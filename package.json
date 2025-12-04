@@ -1,0 +1,33 @@
+{
+  "name": "comunidad-renca-pwa",
+  "version": "2.0.0",
+  "description": "Sistema digital para formación de Juntas de Vecinos y Organizaciones Comunitarias - Ley 19.418",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "pwa",
+    "juntas-vecinos",
+    "organizaciones-comunitarias",
+    "ley-19418",
+    "renca",
+    "clean-architecture"
+  ],
+  "author": "Municipalidad de Renca",
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^10.7.1",
+    "vite": "^5.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-legacy": "^5.2.0",
+    "eslint": "^8.55.0",
+    "vitest": "^1.0.4"
+  }
+}

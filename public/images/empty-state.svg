@@ -1,0 +1,22 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="emptyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d1fae5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a7f3d0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="300" fill="url(#emptyGrad)" opacity="0.3"/>
+
+  <!-- Computer/Screen -->
+  <rect x="100" y="80" width="200" height="130" rx="8" fill="#065f46" opacity="0.9"/>
+  <rect x="110" y="90" width="180" height="100" rx="4" fill="#ecfdf5"/>
+
+  <!-- Stand -->
+  <rect x="180" y="210" width="40" height="10" rx="2" fill="#065f46" opacity="0.9"/>
+  <rect x="150" y="220" width="100" height="8" rx="4" fill="#065f46" opacity="0.9"/>
+
+  <!-- Decorative elements on screen -->
+  <circle cx="200" cy="140" r="30" fill="#10b981" opacity="0.3"/>
+  <path d="M 180 140 L 195 125 L 220 150" stroke="#047857" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+</svg>

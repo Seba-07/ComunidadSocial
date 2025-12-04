@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#dc2626">
+    <title>Reset Database - Comunidad Renca</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .reset-container {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .reset-icon {
+            width: 80px;
+            height: 80px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #dc2626;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+
+        .warning-box h3 {
+            color: #92400e;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-box ul {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+
+        .info-box {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+
+        .info-box h3 {
+            color: #1e40af;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box p {
+            color: #1e3a8a;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-box code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .result.success {
+            background: #f0fdf4;
+            border: 2px solid #10b981;
+            color: #065f46;
+            display: block;
+        }
+
+        .result h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .result a {
+            color: #065f46;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            .reset-container {
+                padding: 32px 24px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reset-container">
+        <div class="reset-icon">⚠️</div>
+        <h1>Reset Database</h1>
+        <p class="subtitle">Herramienta de desarrollo para limpiar la base de datos</p>
+
+        <div class="warning-box">
+            <h3>⚠️ Advertencia</h3>
+            <ul>
+                <li>Esta acción eliminará TODOS los datos de la aplicación</li>
+                <li>Todas las organizaciones, solicitudes y usuarios serán eliminados</li>
+                <li>Los horarios y reservas del Ministro de Fe serán eliminados</li>
+                <li>Esta acción NO se puede deshacer</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>ℹ️ Después del reset</h3>
+            <p>El sistema quedará con un único usuario administrador:</p>
+            <p><strong>Email:</strong> <code>admin@renca.cl</code></p>
+            <p><strong>Contraseña:</strong> <code>admin123</code></p>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-danger" id="reset-btn">
+                🗑️ Resetear Base de Datos
+            </button>
+            <button class="btn btn-secondary" id="cancel-btn">
+                ← Volver
+            </button>
+        </div>
+
+        <div class="result" id="result">
+            <h3>✅ Base de datos reseteada exitosamente</h3>
+            <p>Todos los datos han sido eliminados.</p>
+            <p>El usuario administrador está disponible con las credenciales mostradas arriba.</p>
+            <p style="margin-top: 16px;">
+                <a href="/auth.html">Ir a Iniciar Sesión →</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const resetBtn = document.getElementById('reset-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const resultDiv = document.getElementById('result');
+
+        // Cancel button
+        cancelBtn.addEventListener('click', () => {
+            window.location.href = '/';
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', async () => {
+            // Double confirmation
+            const confirm1 = confirm('⚠️ ¿Estás seguro de que quieres resetear TODA la base de datos?\n\nEsta acción eliminará:\n- Todas las organizaciones\n- Todas las solicitudes\n- Todos los usuarios (excepto admin)\n- Todos los horarios y reservas\n\nEsta acción NO se puede deshacer.');
+
+            if (!confirm1) return;
+
+            const confirm2 = confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Realmente deseas continuar?\n\nEscribe OK en el siguiente prompt para confirmar.');
+
+            if (!confirm2) return;
+
+            const finalConfirm = prompt('Escribe "OK" para confirmar el reseteo de la base de datos:');
+
+            if (finalConfirm !== 'OK') {
+                alert('❌ Reseteo cancelado');
+                return;
+            }
+
+            // Disable button
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Reseteando...';
+
+            try {
+                console.log('🗑️ Iniciando reset de base de datos...');
+
+                // Clear all localStorage
+                localStorage.clear();
+
+                // Initialize empty collections
+                localStorage.setItem('users', JSON.stringify([]));
+                localStorage.setItem('organizations', JSON.stringify([]));
+                localStorage.setItem('applications', JSON.stringify([]));
+                localStorage.setItem('ministro_schedule', JSON.stringify({}));
+                localStorage.setItem('ministro_bookings', JSON.stringify([]));
+
+                console.log('✅ Base de datos limpiada exitosamente');
+                console.log('');
+                console.log('📋 Usuario admin disponible:');
+                console.log('   Email: admin@renca.cl');
+                console.log('   Password: admin123');
+
+                // Show success message
+                resultDiv.classList.add('success');
+                resetBtn.textContent = '✓ Completado';
+
+                // Scroll to result
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (error) {
+                console.error('❌ Error al resetear:', error);
+                alert('Error al resetear la base de datos: ' + error.message);
+                resetBtn.disabled = false;
+                resetBtn.textContent = '🗑️ Resetear Base de Datos';
+            }
+        });
+    </script>
+</body>
+</html>

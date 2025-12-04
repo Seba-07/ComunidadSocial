@@ -1,0 +1,35 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d1fae5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a7f3d0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg1)"/>
+
+  <!-- People icons representing community -->
+  <g transform="translate(200, 150)">
+    <circle cx="0" cy="30" r="25" fill="#065f46"/>
+    <path d="M -30 90 Q -30 50 0 50 Q 30 50 30 90 Z" fill="#065f46"/>
+  </g>
+
+  <g transform="translate(350, 180)">
+    <circle cx="0" cy="30" r="20" fill="#047857"/>
+    <path d="M -25 80 Q -25 50 0 50 Q 25 50 25 80 Z" fill="#047857"/>
+  </g>
+
+  <g transform="translate(500, 160)">
+    <circle cx="0" cy="30" r="25" fill="#065f46"/>
+    <path d="M -30 90 Q -30 50 0 50 Q 30 50 30 90 Z" fill="#065f46"/>
+  </g>
+
+  <g transform="translate(600, 190)">
+    <circle cx="0" cy="30" r="18" fill="#10b981"/>
+    <path d="M -22 75 Q -22 48 0 48 Q 22 48 22 75 Z" fill="#10b981"/>
+  </g>
+
+  <!-- Community text -->
+  <text x="400" y="350" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#065f46" text-anchor="middle">
+    Comunidad Renca
+  </text>
+</svg>

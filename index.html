@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#065f46">
+    <meta name="description" content="Plataforma de Participación Ciudadana y Formación Educativa - Municipalidad de Renca">
+    <title>Comunidad Renca - Participación Ciudadana</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module">
+        // Check authentication before loading app
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        if (!isAuthenticated) {
+            window.location.href = '/auth.html';
+        }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <button id="menu-btn" class="menu-btn" aria-label="Menú">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="#" class="header-logo" id="logo-home-link" data-page="home">
+                    <img src="/icons/icon-192x192.png" alt="Logo Renca" class="logo-img">
+                    <h1 class="header-title">Comunidad Renca</h1>
+                </a>
+
+                <!-- User info (always visible when authenticated) -->
+                <div id="user-info" class="user-info" style="display: flex; align-items: center; gap: 12px;">
+                    <button id="notifications-btn" class="notifications-btn" aria-label="Notificaciones">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <button id="user-name-btn" class="user-name-btn" data-page="profile">
+                        <div class="header-avatar">
+                            <img id="header-user-photo" src="" alt="" style="display: none;">
+                            <span id="header-user-initials">US</span>
+                        </div>
+                        <span id="user-name" class="user-name"></span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l3 3 3-3"/>
+                        </svg>
+                    </button>
+                    <button id="logout-btn" class="btn-secondary-sm">Salir</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Notifications Panel -->
+        <div id="notifications-panel" class="notifications-panel">
+            <div class="notifications-header">
+                <h3>Notificaciones</h3>
+                <button id="btn-mark-all-read" class="btn-mark-all">Marcar todo como leído</button>
+            </div>
+            <div id="notifications-list" class="notifications-list">
+                <!-- Se genera dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Side Navigation -->
+        <nav id="side-nav" class="side-nav">
+            <div class="nav-header">
+                <h2>Menú</h2>
+                <button id="close-nav-btn" class="close-btn" aria-label="Cerrar menú">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <ul class="nav-list">
+                <li><a href="#" data-page="home" class="nav-link active">🏠 Inicio</a></li>
+                <li><a href="#" data-page="consejos" class="nav-link">👥 Consejos Escolares</a></li>
+                <li><a href="#" data-page="padres" class="nav-link">👨‍👩‍👧‍👦 Centro de Padres</a></li>
+                <li><a href="#" data-page="estudiantes" class="nav-link">🎓 Centro de Estudiantes</a></li>
+                <li><a href="#" data-page="comunidad" class="nav-link">🏘️ Comunidad</a></li>
+                <li><a href="#" data-page="proyectos" class="nav-link">📋 Proyectos y Leyes</a></li>
+                <li><a href="#" data-page="recursos" class="nav-link">📚 Recursos</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content">
+            <!-- Home View -->
+            <div id="page-home" class="page-view active">
+                <!-- Sección Mis Organizaciones -->
+                <section class="my-organizations-section" id="my-organizations-section">
+                    <div class="section-header-modern">
+                        <h2>🏘️ Mis Organizaciones</h2>
+                        <button class="btn-new-org" id="btn-nueva-organizacion">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Nueva organización
+                        </button>
+                    </div>
+
+                    <!-- Estado: Sin organizaciones -->
+                    <div class="no-organizations" id="no-organizations">
+                        <div class="no-org-icon">🏠</div>
+                        <h3>Aún no tienes organizaciones</h3>
+                        <p>Crea tu primera organización comunitaria y comienza el proceso de formalización según la Ley 19.418</p>
+                        <button class="btn-primary-lg" id="btn-crear-primera-org">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Crear mi primera organización
+                        </button>
+                    </div>
+
+                    <!-- Lista de organizaciones -->
+                    <div class="organizations-list" id="organizations-list" style="display: none;">
+                        <!-- Se genera dinámicamente -->
+                    </div>
+                </section>
+
+                <!-- Hero Moderno (se muestra solo si no hay organizaciones) -->
+                <section class="hero-modern" id="hero-section">
+                    <div class="hero-badge">✨ Plataforma de Participación Ciudadana</div>
+                    <h1 class="hero-title">Construyamos juntos una mejor comunidad social</h1>
+                    <p class="hero-description">Únete a más de 1,250 personas comprometidas con la participación activa en Renca</p>
+                    <div class="hero-actions">
+                        <button class="btn-primary-lg" id="btn-crear-organizacion">Comenzar ahora</button>
+                        <button class="btn-secondary-lg" data-page="recursos">Ver recursos</button>
+                    </div>
+                    <div class="hero-image-grid">
+                        <img src="/images/comunidad-evento-2.jpeg" alt="Comunidad" class="hero-grid-img">
+                        <img src="/images/estudiantes-palacio.jpeg" alt="Estudiantes" class="hero-grid-img">
+                        <img src="/images/taller-capacitacion-1.jpeg" alt="Talleres" class="hero-grid-img">
+                    </div>
+                </section>
+
+                <!-- Stats Modernos -->
+                <section class="stats-modern">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="1250">0</div>
+                        <div class="stat-text">Participantes activos</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="45">0</div>
+                        <div class="stat-text">Proyectos en curso</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="12">0</div>
+                        <div class="stat-text">Eventos este mes</div>
+                    </div>
+                </section>
+
+                <!-- Oportunidades Carousel -->
+                <section class="opportunities-section">
+                    <div class="section-header-modern">
+                        <h2>Oportunidades destacadas</h2>
+                        <p>Explora las últimas actividades y programas disponibles</p>
+                    </div>
+                    <div class="opportunities-carousel-container">
+                        <button class="carousel-btn carousel-btn-prev" aria-label="Anterior">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                        </button>
+                        <div class="opportunities-carousel">
+                            <div class="opportunity-card opportunity-featured">
+                                <div class="opportunity-tag">🔥 Más popular</div>
+                                <div class="opportunity-icon">🎓</div>
+                                <h3>Taller de Liderazgo Estudiantil</h3>
+                                <p>Desarrolla habilidades de liderazgo y trabajo en equipo con expertos</p>
+                                <div class="opportunity-meta">
+                                    <span>📅 15 Nov</span>
+                                    <span>👥 25 inscritos</span>
+                                </div>
+                                <button class="btn-opportunity">Inscribirse ahora</button>
+                            </div>
+
+                            <div class="opportunity-card">
+                                <div class="opportunity-tag tag-new">✨ Nuevo</div>
+                                <div class="opportunity-icon">📊</div>
+                                <h3>Portal de Transparencia</h3>
+                                <p>Consulta presupuestos y decisiones en tiempo real</p>
+                                <div class="opportunity-meta">
+                                    <span>🌐 Online</span>
+                                    <span>🆓 Gratuito</span>
+                                </div>
+                                <button class="btn-opportunity">Explorar</button>
+                            </div>
+
+                            <div class="opportunity-card">
+                                <div class="opportunity-tag tag-urgent">⏰ Cierra pronto</div>
+                                <div class="opportunity-icon">💰</div>
+                                <h3>Fondos Concursables</h3>
+                                <p>Financia tu proyecto comunitario o educativo</p>
+                                <div class="opportunity-meta">
+                                    <span>📅 Hasta 20 Nov</span>
+                                    <span>💵 Hasta $500k</span>
+                                </div>
+                                <button class="btn-opportunity">Postular</button>
+                            </div>
+                        </div>
+                        <button class="carousel-btn carousel-btn-next" aria-label="Siguiente">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="carousel-indicators">
+                        <span class="indicator active"></span>
+                        <span class="indicator"></span>
+                        <span class="indicator"></span>
+                    </div>
+                </section>
+
+                <!-- Search Bar -->
+                <section class="search-section">
+                    <div class="search-container">
+                        <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" class="search-input" placeholder="Buscar documentos, eventos, noticias..." id="quick-search">
+                        <button class="search-clear" id="search-clear">✕</button>
+                    </div>
+                    <div class="search-results" id="search-results"></div>
+                </section>
+
+                <section class="quick-actions">
+                    <h3>Acceso Rápido</h3>
+                    <div class="action-grid">
+                        <button class="action-card" data-action="documentos">
+                            <img src="/images/icon-documents.svg" alt="Documentos" class="action-icon-img">
+                            <div class="action-title">Documentos</div>
+                            <div class="action-count">+120</div>
+                        </button>
+                        <button class="action-card" data-action="eventos">
+                            <img src="/images/icon-events.svg" alt="Eventos" class="action-icon-img">
+                            <div class="action-title">Eventos</div>
+                            <div class="action-count">12 próximos</div>
+                        </button>
+                        <button class="action-card" data-action="consultas">
+                            <img src="/images/icon-chat.svg" alt="Consultas" class="action-icon-img">
+                            <div class="action-title">Consultas</div>
+                            <div class="action-count">24h respuesta</div>
+                        </button>
+                        <button class="action-card" data-action="noticias">
+                            <img src="/images/icon-news.svg" alt="Noticias" class="action-icon-img">
+                            <div class="action-title">Noticias</div>
+                            <div class="action-count">5 nuevas</div>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Upcoming Events -->
+                <section class="events-section">
+                    <div class="section-header">
+                        <h3>📅 Próximos Eventos</h3>
+                        <a href="#" class="view-all-link">Ver todos →</a>
+                    </div>
+                    <div class="events-grid">
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="/images/comunidad-evento-1.jpeg" alt="Reunión Consejo">
+                            </div>
+                            <div class="event-content">
+                                <div class="event-date">
+                                    <div class="event-day">15</div>
+                                    <div class="event-month">NOV</div>
+                                </div>
+                                <div class="event-details">
+                                    <h4>Reunión Consejo Escolar</h4>
+                                    <p class="event-time">⏰ 18:00 hrs</p>
+                                    <p class="event-location">📍 Sala Municipal</p>
+                                </div>
+                            </div>
+                            <button class="event-btn">Confirmar</button>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-image">
+                                <img src="/images/comunidad-evento-3.jpeg" alt="Evento Comunitario">
+                            </div>
+                            <div class="event-content">
+                                <div class="event-date">
+                                    <div class="event-day">20</div>
+                                    <div class="event-month">NOV</div>
+                                </div>
+                                <div class="event-details">
+                                    <h4>Feria de Proyectos Comunitarios</h4>
+                                    <p class="event-time">⏰ 10:00 hrs</p>
+                                    <p class="event-location">📍 Plaza Cívica</p>
+                                </div>
+                            </div>
+                            <button class="event-btn">Confirmar</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Poll -->
+                <section class="poll-section">
+                    <div class="poll-card">
+                        <h3>🗳️ Encuesta Rápida</h3>
+                        <p class="poll-question">¿Qué tema te gustaría que tratemos en la próxima capacitación?</p>
+                        <div class="poll-options">
+                            <button class="poll-option" data-option="1">
+                                <span>Liderazgo Comunitario</span>
+                                <span class="poll-percentage">45%</span>
+                            </button>
+                            <button class="poll-option" data-option="2">
+                                <span>Gestión de Proyectos</span>
+                                <span class="poll-percentage">30%</span>
+                            </button>
+                            <button class="poll-option" data-option="3">
+                                <span>Comunicación Efectiva</span>
+                                <span class="poll-percentage">25%</span>
+                            </button>
+                        </div>
+                        <div class="poll-footer">
+                            <span>📊 128 votos</span>
+                            <a href="#" class="poll-results-link">Ver resultados completos</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Community Gallery -->
+                <section class="gallery-section gallery-compact">
+                    <h3>📸 Nuestra Comunidad</h3>
+                    <div class="gallery-grid-compact">
+                        <div class="gallery-item">
+                            <img src="/images/comunidad-evento-2.jpeg" alt="Evento Comunitario" loading="lazy">
+                            <div class="gallery-overlay">
+                                <p>Encuentro de Líderes</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="/images/estudiantes-palacio.jpeg" alt="Visita Educativa" loading="lazy">
+                            <div class="gallery-overlay">
+                                <p>Visita Educativa</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="feed-section">
+                    <h3>Publicaciones Recientes</h3>
+                    <div class="feed-container" id="feed-container">
+                        <article class="feed-card">
+                            <div class="feed-header">
+                                <span class="feed-category">Consejos Escolares</span>
+                                <span class="feed-date">Hace 2 horas</span>
+                            </div>
+                            <h4>Próxima Reunión del Consejo Escolar</h4>
+                            <p>Se convoca a todos los miembros del Consejo Escolar a la reunión ordinaria del mes de noviembre...</p>
+                            <button class="btn-secondary">Ver más</button>
+                        </article>
+
+                        <article class="feed-card">
+                            <div class="feed-header">
+                                <span class="feed-category">Centro de Padres</span>
+                                <span class="feed-date">Hace 5 horas</span>
+                            </div>
+                            <h4>Nuevas Guías de Participación Disponibles</h4>
+                            <p>Descarga las guías actualizadas para la organización de actividades en el centro de padres...</p>
+                            <button class="btn-secondary">Ver más</button>
+                        </article>
+
+                        <article class="feed-card">
+                            <div class="feed-header">
+                                <span class="feed-category">Comunidad</span>
+                                <span class="feed-date">Hace 1 día</span>
+                            </div>
+                            <h4>Fondos Concursables 2024</h4>
+                            <p>Ya están abiertas las postulaciones para los fondos concursables municipales...</p>
+                            <button class="btn-secondary">Ver más</button>
+                        </article>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Consejos Escolares View -->
+            <div id="page-consejos" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/votacion-estudiantes.jpeg" alt="Votación estudiantil" class="page-banner">
+                </div>
+                <h2>Consejos Escolares</h2>
+                <p class="page-intro">Apoyamos la organización y fortalecimiento de los Consejos Escolares como instancias de participación democrática en la comunidad educativa.</p>
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="docs-consejos">Documentos</button>
+                    <button class="tab-btn" data-tab="roles-consejos">Roles</button>
+                    <button class="tab-btn" data-tab="material-consejos">Material de Apoyo</button>
+                </div>
+                <div id="docs-consejos" class="tab-content active">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📄</div>
+                            <div class="resource-info">
+                                <h4>Reglamento Interno Consejos Escolares</h4>
+                                <p>Documento oficial con normativas y procedimientos</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon">📄</div>
+                            <div class="resource-info">
+                                <h4>Acta de Constitución</h4>
+                                <p>Modelo de acta para constitución del consejo</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="roles-consejos" class="tab-content">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <h4>Presidente</h4>
+                            <p>Responsable de dirigir y coordinar las reuniones del consejo escolar</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>Secretario</h4>
+                            <p>Encargado de documentar y mantener registro de las sesiones</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="material-consejos" class="tab-content">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📚</div>
+                            <div class="resource-info">
+                                <h4>Guía de Buenas Prácticas</h4>
+                                <p>Recomendaciones para una gestión efectiva</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Centro de Padres View -->
+            <div id="page-padres" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/mesa-directiva.jpeg" alt="Mesa directiva" class="page-banner">
+                </div>
+                <h2>Centro de Padres y Apoderados</h2>
+                <p class="page-intro">Facilitamos herramientas y recursos para fortalecer la participación activa de padres y apoderados en la educación de sus hijos.</p>
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="docs-padres">Documentos</button>
+                    <button class="tab-btn" data-tab="roles-padres">Roles</button>
+                    <button class="tab-btn" data-tab="material-padres">Material de Apoyo</button>
+                </div>
+                <div id="docs-padres" class="tab-content active">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📄</div>
+                            <div class="resource-info">
+                                <h4>Estatutos Centro de Padres</h4>
+                                <p>Marco legal y organizativo</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="roles-padres" class="tab-content">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <h4>Directiva</h4>
+                            <p>Conformación y funciones de la directiva del centro de padres</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="material-padres" class="tab-content">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📚</div>
+                            <div class="resource-info">
+                                <h4>Manual de Organización</h4>
+                                <p>Guía completa para organizar actividades</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Centro de Estudiantes View -->
+            <div id="page-estudiantes" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/visita-educativa.jpeg" alt="Visita educativa" class="page-banner">
+                </div>
+                <h2>Centro de Estudiantes</h2>
+                <p class="page-intro">Promovemos el liderazgo estudiantil y la participación democrática a través de herramientas y capacitaciones para organizaciones sociales.</p>
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="docs-estudiantes">Documentos</button>
+                    <button class="tab-btn" data-tab="roles-estudiantes">Roles</button>
+                    <button class="tab-btn" data-tab="material-estudiantes">Material de Apoyo</button>
+                </div>
+                <div id="docs-estudiantes" class="tab-content active">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📄</div>
+                            <div class="resource-info">
+                                <h4>Reglamento Centro de Estudiantes</h4>
+                                <p>Normativa para la organización estudiantil</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="roles-estudiantes" class="tab-content">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <h4>Presidente</h4>
+                            <p>Representante principal de los estudiantes</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="material-estudiantes" class="tab-content">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">📚</div>
+                            <div class="resource-info">
+                                <h4>Guía de Liderazgo Estudiantil</h4>
+                                <p>Desarrollo de habilidades de liderazgo</p>
+                            </div>
+                            <button class="btn-download">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comunidad View -->
+            <div id="page-comunidad" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/comunidad-evento-2.jpeg" alt="Comunidad participando" class="page-banner">
+                </div>
+                <h2>Comunidad</h2>
+                <p class="page-description">Espacio de participación e información para toda la comunidad social de Renca. Juntos construimos una mejor sociedad para todos.</p>
+                <div class="community-section">
+                    <h3>Canales de Comunicación</h3>
+                    <div class="social-links">
+                        <a href="#" class="social-card">
+                            <div class="social-icon">🌐</div>
+                            <div>Sitio Web Municipal</div>
+                        </a>
+                        <a href="#" class="social-card">
+                            <div class="social-icon">📷</div>
+                            <div>Instagram</div>
+                        </a>
+                        <a href="#" class="social-card">
+                            <div class="social-icon">👍</div>
+                            <div>Facebook</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proyectos y Leyes View -->
+            <div id="page-proyectos" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/proyectos-fondos.svg" alt="Proyectos y fondos" class="page-banner">
+                </div>
+                <h2>Proyectos y Leyes</h2>
+                <p class="page-intro">Accede a información sobre fondos concursables, proyectos comunitarios y el marco legal que sustenta la participación ciudadana.</p>
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="fondos">Fondos Concursables</button>
+                    <button class="tab-btn" data-tab="donaciones">Donaciones</button>
+                    <button class="tab-btn" data-tab="leyes">Marco Legal</button>
+                </div>
+                <div id="fondos" class="tab-content active">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <h4>Fondos Concursables 2024</h4>
+                            <p>Información sobre fondos disponibles para proyectos comunitarios y educativos</p>
+                            <button class="btn-primary">Ver convocatorias</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="donaciones" class="tab-content">
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <h4>Programa de Donaciones</h4>
+                            <p>Información sobre cómo realizar y gestionar donaciones</p>
+                            <button class="btn-primary">Más información</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="leyes" class="tab-content">
+                    <div class="resource-list">
+                        <div class="resource-item">
+                            <div class="resource-icon">⚖️</div>
+                            <div class="resource-info">
+                                <h4>Ley 19.418</h4>
+                                <p>Juntas de Vecinos y Organizaciones Comunitarias</p>
+                            </div>
+                            <button class="btn-download">Ver</button>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon">⚖️</div>
+                            <div class="resource-info">
+                                <h4>Ley 20.500</h4>
+                                <p>Participación Ciudadana</p>
+                            </div>
+                            <button class="btn-download">Ver</button>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon">⚖️</div>
+                            <div class="resource-info">
+                                <h4>Ley 21.146</h4>
+                                <p>Fortalecimiento de Participación Ciudadana</p>
+                            </div>
+                            <button class="btn-download">Ver</button>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon">⚖️</div>
+                            <div class="resource-info">
+                                <h4>Ley 21.040</h4>
+                                <p>Nueva Educación Pública</p>
+                            </div>
+                            <button class="btn-download">Ver</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recursos View -->
+            <div id="page-recursos" class="page-view">
+                <div class="section-header-img">
+                    <img src="/images/recursos-biblioteca.svg" alt="Biblioteca de recursos" class="page-banner">
+                </div>
+                <h2>Biblioteca de Recursos</h2>
+                <p class="page-description">Accede a guías, manuales, plantillas y documentos de apoyo para fortalecer tu organización social.</p>
+                <div class="resource-categories">
+                    <div class="category-card">
+                        <h3>📖 Guías Prácticas</h3>
+                        <p>Manuales paso a paso para diferentes procesos</p>
+                        <button class="btn-secondary">Explorar</button>
+                    </div>
+                    <div class="category-card">
+                        <h3>📝 Plantillas</h3>
+                        <p>Documentos editables para uso inmediato</p>
+                        <button class="btn-secondary">Explorar</button>
+                    </div>
+                    <div class="category-card">
+                        <h3>🎓 Capacitación</h3>
+                        <p>Material de formación y apoyo educativo</p>
+                        <button class="btn-secondary">Explorar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile/Settings View -->
+            <div id="page-profile" class="page-view">
+                <div class="profile-page">
+                    <div class="profile-header">
+                        <div class="profile-avatar-container">
+                            <div class="profile-avatar" id="profile-avatar">
+                                <img id="profile-photo" src="" alt="Foto de perfil" style="display: none;">
+                                <span id="profile-initials">US</span>
+                            </div>
+                            <label for="photo-upload" class="photo-upload-btn" title="Cambiar foto">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5l3 3m0 0l-3 3m3-3H4"/>
+                                </svg>
+                            </label>
+                            <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+                        </div>
+                        <h2 id="profile-fullname">Usuario</h2>
+                        <p id="profile-email" class="profile-email">email@example.com</p>
+                        <span id="profile-role-badge" class="role-badge">Usuario</span>
+                    </div>
+
+                    <div class="profile-sections">
+                        <!-- Personal Info Section -->
+                        <div class="profile-section">
+                            <div class="section-header-profile">
+                                <h3>Información Personal</h3>
+                                <button class="btn-edit" id="btn-edit-personal">Editar</button>
+                            </div>
+                            <form id="form-personal" class="profile-form" style="display: none;">
+                                <div class="form-row-2">
+                                    <div class="form-group">
+                                        <label for="profile-firstname">Nombre</label>
+                                        <input type="text" id="profile-firstname" placeholder="Tu nombre">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="profile-lastname">Apellido</label>
+                                        <input type="text" id="profile-lastname" placeholder="Tu apellido">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-rut">RUT</label>
+                                    <input type="text" id="profile-rut" placeholder="12.345.678-9" disabled>
+                                    <small class="form-hint">El RUT no puede ser modificado</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-phone">Teléfono</label>
+                                    <input type="tel" id="profile-phone" value="+56 " placeholder="9 1234 5678">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-address">Dirección</label>
+                                    <input type="text" id="profile-address" placeholder="Tu dirección">
+                                </div>
+                                <div class="form-row-2">
+                                    <div class="form-group">
+                                        <label for="profile-region">Región</label>
+                                        <select id="profile-region">
+                                            <option value="">Selecciona una región</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="profile-commune">Comuna</label>
+                                        <select id="profile-commune">
+                                            <option value="">Selecciona una comuna</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="btn-cancel-personal">Cancelar</button>
+                                    <button type="submit" class="btn-primary">Guardar Cambios</button>
+                                </div>
+                            </form>
+                            <div id="display-personal" class="profile-display">
+                                <div class="info-row">
+                                    <span class="info-label">Nombre completo</span>
+                                    <span class="info-value" id="display-fullname">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">RUT</span>
+                                    <span class="info-value" id="display-rut">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Teléfono</span>
+                                    <span class="info-value" id="display-phone">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Dirección</span>
+                                    <span class="info-value" id="display-address">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Región</span>
+                                    <span class="info-value" id="display-region">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Comuna</span>
+                                    <span class="info-value" id="display-commune">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Section -->
+                        <div class="profile-section">
+                            <div class="section-header-profile">
+                                <h3>Seguridad</h3>
+                                <button class="btn-edit" id="btn-edit-security">Cambiar Contraseña</button>
+                            </div>
+                            <form id="form-security" class="profile-form" style="display: none;">
+                                <div class="form-group">
+                                    <label for="current-password">Contraseña Actual</label>
+                                    <input type="password" id="current-password" placeholder="Tu contraseña actual" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-password">Nueva Contraseña</label>
+                                    <input type="password" id="new-password" placeholder="Mínimo 6 caracteres" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm-new-password">Confirmar Nueva Contraseña</label>
+                                    <input type="password" id="confirm-new-password" placeholder="Repite la nueva contraseña" required>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="btn-cancel-security">Cancelar</button>
+                                    <button type="submit" class="btn-primary">Actualizar Contraseña</button>
+                                </div>
+                            </form>
+                            <div id="display-security" class="profile-display">
+                                <div class="info-row">
+                                    <span class="info-label">Contraseña</span>
+                                    <span class="info-value">••••••••</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value" id="display-email">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Section -->
+                        <div class="profile-section">
+                            <div class="section-header-profile">
+                                <h3>Cuenta</h3>
+                            </div>
+                            <div class="profile-display">
+                                <div class="info-row">
+                                    <span class="info-label">Miembro desde</span>
+                                    <span class="info-value" id="display-created">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Tipo de cuenta</span>
+                                    <span class="info-value" id="display-account-type">Usuario</span>
+                                </div>
+                            </div>
+                            <div class="danger-zone">
+                                <h4>Zona de Peligro</h4>
+                                <p>Al cerrar sesión, deberás volver a ingresar tus credenciales.</p>
+                                <button class="btn-danger" id="btn-logout-profile">Cerrar Sesión</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Dashboard View -->
+            <div id="page-admin" class="page-view">
+                <div class="admin-dashboard">
+                    <div class="admin-header">
+                        <div class="admin-header-content">
+                            <h1>Panel de Administración</h1>
+                            <p>Gestión de solicitudes de organizaciones comunitarias</p>
+                            <button id="btn-schedule-manager" class="btn-schedule-access">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                Gestionar Horarios
+                            </button>
+                            <button id="btn-ministro-manager" class="btn-schedule-access" style="margin-top: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                Gestionar Ministros de Fe
+                            </button>
+                        </div>
+                        <div class="admin-stats-row">
+                            <div class="admin-stat-card">
+                                <div class="stat-icon pending">📋</div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="admin-pending-count">0</span>
+                                    <span class="stat-label">Pendientes</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%); cursor: pointer;" onclick="document.querySelector('[data-filter=\'waiting_ministro\']')?.click()">
+                                <div class="stat-icon" style="background: #ff9800; color: white;">📝</div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="admin-ministro-count">0</span>
+                                    <span class="stat-label">Solicitudes Ministro Fe</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="stat-icon review">🔍</div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="admin-review-count">0</span>
+                                    <span class="stat-label">En Revisión</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="stat-icon registry">📤</div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="admin-registry-count">0</span>
+                                    <span class="stat-label">Registro Civil</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="stat-icon approved">✅</div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="admin-approved-count">0</span>
+                                    <span class="stat-label">Aprobadas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-toolbar">
+                        <div class="admin-search-box">
+                            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="admin-search" placeholder="Buscar organización...">
+                        </div>
+                        <div class="admin-filter-tabs">
+                            <button class="filter-tab active" data-filter="all">Todas</button>
+                            <button class="filter-tab" data-filter="waiting_ministro" style="background: #fff4e6; color: #ff9800;">🔔 Ministro Fe</button>
+                            <button class="filter-tab" data-filter="pending_review">Pendientes</button>
+                            <button class="filter-tab" data-filter="in_review">En Revisión</button>
+                            <button class="filter-tab" data-filter="sent_registry">Registro Civil</button>
+                            <button class="filter-tab" data-filter="approved">Aprobadas</button>
+                            <button class="filter-tab" data-filter="rejected">Rechazadas</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-applications-list" id="admin-applications-list">
+                        <!-- Se genera dinámicamente -->
+                        <div class="admin-empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3>No hay solicitudes</h3>
+                            <p>Las solicitudes de nuevas organizaciones aparecerán aquí</p>
+                        </div>
+                    </div>
+
+                    <!-- Schedule Manager View -->
+                    <div id="schedule-manager-view" class="schedule-manager-view" style="display: none;">
+                        <!-- Se genera dinámicamente por ScheduleManager.js -->
+                    </div>
+
+                    <!-- Ministro Manager View -->
+                    <div id="ministro-manager-view" class="ministro-manager-view" style="display: none;">
+                        <!-- Se genera dinámicamente por MinistroManager.js -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="home">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Inicio</span>
+            </button>
+            <button class="nav-item" data-page="comunidad">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>Comunidad</span>
+            </button>
+            <button class="nav-item" data-page="recursos">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>Recursos</span>
+            </button>
+            <button class="nav-item" data-page="proyectos">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+                <span>Proyectos</span>
+            </button>
+        </nav>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+</body>
+</html>

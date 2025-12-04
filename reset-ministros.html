@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Ministros</title>
+</head>
+<body>
+    <h1>Resetear Ministros de Fe</h1>
+    <button onclick="resetMinistros()">Resetear Ministros</button>
+    <div id="result"></div>
+
+    <script type="module">
+        window.resetMinistros = function() {
+            // Eliminar ministros actuales
+            localStorage.removeItem('ministros_fe');
+            
+            // Crear ministros con credenciales
+            const ministros = [
+                {
+                    id: 'mf-1',
+                    rut: '12345678-9',
+                    firstName: 'María',
+                    lastName: 'González López',
+                    email: 'maria.gonzalez@renca.cl',
+                    phone: '+56 9 1234 5678',
+                    address: 'Av. Principal 123, Renca',
+                    specialty: 'Juntas de Vecinos',
+                    active: true,
+                    password: 'maria123',
+                    mustChangePassword: true,
+                    role: 'MINISTRO',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'mf-2',
+                    rut: '98765432-1',
+                    firstName: 'Carlos',
+                    lastName: 'Martínez Silva',
+                    email: 'carlos.martinez@renca.cl',
+                    phone: '+56 9 8765 4321',
+                    address: 'Calle Los Aromos 456, Renca',
+                    specialty: 'Organizaciones Funcionales',
+                    active: true,
+                    password: 'carlos123',
+                    mustChangePassword: true,
+                    role: 'MINISTRO',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+
+            localStorage.setItem('ministros_fe', JSON.stringify(ministros));
+            
+            document.getElementById('result').innerHTML = `
+                <p style="color: green; font-weight: bold;">✅ Ministros reseteados correctamente</p>
+                <h3>Credenciales:</h3>
+                <ul>
+                    <li><strong>María González:</strong> maria.gonzalez@renca.cl / maria123</li>
+                    <li><strong>Carlos Martínez:</strong> carlos.martinez@renca.cl / carlos123</li>
+                </ul>
+                <p>Ahora puedes <a href="/ministro-login.html">iniciar sesión</a></p>
+            `;
+        }
+    </script>
+</body>
+</html>

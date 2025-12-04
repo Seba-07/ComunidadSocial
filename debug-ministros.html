@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Ministros</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        h2 { color: #333; }
+        .section { margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Ministros y Asignaciones</h1>
+    
+    <div class="section">
+        <h2>Ministros en localStorage:</h2>
+        <pre id="ministros-data"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Asignaciones en localStorage:</h2>
+        <pre id="assignments-data"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Ministro actual (sesión):</h2>
+        <pre id="current-ministro"></pre>
+    </div>
+
+    <script>
+        // Ministros
+        const ministros = JSON.parse(localStorage.getItem('ministros_fe') || '[]');
+        document.getElementById('ministros-data').textContent = JSON.stringify(ministros, null, 2);
+
+        // Asignaciones
+        const assignments = JSON.parse(localStorage.getItem('ministro_assignments') || '[]');
+        document.getElementById('assignments-data').textContent = JSON.stringify(assignments, null, 2);
+
+        // Ministro actual
+        const currentMinistro = JSON.parse(localStorage.getItem('currentMinistro') || 'null');
+        document.getElementById('current-ministro').textContent = JSON.stringify(currentMinistro, null, 2);
+    </script>
+</body>
+</html>

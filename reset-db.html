@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Database</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px; 
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #1f2937; }
+        .warning {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            color: #991b1b;
+        }
+        button { 
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: #ef4444;
+            color: white;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .result { 
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .success { 
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗑️ Resetear Base de Datos</h1>
+    
+    <div class="warning">
+        <h3 style="margin-top: 0;">⚠️ ADVERTENCIA</h3>
+        <p><strong>Esta acción eliminará TODOS los datos del sistema excepto el usuario admin:</strong></p>
+        <ul>
+            <li>Todas las organizaciones y solicitudes</li>
+            <li>Todos los ministros de fe</li>
+            <li>Todas las asignaciones de ministros</li>
+            <li>Todos los bloques de disponibilidad</li>
+            <li>Todas las notificaciones</li>
+            <li>Todos los usuarios (excepto admin)</li>
+            <li>Alertas y horarios programados</li>
+        </ul>
+        <p><strong>Se mantendrá:</strong></p>
+        <ul>
+            <li>✅ Usuario admin (admin@renca.cl / admin123)</li>
+        </ul>
+    </div>
+
+    <button onclick="resetDatabase()">🗑️ Sí, Borrar Todo (menos admin)</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function resetDatabase() {
+            const confirmed = confirm(
+                '⚠️ ÚLTIMA ADVERTENCIA\n\n' +
+                '¿Estás SEGURO de que deseas borrar toda la base de datos?\n\n' +
+                'Esta acción NO se puede deshacer.\n\n' +
+                'Solo se mantendrá el usuario admin.'
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const itemsToDelete = [];
+                const itemsKept = [];
+
+                // Guardar el usuario admin antes de borrar
+                const usersData = localStorage.getItem('users');
+                let adminUser = null;
+                
+                if (usersData) {
+                    const users = JSON.parse(usersData);
+                    adminUser = users.find(u => u.email === 'admin@renca.cl');
+                }
+
+                // Lista de keys a eliminar
+                const keysToDelete = [
+                    'organizations',
+                    'ministros_fe',
+                    'ministro_assignments',
+                    'ministro_availability',
+                    'system_notifications',
+                    'users',
+                    'alerts',
+                    'schedule_changes',
+                    'currentUser',
+                    'currentMinistro',
+                    'isAuthenticated',
+                    'isMinistroAuthenticated'
+                ];
+
+                // Eliminar todos los items
+                keysToDelete.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        localStorage.removeItem(key);
+                        itemsToDelete.push(key);
+                    }
+                });
+
+                // Restaurar solo el usuario admin
+                if (adminUser) {
+                    localStorage.setItem('users', JSON.stringify([adminUser]));
+                    itemsKept.push('Usuario admin restaurado');
+                } else {
+                    // Crear usuario admin por defecto si no existía
+                    const defaultAdmin = {
+                        id: 'admin-1',
+                        email: 'admin@renca.cl',
+                        password: 'admin123',
+                        role: 'ADMIN',
+                        profile: {
+                            firstName: 'Administrador',
+                            lastName: 'Sistema',
+                            rut: '11111111-1'
+                        },
+                        createdAt: new Date().toISOString()
+                    };
+                    localStorage.setItem('users', JSON.stringify([defaultAdmin]));
+                    itemsKept.push('Usuario admin creado (admin@renca.cl / admin123)');
+                }
+
+                // Crear ministros de ejemplo
+                const defaultMinistros = [
+                    {
+                        id: 'mf-1',
+                        rut: '12345678-9',
+                        firstName: 'María',
+                        lastName: 'González López',
+                        email: 'maria.gonzalez@renca.cl',
+                        phone: '+56 9 1234 5678',
+                        address: 'Av. Principal 123, Renca',
+                        specialty: 'Juntas de Vecinos',
+                        active: true,
+                        password: 'maria123',
+                        mustChangePassword: true,
+                        role: 'MINISTRO',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    },
+                    {
+                        id: 'mf-2',
+                        rut: '98765432-1',
+                        firstName: 'Carlos',
+                        lastName: 'Martínez Silva',
+                        email: 'carlos.martinez@renca.cl',
+                        phone: '+56 9 8765 4321',
+                        address: 'Calle Los Aromos 456, Renca',
+                        specialty: 'Organizaciones Funcionales',
+                        active: true,
+                        password: 'carlos123',
+                        mustChangePassword: true,
+                        role: 'MINISTRO',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    }
+                ];
+
+                localStorage.setItem('ministros_fe', JSON.stringify(defaultMinistros));
+                itemsKept.push('2 Ministros de Fe creados');
+
+                // Mostrar resultado
+                const result = document.getElementById('result');
+                result.className = 'result success';
+                result.innerHTML = `
+                    <h3>✅ Base de Datos Reseteada</h3>
+                    <p><strong>Items eliminados:</strong></p>
+                    <ul>
+                        ${itemsToDelete.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                    <p><strong>Items mantenidos:</strong></p>
+                    <ul>
+                        ${itemsKept.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                    <p style="margin-top: 20px;">
+                        <strong>Credenciales disponibles:</strong>
+                    </p>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <p style="margin: 5px 0;"><strong>👨‍💼 Admin:</strong> admin@renca.cl / admin123</p>
+                        <p style="margin: 5px 0;"><strong>⚖️ Ministro María:</strong> maria.gonzalez@renca.cl / maria123</p>
+                        <p style="margin: 5px 0;"><strong>⚖️ Ministro Carlos:</strong> carlos.martinez@renca.cl / carlos123</p>
+                    </div>
+                    <p style="margin-top: 20px;">
+                        <a href="/auth.html" style="color: #3b82f6; font-weight: 600;">← Ir a Login</a>
+                    </p>
+                `;
+
+                console.log('✅ Database reset completed');
+                console.log('Deleted:', itemsToDelete);
+                console.log('Kept:', itemsKept);
+
+            } catch (error) {
+                const result = document.getElementById('result');
+                result.className = 'result';
+                result.style.background = '#fee2e2';
+                result.style.color = '#991b1b';
+                result.style.border = '2px solid #ef4444';
+                result.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>Ocurrió un error al resetear la base de datos:</p>
+                    <p><code>${error.message}</code></p>
+                `;
+                console.error('Error resetting database:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#065f46">
+    <title>Iniciar Sesión - Comunidad Renca</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-page::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-20px, 20px); }
+        }
+
+        .auth-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-left {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: white;
+        }
+
+        .auth-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .auth-logo img {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+        }
+
+        .auth-logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .auth-hero h2 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 24px;
+        }
+
+        .auth-hero p {
+            font-size: 20px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .auth-right {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .auth-card h3 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #065f46;
+            margin: 0 0 12px 0;
+        }
+
+        .auth-card .subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            background: #f3f4f6;
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .auth-tab.active {
+            background: white;
+            color: #065f46;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #065f46;
+            box-shadow: 0 0 0 4px rgba(6, 95, 70, 0.1);
+        }
+
+        .form-group input.error {
+            border-color: #ef4444;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(6, 95, 70, 0.3);
+        }
+
+        .btn-auth:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-footer {
+            margin-top: 24px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .admin-note {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #78350f;
+        }
+
+        .admin-note strong {
+            color: #92400e;
+        }
+
+        @media (max-width: 968px) {
+            .auth-container {
+                flex-direction: column;
+            }
+
+            .auth-left {
+                padding: 40px 24px;
+            }
+
+            .auth-right {
+                padding: 24px;
+            }
+
+            .auth-hero h2 {
+                font-size: 36px;
+            }
+
+            .auth-card {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-left">
+                <div class="auth-logo">
+                    <img src="/icons/icon-192x192.png" alt="Logo Renca">
+                    <h1>Comunidad Renca</h1>
+                </div>
+                <div class="auth-hero">
+                    <h2>Digitaliza tu organización comunitaria</h2>
+                    <p>Simplifica el proceso de constitución de Juntas de Vecinos y organizaciones funcionales según la Ley 19.418</p>
+                </div>
+            </div>
+
+            <div class="auth-right">
+                <div class="auth-card">
+                    <h3>Bienvenido</h3>
+                    <p class="subtitle">Ingresa a tu cuenta o crea una nueva</p>
+
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+                        <button class="auth-tab" data-tab="register">Registrarse</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="login-form" class="auth-form active">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input
+                                type="email"
+                                id="login-email"
+                                name="email"
+                                placeholder="tu@email.cl"
+                                required
+                            >
+                            <div class="error-message" id="login-email-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="login-password">Contraseña</label>
+                            <input
+                                type="password"
+                                id="login-password"
+                                name="password"
+                                placeholder="••••••••"
+                                required
+                            >
+                            <div class="error-message" id="login-password-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="login-submit">
+                            Iniciar Sesión
+                        </button>
+
+                        <div class="form-footer">
+                            <a href="#" id="forgot-password-link" style="color: #065f46; font-weight: 600; text-decoration: none;">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                            <div style="margin-top: 12px; color: #6b7280;">
+                                ¿No tienes cuenta? Haz clic en "Registrarse" arriba
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="register-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="register-name">Nombre *</label>
+                            <input
+                                type="text"
+                                id="register-name"
+                                name="firstName"
+                                placeholder="Juan"
+                                required
+                            >
+                            <div class="error-message" id="register-name-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-lastname">Apellido *</label>
+                            <input
+                                type="text"
+                                id="register-lastname"
+                                name="lastName"
+                                placeholder="Pérez"
+                                required
+                            >
+                            <div class="error-message" id="register-lastname-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-rut">RUT *</label>
+                            <input
+                                type="text"
+                                id="register-rut"
+                                name="rut"
+                                placeholder="12.345.678-9"
+                                required
+                            >
+                            <div class="error-message" id="register-rut-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-email">Email *</label>
+                            <input
+                                type="email"
+                                id="register-email"
+                                name="email"
+                                placeholder="tu@email.cl"
+                                required
+                            >
+                            <div class="error-message" id="register-email-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-password">Contraseña *</label>
+                            <input
+                                type="password"
+                                id="register-password"
+                                name="password"
+                                placeholder="Mínimo 6 caracteres"
+                                required
+                            >
+                            <div class="error-message" id="register-password-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-password-confirm">Confirmar Contraseña *</label>
+                            <input
+                                type="password"
+                                id="register-password-confirm"
+                                name="passwordConfirm"
+                                placeholder="Repite tu contraseña"
+                                required
+                            >
+                            <div class="error-message" id="register-password-confirm-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="register-submit">
+                            Crear Cuenta
+                        </button>
+
+                        <div class="form-footer">
+                            Al registrarte, aceptas los términos y condiciones del servicio
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Recuperar Contraseña -->
+    <div id="forgot-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 24px; padding: 48px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; color: #065f46; font-size: 28px; font-weight: 700;">Recuperar Contraseña</h3>
+                <button id="close-modal" style="background: none; border: none; font-size: 32px; color: #6b7280; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <p style="color: #6b7280; margin-bottom: 24px; font-size: 16px;">
+                Ingresa tu email y te mostraremos tu contraseña actual. Podrás cambiarla desde tu perfil una vez que inicies sesión.
+            </p>
+            <form id="recover-password-form">
+                <div class="form-group">
+                    <label for="recover-email">Email</label>
+                    <input
+                        type="email"
+                        id="recover-email"
+                        placeholder="tu@email.cl"
+                        required
+                    >
+                    <div class="error-message" id="recover-email-error"></div>
+                </div>
+                <button type="submit" class="btn-auth" id="recover-submit">
+                    Recuperar Contraseña
+                </button>
+            </form>
+            <div id="password-result" style="display: none; margin-top: 24px; padding: 20px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px;">
+                <p style="margin: 0 0 12px 0; color: #065f46; font-weight: 600; font-size: 16px;">✅ Contraseña encontrada:</p>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <code id="password-display" style="flex: 1; padding: 12px 16px; background: white; border: 2px solid #10b981; border-radius: 8px; font-size: 18px; font-weight: 700; color: #065f46; letter-spacing: 2px;"></code>
+                    <button id="copy-password" style="padding: 12px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        Copiar
+                    </button>
+                </div>
+                <p style="margin: 12px 0 0 0; color: #6b7280; font-size: 14px;">
+                    Guarda tu contraseña en un lugar seguro. Podrás cambiarla desde tu perfil.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/auth.js"></script>
+</body>
+</html>
