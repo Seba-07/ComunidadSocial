@@ -8,6 +8,60 @@ import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { showToast } from '../../app.js';
 
+// Helper: Formatear fecha de forma segura (evita Invalid Date)
+function formatDateSafe(dateStr, options = {}) {
+  if (!dateStr) return '-';
+  try {
+    // Si es string en formato YYYY-MM-DD o ISO
+    if (typeof dateStr === 'string') {
+      // Tomar solo la parte de la fecha si viene con hora
+      const datePart = dateStr.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      if (year && month && day) {
+        const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+        return dateObj.toLocaleDateString('es-CL', options);
+      }
+    }
+    // Fallback para objetos Date
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('es-CL', options);
+  } catch (e) {
+    console.error('Error formateando fecha:', e);
+    return '-';
+  }
+}
+
+// Helper: Parsear fecha + hora de forma segura (evita Invalid Date)
+function parseDateTimeSafe(dateStr, timeStr) {
+  if (!dateStr) return null;
+  try {
+    // Extraer partes de la fecha
+    const datePart = dateStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+
+    // Extraer partes de la hora (formato HH:MM o HH:MM:SS)
+    let hours = 12, minutes = 0;
+    if (timeStr) {
+      const timeParts = timeStr.split(':');
+      hours = parseInt(timeParts[0]) || 12;
+      minutes = parseInt(timeParts[1]) || 0;
+    }
+
+    if (year && month && day) {
+      return new Date(year, month - 1, day, hours, minutes, 0);
+    }
+
+    // Fallback
+    const date = new Date(dateStr + (timeStr ? ' ' + timeStr : ''));
+    if (isNaN(date.getTime())) return null;
+    return date;
+  } catch (e) {
+    console.error('Error parseando fecha/hora:', e);
+    return null;
+  }
+}
+
 // Helper: Obtener icono según tipo de organización
 function getOrgIcon(type) {
   if (type === 'JUNTA_VECINOS' || type === 'COMITE_VECINOS') return '🏘️';
@@ -427,12 +481,106 @@ class OrganizationDashboard {
             </div>
 
             ${hasSchedule ? `
+              ${(() => {
+                // Detectar cambios entre solicitud original y confirmación del admin
+                const changes = [];
+
+                // Comparar fechas
+                const originalDate = org.electionDate;
+                const confirmedDate = org.ministroData.scheduledDate;
+                if (originalDate && confirmedDate && originalDate !== confirmedDate) {
+                  changes.push({
+                    tipo: 'Fecha',
+                    original: formatDateSafe(originalDate, { day: 'numeric', month: 'long', year: 'numeric' }),
+                    nuevo: formatDateSafe(confirmedDate, { day: 'numeric', month: 'long', year: 'numeric' }),
+                    icon: '📅'
+                  });
+                }
+
+                // Comparar horas
+                const originalTime = org.electionTime;
+                const confirmedTime = org.ministroData.scheduledTime;
+                if (originalTime && confirmedTime && originalTime !== confirmedTime) {
+                  changes.push({
+                    tipo: 'Hora',
+                    original: originalTime,
+                    nuevo: confirmedTime,
+                    icon: '🕐'
+                  });
+                }
+
+                // Comparar lugar
+                const originalLocation = org.assemblyAddress;
+                const confirmedLocation = org.ministroData.location;
+                if (originalLocation && confirmedLocation && originalLocation !== confirmedLocation) {
+                  changes.push({
+                    tipo: 'Lugar',
+                    original: originalLocation,
+                    nuevo: confirmedLocation,
+                    icon: '📍'
+                  });
+                }
+
+                if (changes.length > 0) {
+                  return `
+                    <div class="schedule-changes-alert" style="
+                      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                      border: 1px solid #f59e0b;
+                      border-radius: 8px;
+                      padding: 16px;
+                      margin-bottom: 16px;
+                    ">
+                      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                        <span style="font-size: 20px;">⚠️</span>
+                        <strong style="color: #92400e;">El administrador realizó cambios en tu solicitud</strong>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${changes.map(c => `
+                          <div style="
+                            background: white;
+                            border-radius: 6px;
+                            padding: 10px 12px;
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                          ">
+                            <span style="font-size: 18px;">${c.icon}</span>
+                            <div style="flex: 1;">
+                              <div style="font-weight: 600; color: #374151; font-size: 13px;">${c.tipo}</div>
+                              <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+                                <span style="
+                                  background: #fee2e2;
+                                  color: #991b1b;
+                                  padding: 2px 8px;
+                                  border-radius: 4px;
+                                  font-size: 12px;
+                                  text-decoration: line-through;
+                                ">Antes: ${c.original}</span>
+                                <span style="font-size: 14px;">→</span>
+                                <span style="
+                                  background: #d1fae5;
+                                  color: #065f46;
+                                  padding: 2px 8px;
+                                  border-radius: 4px;
+                                  font-size: 12px;
+                                  font-weight: 500;
+                                ">Ahora: ${c.nuevo}</span>
+                              </div>
+                            </div>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  `;
+                }
+                return '';
+              })()}
               <div class="schedule-info">
                 <div class="schedule-item">
                   <span class="schedule-icon">📅</span>
                   <div>
                     <strong>Fecha de Asamblea</strong>
-                    <p>${new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL', {
+                    <p>${formatDateSafe(org.ministroData.scheduledDate, {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -444,7 +592,7 @@ class OrganizationDashboard {
                   <span class="schedule-icon">🕐</span>
                   <div>
                     <strong>Hora</strong>
-                    <p>${org.ministroData.scheduledTime}</p>
+                    <p>${org.ministroData.scheduledTime || '-'}</p>
                   </div>
                 </div>
                 <div class="schedule-item">
@@ -522,7 +670,8 @@ class OrganizationDashboard {
                 <p style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">
                   El Ministro de Fe validará las firmas durante la asamblea programada.
                   ${(() => {
-                    const assemblyDate = new Date(org.ministroData.scheduledDate + ' ' + org.ministroData.scheduledTime);
+                    const assemblyDate = parseDateTimeSafe(org.ministroData.scheduledDate, org.ministroData.scheduledTime);
+                    if (!assemblyDate) return '';
                     const now = new Date();
                     const daysSinceAssembly = Math.floor((now - assemblyDate) / (1000 * 60 * 60 * 24));
 
@@ -533,7 +682,8 @@ class OrganizationDashboard {
                   })()}
                 </p>
                 ${(() => {
-                  const assemblyDate = new Date(org.ministroData.scheduledDate + ' ' + org.ministroData.scheduledTime);
+                  const assemblyDate = parseDateTimeSafe(org.ministroData.scheduledDate, org.ministroData.scheduledTime);
+                  if (!assemblyDate) return '';
                   const now = new Date();
                   const daysSinceAssembly = Math.floor((now - assemblyDate) / (1000 * 60 * 60 * 24));
 
