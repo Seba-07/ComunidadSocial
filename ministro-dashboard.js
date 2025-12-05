@@ -665,11 +665,48 @@ function viewDetails(assignmentId) {
   // La organización viene populada en la asignación desde el servidor
   const org = assignment.organizationId; // Ya viene como objeto populado
 
+  // Mapeo de tipos de organización a nombres legibles
+  const orgTypeLabels = {
+    'JUNTA_VECINOS': 'Junta de Vecinos',
+    'COMITE_VECINOS': 'Comité de Vecinos',
+    'CLUB_DEPORTIVO': 'Club Deportivo',
+    'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
+    'CLUB_JUVENIL': 'Club Juvenil',
+    'CLUB_CULTURAL': 'Club Cultural',
+    'CENTRO_MADRES': 'Centro de Madres',
+    'CENTRO_PADRES': 'Centro de Padres y Apoderados',
+    'CENTRO_CULTURAL': 'Centro Cultural',
+    'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
+    'AGRUPACION_CULTURAL': 'Agrupación Cultural',
+    'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
+    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental',
+    'AGRUPACION_EMPRENDEDORES': 'Agrupación de Emprendedores',
+    'COMITE_VIVIENDA': 'Comité de Vivienda',
+    'COMITE_ALLEGADOS': 'Comité de Allegados',
+    'COMITE_APR': 'Comité de Agua Potable Rural',
+    'COMITE_ADELANTO': 'Comité de Adelanto',
+    'COMITE_MEJORAMIENTO': 'Comité de Mejoramiento',
+    'COMITE_CONVIVENCIA': 'Comité de Convivencia',
+    'ORG_SCOUT': 'Organización Scout',
+    'ORG_MUJERES': 'Organización de Mujeres',
+    'ORG_INDIGENA': 'Organización Indígena',
+    'ORG_SALUD': 'Organización de Salud',
+    'ORG_SOCIAL': 'Organización Social',
+    'ORG_CULTURAL': 'Organización Cultural',
+    'GRUPO_TEATRO': 'Grupo de Teatro',
+    'CORO': 'Coro',
+    'TALLER_ARTESANIA': 'Taller de Artesanía',
+    'ORG_COMUNITARIA': 'Organización Comunitaria',
+    'ORG_FUNCIONAL': 'Organización Funcional',
+    'OTRA_FUNCIONAL': 'Otra Organización Funcional'
+  };
+
   // Extraer datos de la organización
   const orgName = org?.organizationName || assignment.organizationName || 'Sin nombre';
-  const orgType = org?.organizationType || 'No especificado';
+  const orgTypeCode = org?.organizationType || '';
+  const orgType = orgTypeLabels[orgTypeCode] || orgTypeCode || 'No especificado';
   const orgAddress = org?.address || 'No especificada';
-  const orgCommune = org?.commune || '';
+  const orgCommune = org?.comuna || org?.commune || 'No especificada';
   const orgRegion = org?.region || '';
   const orgEmail = org?.contactEmail || '';
   const orgPhone = org?.contactPhone || '';
@@ -677,17 +714,34 @@ function viewDetails(assignmentId) {
   // Extraer miembros
   const members = org?.members || [];
 
-  // Formatear fecha
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'No especificada';
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('es-CL', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  // Formatear fecha - maneja tanto strings como objetos Date
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'No especificada';
+    try {
+      let date;
+      if (typeof dateValue === 'string') {
+        // Si es un string ISO o YYYY-MM-DD
+        date = new Date(dateValue);
+      } else if (dateValue instanceof Date) {
+        date = dateValue;
+      } else {
+        // Intentar crear Date de cualquier valor
+        date = new Date(dateValue);
+      }
+
+      if (isNaN(date.getTime())) {
+        return 'No especificada';
+      }
+
+      return date.toLocaleDateString('es-CL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'No especificada';
+    }
   };
 
   const modal = document.createElement('div');

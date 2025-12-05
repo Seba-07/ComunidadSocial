@@ -2862,68 +2862,150 @@ class AdminDashboard {
           </div>
 
           ${isScheduled ? `
-            <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div style="width: 48px; height: 48px; background: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <!-- Cuando está agendado, mostrar info del ministro en la columna derecha -->
+            <div class="ministro-modal-content">
+              <!-- Columna izquierda: Solicitud original del usuario -->
+              <div class="ministro-info-column">
+                <div class="ministro-info-card ministro-request-highlight">
+                  <div class="ministro-info-card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="8.5" cy="7" r="4"></circle>
+                    </svg>
+                    <h4>Solicitud Original</h4>
+                  </div>
+                  <div class="ministro-info-card-body">
+                    <div class="ministro-data-grid">
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Fecha Solicitada</span>
+                        <span class="ministro-data-value">${formattedUserDate}</span>
+                      </div>
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Hora Solicitada</span>
+                        <span class="ministro-data-value">${org.electionTime || 'No especificada'}</span>
+                      </div>
+                    </div>
+                    <div class="ministro-contact-row">
+                      <div class="ministro-contact-item">
+                        <div class="ministro-contact-icon phone ${contactPref === 'phone' ? 'preferred' : ''}">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                          </svg>
+                        </div>
+                        <div class="ministro-contact-details">
+                          <span class="ministro-contact-label">Teléfono</span>
+                          <span class="ministro-contact-value">${contactPhone || 'No disponible'}</span>
+                        </div>
+                      </div>
+                      <div class="ministro-contact-item">
+                        <div class="ministro-contact-icon email ${contactPref === 'email' ? 'preferred' : ''}">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                          </svg>
+                        </div>
+                        <div class="ministro-contact-details">
+                          <span class="ministro-contact-label">Correo</span>
+                          <span class="ministro-contact-value">${contactEmail || 'No disponible'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ministro-info-card">
+                  <div class="ministro-info-card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <h4>Datos de la Organización</h4>
+                  </div>
+                  <div class="ministro-info-card-body">
+                    <div class="ministro-data-grid">
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Tipo</span>
+                        <span class="ministro-data-value">${getOrgTypeName(getOrgType(org))}</span>
+                      </div>
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Miembros</span>
+                        <span class="ministro-data-value">${org.members?.length || 0} fundadores</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Columna derecha: Ministro asignado -->
+              <div class="ministro-form-column" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                  <div style="width: 48px; height: 48px; background: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                       <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>
                   </div>
                   <div>
-                    <h3 style="margin: 0; color: #065f46; font-size: 18px; font-weight: 700;">Ministro de Fe Agendado</h3>
-                    <p style="margin: 4px 0 0; color: #047857; font-size: 13px;">La asamblea ha sido programada exitosamente</p>
+                    <h3 style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700;">Ministro Asignado</h3>
+                    <p style="margin: 2px 0 0; color: #047857; font-size: 12px;">Asamblea programada exitosamente</p>
                   </div>
                 </div>
-                <button type="button" id="btn-edit-ministro" class="btn btn-secondary" style="font-size: 13px; padding: 8px 14px; display: flex; align-items: center; gap: 6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                  Modificar Asignación
-                </button>
-              </div>
 
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: white; padding: 16px; border-radius: 10px;">
-                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">⚖️ Ministro de Fe</span>
-                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${org.ministroData?.name}</p>
-                  <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">RUT: ${org.ministroData?.rut}</p>
-                </div>
-                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">📅 Fecha y Hora</span>
-                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${(() => {
-                    if (org.ministroData?.scheduledDate) {
-                      const [year, month, day] = org.ministroData.scheduledDate.split('-').map(Number);
-                      const date = new Date(year, month - 1, day);
-                      return date.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-                    }
-                    return 'No especificada';
-                  })()}</p>
-                  <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">Hora: ${org.ministroData?.scheduledTime || 'No especificada'}</p>
-                </div>
-                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; grid-column: 1 / -1;">
-                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">📍 Lugar</span>
-                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${org.ministroData?.location || 'No especificado'}</p>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div style="background: white; padding: 14px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                    <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 6px;">Ministro de Fe</span>
+                    <p style="margin: 0; font-size: 16px; font-weight: 700; color: #065f46;">${org.ministroData?.ministroName || org.ministroData?.name || 'No asignado'}</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #059669;">RUT: ${org.ministroData?.ministroRut || org.ministroData?.rut || 'No disponible'}</p>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="background: white; padding: 14px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                      <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 6px;">Fecha</span>
+                      <p style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">${(() => {
+                        if (org.ministroData?.scheduledDate) {
+                          const date = new Date(org.ministroData.scheduledDate);
+                          if (!isNaN(date.getTime())) {
+                            return date.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+                          }
+                        }
+                        return 'No especificada';
+                      })()}</p>
+                    </div>
+                    <div style="background: white; padding: 14px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                      <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 6px;">Hora</span>
+                      <p style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">${org.ministroData?.scheduledTime || 'No especificada'}</p>
+                    </div>
+                  </div>
+
+                  <div style="background: white; padding: 14px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                    <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 6px;">Lugar de la Asamblea</span>
+                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">${org.ministroData?.location || 'No especificado'}</p>
+                  </div>
+
+                  <button type="button" id="btn-edit-ministro" class="btn" style="background: white; color: #047857; border: 2px solid #10b981; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Modificar Asignación
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 10px; padding: 16px; margin-top: 20px;">
               <div style="display: flex; align-items: flex-start; gap: 12px;">
                 <div style="font-size: 24px;">⏳</div>
                 <div>
-                  <h3 style="margin: 0 0 6px 0; color: #1e40af; font-size: 15px; font-weight: 600;">Esperando Validación del Ministro de Fe</h3>
+                  <h3 style="margin: 0 0 6px 0; color: #1e40af; font-size: 15px; font-weight: 600;">Siguiente Paso: Validación del Ministro de Fe</h3>
                   <p style="margin: 0; color: #3b82f6; font-size: 14px; line-height: 1.5;">
-                    El <strong>Ministro de Fe</strong> debe presidir la asamblea, validar las firmas de los miembros y designar el <strong>Directorio Provisorio</strong>.
-                    Esta acción se realiza desde el panel del Ministro de Fe.
+                    El Ministro de Fe debe presidir la asamblea, validar las firmas de los miembros y designar el Directorio Provisorio.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
               <button type="button" class="btn btn-secondary ministro-close">Cerrar</button>
             </div>
           ` : ''}
@@ -3151,8 +3233,8 @@ class AdminDashboard {
 
         const ministroData = {
           ministroId: mId,
-          name: `${ministro.firstName} ${ministro.lastName}`,
-          rut: ministro.rut,
+          ministroName: `${ministro.firstName} ${ministro.lastName}`,
+          ministroRut: ministro.rut,
           scheduledDate,
           scheduledTime,
           location
@@ -3319,9 +3401,9 @@ class AdminDashboard {
           <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <h4 style="margin: 0 0 8px 0; color: #1e40af;">Asignación Actual:</h4>
             <div style="color: #3b82f6; font-size: 14px;">
-              <p style="margin: 4px 0;"><strong>Ministro:</strong> ${org.ministroData?.name}</p>
-              <p style="margin: 4px 0;"><strong>Fecha:</strong> ${new Date(org.ministroData?.scheduledDate).toLocaleDateString('es-CL')}</p>
-              <p style="margin: 4px 0;"><strong>Hora:</strong> ${org.ministroData?.scheduledTime}</p>
+              <p style="margin: 4px 0;"><strong>Ministro:</strong> ${org.ministroData?.ministroName || org.ministroData?.name || 'No asignado'}</p>
+              <p style="margin: 4px 0;"><strong>Fecha:</strong> ${org.ministroData?.scheduledDate ? new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL') : 'No especificada'}</p>
+              <p style="margin: 4px 0;"><strong>Hora:</strong> ${org.ministroData?.scheduledTime || 'No especificada'}</p>
             </div>
           </div>
 
@@ -3510,8 +3592,9 @@ class AdminDashboard {
       const oldMinistroData = { ...org.ministroData };
 
       const newMinistroData = {
-        name: `${ministro.firstName} ${ministro.lastName}`,
-        rut: ministro.rut,
+        ministroId: ministro.id || ministro._id,
+        ministroName: `${ministro.firstName} ${ministro.lastName}`,
+        ministroRut: ministro.rut,
         scheduledDate,
         scheduledTime,
         location
