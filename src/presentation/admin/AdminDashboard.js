@@ -3714,10 +3714,10 @@ class AdminDashboard {
         const { notificationService } = await import('../../services/NotificationService.js');
 
         // Verificar si había datos previos válidos
-        const hadPreviousData = oldMinistroData && oldMinistroData.name;
+        const hadPreviousData = oldMinistroData && oldMinistroData.ministroName;
 
         // Detectar cambios reales (solo si hay datos previos para comparar)
-        const hasMinistroChanged = hadPreviousData && oldMinistroData.name !== newMinistroData.name;
+        const hasMinistroChanged = hadPreviousData && oldMinistroData.ministroName !== newMinistroData.ministroName;
         const hasScheduleChanged = hadPreviousData && (
           oldMinistroData.scheduledDate !== newMinistroData.scheduledDate ||
           oldMinistroData.scheduledTime !== newMinistroData.scheduledTime
@@ -3732,7 +3732,7 @@ class AdminDashboard {
             type: 'ministro_assigned',
             title: '✅ Ministro de Fe Asignado',
             message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
-                    `Ministro: ${newMinistroData.name}\n` +
+                    `Ministro: ${newMinistroData.ministroName}\n` +
                     `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
             data: { organizationId: org.id, ministroData: newMinistroData }
@@ -3743,7 +3743,7 @@ class AdminDashboard {
             type: 'ministro_changed',
             title: '⚖️ Cambio de Ministro de Fe y Horario',
             message: `Se ha actualizado el Ministro de Fe y el horario para la asamblea de ${getOrgName(org)}.\n\n` +
-                    `Nuevo Ministro: ${newMinistroData.name}\n` +
+                    `Nuevo Ministro: ${newMinistroData.ministroName}\n` +
                     `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
           });
@@ -3753,8 +3753,8 @@ class AdminDashboard {
             type: 'ministro_changed',
             title: '⚖️ Cambio de Ministro de Fe',
             message: `Se ha asignado un nuevo Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
-                    `Ministro Anterior: ${oldMinistroData.name}\n` +
-                    `Nuevo Ministro: ${newMinistroData.name}\n` +
+                    `Ministro Anterior: ${oldMinistroData.ministroName}\n` +
+                    `Nuevo Ministro: ${newMinistroData.ministroName}\n` +
                     `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
           });
