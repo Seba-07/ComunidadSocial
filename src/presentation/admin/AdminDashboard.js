@@ -2873,9 +2873,10 @@ class AdminDashboard {
 
         // Filtrar ministros disponibles
         const allMinistros = ministroService.getActive();
-        const availableMinistros = allMinistros.filter(ministro =>
-          ministroAvailabilityService.isAvailable(ministro.id, selectedDate, selectedTime)
-        );
+        const availableMinistros = allMinistros.filter(ministro => {
+          const mId = ministro._id || ministro.id;
+          return ministroAvailabilityService.isAvailable(mId, selectedDate, selectedTime);
+        });
 
         // Actualizar dropdown
         if (availableMinistros.length === 0) {
@@ -2886,11 +2887,13 @@ class AdminDashboard {
         } else {
           ministroSelect.innerHTML = `
             <option value="">-- Seleccionar Ministro de Fe (${availableMinistros.length} disponible${availableMinistros.length !== 1 ? 's' : ''}) --</option>
-            ${availableMinistros.map(ministro => `
-              <option value="${ministro.id}">
+            ${availableMinistros.map(ministro => {
+              const mId = ministro._id || ministro.id;
+              return `
+              <option value="${mId}">
                 ${ministro.firstName} ${ministro.lastName} - ${ministro.rut}
               </option>
-            `).join('')}
+            `}).join('')}
           `;
           warning.style.display = 'block';
           warning.style.color = '#059669';
@@ -2898,9 +2901,10 @@ class AdminDashboard {
         }
 
         // Mostrar ministros no disponibles en consola para debug
-        const unavailableMinistros = allMinistros.filter(ministro =>
-          !ministroAvailabilityService.isAvailable(ministro.id, selectedDate, selectedTime)
-        );
+        const unavailableMinistros = allMinistros.filter(ministro => {
+          const mId = ministro._id || ministro.id;
+          return !ministroAvailabilityService.isAvailable(mId, selectedDate, selectedTime);
+        });
         if (unavailableMinistros.length > 0) {
           console.log('🚫 Ministros NO disponibles:', unavailableMinistros.map(m => `${m.firstName} ${m.lastName}`));
         }
@@ -2999,28 +3003,32 @@ class AdminDashboard {
         e.preventDefault();
         const formData = new FormData(scheduleForm);
 
+        // ID de la organización
+        const orgId = org._id || org.id;
+
         // Obtener el Ministro de Fe seleccionado
         const ministroId = formData.get('ministroId');
         const ministro = ministroService.getById(ministroId);
 
         if (!ministro) {
-          showToast('Error: Ministro de Fe no encontrado', 'error');
+          showToast('Error: Ministro de Fe no encontrado. Verifica que haya ministros activos.', 'error');
           return;
         }
 
+        const mId = ministro._id || ministro.id;
         const scheduledDate = formData.get('scheduledDate');
         const scheduledTime = formData.get('scheduledTime');
         const location = formData.get('location');
 
         // Verificar disponibilidad del ministro
-        const isAvailable = ministroAvailabilityService.isAvailable(ministroId, scheduledDate, scheduledTime);
+        const isAvailable = ministroAvailabilityService.isAvailable(mId, scheduledDate, scheduledTime);
         if (!isAvailable) {
           showToast('⚠️ El ministro no está disponible en esta fecha/hora. Ha bloqueado su disponibilidad.', 'error');
           return;
         }
 
         // Verificar conflictos de horario
-        const hasConflict = ministroAssignmentService.hasScheduleConflict(ministroId, scheduledDate, scheduledTime);
+        const hasConflict = ministroAssignmentService.hasScheduleConflict(mId, scheduledDate, scheduledTime);
         if (hasConflict) {
           const confirmed = confirm(
             `⚠️ ADVERTENCIA: El ministro ${ministro.firstName} ${ministro.lastName} ya tiene otra asamblea agendada en esta fecha y hora.\n\n` +
@@ -3036,6 +3044,7 @@ class AdminDashboard {
         }
 
         const ministroData = {
+          ministroId: mId,
           name: `${ministro.firstName} ${ministro.lastName}`,
           rut: ministro.rut,
           scheduledDate,
@@ -3043,15 +3052,15 @@ class AdminDashboard {
           location
         };
 
-        const updated = organizationsService.scheduleMinistro(org.id, ministroData);
-        if (updated) {
-          // Crear asignación para el ministro
-          try {
+        try {
+          const updated = await organizationsService.scheduleMinistro(orgId, ministroData);
+          if (updated) {
+            // Crear asignación para el ministro
             ministroAssignmentService.create({
-              ministroId: ministro.id,
+              ministroId: mId,
               ministroName: `${ministro.firstName} ${ministro.lastName}`,
               ministroRut: ministro.rut,
-              organizationId: org.id,
+              organizationId: orgId,
               organizationName: getOrgName(org) || org.organizationName,
               scheduledDate,
               scheduledTime,
@@ -3070,31 +3079,31 @@ class AdminDashboard {
                       `Ministro: ${ministro.firstName} ${ministro.lastName}\n` +
                       `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
-              data: { organizationId: org.id, ministroData }
+              data: { organizationId: orgId, ministroData }
             });
 
             // Notificación al ministro - nueva asignación
             notificationService.create({
-              ministroId: ministro.id,
+              ministroId: mId,
               type: 'new_assignment',
               title: '⚖️ Nueva Asignación de Asamblea',
               message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
                       `Organización: ${getOrgName(org)}\n` +
                       `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
-              data: { organizationId: org.id, scheduledDate, scheduledTime, location }
+              data: { organizationId: orgId, scheduledDate, scheduledTime, location }
             });
 
             showToast('Ministro de Fe agendado correctamente. Notificados: usuario y ministro.', 'success');
             modal.remove();
             this.renderApplicationsList();
             this.updateStats();
-          } catch (error) {
-            console.error('Error creating assignment:', error);
-            showToast('Agendado, pero error al crear asignación', 'error');
+          } else {
+            showToast('Error al agendar Ministro de Fe', 'error');
           }
-        } else {
-          showToast('Error al agendar Ministro de Fe', 'error');
+        } catch (error) {
+          console.error('Error scheduling ministro:', error);
+          showToast('Error al agendar Ministro de Fe: ' + (error.message || 'Error desconocido'), 'error');
         }
       });
     }
