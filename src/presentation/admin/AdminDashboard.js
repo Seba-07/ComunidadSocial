@@ -1945,6 +1945,8 @@ class AdminDashboard {
    * Renderiza el tab de documentos con opción de marcar para corrección
    */
   renderDocumentsTab(org, canReview = true) {
+    // Obtener el ID correcto (MongoDB usa _id)
+    const orgId = org._id || org.id;
     const documents = org.documents || {};
     const isReviewable = canReview && org.status === ORG_STATUS.IN_REVIEW;
     const hasMinistroApproval = org.status === ORG_STATUS.MINISTRO_APPROVED ||
@@ -2020,14 +2022,14 @@ class AdminDashboard {
                   <span class="doc-badge" style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Oficial</span>
                 </div>
                 <div class="doc-actions">
-                  <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Ver documento" style="background: #ecfdf5; color: #065f46; border: 1px solid #10b981; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${orgId}" title="Ver documento" style="background: #ecfdf5; color: #065f46; border: 1px solid #10b981; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                     Ver
                   </button>
-                  <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Descargar PDF" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${orgId}" title="Descargar PDF" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
@@ -2048,14 +2050,14 @@ class AdminDashboard {
                     <span class="doc-name" style="font-size: 13px;">${doc.name}</span>
                   </div>
                   <div class="doc-actions">
-                    <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Ver documento" style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${orgId}" title="Ver documento" style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                       Ver
                     </button>
-                    <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Descargar PDF" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${orgId}" title="Descargar PDF" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
@@ -2069,7 +2071,7 @@ class AdminDashboard {
             ` : ''}
 
             <div style="margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
-              <button class="btn-download-all-pdfs" data-org-id="${org.id}" style="
+              <button class="btn-download-all-pdfs" data-org-id="${orgId}" style="
                 width: 100%;
                 padding: 12px 20px;
                 background: linear-gradient(135deg, #10b981 0%, #059669 100%);
