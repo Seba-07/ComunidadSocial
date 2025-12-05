@@ -2692,11 +2692,15 @@ body {
     margin-bottom: 24px;
 }
 
-/* Auth Form */
-.auth-form {
-    display: flex;
+/* Auth Form - Only for non-tabbed forms */
+.auth-page .auth-form {
+    display: none;
     flex-direction: column;
     gap: 20px;
+}
+
+.auth-page .auth-form.active {
+    display: flex;
 }
 
 .form-group {
