@@ -66,20 +66,38 @@ document.getElementById('welcome-message').textContent =
   `Bienvenido/a, ${currentMinistro.firstName} ${currentMinistro.lastName}`;
 
 // Load stats
-function loadStats() {
+async function loadStats() {
   const ministroId = currentMinistro._id || currentMinistro.id;
-  const stats = ministroAssignmentService.getStatsByMinistro(ministroId);
-
-  document.getElementById('stat-pending').textContent = stats.pending;
-  document.getElementById('stat-completed').textContent = stats.completed;
-  document.getElementById('stat-validated').textContent = stats.signaturesValidated;
+  try {
+    const stats = await ministroAssignmentService.getStatsByMinistro(ministroId);
+    document.getElementById('stat-pending').textContent = stats.pending || 0;
+    document.getElementById('stat-completed').textContent = stats.completed || 0;
+    document.getElementById('stat-validated').textContent = stats.signaturesValidated || 0;
+  } catch (error) {
+    console.error('Error loading stats:', error);
+    document.getElementById('stat-pending').textContent = '0';
+    document.getElementById('stat-completed').textContent = '0';
+    document.getElementById('stat-validated').textContent = '0';
+  }
 }
 
 // Render assignments list
-function renderAssignments() {
+async function renderAssignments() {
   const ministroId = currentMinistro._id || currentMinistro.id;
-  const assignments = ministroAssignmentService.getByMinistroId(ministroId);
   const container = document.getElementById('assignments-list');
+
+  // Mostrar loading
+  container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Cargando asambleas...</div>';
+
+  let assignments = [];
+  try {
+    // Cargar desde el servidor
+    assignments = await ministroAssignmentService.getByMinistroIdAsync(ministroId);
+  } catch (error) {
+    console.error('Error loading assignments:', error);
+    // Fallback a datos locales
+    assignments = ministroAssignmentService.getByMinistroId(ministroId);
+  }
 
   if (assignments.length === 0) {
     container.innerHTML = `
