@@ -2569,26 +2569,37 @@ class AdminDashboard {
     modal.className = 'admin-review-modal-overlay';
 
     // Parsear fecha correctamente - puede venir como Date object o string
+    // IMPORTANTE: Si es string "YYYY-MM-DD", parsearlo manualmente para evitar problemas de timezone
     let electionDate = 'No especificada';
     let electionDateForInput = '';
+    let formattedUserDate = 'No especificada';
+
     if (org.electionDate) {
-      const date = new Date(org.electionDate);
+      let date;
+      const dateStr = org.electionDate;
+
+      // Si es string en formato YYYY-MM-DD, parsear manualmente para evitar desfase de zona horaria
+      if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+        const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+        date = new Date(year, month - 1, day, 12, 0, 0); // Usar mediodía para evitar problemas
+      } else {
+        date = new Date(dateStr);
+      }
+
       if (!isNaN(date.getTime())) {
         electionDate = date.toLocaleDateString('es-CL', {
           day: 'numeric',
           month: 'long',
           year: 'numeric'
         });
-        // Formato para input date (yyyy-mm-dd)
-        electionDateForInput = date.toISOString().split('T')[0];
-      }
-    }
 
-    // Formatear fecha para mostrar
-    let formattedUserDate = electionDate;
-    if (org.electionDate) {
-      const date = new Date(org.electionDate);
-      if (!isNaN(date.getTime())) {
+        // Formato para input date (yyyy-mm-dd) - usar los valores locales
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        electionDateForInput = `${y}-${m}-${d}`;
+
+        // Formatear fecha completa con día de la semana
         formattedUserDate = date.toLocaleDateString('es-CL', {
           weekday: 'long',
           year: 'numeric',

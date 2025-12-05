@@ -292,7 +292,14 @@ async function renderAssignments() {
 // Render availability blocks
 function renderAvailability() {
   const ministroId = currentMinistro._id || currentMinistro.id;
+  console.log('📅 renderAvailability - ministroId:', ministroId);
+
+  const allBlocks = ministroAvailabilityService.getAll();
+  console.log('📅 Todos los bloques en localStorage:', allBlocks);
+
   const blocks = ministroAvailabilityService.getByMinistroId(ministroId);
+  console.log('📅 Bloques filtrados para este ministro:', blocks);
+
   const container = document.getElementById('availability-list');
 
   if (blocks.length === 0) {
@@ -434,6 +441,18 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 
 // Add block button
 document.getElementById('btn-add-block').addEventListener('click', showAddBlockModal);
+
+// Clear blocks button
+document.getElementById('btn-clear-blocks').addEventListener('click', () => {
+  if (!confirm('¿Estás seguro de que deseas eliminar TODOS tus bloqueos de disponibilidad? Esta acción no se puede deshacer.')) {
+    return;
+  }
+
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  ministroAvailabilityService.clearByMinistroId(ministroId);
+  showToast('Todos los bloqueos han sido eliminados', 'success');
+  renderAvailability();
+});
 
 // Global functions for inline event handlers
 window.validateSignatures = validateSignatures;
@@ -1053,10 +1072,13 @@ function showAddBlockModal() {
     const reason = document.getElementById('block-reason').value.trim();
 
     try {
+      // Obtener el ID correcto del ministro (MongoDB usa _id)
+      const ministroId = currentMinistro._id || currentMinistro.id;
+
       // Si es día completo, crear un solo bloqueo sin hora
       if (fullDayCheckbox.checked) {
         ministroAvailabilityService.create({
-          ministroId: currentMinistro.id,
+          ministroId: ministroId,
           date,
           time: null,
           reason
@@ -1078,7 +1100,7 @@ function showAddBlockModal() {
         selectedTimes.forEach(time => {
           try {
             ministroAvailabilityService.create({
-              ministroId: currentMinistro.id,
+              ministroId: ministroId,
               date,
               time,
               reason

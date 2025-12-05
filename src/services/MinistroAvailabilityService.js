@@ -241,6 +241,23 @@ class MinistroAvailabilityService {
       throw new Error('No se pudo guardar la información');
     }
   }
+
+  /**
+   * Limpia todos los bloqueos de un ministro específico
+   */
+  clearByMinistroId(ministroId) {
+    const blocks = this.getAll();
+    const filtered = blocks.filter(b => b.ministroId !== ministroId);
+    this.saveAll(filtered);
+    return true;
+  }
+
+  /**
+   * Limpia todos los datos de disponibilidad (para reseteo)
+   */
+  clearAll() {
+    localStorage.removeItem(this.storageKey);
+  }
 }
 
 // Exportar instancia singleton
