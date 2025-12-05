@@ -31,12 +31,28 @@ class PDFService {
 
   /**
    * Helper para obtener el nombre de un miembro (puede venir en diferentes formatos)
+   * @param {Object} member - El miembro del que obtener el nombre
+   * @param {Array} membersList - Lista de miembros original para buscar por ID si es necesario
    */
-  getMemberName(member) {
+  getMemberName(member, membersList = []) {
     if (!member) return '______________________';
+    // Primero verificar si tiene nombre directo
     if (member.name) return member.name;
+    // Formato firstName + lastName
     if (member.firstName) {
       return `${member.firstName} ${member.lastName || ''}`.trim();
+    }
+    // Si tiene _id o id, buscar en la lista de miembros
+    const memberId = member._id || member.id;
+    if (memberId && membersList.length > 0) {
+      const found = membersList.find(m =>
+        (m._id === memberId || m.id === memberId) ||
+        (m._id?.toString() === memberId?.toString())
+      );
+      if (found) {
+        if (found.name) return found.name;
+        if (found.firstName) return `${found.firstName} ${found.lastName || ''}`.trim();
+      }
     }
     return '______________________';
   }
@@ -161,6 +177,16 @@ class PDFService {
     // ministroData puede venir en diferentes campos
     const ministroData = organization.ministroData || organization.ministroAssignment || {};
 
+    // Guardar referencia a members para usar en getMemberName
+    this._currentMembers = members;
+
+    // DEBUG: Ver qué datos llegan
+    console.log('🔍 PDFService.generateActaAsamblea - organization:', organization);
+    console.log('🔍 PDFService - provisionalDirectorio:', directorio);
+    console.log('🔍 PDFService - president:', directorio.president);
+    console.log('🔍 PDFService - members count:', members.length);
+    console.log('🔍 PDFService - comisionElectoral:', comision);
+
     this.drawHeader(doc, 'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO', 'Departamento de Registro y Certificación');
     this.drawHeader(doc, 'Y ELECCIÓN DE DIRECTIVA PROVISIONAL');
 
@@ -244,15 +270,15 @@ class PDFService {
     const secretary = directorio.secretary || {};
     const treasurer = directorio.treasurer || {};
 
-    doc.text(`PRESIDENTE (A): ${this.getMemberName(president)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`PRESIDENTE (A): ${this.getMemberName(president, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(president.rut || '________________', PAGE_WIDTH - 50, this.currentY);
     this.currentY += 7;
 
-    doc.text(`SECRETARIO (A): ${this.getMemberName(secretary)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`SECRETARIO (A): ${this.getMemberName(secretary, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(secretary.rut || '________________', PAGE_WIDTH - 50, this.currentY);
     this.currentY += 7;
 
-    doc.text(`TESORERO (A): ${this.getMemberName(treasurer)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`TESORERO (A): ${this.getMemberName(treasurer, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(treasurer.rut || '________________', PAGE_WIDTH - 50, this.currentY);
     this.currentY += 15;
 
@@ -264,7 +290,7 @@ class PDFService {
 
     doc.setFont('helvetica', 'normal');
     comision.forEach((member, i) => {
-      doc.text(`DON (ÑA): ${this.getMemberName(member)}`, MARGIN_LEFT, this.currentY);
+      doc.text(`DON (ÑA): ${this.getMemberName(member, members)}`, MARGIN_LEFT, this.currentY);
       doc.text(member.rut || '________________', PAGE_WIDTH - 50, this.currentY);
       this.currentY += 7;
     });
@@ -281,7 +307,9 @@ class PDFService {
     this.currentY += 10;
 
     // Texto de delegación
-    const delegacionText = `La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) ${president.name || '______________________'} Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: ${org.address || '______________________'}`;
+    const presidentName = this.getMemberName(president, members);
+    const orgAddress = org.address || organization.address || '______________________';
+    const delegacionText = `La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) ${presidentName} Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: ${orgAddress}`;
 
     this.currentY = this.addWrappedText(doc, delegacionText, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
     this.currentY += 10;
@@ -333,9 +361,10 @@ class PDFService {
 
     doc.text('MINISTRO DE FE:', PAGE_WIDTH / 2 + 10, this.currentY);
     doc.text('__________________', PAGE_WIDTH / 2 + 45, this.currentY);
-    if (organization.ministroSignature) {
+    const ministroSignature = organization.validationData?.ministroSignature || organization.ministroSignature;
+    if (ministroSignature) {
       try {
-        doc.addImage(organization.ministroSignature, 'PNG', PAGE_WIDTH / 2 + 45, this.currentY - signatureHeight + 2, signatureWidth, signatureHeight);
+        doc.addImage(ministroSignature, 'PNG', PAGE_WIDTH / 2 + 45, this.currentY - signatureHeight + 2, signatureWidth, signatureHeight);
       } catch (e) {}
     }
 
@@ -350,8 +379,9 @@ class PDFService {
   generateListaSocios(organization) {
     const doc = new jsPDF();
     const org = organization.organization || organization;
+    const members = organization.members || [];
     // Usar asistentes de la asamblea si existen, sino usar miembros
-    const attendees = organization.validatedAttendees || organization.assemblyAttendees || organization.members || [];
+    const attendees = organization.validatedAttendees || organization.assemblyAttendees || members;
     const ministroData = organization.ministroData || organization.ministroAssignment || {};
     const assemblyDate = ministroData.scheduledDate || organization.createdAt;
 
@@ -374,7 +404,7 @@ class PDFService {
       }
 
       // Nombre
-      doc.text(`Nombre: ${this.getMemberName(attendee)}`, MARGIN_LEFT, this.currentY);
+      doc.text(`Nombre: ${this.getMemberName(attendee, members)}`, MARGIN_LEFT, this.currentY);
       // RUT
       doc.text(`Rut: ${attendee.rut || '____________'}`, MARGIN_LEFT + 80, this.currentY);
       // Firma
@@ -425,6 +455,7 @@ class PDFService {
   generateCertificado(organization) {
     const doc = new jsPDF();
     const org = organization.organization || organization;
+    const members = organization.members || [];
     const directorio = organization.provisionalDirectorio || {};
     const ministroData = organization.ministroData || organization.ministroAssignment || {};
     // Obtener nombre del ministro de varias fuentes posibles
@@ -463,7 +494,7 @@ class PDFService {
     this.currentY += 5;
 
     const president = directorio.president || {};
-    const presidentName = this.getMemberName(president);
+    const presidentName = this.getMemberName(president, members);
     const orgAddress = org.address || organization.address || '________________________________________';
     const text3 = `• Que, para todos los efectos legales, el (la) Presidente (a) de la institución es Don (ña) ${presidentName} y su domicilio es ${orgAddress}`;
     this.currentY = this.addWrappedText(doc, text3, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 6);
@@ -521,6 +552,7 @@ class PDFService {
   generateCertificacion(organization, certNumber = '') {
     const doc = new jsPDF();
     const org = organization.organization || organization;
+    const members = organization.members || [];
     const directorio = organization.provisionalDirectorio || {};
     // comisionElectoral puede ser un array directo o tener .members
     const comision = Array.isArray(organization.comisionElectoral)
@@ -570,15 +602,15 @@ class PDFService {
     const secretary = directorio.secretary || {};
     const treasurer = directorio.treasurer || {};
 
-    doc.text(`PRESIDENTE: ${this.getMemberName(president)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`PRESIDENTE: ${this.getMemberName(president, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(`C.I. Nº ${president.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
     this.currentY += 6;
 
-    doc.text(`SECRETARIO: ${this.getMemberName(secretary)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`SECRETARIO: ${this.getMemberName(secretary, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(`C.I. Nº ${secretary.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
     this.currentY += 6;
 
-    doc.text(`TESORERO: ${this.getMemberName(treasurer)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`TESORERO: ${this.getMemberName(treasurer, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(`C.I. Nº ${treasurer.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
     this.currentY += 10;
 
@@ -590,13 +622,13 @@ class PDFService {
     doc.setFont('helvetica', 'normal');
     for (let i = 0; i < 3; i++) {
       const member = comision[i] || {};
-      doc.text(`DON (ÑA): ${this.getMemberName(member)}`, MARGIN_LEFT, this.currentY);
+      doc.text(`DON (ÑA): ${this.getMemberName(member, members)}`, MARGIN_LEFT, this.currentY);
       doc.text(`C.I. Nº ${member.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
       this.currentY += 6;
     }
     this.currentY += 5;
 
-    const text3 = `Dicha Organización gozará de Personalidad Jurídica conforme a la Ley Nº 19.418 de 1995, a contar de la fecha del depósito del Acta de Asamblea Constitutiva, la cual fue depositada en la Secretaría Municipal por Don (ña) ${this.getMemberName(president)} presidenta (e) de la organización y Don (ña) ${ministroNameCert} en su calidad de Ministro de Fe, con domicilio en Blanco Encalada Nº 1335.`;
+    const text3 = `Dicha Organización gozará de Personalidad Jurídica conforme a la Ley Nº 19.418 de 1995, a contar de la fecha del depósito del Acta de Asamblea Constitutiva, la cual fue depositada en la Secretaría Municipal por Don (ña) ${this.getMemberName(president, members)} presidenta (e) de la organización y Don (ña) ${ministroNameCert} en su calidad de Ministro de Fe, con domicilio en Blanco Encalada Nº 1335.`;
     this.currentY = this.addWrappedText(doc, text3, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
     this.currentY += 5;
 
@@ -619,6 +651,7 @@ class PDFService {
   generateDeclaracionJurada(organization, director) {
     const doc = new jsPDF();
     const org = organization.organization || organization;
+    const members = organization.members || [];
 
     this.drawHeader(doc, 'DECLARACIÓN JURADA SIMPLE');
 
@@ -626,7 +659,7 @@ class PDFService {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
 
-    doc.text(`YO, ${this.getMemberName(director)}`, MARGIN_LEFT, this.currentY);
+    doc.text(`YO, ${this.getMemberName(director, members)}`, MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
     doc.text(`CÉDULA DE IDENTIDAD: ${director.rut || '______________________________________________'}`, MARGIN_LEFT, this.currentY);
@@ -693,28 +726,32 @@ class PDFService {
    */
   generateAllDeclaracionesJuradas(organization) {
     const directorio = organization.provisionalDirectorio || {};
+    const members = organization.members || [];
     const docs = [];
 
     // Presidente
     if (directorio.president) {
+      const presName = this.getMemberName(directorio.president, members).replace(/\s+/g, '_');
       docs.push({
-        name: `Declaracion_Jurada_Presidente_${directorio.president.name?.replace(/\s+/g, '_') || 'Presidente'}.pdf`,
+        name: `Declaracion_Jurada_Presidente_${presName || 'Presidente'}.pdf`,
         doc: this.generateDeclaracionJurada(organization, directorio.president)
       });
     }
 
     // Secretario
     if (directorio.secretary) {
+      const secName = this.getMemberName(directorio.secretary, members).replace(/\s+/g, '_');
       docs.push({
-        name: `Declaracion_Jurada_Secretario_${directorio.secretary.name?.replace(/\s+/g, '_') || 'Secretario'}.pdf`,
+        name: `Declaracion_Jurada_Secretario_${secName || 'Secretario'}.pdf`,
         doc: this.generateDeclaracionJurada(organization, directorio.secretary)
       });
     }
 
     // Tesorero
     if (directorio.treasurer) {
+      const tresName = this.getMemberName(directorio.treasurer, members).replace(/\s+/g, '_');
       docs.push({
-        name: `Declaracion_Jurada_Tesorero_${directorio.treasurer.name?.replace(/\s+/g, '_') || 'Tesorero'}.pdf`,
+        name: `Declaracion_Jurada_Tesorero_${tresName || 'Tesorero'}.pdf`,
         doc: this.generateDeclaracionJurada(organization, directorio.treasurer)
       });
     }
@@ -722,8 +759,9 @@ class PDFService {
     // Miembros adicionales
     if (directorio.additionalMembers) {
       directorio.additionalMembers.forEach((member, i) => {
+        const memberName = this.getMemberName(member, members).replace(/\s+/g, '_');
         docs.push({
-          name: `Declaracion_Jurada_${member.cargo || 'Director'}_${member.name?.replace(/\s+/g, '_') || i}.pdf`,
+          name: `Declaracion_Jurada_${member.cargo || 'Director'}_${memberName || i}.pdf`,
           doc: this.generateDeclaracionJurada(organization, member)
         });
       });
@@ -745,10 +783,10 @@ class PDFService {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
 
-    doc.text(`TIPO DE ORGANIZACIÓN: ${org.type || '___________________________________________'}`, MARGIN_LEFT, this.currentY);
+    doc.text(`TIPO DE ORGANIZACIÓN: ${org.organizationType || org.type || '___________________________________________'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
-    doc.text(`NOMBRE DE LA ORGANIZACIÓN: ${org.name || '_____________________________________'}`, MARGIN_LEFT, this.currentY);
+    doc.text(`NOMBRE DE LA ORGANIZACIÓN: ${org.organizationName || org.name || '_____________________________________'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
     doc.text(`UNIDAD VECINAL: ${org.unidadVecinal || '___________'}/`, MARGIN_LEFT, this.currentY);
@@ -777,7 +815,8 @@ class PDFService {
    * Genera todos los documentos de una organización
    */
   generateAllDocuments(organization) {
-    const orgName = (organization.organization?.name || organization.organizationName || 'Organizacion').replace(/\s+/g, '_');
+    const org = organization.organization || organization;
+    const orgName = (org.organizationName || org.name || 'Organizacion').replace(/\s+/g, '_');
 
     const documents = [];
 

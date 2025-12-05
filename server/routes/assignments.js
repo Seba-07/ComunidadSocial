@@ -147,6 +147,10 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
 
     const { signatures, wizardData } = req.body;
 
+    // DEBUG: Log what data arrives from frontend
+    console.log('🔍 VALIDATE - wizardData received:', JSON.stringify(wizardData?.provisionalDirectorio, null, 2));
+    console.log('🔍 VALIDATE - President name:', wizardData?.provisionalDirectorio?.president?.name);
+
     assignment.signaturesValidated = true;
     assignment.validatedAt = new Date();
     assignment.validatedBy = 'MINISTRO';
