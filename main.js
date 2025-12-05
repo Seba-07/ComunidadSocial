@@ -12,6 +12,7 @@ import { adminDashboard } from './src/presentation/admin/AdminDashboard.js';
 import { organizationDashboard } from './src/presentation/organization/OrganizationDashboard.js';
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
+import { apiService } from './src/services/ApiService.js';
 
 console.log('📦 main.js cargado');
 
@@ -105,7 +106,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar usuario desde localStorage
   const currentUserData = localStorage.getItem('currentUser');
-  if (currentUserData) {
+  const authToken = localStorage.getItem('auth_token');
+
+  if (currentUserData && authToken) {
     try {
       const user = JSON.parse(currentUserData);
       appState.setCurrentUser(user);
@@ -114,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Actualizar nombre en header
       const userName = document.getElementById('user-name');
       if (userName) {
-        userName.textContent = user.profile?.firstName || user.email;
+        userName.textContent = user.firstName || user.profile?.firstName || user.email;
       }
 
       // Actualizar foto y iniciales en header
@@ -128,18 +131,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           headerPhoto.style.display = 'none';
           headerInitials.style.display = 'block';
-          const initials = `${(user.profile?.firstName || 'U')[0]}${(user.profile?.lastName || 'S')[0]}`.toUpperCase();
+          const firstName = user.firstName || user.profile?.firstName || 'U';
+          const lastName = user.lastName || user.profile?.lastName || 'S';
+          const initials = `${firstName[0]}${lastName[0]}`.toUpperCase();
           headerInitials.textContent = initials;
         }
       }
 
       console.log('✅ Usuario cargado:', user);
 
+      // Sincronizar datos desde el servidor
+      try {
+        await Promise.all([
+          organizationsService.sync(),
+          notificationService.sync()
+        ]);
+        console.log('✅ Datos sincronizados desde el servidor');
+      } catch (syncError) {
+        console.warn('Error sincronizando datos:', syncError);
+      }
+
       // Pre-cargar datos del perfil por si el usuario navega allí
       loadProfileData();
     } catch (error) {
       console.error('Error al cargar usuario:', error);
     }
+  } else if (currentUserData && !authToken) {
+    // Usuario en localStorage pero sin token - limpiar y redirigir
+    console.log('Token expirado o no encontrado, redirigiendo a login...');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('isAuthenticated');
   }
 
   // Click en logo para volver al inicio
@@ -169,9 +190,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      // Limpiar localStorage
+      // Limpiar localStorage y token API
+      apiService.logout();
       localStorage.removeItem('currentUser');
       localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('user_organizations');
+      localStorage.removeItem('ministros_fe');
+      localStorage.removeItem('ministro_assignments');
+      localStorage.removeItem('user_notifications');
 
       const result = await handleLogout();
       if (result.success) {

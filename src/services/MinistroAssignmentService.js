@@ -1,23 +1,69 @@
 /**
  * Servicio de Asignaciones de Ministros de Fe
- * Gestiona las asignaciones de ministros a asambleas
+ * Conecta con el backend API
  */
+
+import { apiService } from './ApiService.js';
 
 class MinistroAssignmentService {
   constructor() {
-    this.storageKey = 'ministro_assignments';
+    this.assignments = [];
+    this.loaded = false;
+  }
+
+  /**
+   * Carga las asignaciones desde el servidor
+   */
+  async loadFromServer() {
+    try {
+      this.assignments = await apiService.getAssignments();
+      this.loaded = true;
+      localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+    } catch (e) {
+      console.error('Error loading assignments from server:', e);
+      this.loadFromStorage();
+    }
+  }
+
+  /**
+   * Carga desde localStorage (fallback)
+   */
+  loadFromStorage() {
+    try {
+      const data = localStorage.getItem('ministro_assignments');
+      this.assignments = data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error al obtener asignaciones:', error);
+      this.assignments = [];
+    }
+  }
+
+  /**
+   * Sincroniza con el servidor
+   */
+  async sync() {
+    await this.loadFromServer();
   }
 
   /**
    * Obtiene todas las asignaciones
    */
   getAll() {
+    return this.assignments;
+  }
+
+  /**
+   * Obtiene todas las asignaciones desde el servidor
+   */
+  async getAllAsync() {
     try {
-      const data = localStorage.getItem(this.storageKey);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Error al obtener asignaciones:', error);
-      return [];
+      const assignments = await apiService.getAssignments();
+      this.assignments = assignments;
+      localStorage.setItem('ministro_assignments', JSON.stringify(assignments));
+      return assignments;
+    } catch (e) {
+      console.error('Error fetching assignments:', e);
+      return this.assignments;
     }
   }
 
@@ -25,142 +71,174 @@ class MinistroAssignmentService {
    * Obtiene asignaciones de un ministro específico
    */
   getByMinistroId(ministroId) {
-    return this.getAll().filter(a => a.ministroId === ministroId);
+    return this.assignments.filter(a =>
+      a.ministroId === ministroId || a.ministroId === ministroId.toString()
+    );
+  }
+
+  /**
+   * Obtiene asignaciones de un ministro desde el servidor
+   */
+  async getByMinistroIdAsync(ministroId) {
+    try {
+      const assignments = await apiService.getMinistroAssignments(ministroId);
+      return assignments;
+    } catch (e) {
+      console.error('Error fetching ministro assignments:', e);
+      return this.getByMinistroId(ministroId);
+    }
   }
 
   /**
    * Obtiene asignaciones de una organización específica
    */
   getByOrganizationId(orgId) {
-    return this.getAll().filter(a => a.organizationId === orgId);
+    return this.assignments.filter(a =>
+      a.organizationId === orgId || a.organizationId === orgId.toString()
+    );
+  }
+
+  /**
+   * Obtiene una asignación por ID
+   */
+  getById(id) {
+    return this.assignments.find(a => a.id === id || a._id === id);
+  }
+
+  /**
+   * Obtiene una asignación por ID desde el servidor
+   */
+  async getByIdAsync(id) {
+    try {
+      return await apiService.getAssignment(id);
+    } catch (e) {
+      console.error('Error fetching assignment:', e);
+      return this.getById(id);
+    }
   }
 
   /**
    * Crea una nueva asignación
    */
-  create(assignmentData) {
-    const assignments = this.getAll();
-
-    const newAssignment = {
-      id: `assignment-${Date.now()}`,
-      ministroId: assignmentData.ministroId,
-      ministroName: assignmentData.ministroName,
-      ministroRut: assignmentData.ministroRut,
-      organizationId: assignmentData.organizationId,
-      organizationName: assignmentData.organizationName,
-      scheduledDate: assignmentData.scheduledDate,
-      scheduledTime: assignmentData.scheduledTime,
-      location: assignmentData.location,
-      status: 'pending', // pending, completed, cancelled
-      signaturesValidated: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    assignments.push(newAssignment);
-    this.saveAll(assignments);
-
-    return newAssignment;
+  async create(assignmentData) {
+    try {
+      const newAssignment = await apiService.createAssignment(assignmentData);
+      this.assignments.push(newAssignment);
+      localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      return newAssignment;
+    } catch (e) {
+      console.error('Error creating assignment:', e);
+      throw e;
+    }
   }
 
   /**
    * Actualiza una asignación
    */
-  update(id, updates) {
-    const assignments = this.getAll();
-    const index = assignments.findIndex(a => a.id === id);
-
-    if (index === -1) {
-      throw new Error('Asignación no encontrada');
+  async update(id, updates) {
+    try {
+      const updated = await apiService.updateAssignment(id, updates);
+      const index = this.assignments.findIndex(a => a.id === id || a._id === id);
+      if (index !== -1) {
+        this.assignments[index] = updated;
+        localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error updating assignment:', e);
+      throw e;
     }
-
-    assignments[index] = {
-      ...assignments[index],
-      ...updates,
-      id: assignments[index].id,
-      createdAt: assignments[index].createdAt,
-      updatedAt: new Date().toISOString()
-    };
-
-    this.saveAll(assignments);
-    return assignments[index];
   }
 
   /**
    * Marca firmas como validadas
    */
-  markSignaturesValidated(id, validatedData) {
-    return this.update(id, {
-      signaturesValidated: true,
-      validatedAt: new Date().toISOString(),
-      validatedBy: validatedData.validatedBy, // 'MINISTRO' o 'USER'
-      signatures: validatedData.signatures
-    });
+  async markSignaturesValidated(id, validatedData) {
+    try {
+      const updated = await apiService.validateSignatures(id, validatedData.signatures, validatedData.wizardData);
+      const index = this.assignments.findIndex(a => a.id === id || a._id === id);
+      if (index !== -1) {
+        this.assignments[index] = updated;
+        localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error validating signatures:', e);
+      throw e;
+    }
   }
 
   /**
    * Resetea la validación para permitir edición
    */
-  resetValidation(id) {
-    const assignment = this.getAll().find(a => a.id === id);
-    if (!assignment) return null;
-
-    // Guardar historial de la validación anterior
-    const previousValidation = {
-      validatedAt: assignment.validatedAt,
-      validatedBy: assignment.validatedBy,
-      signatures: assignment.signatures,
-      resetAt: new Date().toISOString()
-    };
-
-    // Inicializar historial si no existe
-    if (!assignment.validationHistory) {
-      assignment.validationHistory = [];
+  async resetValidation(id) {
+    try {
+      const updated = await apiService.resetValidation(id);
+      const index = this.assignments.findIndex(a => a.id === id || a._id === id);
+      if (index !== -1) {
+        this.assignments[index] = updated;
+        localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error resetting validation:', e);
+      throw e;
     }
-    assignment.validationHistory.push(previousValidation);
-
-    return this.update(id, {
-      signaturesValidated: false,
-      validatedAt: null,
-      validatedBy: null,
-      signatures: null,
-      validationHistory: assignment.validationHistory,
-      lastEditedAt: new Date().toISOString()
-    });
   }
 
   /**
    * Completa una asignación
    */
-  complete(id) {
-    return this.update(id, {
-      status: 'completed',
-      completedAt: new Date().toISOString()
-    });
+  async complete(id) {
+    try {
+      const updated = await apiService.completeAssignment(id);
+      const index = this.assignments.findIndex(a => a.id === id || a._id === id);
+      if (index !== -1) {
+        this.assignments[index] = updated;
+        localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error completing assignment:', e);
+      throw e;
+    }
   }
 
   /**
    * Cancela una asignación
    */
-  cancel(id, reason) {
-    return this.update(id, {
-      status: 'cancelled',
-      cancelledAt: new Date().toISOString(),
-      cancellationReason: reason
-    });
+  async cancel(id, reason) {
+    try {
+      const updated = await apiService.cancelAssignment(id, reason);
+      const index = this.assignments.findIndex(a => a.id === id || a._id === id);
+      if (index !== -1) {
+        this.assignments[index] = updated;
+        localStorage.setItem('ministro_assignments', JSON.stringify(this.assignments));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error cancelling assignment:', e);
+      throw e;
+    }
   }
 
   /**
    * Verifica si un ministro tiene conflicto de horario
    */
-  hasScheduleConflict(ministroId, date, time) {
-    const assignments = this.getByMinistroId(ministroId);
-
-    return assignments.some(a =>
-      a.status !== 'cancelled' &&
-      a.scheduledDate === date &&
-      a.scheduledTime === time
-    );
+  async hasScheduleConflict(ministroId, date, time) {
+    try {
+      const result = await apiService.checkScheduleConflict(ministroId, date, time);
+      return result.hasConflict;
+    } catch (e) {
+      console.error('Error checking schedule conflict:', e);
+      // Fallback local
+      return this.assignments.some(a =>
+        (a.ministroId === ministroId || a.ministroId === ministroId.toString()) &&
+        a.status !== 'cancelled' &&
+        a.scheduledDate === date &&
+        a.scheduledTime === time
+      );
+    }
   }
 
   /**
@@ -171,6 +249,19 @@ class MinistroAssignmentService {
   }
 
   /**
+   * Obtiene asignaciones pendientes desde el servidor
+   */
+  async getPendingByMinistroAsync(ministroId) {
+    try {
+      const assignments = await apiService.getMyPendingAssignments();
+      return assignments;
+    } catch (e) {
+      console.error('Error fetching pending assignments:', e);
+      return this.getPendingByMinistro(ministroId);
+    }
+  }
+
+  /**
    * Obtiene asignaciones completadas de un ministro
    */
   getCompletedByMinistro(ministroId) {
@@ -178,29 +269,22 @@ class MinistroAssignmentService {
   }
 
   /**
-   * Guarda todas las asignaciones
-   */
-  saveAll(assignments) {
-    try {
-      localStorage.setItem(this.storageKey, JSON.stringify(assignments));
-    } catch (error) {
-      console.error('Error al guardar asignaciones:', error);
-      throw new Error('No se pudo guardar la información');
-    }
-  }
-
-  /**
    * Obtiene estadísticas de un ministro
    */
-  getStatsByMinistro(ministroId) {
-    const assignments = this.getByMinistroId(ministroId);
-    return {
-      total: assignments.length,
-      pending: assignments.filter(a => a.status === 'pending').length,
-      completed: assignments.filter(a => a.status === 'completed').length,
-      cancelled: assignments.filter(a => a.status === 'cancelled').length,
-      signaturesValidated: assignments.filter(a => a.signaturesValidated).length
-    };
+  async getStatsByMinistro(ministroId) {
+    try {
+      return await apiService.getAssignmentStats(ministroId);
+    } catch (e) {
+      console.error('Error getting stats:', e);
+      const assignments = this.getByMinistroId(ministroId);
+      return {
+        total: assignments.length,
+        pending: assignments.filter(a => a.status === 'pending').length,
+        completed: assignments.filter(a => a.status === 'completed').length,
+        cancelled: assignments.filter(a => a.status === 'cancelled').length,
+        signaturesValidated: assignments.filter(a => a.signaturesValidated).length
+      };
+    }
   }
 }
 

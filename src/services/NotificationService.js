@@ -1,23 +1,94 @@
 /**
  * Servicio de Notificaciones
- * Gestiona notificaciones del sistema para usuarios
+ * Conecta con el backend API
  */
+
+import { apiService } from './ApiService.js';
 
 class NotificationService {
   constructor() {
-    this.storageKey = 'system_notifications';
+    this.notifications = [];
+    this.listeners = [];
+    this.loaded = false;
+  }
+
+  /**
+   * Carga las notificaciones desde el servidor
+   */
+  async loadFromServer() {
+    try {
+      this.notifications = await apiService.getNotifications();
+      this.loaded = true;
+      localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
+      this.notifyListeners();
+    } catch (e) {
+      console.error('Error loading notifications from server:', e);
+      this.loadFromStorage();
+    }
+  }
+
+  /**
+   * Carga desde localStorage (fallback)
+   */
+  loadFromStorage() {
+    try {
+      const saved = localStorage.getItem('user_notifications');
+      this.notifications = saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error loading notifications:', e);
+      this.notifications = [];
+    }
+  }
+
+  /**
+   * Sincroniza con el servidor
+   */
+  async sync() {
+    await this.loadFromServer();
+  }
+
+  /**
+   * Suscribe un listener para cambios de notificaciones
+   */
+  subscribe(listener) {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
+  }
+
+  /**
+   * Notifica a los listeners
+   */
+  notifyListeners() {
+    this.listeners.forEach(listener => {
+      try {
+        listener(this.notifications);
+      } catch (e) {
+        console.error('Error in notification listener:', e);
+      }
+    });
   }
 
   /**
    * Obtiene todas las notificaciones
    */
   getAll() {
+    return this.notifications;
+  }
+
+  /**
+   * Obtiene todas las notificaciones desde el servidor
+   */
+  async getAllAsync() {
     try {
-      const data = localStorage.getItem(this.storageKey);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Error al obtener notificaciones:', error);
-      return [];
+      const notifications = await apiService.getNotifications();
+      this.notifications = notifications;
+      localStorage.setItem('user_notifications', JSON.stringify(notifications));
+      return notifications;
+    } catch (e) {
+      console.error('Error fetching notifications:', e);
+      return this.notifications;
     }
   }
 
@@ -25,197 +96,168 @@ class NotificationService {
    * Obtiene notificaciones de un usuario específico
    */
   getByUserId(userId) {
-    return this.getAll().filter(n => n.userId === userId);
+    return this.notifications.filter(n => n.userId === userId);
   }
 
   /**
    * Obtiene notificaciones no leídas de un usuario
    */
   getUnreadByUserId(userId) {
-    return this.getByUserId(userId).filter(n => !n.read);
+    return this.notifications.filter(n => n.userId === userId && !n.read);
+  }
+
+  /**
+   * Obtiene notificaciones no leídas
+   */
+  getUnread() {
+    return this.notifications.filter(n => !n.read);
+  }
+
+  /**
+   * Obtiene notificaciones no leídas desde el servidor
+   */
+  async getUnreadAsync() {
+    try {
+      return await apiService.getUnreadNotifications();
+    } catch (e) {
+      console.error('Error fetching unread notifications:', e);
+      return this.getUnread();
+    }
+  }
+
+  /**
+   * Obtiene el conteo de no leídas
+   */
+  getUnreadCount(userId) {
+    if (userId) {
+      return this.getUnreadByUserId(userId).length;
+    }
+    return this.getUnread().length;
+  }
+
+  /**
+   * Obtiene el conteo desde el servidor
+   */
+  async getUnreadCountAsync() {
+    try {
+      const result = await apiService.getUnreadCount();
+      return result.count;
+    } catch (e) {
+      console.error('Error fetching unread count:', e);
+      return this.getUnreadCount();
+    }
   }
 
   /**
    * Crea una nueva notificación
    */
-  create(notificationData) {
-    const notifications = this.getAll();
-
-    const newNotification = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      userId: notificationData.userId,
-      type: notificationData.type, // 'schedule_change', 'ministro_assigned', 'status_update', etc.
-      title: notificationData.title,
-      message: notificationData.message,
-      data: notificationData.data || {}, // Datos adicionales
-      read: false,
-      createdAt: new Date().toISOString()
-    };
-
-    notifications.push(newNotification);
-    this.saveAll(notifications);
-
-    return newNotification;
+  async create(notificationData) {
+    try {
+      const notification = await apiService.post('/notifications', notificationData);
+      this.notifications.unshift(notification);
+      localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
+      this.notifyListeners();
+      return notification;
+    } catch (e) {
+      console.error('Error creating notification:', e);
+      throw e;
+    }
   }
 
   /**
    * Marca una notificación como leída
    */
-  markAsRead(notificationId) {
-    const notifications = this.getAll();
-    const notification = notifications.find(n => n.id === notificationId);
-
-    if (notification) {
-      notification.read = true;
-      notification.readAt = new Date().toISOString();
-      this.saveAll(notifications);
-      return notification;
+  async markAsRead(notificationId) {
+    try {
+      const updated = await apiService.markNotificationRead(notificationId);
+      const index = this.notifications.findIndex(n => n.id === notificationId || n._id === notificationId);
+      if (index !== -1) {
+        this.notifications[index] = updated;
+        localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
+        this.notifyListeners();
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error marking notification as read:', e);
+      throw e;
     }
-
-    return null;
   }
 
   /**
    * Marca todas las notificaciones de un usuario como leídas
    */
-  markAllAsRead(userId) {
-    const notifications = this.getAll();
-    let updated = 0;
-
-    notifications.forEach(notification => {
-      if (notification.userId === userId && !notification.read) {
-        notification.read = true;
-        notification.readAt = new Date().toISOString();
-        updated++;
-      }
-    });
-
-    if (updated > 0) {
-      this.saveAll(notifications);
+  async markAllAsRead(userId) {
+    try {
+      await apiService.markAllNotificationsRead();
+      this.notifications = this.notifications.map(n => ({
+        ...n,
+        read: true,
+        readAt: new Date().toISOString()
+      }));
+      localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
+      this.notifyListeners();
+      return this.notifications.length;
+    } catch (e) {
+      console.error('Error marking all as read:', e);
+      throw e;
     }
-
-    return updated;
   }
 
   /**
    * Elimina una notificación
    */
-  delete(notificationId) {
-    const notifications = this.getAll();
-    const filtered = notifications.filter(n => n.id !== notificationId);
-
-    if (filtered.length < notifications.length) {
-      this.saveAll(filtered);
+  async delete(notificationId) {
+    try {
+      await apiService.deleteNotification(notificationId);
+      this.notifications = this.notifications.filter(n => n.id !== notificationId && n._id !== notificationId);
+      localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
+      this.notifyListeners();
       return true;
+    } catch (e) {
+      console.error('Error deleting notification:', e);
+      throw e;
     }
-
-    return false;
   }
 
   /**
    * Elimina todas las notificaciones de un usuario
    */
-  deleteAllByUserId(userId) {
-    const notifications = this.getAll();
-    const filtered = notifications.filter(n => n.userId !== userId);
-
-    const deletedCount = notifications.length - filtered.length;
-    if (deletedCount > 0) {
-      this.saveAll(filtered);
+  async deleteAllByUserId(userId) {
+    try {
+      // This would need a backend endpoint
+      const toDelete = this.notifications.filter(n => n.userId === userId);
+      for (const n of toDelete) {
+        await this.delete(n.id || n._id);
+      }
+      return toDelete.length;
+    } catch (e) {
+      console.error('Error deleting all notifications:', e);
+      throw e;
     }
-
-    return deletedCount;
   }
 
   /**
    * Notifica cambio de horario de asamblea
+   * Nota: Las notificaciones ahora se crean en el backend
    */
   notifyScheduleChange(userId, oldSchedule, newSchedule, organizationName) {
-    const oldDate = new Date(oldSchedule.date);
-    const newDate = new Date(newSchedule.date);
-
-    return this.create({
-      userId,
-      type: 'schedule_change',
-      title: '📅 Cambio de Horario de Asamblea',
-      message: `La asamblea de ${organizationName} ha cambiado de horario.\n\n` +
-        `❌ Anterior: ${oldDate.toLocaleDateString('es-CL')} a las ${oldSchedule.time}\n` +
-        `✅ Nueva: ${newDate.toLocaleDateString('es-CL')} a las ${newSchedule.time}`,
-      data: {
-        organizationName,
-        oldSchedule,
-        newSchedule
-      }
-    });
+    console.log('Schedule change notification will be created by backend');
   }
 
   /**
    * Notifica asignación de Ministro de Fe
+   * Nota: Las notificaciones ahora se crean en el backend
    */
   notifyMinistroAssigned(userId, ministroData, organizationName) {
-    const date = new Date(ministroData.scheduledDate);
-
-    return this.create({
-      userId,
-      type: 'ministro_assigned',
-      title: '⚖️ Ministro de Fe Asignado',
-      message: `Se ha asignado un Ministro de Fe para la asamblea de ${organizationName}.\n\n` +
-        `Ministro: ${ministroData.name}\n` +
-        `Fecha: ${date.toLocaleDateString('es-CL')}\n` +
-        `Hora: ${ministroData.scheduledTime}\n` +
-        `Lugar: ${ministroData.location}`,
-      data: {
-        organizationName,
-        ministro: ministroData
-      }
-    });
+    console.log('Ministro assigned notification will be created by backend');
   }
 
   /**
    * Notifica cambio de estado de solicitud
+   * Nota: Las notificaciones ahora se crean en el backend
    */
   notifyStatusUpdate(userId, organizationName, oldStatus, newStatus) {
-    const statusLabels = {
-      pending: 'Pendiente',
-      approved: 'Aprobada',
-      rejected: 'Rechazada',
-      ministro_requested: 'Requiere Ministro de Fe',
-      ministro_scheduled: 'Ministro Agendado',
-      completed: 'Completada'
-    };
-
-    return this.create({
-      userId,
-      type: 'status_update',
-      title: '🔔 Actualización de Solicitud',
-      message: `La solicitud de ${organizationName} ha cambiado de estado.\n\n` +
-        `Estado anterior: ${statusLabels[oldStatus] || oldStatus}\n` +
-        `Nuevo estado: ${statusLabels[newStatus] || newStatus}`,
-      data: {
-        organizationName,
-        oldStatus,
-        newStatus
-      }
-    });
-  }
-
-  /**
-   * Guarda todas las notificaciones
-   */
-  saveAll(notifications) {
-    try {
-      localStorage.setItem(this.storageKey, JSON.stringify(notifications));
-    } catch (error) {
-      console.error('Error al guardar notificaciones:', error);
-      throw new Error('No se pudo guardar las notificaciones');
-    }
-  }
-
-  /**
-   * Obtiene contador de notificaciones no leídas
-   */
-  getUnreadCount(userId) {
-    return this.getUnreadByUserId(userId).length;
+    console.log('Status update notification will be created by backend');
   }
 }
 

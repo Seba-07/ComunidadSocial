@@ -1,15 +1,11 @@
 /**
  * Authentication Page Script
- * Maneja login y registro de usuarios
+ * Maneja login y registro de usuarios usando la API
  */
 
-import { initializeApp } from './src/app.js';
-import { container } from './src/infrastructure/config/container.js';
+import { apiService } from './src/services/ApiService.js';
 
 console.log('🔐 Auth page loaded');
-
-// Inicializar app
-await initializeApp();
 
 // Toast notification
 function showToast(message, type = 'info') {
@@ -40,22 +36,16 @@ function showToast(message, type = 'info') {
 
 // Validar RUT chileno (formato y dígito verificador)
 function validateRut(rut) {
-  // Eliminar puntos y guión
   const cleanRut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
 
-  // Verificar longitud mínima (7 dígitos + 1 verificador)
   if (cleanRut.length < 8 || cleanRut.length > 9) return false;
 
   const body = cleanRut.slice(0, -1);
   const digit = cleanRut.slice(-1);
 
-  // Verificar que el cuerpo sean solo números
   if (!/^\d+$/.test(body)) return false;
-
-  // Verificar que el dígito sea número o K
   if (!/^[\dK]$/.test(digit)) return false;
 
-  // Calcular dígito verificador
   let sum = 0;
   let multiplier = 2;
 
@@ -81,7 +71,6 @@ function validateRut(rut) {
 
 // Format RUT
 function formatRut(rut) {
-  // Remove existing formatting
   rut = rut.replace(/\./g, '').replace(/-/g, '');
 
   if (rut.length < 2) return rut;
@@ -89,7 +78,6 @@ function formatRut(rut) {
   const body = rut.slice(0, -1);
   const digit = rut.slice(-1);
 
-  // Add dots every 3 digits
   const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
   return `${formattedBody}-${digit}`;
@@ -164,28 +152,25 @@ loginForm.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
 
   try {
-    // Get auth service
-    const authService = container.get('authService');
-
     let user = null;
     let isMinistro = false;
 
     // Primero intentar login como usuario/admin
     try {
-      user = await authService.login(email, password);
+      const result = await apiService.login(email, password);
+      user = result.user;
       console.log('✅ Login successful as USER/ADMIN:', user);
     } catch (userError) {
-      // Si falla, intentar como ministro
-      console.log('User login failed, trying ministro...');
+      console.log('User login failed, trying ministro...', userError.message);
 
+      // Si falla, intentar como ministro
       try {
-        const { ministroService } = await import('./src/services/MinistroService.js');
-        user = ministroService.authenticate(email, password);
+        const result = await apiService.loginMinistro(email, password);
+        user = result.ministro;
         isMinistro = true;
         console.log('✅ Login successful as MINISTRO:', user);
       } catch (ministroError) {
-        // Si ambos fallan, lanzar el error original
-        throw userError;
+        throw new Error('Credenciales inválidas');
       }
     }
 
@@ -193,14 +178,13 @@ loginForm.addEventListener('submit', async (e) => {
       throw new Error('Error de autenticación');
     }
 
-    // Save to localStorage según el tipo de usuario
+    // Redirigir según el tipo de usuario
     if (isMinistro) {
       localStorage.setItem('currentMinistro', JSON.stringify(user));
       localStorage.setItem('isMinistroAuthenticated', 'true');
 
       showToast(`¡Bienvenido ${user.firstName}!`, 'success');
 
-      // Redirigir al dashboard de ministro
       if (user.mustChangePassword) {
         setTimeout(() => {
           window.location.href = '/ministro-dashboard.html?changePassword=true';
@@ -211,12 +195,11 @@ loginForm.addEventListener('submit', async (e) => {
         }, 500);
       }
     } else {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      // El token ya se guarda en apiService.login()
       localStorage.setItem('isAuthenticated', 'true');
 
-      showToast(`¡Bienvenido ${user.profile?.firstName || 'Usuario'}!`, 'success');
+      showToast(`¡Bienvenido ${user.firstName || user.profile?.firstName || 'Usuario'}!`, 'success');
 
-      // Redirigir al dashboard principal (admin o user)
       setTimeout(() => {
         window.location.href = '/';
       }, 500);
@@ -225,13 +208,12 @@ loginForm.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('❌ Login error:', error);
 
-    // Show error in form
-    if (error.message.includes('no encontrado') || error.message.includes('Usuario') || error.message.includes('Credenciales inválidas')) {
+    if (error.message.includes('no encontrado') || error.message.includes('Usuario') || error.message.includes('Credenciales inválidas') || error.message.includes('inválidas')) {
       showError('login-email', 'Correo o contraseña incorrectos');
       showError('login-password', 'Correo o contraseña incorrectos');
     } else if (error.message.includes('contraseña') || error.message.includes('Contraseña')) {
       showError('login-password', 'Contraseña incorrecta');
-    } else if (error.message.includes('desactivada')) {
+    } else if (error.message.includes('desactivada') || error.message.includes('inactivo')) {
       showToast(error.message, 'error');
     } else {
       showToast(error.message || 'Error al iniciar sesión', 'error');
@@ -250,7 +232,6 @@ registerForm.addEventListener('submit', async (e) => {
   const submitBtn = document.getElementById('register-submit');
   const originalText = submitBtn.textContent;
 
-  // Get form values
   const firstName = document.getElementById('register-name').value.trim();
   const lastName = document.getElementById('register-lastname').value.trim();
   const rut = document.getElementById('register-rut').value.trim();
@@ -306,35 +287,22 @@ registerForm.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
 
   try {
-    // Get auth service
-    const authService = container.get('authService');
-
-    // Create user data
     const userData = {
+      rut,
+      firstName,
+      lastName,
       email,
-      password,
-      role: 'USER',
-      profile: {
-        firstName,
-        lastName,
-        rut,
-        phone: '',
-        address: ''
-      }
+      password
     };
 
-    // Register user (creates and logs in automatically)
-    const user = await authService.register(userData);
+    const result = await apiService.register(userData);
 
-    console.log('✅ User registered successfully:', user);
+    console.log('✅ User registered successfully:', result.user);
 
-    // Save to localStorage
-    localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('isAuthenticated', 'true');
 
     showToast('¡Cuenta creada exitosamente! Redirigiendo...', 'success');
 
-    // Redirect to main app
     setTimeout(() => {
       window.location.href = '/';
     }, 1500);
@@ -342,9 +310,10 @@ registerForm.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('❌ Register error:', error);
 
-    // Show specific errors
     if (error.message.includes('email') || error.message.includes('Email')) {
       showError('register-email', error.message);
+    } else if (error.message.includes('RUT') || error.message.includes('rut')) {
+      showError('register-rut', error.message);
     } else {
       showToast(error.message || 'Error al crear la cuenta', 'error');
     }
@@ -393,14 +362,14 @@ style.textContent = `
 document.head.appendChild(style);
 
 // ===== FORGOT PASSWORD FUNCTIONALITY =====
+// Note: In production with a real backend, this would send a reset email
+// For now, we show a message to contact the administrator
 
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const forgotPasswordModal = document.getElementById('forgot-password-modal');
 const closeModalBtn = document.getElementById('close-modal');
 const recoverPasswordForm = document.getElementById('recover-password-form');
 const passwordResult = document.getElementById('password-result');
-const passwordDisplay = document.getElementById('password-display');
-const copyPasswordBtn = document.getElementById('copy-password');
 
 // Open modal
 forgotPasswordLink.addEventListener('click', (e) => {
@@ -452,65 +421,23 @@ recoverPasswordForm.addEventListener('submit', async (e) => {
     return;
   }
 
-  submitBtn.textContent = 'Buscando...';
+  submitBtn.textContent = 'Procesando...';
   submitBtn.disabled = true;
 
-  try {
-    // Get auth service
-    const authService = container.get('authService');
-    const userRepository = container.get('userRepository');
+  // Show message to contact administrator
+  passwordResult.innerHTML = `
+    <p style="margin: 0 0 12px 0; color: #065f46; font-weight: 600; font-size: 16px;">📧 Recuperación de contraseña</p>
+    <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.6;">
+      Para recuperar tu contraseña, por favor contacta al administrador del sistema en:<br><br>
+      <strong>Email:</strong> admin@renca.cl<br>
+      <strong>Teléfono:</strong> +56 2 2345 6789<br><br>
+      Proporciona tu email registrado: <strong>${email}</strong>
+    </p>
+  `;
+  passwordResult.style.display = 'block';
+  passwordResult.style.background = '#fef3c7';
+  passwordResult.style.borderColor = '#fbbf24';
 
-    // DEBUG: Log all users
-    const allUsers = await userRepository.findAll({ limit: 100 });
-    console.log('📋 Todos los usuarios registrados:', allUsers);
-    console.log('🔍 Buscando email:', email);
-
-    // Find user by email
-    const user = await userRepository.findByEmail(email);
-
-    if (!user) {
-      // Show available emails in error message
-      const availableEmails = allUsers.users.map(u => u.email).slice(0, 3).join(', ');
-      document.getElementById('recover-email-error').textContent = `No existe una cuenta con este email. Emails disponibles: ${availableEmails}...`;
-      document.getElementById('recover-email-error').classList.add('show');
-      document.getElementById('recover-email').classList.add('error');
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-      return;
-    }
-
-    // Show password
-    passwordDisplay.textContent = user.password;
-    passwordResult.style.display = 'block';
-
-    showToast('¡Contraseña encontrada!', 'success');
-
-  } catch (error) {
-    console.error('❌ Recovery error:', error);
-    showToast('Error al buscar la contraseña', 'error');
-  } finally {
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
-  }
-});
-
-// Copy password to clipboard
-copyPasswordBtn.addEventListener('click', async () => {
-  const password = passwordDisplay.textContent;
-
-  try {
-    await navigator.clipboard.writeText(password);
-    copyPasswordBtn.textContent = '✓ Copiado';
-    copyPasswordBtn.style.background = '#059669';
-
-    setTimeout(() => {
-      copyPasswordBtn.textContent = 'Copiar';
-      copyPasswordBtn.style.background = '#10b981';
-    }, 2000);
-
-    showToast('Contraseña copiada al portapapeles', 'success');
-  } catch (error) {
-    console.error('Error copying to clipboard:', error);
-    showToast('No se pudo copiar. Copia manualmente.', 'error');
-  }
+  submitBtn.textContent = originalText;
+  submitBtn.disabled = false;
 });
