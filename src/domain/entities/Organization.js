@@ -48,9 +48,9 @@ export class Organization {
     this.objectives = objectives;
     this.members = members;
     // Quórum según Ley 19.418 actualizada:
-    // - Junta de Vecinos: 50 personas mínimo
+    // - Junta de Vecinos: 200 personas mínimo (Renca)
     // - Otras organizaciones: 15 personas mínimo
-    this.minimumMembers = minimumMembers || (type === 'JUNTA_VECINOS' ? 50 : 15);
+    this.minimumMembers = minimumMembers || (type === 'JUNTA_VECINOS' ? 200 : 15);
     this.status = status;
     this.foundingDate = foundingDate;
     this.approvalDate = approvalDate;

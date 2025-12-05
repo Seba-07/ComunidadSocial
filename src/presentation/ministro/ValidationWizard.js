@@ -9,7 +9,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   const orgName = orgData.organizationName || orgData.name || org?.organizationName || assignment.organizationName || 'Organización';
   const orgType = orgData.organizationType || orgData.type || 'FUNCIONAL';
   // El mínimo de asistentes es ahora solo informativo, no obligatorio
-  const minAttendees = orgType === 'JUNTA_VECINOS' ? 50 : 15;
+  const minAttendees = orgType === 'JUNTA_VECINOS' ? 200 : 15;
 
   // Función para calcular si es menor de edad
   const isUnderage = (birthDate) => {

@@ -589,13 +589,13 @@ export class WizardController {
     const step2Description = document.getElementById('step2-description');
 
     const isJuntaVecinos = orgType === 'JUNTA_VECINOS';
-    const minMembers = isJuntaVecinos ? 50 : 15;
+    const minMembers = isJuntaVecinos ? 200 : 15;
 
     // Actualizar lista de requisitos en Paso 1
     if (requirementsList) {
       if (isJuntaVecinos) {
         requirementsList.innerHTML = `
-          <li>Mínimo 50-200 miembros según tamaño de comuna</li>
+          <li>Mínimo 200 miembros fundadores</li>
           <li>Todos los miembros deben tener mínimo 14 años</li>
           <li>Deben residir en la unidad vecinal correspondiente</li>
         `;
@@ -788,7 +788,7 @@ export class WizardController {
    */
   validateStep2() {
     const orgType = this.formData.organization?.type;
-    const requiredMembers = orgType === 'JUNTA_VECINOS' ? 50 : 15;
+    const requiredMembers = orgType === 'JUNTA_VECINOS' ? 200 : 15;
 
     if (this.formData.members.length < requiredMembers) {
       const orgName = orgType === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización';
@@ -1138,11 +1138,11 @@ export class WizardController {
       };
     }
 
-    // Botón cargar 50 miembros de prueba
-    const btnLoadTest50 = document.getElementById('btn-load-test-members-50');
-    if (btnLoadTest50) {
-      btnLoadTest50.onclick = () => {
-        this.loadTestMembers(50, 10); // 50 miembros, 10 menores
+    // Botón cargar 200 miembros de prueba (Juntas de Vecinos Renca)
+    const btnLoadTest200 = document.getElementById('btn-load-test-members-200');
+    if (btnLoadTest200) {
+      btnLoadTest200.onclick = () => {
+        this.loadTestMembers(200, 30); // 200 miembros, 30 menores
       };
     }
   }
@@ -1255,7 +1255,7 @@ export class WizardController {
 
       // Determinar mínimo según tipo de organización
       const orgType = this.formData.organization?.type;
-      const minRequired = orgType === 'JUNTA_VECINOS' ? 50 : 15;
+      const minRequired = orgType === 'JUNTA_VECINOS' ? 200 : 15;
 
       if (this.formData.members.length >= minRequired) {
         countElement.style.color = 'var(--success-color, #10b981)';
