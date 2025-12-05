@@ -3319,6 +3319,28 @@ body {
     color: var(--text-primary);
     margin-bottom: 6px;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.member-age {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.member-age.age-minor {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.member-card.member-minor {
+    border-left: 3px solid #f59e0b;
 }
 
 .member-details {

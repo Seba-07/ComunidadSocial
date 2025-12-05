@@ -135,16 +135,16 @@ const testMembers = [
     email: 'martina.guzman@email.cl',
     phone: '+56 9 5678 9012',
     address: 'Calle Principal 741, Renca',
-    birthDate: '2002-07-16'
+    birthDate: '2008-07-16' // 16 años - menor de edad
   },
   {
-    rut: '8.678.901-2',
-    firstName: 'Luis',
+    rut: '23.678.901-2',
+    firstName: 'Tomás',
     lastName: 'Ortiz Valenzuela',
-    email: 'luis.ortiz@email.cl',
+    email: 'tomas.ortiz@email.cl',
     phone: '+56 9 6789 0123',
     address: 'Pasaje Sur 852, Renca',
-    birthDate: '1955-11-29'
+    birthDate: '2010-03-15' // 14 años - menor de edad
   }
 ];
 

@@ -1228,6 +1228,27 @@ export class WizardController {
   }
 
   /**
+   * Calcula la edad a partir de una fecha de nacimiento
+   */
+  calculateAge(birthDate) {
+    if (!birthDate) return null;
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+
+    if (isNaN(birth.getTime())) return null;
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age;
+  }
+
+  /**
    * Renderiza lista de miembros
    */
   renderMembersList() {
@@ -1240,11 +1261,20 @@ export class WizardController {
 
     listContainer.innerHTML = this.formData.members.map((member, index) => {
       const fullName = `${member.primerNombre || member.firstName || ''} ${member.segundoNombre || ''} ${member.apellidoPaterno || member.lastName?.split(' ')[0] || ''} ${member.apellidoMaterno || member.lastName?.split(' ')[1] || ''}`.replace(/\s+/g, ' ').trim();
+
+      // Calcular edad
+      const age = this.calculateAge(member.birthDate);
+      const ageDisplay = age !== null ? `${age} años` : '';
+      const isMinor = age !== null && age < 18;
+
       return `
-      <div class="member-card">
+      <div class="member-card ${isMinor ? 'member-minor' : ''}">
         <div class="member-number">${index + 1}</div>
         <div class="member-info">
-          <div class="member-name">${fullName}</div>
+          <div class="member-name">
+            ${fullName}
+            ${age !== null ? `<span class="member-age ${isMinor ? 'age-minor' : ''}">${ageDisplay}${isMinor ? ' (menor)' : ''}</span>` : ''}
+          </div>
           <div class="member-details">
             <span class="member-detail-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
