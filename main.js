@@ -865,9 +865,8 @@ function initProfile() {
 
       const user = JSON.parse(userData);
 
-      // Update profile
-      user.profile = {
-        ...user.profile,
+      // Obtener valores del formulario
+      const profileData = {
         firstName: document.getElementById('profile-firstname').value.trim(),
         lastName: document.getElementById('profile-lastname').value.trim(),
         phone: document.getElementById('profile-phone').value.trim(),
@@ -876,30 +875,31 @@ function initProfile() {
         commune: document.getElementById('profile-commune').value
       };
 
-      // Save to localStorage
-      localStorage.setItem('currentUser', JSON.stringify(user));
-
-      // Persist to IndexedDB
+      // Guardar en el servidor
       try {
-        const userRepository = getUserRepository();
-        await userRepository.update(user.id, { profile: user.profile });
+        const updatedUser = await apiService.updateUser(user._id || user.id, profileData);
+
+        // Actualizar datos locales con la respuesta del servidor
+        const mergedUser = { ...user, ...updatedUser };
+        localStorage.setItem('currentUser', JSON.stringify(mergedUser));
+
+        // Update header name
+        const userName = document.getElementById('user-name');
+        if (userName) {
+          userName.textContent = profileData.firstName || user.email;
+        }
+
+        // Reset view
+        formPersonal.style.display = 'none';
+        displayPersonal.style.display = 'flex';
+        btnEditPersonal.style.display = 'block';
+
+        loadProfileData();
+        showToast('Información actualizada correctamente', 'success');
       } catch (error) {
-        console.error('Error saving profile to DB:', error);
+        console.error('Error saving profile:', error);
+        showToast('Error al guardar el perfil. Intenta de nuevo.', 'error');
       }
-
-      // Update header name
-      const userName = document.getElementById('user-name');
-      if (userName) {
-        userName.textContent = user.profile.firstName || user.email;
-      }
-
-      // Reset view
-      formPersonal.style.display = 'none';
-      displayPersonal.style.display = 'flex';
-      btnEditPersonal.style.display = 'block';
-
-      loadProfileData();
-      showToast('Información actualizada correctamente', 'success');
     });
   }
 
@@ -1063,6 +1063,11 @@ async function renderOrganizations() {
         e.stopPropagation();
         continueOrganizationWizard(orgId);
       });
+
+      card.querySelector('.btn-org-continue-draft')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        continueDraftOrganization(orgId);
+      });
     });
   } else {
     // Mostrar mensaje vacío
@@ -1079,6 +1084,7 @@ function renderOrganizationCard(org) {
   const isApproved = org.status === ORG_STATUS.APPROVED;
   const isPending = [ORG_STATUS.PENDING_REVIEW, ORG_STATUS.IN_REVIEW, ORG_STATUS.SENT_TO_REGISTRY].includes(org.status);
   const isRejected = org.status === ORG_STATUS.REJECTED;
+  const isDraft = org.status === ORG_STATUS.DRAFT;
   const canContinueWizard = org.status === ORG_STATUS.MINISTRO_APPROVED;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
@@ -1127,11 +1133,11 @@ function renderOrganizationCard(org) {
   const orgId = org._id || org.id;
 
   return `
-    <div class="org-card ${isApproved ? 'org-approved' : ''} ${isRejected ? 'org-rejected' : ''}" data-org-id="${orgId}">
+    <div class="org-card ${isApproved ? 'org-approved' : ''} ${isRejected ? 'org-rejected' : ''} ${isDraft ? 'org-draft' : ''}" data-org-id="${orgId}">
       <div class="org-card-header">
         <div class="org-type-icon">${typeIcon}</div>
         <div class="org-status-badge" style="background: ${statusColor}20; color: ${statusColor}">
-          ${statusLabel}
+          ${isDraft ? '📝 Guardado' : statusLabel}
         </div>
       </div>
 
@@ -1184,18 +1190,41 @@ function renderOrganizationCard(org) {
             </div>
           </div>
         ` : ''}
+
+        ${isDraft ? `
+          <div class="org-draft-notice" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); border: 2px dashed #6366f1; border-radius: 12px; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 24px;">📋</span>
+              <div style="flex: 1;">
+                <p style="margin: 0; font-weight: 700; color: #4338ca; font-size: 14px;">Proceso Inconcluso</p>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #4f46e5;">Tienes un formulario guardado. Continúa donde lo dejaste.</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
 
       <div class="org-card-actions">
-        <button class="btn-org-view">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-          Ver detalles
-        </button>
+        ${!isDraft ? `
+          <button class="btn-org-view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Ver detalles
+          </button>
+        ` : ''}
+        ${isDraft ? `
+          <button class="btn-org-continue-draft" data-org-id="${orgId}" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Continuar Registro
+          </button>
+        ` : ''}
         ${canContinueWizard ? `
-          <button class="btn-org-continue" data-org-id="${org.id}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <button class="btn-org-continue" data-org-id="${orgId}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
@@ -2485,6 +2514,54 @@ function continueOrganizationWizard(orgId) {
   // Abrir el wizard
   const wizard = new WizardController();
   wizard.open();
+}
+
+/**
+ * Continúa una organización en estado draft (borrador)
+ */
+function continueDraftOrganization(orgId) {
+  const org = organizationsService.getById(orgId);
+  if (!org) {
+    showToast('Organización no encontrada', 'error');
+    return;
+  }
+
+  // Construir el progreso del wizard a partir de los datos guardados
+  const wizardProgress = {
+    currentStep: 1, // Empezar desde el paso 1 para revisar
+    organizationId: orgId,
+    formData: {
+      organization: {
+        type: org.organizationType,
+        name: org.organizationName,
+        address: org.address,
+        region: org.region || 'RM',
+        commune: org.comuna || 'Renca',
+        territory: org.territory,
+        unidadVecinal: org.unidadVecinal
+      },
+      members: org.members || [],
+      commission: {
+        members: org.electoralCommission || [],
+        electionDate: org.electionDate || null
+      },
+      statutes: org.statutes || { type: 'template', content: null },
+      documents: org.documents || {},
+      certificates: org.certificates || {},
+      otherDocuments: org.otherDocuments || [],
+      signatures: org.signatures || {}
+    },
+    savedAt: new Date().toISOString()
+  };
+
+  // Guardar el progreso en localStorage para que el wizard lo cargue
+  localStorage.setItem('wizardProgress', JSON.stringify(wizardProgress));
+
+  // Abrir el wizard
+  const wizard = new WizardController();
+  wizard.open();
+
+  showToast('Continuando con el registro guardado...', 'info');
 }
 
 // Exportar para uso desde el wizard
