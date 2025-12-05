@@ -1130,21 +1130,33 @@ export class WizardController {
       this.showAddMemberModal();
     });
 
-    // Botón cargar miembros de prueba (remover listener anterior si existe)
-    const btnLoadTest = document.getElementById('btn-load-test-members');
-    if (btnLoadTest) {
-      const newBtnTest = btnLoadTest.cloneNode(true);
-      btnLoadTest.parentNode.replaceChild(newBtnTest, btnLoadTest);
-      newBtnTest.addEventListener('click', () => {
-        this.loadTestMembers();
+    // Botón cargar 15 miembros de prueba (remover listener anterior si existe)
+    const btnLoadTest15 = document.getElementById('btn-load-test-members-15');
+    if (btnLoadTest15) {
+      const newBtnTest15 = btnLoadTest15.cloneNode(true);
+      btnLoadTest15.parentNode.replaceChild(newBtnTest15, btnLoadTest15);
+      newBtnTest15.addEventListener('click', () => {
+        this.loadTestMembers(15, 2); // 15 miembros, 2 menores
+      });
+    }
+
+    // Botón cargar 50 miembros de prueba (remover listener anterior si existe)
+    const btnLoadTest50 = document.getElementById('btn-load-test-members-50');
+    if (btnLoadTest50) {
+      const newBtnTest50 = btnLoadTest50.cloneNode(true);
+      btnLoadTest50.parentNode.replaceChild(newBtnTest50, btnLoadTest50);
+      newBtnTest50.addEventListener('click', () => {
+        this.loadTestMembers(50, 10); // 50 miembros, 10 menores
       });
     }
   }
 
   /**
-   * Carga 49 miembros de prueba
+   * Carga miembros de prueba con cantidad configurable de menores de edad
+   * @param {number} cantidad - Cantidad total de miembros a generar
+   * @param {number} cantidadMenores - Cantidad de miembros menores de edad (14-17 años)
    */
-  loadTestMembers() {
+  loadTestMembers(cantidad = 15, cantidadMenores = 2) {
     if (this.formData.members.length > 0) {
       if (!confirm('Esto reemplazará los miembros actuales. ¿Continuar?')) {
         return;
@@ -1157,9 +1169,26 @@ export class WizardController {
 
     this.formData.members = [];
 
-    // Determinar cantidad según tipo de organización
-    const orgType = this.formData.organization?.type;
-    const cantidad = orgType === 'JUNTA_VECINOS' ? 50 : 15;
+    // Función para generar fecha de nacimiento según si es menor o mayor de edad
+    const generateBirthDate = (isMinor) => {
+      const today = new Date();
+      let year, month, day;
+
+      if (isMinor) {
+        // Menor de edad: entre 14 y 17 años
+        const age = 14 + Math.floor(Math.random() * 4); // 14, 15, 16 o 17
+        year = today.getFullYear() - age;
+      } else {
+        // Mayor de edad: entre 18 y 65 años
+        const age = 18 + Math.floor(Math.random() * 48); // 18-65
+        year = today.getFullYear() - age;
+      }
+
+      month = Math.floor(Math.random() * 12) + 1;
+      day = Math.floor(Math.random() * 28) + 1;
+
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    };
 
     for (let i = 0; i < cantidad; i++) {
       const primerNombre = nombres[i % nombres.length];
@@ -1168,6 +1197,9 @@ export class WizardController {
       const apellidoMaterno = apellidos[Math.floor(Math.random() * apellidos.length)];
       const rutNum = 10000000 + Math.floor(Math.random() * 15000000);
       const rutDv = this.calculateRutDv(rutNum);
+
+      // Los primeros 'cantidadMenores' serán menores de edad
+      const isMinor = i < cantidadMenores;
 
       this.formData.members.push({
         id: `member-${Date.now()}-${i}`,
@@ -1182,7 +1214,7 @@ export class WizardController {
         email: `${primerNombre.toLowerCase()}.${apellidoPaterno.toLowerCase()}${i}@email.com`,
         phone: `+569${(10000000 + Math.floor(Math.random() * 90000000)).toString().substring(0, 8)}`,
         address: `Calle ${Math.floor(Math.random() * 1000) + 1}, Renca`,
-        birthDate: `${1960 + Math.floor(Math.random() * 45)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        birthDate: generateBirthDate(isMinor),
         isFoundingMember: true,
         joinDate: new Date().toISOString()
       });
@@ -1190,8 +1222,7 @@ export class WizardController {
 
     this.updateMembersCount();
     this.renderMembersList();
-    const mensaje = cantidad === 50 ? '50 miembros de prueba cargados correctamente.' : '15 miembros de prueba cargados correctamente.';
-    showToast(mensaje, 'success');
+    showToast(`${cantidad} miembros de prueba cargados (${cantidadMenores} menores de edad).`, 'success');
 
     // Guardar progreso
     this.saveProgress();
@@ -5271,7 +5302,16 @@ Vocal`;
           </svg>
           Agregar Miembro
         </button>
-        <button class="btn-outline" id="btn-load-test-members">
+        <button class="btn-outline" id="btn-load-test-members-15">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Cargar 15 de Prueba
+        </button>
+        <button class="btn-outline" id="btn-load-test-members-50">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
