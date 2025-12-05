@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
   server: {
@@ -10,6 +11,12 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        auth: resolve(__dirname, 'auth.html'),
+        ministroDashboard: resolve(__dirname, 'ministro-dashboard.html'),
+        ministroLogin: resolve(__dirname, 'ministro-login.html')
+      },
       output: {
         manualChunks: undefined
       }
