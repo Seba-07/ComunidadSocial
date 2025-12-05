@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import User from '../models/User.js';
 import Organization from '../models/Organization.js';
+import Assignment from '../models/Assignment.js';
+import Notification from '../models/Notification.js';
 
 dotenv.config();
 
@@ -155,6 +157,8 @@ async function seed() {
     console.log('\n🗑️  Limpiando base de datos...');
     await User.deleteMany({});
     await Organization.deleteMany({});
+    await Assignment.deleteMany({});
+    await Notification.deleteMany({});
     console.log('Base de datos limpiada');
 
     // Crear administrador
@@ -211,52 +215,6 @@ async function seed() {
       console.log(`  ✅ Usuario ${i + 1}/15: ${member.firstName} ${member.lastName}`);
     }
 
-    // Crear una organización de ejemplo con 15 miembros
-    console.log('\n🏠 Creando organización de ejemplo...');
-
-    // Mapear roles correctamente según el enum del modelo
-    const roleMapping = ['president', 'secretary', 'treasurer', 'director', 'director'];
-    const orgMembers = createdUsers.map((user, index) => ({
-      rut: user.rut,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      address: user.address,
-      phone: user.phone,
-      email: user.email,
-      birthDate: user.birthDate,
-      role: index < 5 ? roleMapping[index] : 'member',
-      signature: null,
-      certificate: null
-    }));
-
-    const organization = new Organization({
-      userId: createdUsers[0]._id,
-      organizationName: 'Junta de Vecinos Villa Los Aromos',
-      organizationType: 'JUNTA_VECINOS',
-      address: 'Av. Dorsal 1500, Renca',
-      comuna: 'Renca',
-      unidadVecinal: 'UV-15',
-      territory: 'Sector Norte',
-      members: orgMembers,
-      minMembers: 15,
-      status: 'draft',
-      statusHistory: [
-        {
-          status: 'draft',
-          date: new Date(),
-          comment: 'Organización creada como borrador'
-        }
-      ],
-      provisionalDirectorio: {
-        president: orgMembers[0],
-        secretary: orgMembers[1],
-        treasurer: orgMembers[2],
-        designatedAt: new Date(),
-        type: 'PROVISIONAL'
-      }
-    });
-    await organization.save();
-    console.log('✅ Organización creada: Junta de Vecinos Villa Los Aromos (15 miembros)');
 
     console.log('\n' + '='.repeat(50));
     console.log('🎉 SEED COMPLETADO EXITOSAMENTE');
@@ -279,7 +237,6 @@ async function seed() {
     console.log(`  - 1 Administrador`);
     console.log(`  - 1 Ministro de Fe`);
     console.log(`  - 15 Usuarios de prueba`);
-    console.log(`  - 1 Organización con 15 miembros`);
     console.log('');
 
     process.exit(0);

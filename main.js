@@ -205,6 +205,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
+      // Mostrar loading screen inmediatamente para evitar flash de contenido
+      const app = document.getElementById('app');
+      if (app) app.classList.remove('loaded');
+
       // Limpiar localStorage y token API
       apiService.logout();
       localStorage.removeItem('currentUser');
@@ -214,15 +218,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       localStorage.removeItem('ministro_assignments');
       localStorage.removeItem('user_notifications');
 
-      const result = await handleLogout();
-      if (result.success) {
-        showToast('Sesión cerrada correctamente', 'success');
+      await handleLogout();
 
-        // Redirigir a auth
-        setTimeout(() => {
-          window.location.href = '/auth.html';
-        }, 500);
-      }
+      // Redirigir inmediatamente a auth
+      window.location.href = '/auth.html';
     });
   }
 
@@ -2782,7 +2781,10 @@ window.showAppointmentHistory = function(orgId) {
 
 function setupUserRoleUI() {
   const userData = localStorage.getItem('currentUser');
-  if (!userData) return;
+  if (!userData) {
+    hideLoadingScreen();
+    return;
+  }
 
   try {
     const user = JSON.parse(userData);
@@ -2795,6 +2797,23 @@ function setupUserRoleUI() {
     }
   } catch (error) {
     console.error('Error setting up role UI:', error);
+  }
+
+  // Ocultar loading screen y mostrar contenido
+  hideLoadingScreen();
+}
+
+function hideLoadingScreen() {
+  const loadingScreen = document.getElementById('app-loading');
+  const app = document.getElementById('app');
+
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    setTimeout(() => loadingScreen.remove(), 300);
+  }
+
+  if (app) {
+    app.classList.add('loaded');
   }
 }
 
