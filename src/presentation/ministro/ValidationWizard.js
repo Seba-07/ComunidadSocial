@@ -11,12 +11,28 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // El mínimo de asistentes es ahora solo informativo, no obligatorio
   const minAttendees = orgType === 'JUNTA_VECINOS' ? 50 : 15;
 
+  // Función para calcular si es menor de edad
+  const isUnderage = (birthDate) => {
+    if (!birthDate) return false; // Si no hay fecha, asumimos que es mayor
+    const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) return false;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age < 18;
+  };
+
   // Extraer miembros y normalizar
   const rawMembers = org?.members || [];
   const members = rawMembers.map((m, index) => ({
-    id: m.id || `member-${index}`,
+    id: m.id || m._id || `member-${index}`,
     name: m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.name || 'Sin nombre',
     rut: m.rut || 'Sin RUT',
+    birthDate: m.birthDate || null,
+    isMinor: isUnderage(m.birthDate),
     signature: m.signature || null
   }));
 
@@ -199,6 +215,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Función para renderizar el wizard
   const renderWizard = () => {
+    // Actualizar IDs seleccionados antes de renderizar
+    updateSelectedIds();
+
     modal.innerHTML = `
       <div class="wizard-container" style="background: white; border-radius: 20px; max-width: 950px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.3); overflow: hidden;">
         <!-- Header -->
@@ -328,8 +347,13 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
                 <option value="">Seleccionar miembro...</option>
                 ${members.map(m => {
                   const isSelected = saved?.id === m.id;
-                  const isDisabled = selectedIds.has(m.id) && !isSelected;
-                  return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled style="color: #9ca3af;"' : ''}>${m.name} - ${m.rut}</option>`;
+                  const isAlreadySelected = selectedIds.has(m.id) && !isSelected;
+                  const isMinorMember = m.isMinor;
+                  const isDisabled = isAlreadySelected || isMinorMember;
+                  let label = `${m.name} - ${m.rut}`;
+                  if (isMinorMember) label += ' (Menor de edad)';
+                  else if (isAlreadySelected) label += ' (Ya asignado)';
+                  return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled style="color: #9ca3af;"' : ''}>${label}</option>`;
                 }).join('')}
                 <option value="manual">➕ Ingresar manualmente...</option>
               </select>
@@ -414,8 +438,13 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
             <option value="">Seleccionar miembro...</option>
             ${members.map(m => {
               const isSelected = member.id === m.id;
-              const isDisabled = selectedIds.has(m.id) && !isSelected;
-              return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}>${m.name}</option>`;
+              const isAlreadySelected = selectedIds.has(m.id) && !isSelected;
+              const isMinorMember = m.isMinor;
+              const isDisabled = isAlreadySelected || isMinorMember;
+              let label = m.name;
+              if (isMinorMember) label += ' (Menor de edad)';
+              else if (isAlreadySelected) label += ' (Ya asignado)';
+              return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled style="color: #9ca3af;"' : ''}>${label}</option>`;
             }).join('')}
             <option value="manual">➕ Otro...</option>
           </select>
@@ -465,8 +494,13 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
                   <option value="">Seleccionar miembro...</option>
                   ${members.map(m => {
                     const isSelected = saved?.id === m.id;
-                    const isDisabled = selectedIds.has(m.id) && !isSelected;
-                    return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}>${m.name} - ${m.rut}</option>`;
+                    const isAlreadySelected = selectedIds.has(m.id) && !isSelected;
+                    const isMinorMember = m.isMinor;
+                    const isDisabled = isAlreadySelected || isMinorMember;
+                    let label = `${m.name} - ${m.rut}`;
+                    if (isMinorMember) label += ' (Menor de edad)';
+                    else if (isAlreadySelected) label += ' (Ya asignado)';
+                    return `<option value="${m.id}" data-name="${m.name}" data-rut="${m.rut}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled style="color: #9ca3af;"' : ''}>${label}</option>`;
                   }).join('')}
                   <option value="manual">➕ Otro...</option>
                 </select>
@@ -849,23 +883,46 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
   };
 
-  // Actualizar IDs seleccionados
+  // Actualizar IDs seleccionados (incluye datos guardados y DOM actual)
   const updateSelectedIds = () => {
     selectedIds.clear();
-    // Directorio
+
+    // Incluir datos guardados en wizardData (para cuando navegamos entre pasos)
+    // Directorio guardado
+    ['president', 'secretary', 'treasurer'].forEach(role => {
+      const saved = wizardData.directorio[role];
+      if (saved?.id && saved.id !== 'manual') {
+        selectedIds.add(saved.id);
+      }
+    });
+    // Adicionales guardados
+    wizardData.additionalMembers.forEach(m => {
+      if (m?.id && m.id !== 'manual') {
+        selectedIds.add(m.id);
+      }
+    });
+    // Comisión guardada
+    wizardData.comisionElectoral.forEach(m => {
+      if (m?.id && m.id !== 'manual') {
+        selectedIds.add(m.id);
+      }
+    });
+
+    // También revisar el DOM actual (para selecciones en el paso actual)
+    // Directorio DOM
     ['president', 'secretary', 'treasurer'].forEach(role => {
       const select = modal.querySelector(`#${role}-select`);
       if (select && select.value && select.value !== 'manual') {
         selectedIds.add(select.value);
       }
     });
-    // Adicionales
+    // Adicionales DOM
     modal.querySelectorAll('.additional-select').forEach(select => {
       if (select.value && select.value !== 'manual') {
         selectedIds.add(select.value);
       }
     });
-    // Comisión
+    // Comisión DOM
     modal.querySelectorAll('.commission-select').forEach(select => {
       if (select.value && select.value !== 'manual') {
         selectedIds.add(select.value);
