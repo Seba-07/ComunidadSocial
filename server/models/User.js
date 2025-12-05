@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  region: {
+    type: String,
+    trim: true
+  },
+  commune: {
+    type: String,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['USER', 'ADMIN', 'MINISTRO'],

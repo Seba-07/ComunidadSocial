@@ -118,11 +118,22 @@ export class WizardController {
     }
 
     const user = JSON.parse(userData);
-    const profile = user.profile || {};
+
+    // Los datos del usuario vienen directamente en user, no en user.profile
+    // Crear un objeto profile con los datos del usuario para compatibilidad
+    const profile = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      email: user.email,
+      address: user.address,
+      region: user.region,
+      commune: user.commune
+    };
 
     // Verificar que tenga teléfono configurado
     // Nota: Región y comuna ya no son requeridas porque todas las organizaciones son de Renca
-    if (!profile.phone) {
+    if (!user.phone) {
       showToast('Debes completar tu número de teléfono antes de crear una organización', 'error');
 
       // Mostrar modal informativo
@@ -135,7 +146,7 @@ export class WizardController {
 
     // Guardar datos del usuario para uso en el wizard
     this.userProfile = profile;
-    this.userId = user.id;
+    this.userId = user._id || user.id;
 
     // Verificar si hay progreso guardado
     const savedProgress = this.loadProgress();
