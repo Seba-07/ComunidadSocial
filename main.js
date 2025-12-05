@@ -614,11 +614,22 @@ function loadProfileData() {
     const user = JSON.parse(userData);
     const profile = user.profile || {};
 
-    console.log('loadProfileData: Loading profile for', user.email, profile);
+    // Los datos pueden venir directamente en user o dentro de user.profile
+    // Priorizar datos directos del usuario sobre los del perfil
+    const firstName = user.firstName || profile.firstName || '';
+    const lastName = user.lastName || profile.lastName || '';
+    const rut = user.rut || profile.rut || '';
+    const phone = user.phone || profile.phone || '';
+    const address = user.address || profile.address || '';
+    const region = user.region || profile.region || '';
+    const commune = user.commune || profile.commune || '';
+    const photo = user.photo || profile.photo || '';
+
+    console.log('loadProfileData: Loading profile for', user.email, { firstName, lastName, rut, phone, address });
 
     // Header
-    const initials = `${(profile.firstName || 'U')[0]}${(profile.lastName || 'S')[0]}`.toUpperCase();
-    const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Usuario';
+    const initials = `${(firstName || 'U')[0]}${(lastName || 'S')[0]}`.toUpperCase();
+    const fullName = `${firstName} ${lastName}`.trim() || 'Usuario';
 
     const profileInitialsEl = document.getElementById('profile-initials');
     const profileFullnameEl = document.getElementById('profile-fullname');
@@ -632,8 +643,8 @@ function loadProfileData() {
     const photoEl = document.getElementById('profile-photo');
     const initialsEl = document.getElementById('profile-initials');
     if (photoEl && initialsEl) {
-      if (profile.photo) {
-        photoEl.src = profile.photo;
+      if (photo) {
+        photoEl.src = photo;
         photoEl.style.display = 'block';
         initialsEl.style.display = 'none';
       } else {
@@ -655,7 +666,7 @@ function loadProfileData() {
     }
 
     // Get region name
-    const regionObj = CHILE_REGIONS.find(r => r.id === profile.region);
+    const regionObj = CHILE_REGIONS.find(r => r.id === region);
     const regionName = regionObj ? regionObj.name : '-';
 
     // Display values - con verificación de existencia
@@ -668,11 +679,11 @@ function loadProfileData() {
     const displayEmail = document.getElementById('display-email');
 
     if (displayFullname) displayFullname.textContent = fullName;
-    if (displayRut) displayRut.textContent = profile.rut || '-';
-    if (displayPhone) displayPhone.textContent = profile.phone || '-';
-    if (displayAddress) displayAddress.textContent = profile.address || '-';
+    if (displayRut) displayRut.textContent = rut || '-';
+    if (displayPhone) displayPhone.textContent = phone || '-';
+    if (displayAddress) displayAddress.textContent = address || '-';
     if (displayRegion) displayRegion.textContent = regionName;
-    if (displayCommune) displayCommune.textContent = profile.commune || '-';
+    if (displayCommune) displayCommune.textContent = commune || '-';
     if (displayEmail) displayEmail.textContent = user.email || '-';
 
     // Form values - con verificación de existencia
@@ -682,21 +693,21 @@ function loadProfileData() {
     const profilePhone = document.getElementById('profile-phone');
     const profileAddress = document.getElementById('profile-address');
 
-    if (profileFirstname) profileFirstname.value = profile.firstName || '';
-    if (profileLastname) profileLastname.value = profile.lastName || '';
-    if (profileRut) profileRut.value = profile.rut || '';
-    if (profilePhone) profilePhone.value = profile.phone || '+56 ';
-    if (profileAddress) profileAddress.value = profile.address || '';
+    if (profileFirstname) profileFirstname.value = firstName;
+    if (profileLastname) profileLastname.value = lastName;
+    if (profileRut) profileRut.value = rut;
+    if (profilePhone) profilePhone.value = phone || '+56 ';
+    if (profileAddress) profileAddress.value = address;
 
     // Load regions dropdown
     const regionSelect = document.getElementById('profile-region');
     if (regionSelect) {
       regionSelect.innerHTML = '<option value="">Selecciona una región</option>';
-      CHILE_REGIONS.forEach(region => {
+      CHILE_REGIONS.forEach(r => {
         const option = document.createElement('option');
-        option.value = region.id;
-        option.textContent = region.name;
-        if (region.id === profile.region) {
+        option.value = r.id;
+        option.textContent = r.name;
+        if (r.id === region) {
           option.selected = true;
         }
         regionSelect.appendChild(option);
@@ -704,8 +715,8 @@ function loadProfileData() {
     }
 
     // Load comunas if region is selected
-    if (profile.region) {
-      loadComunas(profile.region, profile.commune);
+    if (region) {
+      loadComunas(region, commune);
     }
 
     // Account info
