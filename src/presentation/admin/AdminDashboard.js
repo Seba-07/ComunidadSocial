@@ -3618,8 +3618,13 @@ class AdminDashboard {
    * Ver PDF oficial en modal
    */
   viewOfficialPDF(orgId, docId) {
+    console.log('📄 viewOfficialPDF called:', { orgId, docId });
+    console.log('📄 Organizations loaded:', this.organizations?.length);
+
     // Buscar en las organizaciones cargadas (usar _id de MongoDB)
     const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+
+    console.log('📄 Organization found:', org ? org.organizationName : 'NOT FOUND');
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
@@ -3630,6 +3635,7 @@ class AdminDashboard {
     let docTitle = '';
 
     try {
+      console.log('📄 Generating PDF for docId:', docId);
       const directorio = org.provisionalDirectorio || {};
 
       switch (docId) {
@@ -3684,13 +3690,17 @@ class AdminDashboard {
           break;
       }
 
+      console.log('📄 pdfDoc generated:', pdfDoc ? 'YES' : 'NO');
+
       if (!pdfDoc) {
         showToast('No se pudo generar el documento', 'error');
         return;
       }
 
       // Crear modal para mostrar el PDF
+      console.log('📄 Getting PDF Data URL...');
       const pdfDataUrl = pdfService.getPDFDataURL(pdfDoc);
+      console.log('📄 PDF Data URL:', pdfDataUrl ? 'Generated' : 'FAILED');
 
       const previewModal = document.createElement('div');
       previewModal.className = 'pdf-preview-modal';
