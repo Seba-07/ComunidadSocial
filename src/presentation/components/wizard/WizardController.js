@@ -848,40 +848,32 @@ export class WizardController {
    * Valida paso 3: Configuración de Estatutos
    */
   validateStep3_ConfigEstatutos() {
-    const mesAsamblea1 = document.getElementById('config-mes-asamblea-1')?.value;
-    const mesAsamblea2 = document.getElementById('config-mes-asamblea-2')?.value;
-    const mesInforme = document.getElementById('config-mes-informe')?.value;
-    const mesEleccion = document.getElementById('config-mes-eleccion')?.value;
+    try {
+      // Los selects tienen valores por defecto, solo guardamos los datos
+      const mesAsamblea1 = document.getElementById('config-mes-asamblea-1')?.value || 'Marzo';
+      const mesAsamblea2 = document.getElementById('config-mes-asamblea-2')?.value || 'Noviembre';
+      const mesInforme = document.getElementById('config-mes-informe')?.value || 'Marzo';
+      const mesEleccion = document.getElementById('config-mes-eleccion')?.value || 'Marzo';
 
-    if (!mesAsamblea1 || !mesAsamblea2) {
-      showToast('Debe seleccionar los meses de asambleas ordinarias', 'error');
+      // Guardar configuración de estatutos en formData
+      this.formData.configEstatutos = {
+        mesAsamblea1: mesAsamblea1,
+        mesAsamblea2: mesAsamblea2,
+        mesInforme: mesInforme,
+        mesEleccion: mesEleccion,
+        cuotaIncMin: document.getElementById('config-cuota-inc-min')?.value || '0.1',
+        cuotaIncMax: document.getElementById('config-cuota-inc-max')?.value || '0.5',
+        cuotaOrdMin: document.getElementById('config-cuota-ord-min')?.value || '0.25',
+        cuotaOrdMax: document.getElementById('config-cuota-ord-max')?.value || '0.5',
+        entidadDisolucion: document.getElementById('config-entidad-disolucion')?.value || 'Corporación Municipal de Renca'
+      };
+
+      return true;
+    } catch (error) {
+      console.error('Error en validateStep3_ConfigEstatutos:', error);
+      showToast('Error al validar configuración de estatutos', 'error');
       return false;
     }
-
-    if (!mesInforme) {
-      showToast('Debe seleccionar el mes para informe de comisión', 'error');
-      return false;
-    }
-
-    if (!mesEleccion) {
-      showToast('Debe seleccionar el mes de elección del directorio', 'error');
-      return false;
-    }
-
-    // Guardar configuración de estatutos en formData
-    this.formData.configEstatutos = {
-      mesAsamblea1: mesAsamblea1,
-      mesAsamblea2: mesAsamblea2,
-      mesInforme: mesInforme,
-      mesEleccion: mesEleccion,
-      cuotaIncMin: document.getElementById('config-cuota-inc-min')?.value || '0.1',
-      cuotaIncMax: document.getElementById('config-cuota-inc-max')?.value || '0.5',
-      cuotaOrdMin: document.getElementById('config-cuota-ord-min')?.value || '0.25',
-      cuotaOrdMax: document.getElementById('config-cuota-ord-max')?.value || '0.5',
-      entidadDisolucion: document.getElementById('config-entidad-disolucion')?.value || 'Corporación Municipal de Renca'
-    };
-
-    return true;
   }
 
   /**
@@ -1032,20 +1024,24 @@ export class WizardController {
         // Los miembros se guardan en tiempo real
         break;
       case 3:
-        this.saveStep3();
+        // Config Estatutos - ya guardado en validación
         break;
       case 4:
-        // FASE 3: Paso 4 ahora es Firmas (se guardan en tiempo real)
+        // Estatutos
+        await this.saveStep4_Estatutos();
         break;
       case 5:
-        // FASE 3: Paso 5 ahora es Estatutos
-        await this.saveStep5_Estatutos();
+        // Comisión Electoral - guardar fecha de elección
+        this.saveStep5_Comision();
         break;
       case 6:
-        // Los documentos se guardan en tiempo real
+        // Firmas - se guardan en tiempo real
         break;
       case 7:
-        // Paso de revisión, no hay nada que guardar
+        // Documentos - se guardan en tiempo real
+        break;
+      case 8:
+        // Revisión - nada que guardar
         break;
     }
   }
@@ -1074,17 +1070,19 @@ export class WizardController {
   }
 
   /**
-   * Guarda datos del paso 3
+   * Guarda datos del paso 5: Comisión Electoral
    */
-  saveStep3() {
-    const electionDate = document.getElementById('election-date').value;
-    this.formData.commission.electionDate = electionDate;
+  saveStep5_Comision() {
+    const electionDate = document.getElementById('election-date')?.value;
+    if (electionDate) {
+      this.formData.commission.electionDate = electionDate;
+    }
   }
 
   /**
-   * FASE 3: Guarda datos del paso 5: Estatutos (antes era paso 4)
+   * Guarda datos del paso 4: Estatutos
    */
-  async saveStep5_Estatutos() {
+  async saveStep4_Estatutos() {
     const statutesOption = document.querySelector('input[name="statutes-option"]:checked').value;
 
     if (statutesOption === 'template') {
