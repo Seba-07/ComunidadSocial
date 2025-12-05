@@ -37,15 +37,15 @@ export function getWizardHTML() {
             </div>
             <div class="wizard-step" data-step="3">
               <div class="step-number">3</div>
-              <div class="step-label">Comisión</div>
+              <div class="step-label">Estatutos</div>
             </div>
             <div class="wizard-step" data-step="4">
               <div class="step-number">4</div>
-              <div class="step-label">Firmas</div>
+              <div class="step-label">Comisión</div>
             </div>
             <div class="wizard-step" data-step="5">
               <div class="step-number">5</div>
-              <div class="step-label">Estatutos</div>
+              <div class="step-label">Firmas</div>
             </div>
             <div class="wizard-step" data-step="6">
               <div class="step-number">6</div>
@@ -62,9 +62,9 @@ export function getWizardHTML() {
         <div class="wizard-content">
           ${getStep1HTML()}
           ${getStep2HTML()}
-          ${getStep3HTML()}
-          ${getStep4HTML_Firmas()}
-          ${getStep5HTML_Estatutos()}
+          ${getStep3HTML_Estatutos()}
+          ${getStep4HTML_Comision()}
+          ${getStep5HTML_Firmas()}
           ${getStep6HTML()}
           ${getStep7HTML()}
         </div>
@@ -308,10 +308,10 @@ function getStep2HTML() {
   `;
 }
 
-function getStep3HTML() {
+function getStep4HTML_Comision() {
   return `
-    <div class="wizard-step-content" id="step-3">
-      <h3>Paso 3: Comisión Electoral</h3>
+    <div class="wizard-step-content" id="step-4">
+      <h3>Paso 4: Comisión Electoral</h3>
       <p class="step-description">Verificación de la Comisión Electoral designada en la Asamblea Constitutiva.</p>
 
       <div class="info-box info-box-success mb-4">
@@ -348,11 +348,11 @@ function getStep3HTML() {
   `;
 }
 
-function getStep5HTML_Estatutos() {
+function getStep3HTML_Estatutos() {
   return `
-    <div class="wizard-step-content" id="step-5">
-      <h3>Paso 5: Estatutos de la Organización</h3>
-      <p class="step-description">Revise y edite los estatutos que regirán su organización según la Ley 19.418.</p>
+    <div class="wizard-step-content" id="step-3">
+      <h3>Paso 3: Estatutos de la Organización</h3>
+      <p class="step-description">Revise los estatutos tipo que regirán su organización según la Ley 19.418. Estos estatutos serán presentados al Ministro de Fe en la Asamblea Constitutiva.</p>
 
       <div class="statutes-options-row">
         <div class="form-group">
@@ -427,10 +427,10 @@ function getStep5HTML_Estatutos() {
   `;
 }
 
-function getStep4HTML_Firmas() {
+function getStep5HTML_Firmas() {
   return `
-    <div class="wizard-step-content" id="step-4">
-      <h3>Paso 4: Firmas de la Comisión Electoral</h3>
+    <div class="wizard-step-content" id="step-5">
+      <h3>Paso 5: Firmas de la Comisión Electoral</h3>
       <p class="step-description">Verificación de las firmas recolectadas durante la Asamblea Constitutiva.</p>
 
       <div class="info-box info-box-success mb-4">

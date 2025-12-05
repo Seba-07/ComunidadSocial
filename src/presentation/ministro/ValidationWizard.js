@@ -666,6 +666,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     `;
   };
 
+  // Extraer estatutos de la organización
+  const estatutosOrg = org?.estatutos || orgData.estatutos || null;
+
   // PASO 5: Confirmación
   const renderStep5_Confirmar = () => {
     const dir = wizardData.directorio;
@@ -676,7 +679,39 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     return `
       <div style="margin-bottom: 20px;">
         <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 5: Confirmación y Firma del Ministro de Fe</h3>
-        <p style="margin: 0; color: #6b7280; font-size: 14px;">Revisa el resumen y firma para completar la validación.</p>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">Revisa el resumen, los estatutos definitivos y firma para completar la validación.</p>
+      </div>
+
+      <!-- Estatutos de la Organización -->
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4 style="margin: 0; color: #92400e; font-size: 16px; display: flex; align-items: center; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            📜 Estatutos de la Organización
+          </h4>
+          <button type="button" id="btn-view-estatutos" style="padding: 10px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Ver Estatutos Definitivos
+          </button>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 12px; font-size: 13px; color: #78350f;">
+          <p style="margin: 0 0 8px;"><strong>Importante:</strong> Los estatutos definitivos incluyen:</p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>Datos de la organización (Paso 1)</li>
+            <li>Listado de miembros fundadores (Paso 2)</li>
+            <li>Directorio Provisorio: ${dir.president?.name || 'Pendiente'} (Presidente), ${dir.secretary?.name || 'Pendiente'} (Secretario), ${dir.treasurer?.name || 'Pendiente'} (Tesorero)</li>
+            <li>Comisión Electoral: ${com.length > 0 ? com.map(m => m?.name || '-').join(', ') : 'Pendiente'}</li>
+          </ul>
+          <p style="margin: 12px 0 0; font-style: italic;">Debes revisar que los estatutos estén completos y correctos antes de firmar.</p>
+        </div>
       </div>
 
       <!-- Resumen -->
@@ -928,7 +963,137 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         });
       });
     }
+
+    if (currentStep === 5) {
+      // Botón para ver estatutos definitivos
+      modal.querySelector('#btn-view-estatutos')?.addEventListener('click', () => {
+        showEstatutosModal();
+      });
+    }
   };
+
+  // Mostrar modal con estatutos definitivos
+  const showEstatutosModal = () => {
+    const dir = wizardData.directorio;
+    const com = wizardData.comisionElectoral;
+
+    // Generar contenido de estatutos con datos definitivos
+    const estatutosContent = estatutosOrg?.contenido || generateDefaultEstatutos();
+
+    const estatutosModal = document.createElement('div');
+    estatutosModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200000; padding: 20px; box-sizing: border-box;';
+
+    estatutosModal.innerHTML = `
+      <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">📜 Estatutos Definitivos</h3>
+            <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">${orgName}</p>
+          </div>
+          <button type="button" class="btn-close-estatutos" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div style="padding: 20px; background: #fef3c7; border-bottom: 1px solid #f59e0b;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+              <strong style="color: #92400e; font-size: 12px;">DIRECTORIO PROVISORIO</strong>
+              <p style="margin: 4px 0 0; font-size: 13px; color: #78350f;">
+                Presidente: ${dir.president?.name || 'Pendiente'}<br>
+                Secretario: ${dir.secretary?.name || 'Pendiente'}<br>
+                Tesorero: ${dir.treasurer?.name || 'Pendiente'}
+              </p>
+            </div>
+            <div>
+              <strong style="color: #92400e; font-size: 12px;">COMISIÓN ELECTORAL</strong>
+              <p style="margin: 4px 0 0; font-size: 13px; color: #78350f;">
+                ${com.length > 0 ? com.map((m, i) => `${i + 1}. ${m?.name || '-'}`).join('<br>') : 'Pendiente'}
+              </p>
+            </div>
+            <div>
+              <strong style="color: #92400e; font-size: 12px;">TIPO DE ORGANIZACIÓN</strong>
+              <p style="margin: 4px 0 0; font-size: 13px; color: #78350f;">${orgType === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Funcional'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding: 20px;">
+          <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; font-size: 14px; line-height: 1.8; color: #1f2937;">
+            ${estatutosContent}
+          </div>
+        </div>
+
+        <div style="padding: 16px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn-close-estatutos" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(estatutosModal);
+
+    estatutosModal.querySelectorAll('.btn-close-estatutos').forEach(btn => {
+      btn.addEventListener('click', () => estatutosModal.remove());
+    });
+
+    estatutosModal.addEventListener('click', (e) => {
+      if (e.target === estatutosModal) estatutosModal.remove();
+    });
+  };
+
+  // Generar estatutos por defecto si no hay
+  const generateDefaultEstatutos = () => {
+    const dir = wizardData.directorio;
+    const com = wizardData.comisionElectoral;
+
+    return `ESTATUTOS DE LA ORGANIZACIÓN
+
+${orgName.toUpperCase()}
+
+TÍTULO I: DENOMINACIÓN, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese la organización comunitaria denominada "${orgName}", con domicilio en la comuna de Renca, Región Metropolitana de Santiago.
+
+Artículo 2°: La organización tendrá duración indefinida.
+
+TÍTULO II: FINALIDADES Y OBJETIVOS
+
+Artículo 3°: La organización tiene como objetivo principal promover la integración, participación y desarrollo de la comunidad, así como la defensa de los intereses y derechos de sus asociados.
+
+TÍTULO III: DE LOS SOCIOS
+
+Artículo 4°: Podrán ser socios todas las personas naturales mayores de 14 años que residan en el territorio de la organización y que manifiesten su voluntad de pertenecer a ella.
+
+Artículo 5°: Son derechos de los socios:
+a) Participar con derecho a voz y voto en las asambleas
+b) Elegir y ser elegidos para cargos directivos
+c) Presentar proyectos e iniciativas
+
+TÍTULO IV: DEL DIRECTORIO
+
+Artículo 6°: El Directorio estará compuesto por:
+- Presidente: ${dir.president?.name || '[Por designar]'}
+- Secretario: ${dir.secretary?.name || '[Por designar]'}
+- Tesorero: ${dir.treasurer?.name || '[Por designar]'}
+
+TÍTULO V: DE LA COMISIÓN ELECTORAL
+
+Artículo 7°: La Comisión Electoral estará compuesta por tres miembros:
+${com.length > 0 ? com.map((m, i) => `${i + 1}. ${m?.name || '[Por designar]'}`).join('\n') : '1. [Por designar]\n2. [Por designar]\n3. [Por designar]'}
+
+TÍTULO VI: DISPOSICIONES FINALES
+
+Artículo 8°: Estos estatutos podrán ser modificados en Asamblea Extraordinaria, con la aprobación de al menos 2/3 de los socios presentes.
+
+---
+Estatutos aprobados en Asamblea Constitutiva
+Validados por Ministro de Fe de la Municipalidad de Renca`;
+  }
 
   // Actualizar IDs seleccionados (incluye datos guardados y DOM actual)
   const updateSelectedIds = () => {

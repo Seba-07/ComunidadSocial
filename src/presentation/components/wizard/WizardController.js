@@ -636,8 +636,9 @@ export class WizardController {
     // Guardar datos del paso actual
     await this.saveCurrentStep();
 
-    // FASE 2: Interceptar después del paso 2 para solicitar Ministro de Fe
-    if (this.currentStep === 2 && !this.formData.ministroApproved) {
+    // FASE 2: Interceptar después del paso 3 (Estatutos) para solicitar Ministro de Fe
+    // El usuario debe revisar los estatutos antes de agendar la asamblea con el Ministro
+    if (this.currentStep === 3 && !this.formData.ministroApproved) {
       await this.showMinistroRequestScreen();
       return;
     }
@@ -747,11 +748,11 @@ export class WizardController {
       case 2:
         return this.validateStep2();
       case 3:
-        return this.validateStep3();
+        return this.validateStep3_Estatutos(); // Estatutos ahora es paso 3
       case 4:
-        return this.validateStep4_Firmas(); // FASE 3: Firmas ahora es paso 4
+        return this.validateStep4_Comision(); // Comisión ahora es paso 4
       case 5:
-        return this.validateStep5_Estatutos(); // FASE 3: Estatutos ahora es paso 5
+        return this.validateStep5_Firmas(); // Firmas ahora es paso 5
       case 6:
         return this.validateStep6(); // Documentos
       case 7:
@@ -799,9 +800,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 3: Comisión Electoral
+   * Valida paso 4: Comisión Electoral
    */
-  validateStep3() {
+  validateStep4_Comision() {
     const electionDate = document.getElementById('election-date').value;
 
     if (!electionDate) {
@@ -818,16 +819,16 @@ export class WizardController {
   }
 
   /**
-   * FASE 3: Valida paso 4: Firmas (antes era paso 5)
+   * Valida paso 5: Firmas
    */
-  validateStep4_Firmas() {
+  validateStep5_Firmas() {
     // Verificar que todos los miembros de la comisión hayan firmado
     const commission = this.formData.commission.members || [];
     const signatures = this.formData.signatures || {};
     const signedCount = commission.filter(m => signatures[m.id]).length;
 
     if (commission.length === 0) {
-      showToast('No hay miembros de comisión. Vuelva al Paso 3.', 'error');
+      showToast('No hay miembros de comisión. Vuelva al Paso 4.', 'error');
       return false;
     }
 
@@ -841,10 +842,10 @@ export class WizardController {
   }
 
   /**
-   * FASE 3: Valida paso 5: Estatutos (antes era paso 4)
+   * Valida paso 3: Estatutos (antes de solicitar Ministro de Fe)
    */
-  validateStep5_Estatutos() {
-    const statutesOption = document.querySelector('input[name="statutes-option"]:checked').value;
+  validateStep3_Estatutos() {
+    const statutesOption = document.querySelector('input[name="statutes-option"]:checked')?.value;
 
     if (statutesOption === 'custom') {
       const fileInput = document.getElementById('custom-statutes-file');
@@ -852,16 +853,20 @@ export class WizardController {
         showToast('Debe cargar un archivo de estatutos', 'error');
         return false;
       }
-    }
-
-    // Si hay firmas manuales, verificar que se haya subido el documento
-    for (const member of commission) {
-      const sig = signatures[member.id];
-      if (sig && sig.type === 'manual' && !sig.documentUploaded) {
-        showToast(`${member.firstName} ${member.lastName} eligió firma manual pero no ha subido el documento firmado.`, 'error');
+    } else {
+      // Verificar que hay contenido en los estatutos generados
+      const statutesContent = document.getElementById('statutes-editor')?.value;
+      if (!statutesContent || statutesContent.trim().length < 100) {
+        showToast('Los estatutos deben tener contenido válido', 'error');
         return false;
       }
     }
+
+    // Guardar los estatutos en formData
+    this.formData.estatutos = {
+      tipo: statutesOption || 'template',
+      contenido: document.getElementById('statutes-editor')?.value || ''
+    };
 
     return true;
   }
@@ -1098,13 +1103,13 @@ export class WizardController {
         this.initializeStep2();
         break;
       case 3:
-        this.initializeStep3();
+        this.initializeStep3_Estatutos(); // Estatutos ahora es paso 3
         break;
       case 4:
-        this.initializeStep4_Firmas(); // FASE 3: Firmas ahora es paso 4
+        this.initializeStep4_Comision(); // Comisión ahora es paso 4
         break;
       case 5:
-        this.initializeStep5_Estatutos(); // FASE 3: Estatutos ahora es paso 5
+        this.initializeStep5_Firmas(); // Firmas ahora es paso 5
         break;
       case 6:
         this.initializeStep6(); // Documentos
@@ -1810,9 +1815,9 @@ export class WizardController {
   }
 
   /**
-   * Inicializa paso 3: Comisión Electoral (solo visualización)
+   * Inicializa paso 4: Comisión Electoral (solo visualización)
    */
-  initializeStep3() {
+  initializeStep4_Comision() {
     this.renderCommissionListReadOnly();
     this.renderElectionDateDisplay();
   }
@@ -2065,9 +2070,9 @@ export class WizardController {
   }
 
   /**
-   * FASE 3: Inicializa paso 5: Estatutos (antes era paso 4)
+   * Inicializa paso 3: Estatutos (antes de solicitar Ministro de Fe)
    */
-  initializeStep5_Estatutos() {
+  initializeStep3_Estatutos() {
     // Alternar entre plantilla y custom
     const radioButtons = document.querySelectorAll('input[name="statutes-option"]');
 
@@ -2901,9 +2906,9 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
-   * FASE 3: Inicializa paso 4: Firmas (solo visualización)
+   * Inicializa paso 5: Firmas (solo visualización)
    */
-  initializeStep4_Firmas() {
+  initializeStep5_Firmas() {
     // Renderizar lista de firmas en modo lectura
     this.renderSignaturesListReadOnly();
   }
