@@ -123,7 +123,10 @@ class ApiService {
     const data = await this.post('/auth/login', { email, password });
     if (data.token) {
       this.setToken(data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      // Solo guardar en currentUser si NO es ministro (los ministros usan currentMinistro)
+      if (data.user && data.user.role !== 'MINISTRO') {
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+      }
     }
     return data;
   }

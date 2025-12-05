@@ -152,34 +152,19 @@ loginForm.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
 
   try {
-    let user = null;
-    let isMinistro = false;
-
-    // Primero intentar login como usuario/admin
-    try {
-      const result = await apiService.login(email, password);
-      user = result.user;
-      console.log('✅ Login successful as USER/ADMIN:', user);
-    } catch (userError) {
-      console.log('User login failed, trying ministro...', userError.message);
-
-      // Si falla, intentar como ministro
-      try {
-        const result = await apiService.loginMinistro(email, password);
-        user = result.ministro;
-        isMinistro = true;
-        console.log('✅ Login successful as MINISTRO:', user);
-      } catch (ministroError) {
-        throw new Error('Credenciales inválidas');
-      }
-    }
+    const result = await apiService.login(email, password);
+    const user = result.user;
 
     if (!user) {
       throw new Error('Error de autenticación');
     }
 
-    // Redirigir según el tipo de usuario
-    if (isMinistro) {
+    console.log('✅ Login successful:', user);
+
+    // Redirigir según el rol del usuario
+    if (user.role === 'MINISTRO') {
+      // Es un ministro de fe - guardar en currentMinistro y redirigir al dashboard de ministro
+      localStorage.removeItem('currentUser'); // Limpiar por si acaso
       localStorage.setItem('currentMinistro', JSON.stringify(user));
       localStorage.setItem('isMinistroAuthenticated', 'true');
 
@@ -194,8 +179,17 @@ loginForm.addEventListener('submit', async (e) => {
           window.location.href = '/ministro-dashboard.html';
         }, 500);
       }
+    } else if (user.role === 'ADMIN') {
+      // Es un admin - redirigir al panel de admin
+      localStorage.setItem('isAuthenticated', 'true');
+
+      showToast(`¡Bienvenido Administrador ${user.firstName || 'Admin'}!`, 'success');
+
+      setTimeout(() => {
+        window.location.href = '/?admin=true';
+      }, 500);
     } else {
-      // El token ya se guarda en apiService.login()
+      // Es un usuario normal
       localStorage.setItem('isAuthenticated', 'true');
 
       showToast(`¡Bienvenido ${user.firstName || user.profile?.firstName || 'Usuario'}!`, 'success');
