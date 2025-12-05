@@ -15252,3 +15252,321 @@ a.header-logo:hover {
         font-size: 0.75rem;
     }
 }
+
+/* ============================================
+   MODAL SOLICITUD MINISTRO DE FE - MEJORADO
+   ============================================ */
+
+.ministro-modal-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .ministro-modal-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Columna izquierda - Info del solicitante */
+.ministro-info-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Columna derecha - Formulario */
+.ministro-form-column {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Tarjeta de información compacta */
+.ministro-info-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.ministro-info-card-header {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ministro-info-card-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.ministro-info-card-header svg {
+    width: 18px;
+    height: 18px;
+    color: #64748b;
+}
+
+.ministro-info-card-body {
+    padding: 16px;
+}
+
+/* Grid de datos dentro de tarjeta */
+.ministro-data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.ministro-data-grid.single-col {
+    grid-template-columns: 1fr;
+}
+
+.ministro-data-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ministro-data-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.ministro-data-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ministro-data-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.ministro-data-value.highlight {
+    color: #2563eb;
+}
+
+.ministro-data-value.muted {
+    color: #94a3b8;
+    font-weight: 400;
+    font-style: italic;
+}
+
+/* Tarjeta destacada para solicitud */
+.ministro-request-highlight {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #3b82f6 !important;
+}
+
+.ministro-request-highlight .ministro-info-card-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-bottom-color: #2563eb;
+}
+
+.ministro-request-highlight .ministro-info-card-header h4 {
+    color: white;
+}
+
+.ministro-request-highlight .ministro-info-card-header svg {
+    color: white;
+}
+
+/* Contacto del usuario con ambos datos */
+.ministro-contact-row {
+    display: flex;
+    gap: 16px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.ministro-contact-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ministro-contact-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ministro-contact-icon.phone {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.ministro-contact-icon.email {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.ministro-contact-icon.preferred {
+    box-shadow: 0 0 0 2px #fbbf24;
+}
+
+.ministro-contact-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.ministro-contact-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.ministro-contact-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badge de preferencia */
+.contact-pref-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Comentarios del usuario */
+.ministro-comments-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+}
+
+.ministro-comments-box p {
+    margin: 0;
+    font-size: 13px;
+    color: #78350f;
+    line-height: 1.5;
+}
+
+/* Opciones de ubicación mejoradas */
+.location-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.location-option-card:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.location-option-card.selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.location-option-card input[type="radio"] {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    accent-color: #3b82f6;
+}
+
+.location-option-content {
+    flex: 1;
+}
+
+.location-option-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.location-option-address {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.location-option-card.selected .location-option-title {
+    color: #1e40af;
+}
+
+.location-option-card.selected .location-option-address {
+    color: #3b82f6;
+}
+
+/* Formulario dentro del modal */
+.ministro-form-section h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 16px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.ministro-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ministro-form-row.single {
+    grid-template-columns: 1fr;
+}
+
+/* Alerta de acción requerida */
+.ministro-action-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.ministro-action-alert svg {
+    width: 24px;
+    height: 24px;
+    color: #d97706;
+    flex-shrink: 0;
+}
+
+.ministro-action-alert p {
+    margin: 0;
+    font-size: 13px;
+    color: #92400e;
+    font-weight: 500;
+}

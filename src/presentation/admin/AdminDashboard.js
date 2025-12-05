@@ -2631,20 +2631,22 @@ class AdminDashboard {
       }
     }
 
-    // Preferencia de contacto - buscar en el primer miembro (presidente) o en org
-    const president = org.members?.find(m => m.role === 'president') || org.members?.[0];
-    const contactPhone = president?.phone || org.phone || org.organization?.phone;
-    const contactEmail = president?.email || org.email || org.organization?.email;
-    const contactPref = org.contactPreference || org.organization?.contactPreference || 'phone';
+    // Preferencia de contacto - usar los campos contactPhone y contactEmail de la organización
+    const contactPhone = org.contactPhone || org.phone || '';
+    const contactEmail = org.contactEmail || org.email || '';
+    const contactPref = org.contactPreference || 'phone';
     const contactLabel = contactPref === 'email' ? 'Correo Electrónico' : 'Teléfono';
     const contactValue = contactPref === 'email' ? contactEmail : contactPhone;
 
+    // Dirección de la organización
+    const orgAddress = org.address || '';
+
     modal.innerHTML = `
       <div class="admin-review-modal ministro-request-modal">
-        <div class="review-modal-header" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%);">
+        <div class="review-modal-header" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
           <div class="review-header-left">
-            <h2 style="color: #ff9800;">📝 Solicitud de Ministro de Fe</h2>
-            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${getOrgName(org)}</p>
+            <h2 style="color: white;">Solicitud de Ministro de Fe</h2>
+            <p style="margin: 4px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">${getOrgName(org)}</p>
           </div>
           <button class="review-close-btn ministro-close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2655,155 +2657,209 @@ class AdminDashboard {
         </div>
 
         <div class="review-modal-body" style="padding: 24px;">
-          <!-- Sección destacada: Solicitud del Usuario -->
-          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <h3 style="margin: 0 0 16px 0; color: #1e40af; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
-              </svg>
-              Solicitud del Usuario
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">📅 Fecha Solicitada</span>
-                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${formattedUserDate}</p>
+          <div class="ministro-modal-content">
+            <!-- COLUMNA IZQUIERDA: Información -->
+            <div class="ministro-info-column">
+
+              <!-- Tarjeta: Solicitud del Usuario -->
+              <div class="ministro-info-card ministro-request-highlight">
+                <div class="ministro-info-card-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                  </svg>
+                  <h4>Solicitud del Usuario</h4>
+                </div>
+                <div class="ministro-info-card-body">
+                  <div class="ministro-data-grid">
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Fecha Solicitada</span>
+                      <span class="ministro-data-value highlight">${formattedUserDate}</span>
+                    </div>
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Hora Solicitada</span>
+                      <span class="ministro-data-value ${org.electionTime ? 'highlight' : 'muted'}">${org.electionTime || 'No especificada'}</span>
+                    </div>
+                    <div class="ministro-data-item full-width">
+                      <span class="ministro-data-label">Dirección para Asamblea</span>
+                      <span class="ministro-data-value ${org.assemblyAddress ? '' : 'muted'}">${org.assemblyAddress || 'No especificada'}</span>
+                    </div>
+                  </div>
+
+                  <!-- Datos de contacto del usuario -->
+                  <div class="ministro-contact-row">
+                    <div class="ministro-contact-item">
+                      <div class="ministro-contact-icon phone ${contactPref === 'phone' ? 'preferred' : ''}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                      </div>
+                      <div class="ministro-contact-details">
+                        <span class="ministro-contact-label">Teléfono ${contactPref === 'phone' ? '<span class="contact-pref-badge">Preferido</span>' : ''}</span>
+                        <span class="ministro-contact-value">${contactPhone || 'No disponible'}</span>
+                      </div>
+                    </div>
+                    <div class="ministro-contact-item">
+                      <div class="ministro-contact-icon email ${contactPref === 'email' ? 'preferred' : ''}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                          <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                      </div>
+                      <div class="ministro-contact-details">
+                        <span class="ministro-contact-label">Correo ${contactPref === 'email' ? '<span class="contact-pref-badge">Preferido</span>' : ''}</span>
+                        <span class="ministro-contact-value">${contactEmail || 'No disponible'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  ${org.comments ? `
+                    <div class="ministro-comments-box">
+                      <p><strong>Comentarios:</strong> ${org.comments}</p>
+                    </div>
+                  ` : ''}
+                </div>
               </div>
-              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">🕐 Hora Solicitada</span>
-                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${org.electionTime || 'No especificada'}</p>
-              </div>
-              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); grid-column: 1 / -1;">
-                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">📍 Dirección Solicitada para Asamblea</span>
-                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${org.assemblyAddress || 'No especificada'}</p>
-              </div>
-              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); grid-column: 1 / -1;">
-                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">${contactPref === 'email' ? '📧' : '📞'} Preferencia de Contacto</span>
-                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${contactLabel}: ${contactValue || 'No especificado'}</p>
+
+              <!-- Tarjeta: Información de la Organización -->
+              <div class="ministro-info-card">
+                <div class="ministro-info-card-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                  <h4>Datos de la Organización</h4>
+                </div>
+                <div class="ministro-info-card-body">
+                  <div class="ministro-data-grid">
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Tipo</span>
+                      <span class="ministro-data-value">${getOrgTypeName(getOrgType(org))}</span>
+                    </div>
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Comuna</span>
+                      <span class="ministro-data-value">${getOrgComuna(org)}</span>
+                    </div>
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Miembros Fundadores</span>
+                      <span class="ministro-data-value">${org.members?.length || 0} personas</span>
+                    </div>
+                    <div class="ministro-data-item">
+                      <span class="ministro-data-label">Dirección Sede</span>
+                      <span class="ministro-data-value ${orgAddress ? '' : 'muted'}">${orgAddress || 'No especificada'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            ${org.comments ? `
-              <div style="margin-top: 16px; padding: 14px; background: white; border-radius: 8px; border-left: 3px solid #3b82f6;">
-                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">💬 Comentarios del Usuario</span>
-                <p style="margin: 6px 0 0; color: #334155; font-size: 14px;">${org.comments}</p>
-              </div>
-            ` : ''}
+
+            <!-- COLUMNA DERECHA: Formulario -->
+            <div class="ministro-form-column">
+              ${isWaiting ? `
+                <div class="ministro-action-alert">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <p>Asigna un Ministro de Fe para la asamblea constitutiva</p>
+                </div>
+
+                <form id="schedule-ministro-form" class="ministro-form-section">
+                  <h4>Agendar Ministro de Fe</h4>
+
+                  <div class="ministro-form-row">
+                    <div class="form-group">
+                      <label>Fecha <span class="required">*</span></label>
+                      <input type="date" name="scheduledDate" required
+                        value="${electionDateForInput}"
+                        min="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                      <label>Hora <span class="required">*</span></label>
+                      <select name="scheduledTime" required class="input-styled">
+                        <option value="">Seleccionar...</option>
+                        ${(() => {
+                          const baseHours = ministroAvailabilityService.getAvailableHours();
+                          const userTime = org.electionTime || '';
+                          const allHours = userTime && !baseHours.includes(userTime)
+                            ? [...baseHours, userTime].sort()
+                            : baseHours;
+                          return allHours.map(hour => `
+                            <option value="${hour}" ${hour === userTime ? 'selected' : ''}>
+                              ${hour}${hour === userTime && !baseHours.includes(hour) ? ' (solicitado)' : ''}
+                            </option>
+                          `).join('');
+                        })()}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="ministro-form-row single">
+                    <div class="form-group">
+                      <label>Ministro de Fe <span class="required">*</span></label>
+                      <select name="ministroId" id="ministro-select" required class="input-styled">
+                        <option value="">-- Selecciona fecha y hora primero --</option>
+                      </select>
+                      <p id="ministro-availability-warning" style="color: #f59e0b; font-size: 12px; margin-top: 6px; display: none;">
+                        Los ministros listados están disponibles para la fecha/hora seleccionada
+                      </p>
+                      ${ministroService.getActive().length === 0 ? `
+                        <p style="color: #ef4444; font-size: 12px; margin-top: 6px;">
+                          No hay Ministros de Fe activos. Agrega uno en "Gestionar Ministros de Fe".
+                        </p>
+                      ` : ''}
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Lugar de la Reunión <span class="required">*</span></label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;" id="location-options-container"
+                         data-user-address="${org.assemblyAddress || ''}"
+                         data-org-address="${orgAddress}"
+                         data-muni-address="Blanco Encalada 1335, Renca">
+                      <label class="location-option-card ${org.assemblyAddress ? 'selected' : ''}">
+                        <input type="radio" name="locationOption" value="user" ${org.assemblyAddress ? 'checked' : ''}>
+                        <div class="location-option-content">
+                          <div class="location-option-title">Dirección del usuario</div>
+                          <div class="location-option-address">${org.assemblyAddress || 'No especificada'}</div>
+                        </div>
+                      </label>
+                      <label class="location-option-card ${!org.assemblyAddress && orgAddress ? 'selected' : ''}">
+                        <input type="radio" name="locationOption" value="org" ${!org.assemblyAddress && orgAddress ? 'checked' : ''}>
+                        <div class="location-option-content">
+                          <div class="location-option-title">Sede de la organización</div>
+                          <div class="location-option-address">${orgAddress || 'No especificada'}</div>
+                        </div>
+                      </label>
+                      <label class="location-option-card">
+                        <input type="radio" name="locationOption" value="muni">
+                        <div class="location-option-content">
+                          <div class="location-option-title">Municipalidad de Renca</div>
+                          <div class="location-option-address">Blanco Encalada 1335, Renca</div>
+                        </div>
+                      </label>
+                      <label class="location-option-card">
+                        <input type="radio" name="locationOption" value="custom">
+                        <div class="location-option-content">
+                          <div class="location-option-title">Otra dirección</div>
+                          <input type="text" id="custom-location-input" placeholder="Escriba la dirección..."
+                            style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 6px; display: none;"
+                            disabled>
+                        </div>
+                      </label>
+                    </div>
+                    <input type="hidden" name="location" id="final-location" value="${org.assemblyAddress || orgAddress || ''}" required>
+                  </div>
+
+                  <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary ministro-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agendar Ministro</button>
+                  </div>
+                </form>
+              ` : ''}
+            </div>
           </div>
-
-          <!-- Información de la Organización -->
-          <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
-            <h3 style="margin: 0 0 12px 0; color: #1f2937; font-size: 16px;">Información de la Organización</h3>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; color: #4b5563; font-size: 14px;">
-              <div><strong>Tipo:</strong> ${getOrgTypeName(getOrgType(org))}</div>
-              <div><strong>Comuna:</strong> ${getOrgComuna(org)}</div>
-              <div><strong>Miembros Fundadores:</strong> ${org.members?.length || 0}</div>
-              <div><strong>Dirección Organización:</strong> ${getOrgAddress(org) || 'No especificada'}</div>
-            </div>
-          </div>
-
-          ${isWaiting ? `
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-              <h3 style="margin: 0 0 8px 0; color: #1e40af; font-size: 16px;">Acción Requerida</h3>
-              <p style="margin: 0; color: #3b82f6; font-size: 14px;">
-                Esta organización requiere que se asigne un <strong>Ministro de Fe</strong> para la asamblea de constitución.
-              </p>
-            </div>
-
-            <form id="schedule-ministro-form">
-              <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px;">Agendar Ministro de Fe</h3>
-
-              <div class="form-group">
-                <label>Seleccionar Ministro de Fe <span class="required">*</span></label>
-                <select name="ministroId" id="ministro-select" required class="input-styled">
-                  <option value="">-- Selecciona fecha y hora primero --</option>
-                </select>
-                <p id="ministro-availability-warning" style="color: #f59e0b; font-size: 13px; margin-top: 8px; display: none;">
-                  ℹ️ Los ministros listados están disponibles para la fecha/hora seleccionada
-                </p>
-                ${ministroService.getActive().length === 0 ? `
-                  <p style="color: #ef4444; font-size: 14px; margin-top: 8px;">
-                    ⚠️ No hay Ministros de Fe activos. Por favor, agrega uno en <strong>Gestionar Ministros de Fe</strong>.
-                  </p>
-                ` : ''}
-              </div>
-
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div class="form-group">
-                  <label>Fecha de la Asamblea <span class="required">*</span></label>
-                  <input type="date" name="scheduledDate" required
-                    value="${electionDateForInput}"
-                    min="${new Date().toISOString().split('T')[0]}">
-                </div>
-
-                <div class="form-group">
-                  <label>Hora <span class="required">*</span></label>
-                  <select name="scheduledTime" required class="input-styled">
-                    <option value="">-- Seleccionar Hora --</option>
-                    ${(() => {
-                      const baseHours = ministroAvailabilityService.getAvailableHours();
-                      const userTime = org.electionTime || '';
-                      // Include user's requested time if not already in the list
-                      const allHours = userTime && !baseHours.includes(userTime)
-                        ? [...baseHours, userTime].sort()
-                        : baseHours;
-                      return allHours.map(hour => `
-                        <option value="${hour}" ${hour === userTime ? 'selected' : ''}>
-                          ${hour}${hour === userTime && !baseHours.includes(hour) ? ' (solicitado)' : ''}
-                        </option>
-                      `).join('');
-                    })()}
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label>Lugar de la Reunión <span class="required">*</span></label>
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;" id="location-options-container"
-                     data-user-address="${org.assemblyAddress || ''}"
-                     data-org-address="${org.organization?.address || ''}"
-                     data-muni-address="Blanco Encalada 1335, Renca">
-                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
-                    <input type="radio" name="locationOption" value="user" style="width: 16px; height: 16px;" ${org.assemblyAddress ? 'checked' : ''}>
-                    <div style="flex: 1;">
-                      <strong style="display: block; color: #1f2937; font-size: 14px;">Dirección solicitada por usuario</strong>
-                      <span style="font-size: 13px; color: #6b7280;">${org.assemblyAddress || 'No especificada'}</span>
-                    </div>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
-                    <input type="radio" name="locationOption" value="org" style="width: 16px; height: 16px;" ${!org.assemblyAddress ? 'checked' : ''}>
-                    <div style="flex: 1;">
-                      <strong style="display: block; color: #1f2937; font-size: 14px;">Dirección de la organización</strong>
-                      <span style="font-size: 13px; color: #6b7280;">${org.organization?.address || 'No especificada'}</span>
-                    </div>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
-                    <input type="radio" name="locationOption" value="muni" style="width: 16px; height: 16px;">
-                    <div style="flex: 1;">
-                      <strong style="display: block; color: #1f2937; font-size: 14px;">Municipalidad de Renca</strong>
-                      <span style="font-size: 13px; color: #6b7280;">Blanco Encalada 1335, Renca</span>
-                    </div>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
-                    <input type="radio" name="locationOption" value="custom" style="width: 16px; height: 16px;">
-                    <div style="flex: 1;">
-                      <strong style="display: block; color: #1f2937; font-size: 14px;">Otra dirección</strong>
-                      <input type="text" id="custom-location-input" placeholder="Escriba la dirección..."
-                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 6px; display: none;"
-                        disabled>
-                    </div>
-                  </label>
-                </div>
-                <input type="hidden" name="location" id="final-location" value="${org.assemblyAddress || org.organization?.address || ''}" required>
-              </div>
-
-              <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary ministro-close">Cancelar</button>
-                <button type="submit" class="btn btn-primary">📅 Agendar Ministro de Fe</button>
-              </div>
-            </form>
-          ` : ''}
 
           ${isScheduled ? `
             <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
@@ -2967,27 +3023,25 @@ class AdminDashboard {
       const locationRadios = scheduleForm.querySelectorAll('input[name="locationOption"]');
       const customLocationInput = scheduleForm.querySelector('#custom-location-input');
       const finalLocationInput = scheduleForm.querySelector('#final-location');
-      const locationOptions = scheduleForm.querySelectorAll('.location-option');
+      const locationOptionCards = scheduleForm.querySelectorAll('.location-option-card');
       const locationContainer = scheduleForm.querySelector('#location-options-container');
 
       // Obtener direcciones de los data attributes
       const userAddress = locationContainer?.dataset.userAddress || '';
-      const orgAddress = locationContainer?.dataset.orgAddress || '';
+      const orgAddressValue = locationContainer?.dataset.orgAddress || '';
       const muniAddress = locationContainer?.dataset.muniAddress || 'Blanco Encalada 1335, Renca';
 
       const updateLocationValue = () => {
         const selectedRadio = scheduleForm.querySelector('input[name="locationOption"]:checked');
         if (!selectedRadio) return;
 
-        // Actualizar estilos visuales
-        locationOptions.forEach(option => {
-          option.style.borderColor = '#d1d5db';
-          option.style.background = 'white';
+        // Actualizar estilos visuales usando clases CSS
+        locationOptionCards.forEach(card => {
+          card.classList.remove('selected');
         });
-        const selectedOption = selectedRadio.closest('.location-option');
-        if (selectedOption) {
-          selectedOption.style.borderColor = '#3b82f6';
-          selectedOption.style.background = '#eff6ff';
+        const selectedCard = selectedRadio.closest('.location-option-card');
+        if (selectedCard) {
+          selectedCard.classList.add('selected');
         }
 
         switch (selectedRadio.value) {
@@ -2999,7 +3053,7 @@ class AdminDashboard {
             }
             break;
           case 'org':
-            finalLocationInput.value = orgAddress;
+            finalLocationInput.value = orgAddressValue;
             if (customLocationInput) {
               customLocationInput.style.display = 'none';
               customLocationInput.disabled = true;
