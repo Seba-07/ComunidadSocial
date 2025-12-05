@@ -104,6 +104,23 @@ const organizationSchema = new mongoose.Schema({
   },
   ministroSignature: String, // Base64
 
+  // Comision Electoral (from validation wizard)
+  comisionElectoral: {
+    members: [memberSchema]
+  },
+
+  // Validated attendees from assembly
+  validatedAttendees: [memberSchema],
+
+  // Validation data from Ministro de Fe
+  validationData: {
+    validatedAt: Date,
+    validatorId: String,
+    validatorName: String,
+    ministroSignature: String,
+    signatures: mongoose.Schema.Types.Mixed
+  },
+
   // Corrections
   corrections: {
     fields: mongoose.Schema.Types.Mixed,

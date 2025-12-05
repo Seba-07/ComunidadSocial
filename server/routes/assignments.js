@@ -155,9 +155,9 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
 
     await assignment.save();
 
-    // Update organization status if needed
+    // Update organization status and save validation data
     if (assignment.organizationId) {
-      await Organization.findByIdAndUpdate(assignment.organizationId, {
+      const updateData = {
         status: 'ministro_approved',
         $push: {
           statusHistory: {
@@ -166,7 +166,30 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
             comment: 'Firmas validadas por Ministro de Fe'
           }
         }
-      });
+      };
+
+      // Copy wizard data to organization for PDF generation
+      if (wizardData) {
+        if (wizardData.provisionalDirectorio) {
+          updateData.provisionalDirectorio = wizardData.provisionalDirectorio;
+        }
+        if (wizardData.comisionElectoral) {
+          updateData.comisionElectoral = wizardData.comisionElectoral;
+        }
+        if (wizardData.attendees) {
+          updateData.validatedAttendees = wizardData.attendees;
+        }
+        // Store validation metadata
+        updateData.validationData = {
+          validatedAt: new Date(),
+          validatorId: wizardData.validatorId,
+          validatorName: wizardData.validatorName,
+          ministroSignature: wizardData.ministroSignature,
+          signatures: signatures
+        };
+      }
+
+      await Organization.findByIdAndUpdate(assignment.organizationId, updateData);
     }
 
     res.json(assignment);
