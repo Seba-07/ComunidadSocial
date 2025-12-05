@@ -27,7 +27,7 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
     }
 
     const assignments = await Assignment.find({ ministroId: req.params.ministroId })
-      .populate('organizationId', 'organizationName members electoralCommission')
+      .populate('organizationId', 'organizationName organizationType address comuna region contactEmail contactPhone members electoralCommission')
       .sort({ scheduledDate: -1 });
     res.json(assignments);
   } catch (error) {
