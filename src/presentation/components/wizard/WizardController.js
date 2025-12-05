@@ -1122,32 +1122,28 @@ export class WizardController {
     this.updateMembersCount();
     this.renderMembersList();
 
-    // Botón agregar miembro (remover listener anterior si existe)
+    // Botón agregar miembro
     const btnAddMember = document.getElementById('btn-add-member');
-    const newBtn = btnAddMember.cloneNode(true);
-    btnAddMember.parentNode.replaceChild(newBtn, btnAddMember);
-    newBtn.addEventListener('click', () => {
-      this.showAddMemberModal();
-    });
-
-    // Botón cargar 15 miembros de prueba (remover listener anterior si existe)
-    const btnLoadTest15 = document.getElementById('btn-load-test-members-15');
-    if (btnLoadTest15) {
-      const newBtnTest15 = btnLoadTest15.cloneNode(true);
-      btnLoadTest15.parentNode.replaceChild(newBtnTest15, btnLoadTest15);
-      newBtnTest15.addEventListener('click', () => {
-        this.loadTestMembers(15, 2); // 15 miembros, 2 menores
-      });
+    if (btnAddMember) {
+      btnAddMember.onclick = () => {
+        this.showAddMemberModal();
+      };
     }
 
-    // Botón cargar 50 miembros de prueba (remover listener anterior si existe)
+    // Botón cargar 15 miembros de prueba
+    const btnLoadTest15 = document.getElementById('btn-load-test-members-15');
+    if (btnLoadTest15) {
+      btnLoadTest15.onclick = () => {
+        this.loadTestMembers(15, 2); // 15 miembros, 2 menores
+      };
+    }
+
+    // Botón cargar 50 miembros de prueba
     const btnLoadTest50 = document.getElementById('btn-load-test-members-50');
     if (btnLoadTest50) {
-      const newBtnTest50 = btnLoadTest50.cloneNode(true);
-      btnLoadTest50.parentNode.replaceChild(newBtnTest50, btnLoadTest50);
-      newBtnTest50.addEventListener('click', () => {
+      btnLoadTest50.onclick = () => {
         this.loadTestMembers(50, 10); // 50 miembros, 10 menores
-      });
+      };
     }
   }
 
