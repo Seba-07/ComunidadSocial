@@ -17,7 +17,8 @@
       "Bash(git push:*)",
       "WebFetch(domain:comunidadsocial-production.up.railway.app)",
       "Bash(npm run seed:*)",
-      "WebFetch(domain:comunidad-social.vercel.app)"
+      "WebFetch(domain:comunidad-social.vercel.app)",
+      "Bash(set \"MONGODB_URI=mongodb+srv://comunidad_admin:caKSw2xTsPnm9IXo@comunidadsocial.ebklrle.mongodb.net/comunidad_social?retryWrites=true&w=majority\")"
     ],
     "deny": [],
     "ask": []
