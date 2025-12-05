@@ -997,10 +997,11 @@ function initOrganizations() {
   if (btnCrearOrg) btnCrearOrg.addEventListener('click', openWizard);
 }
 
-function renderOrganizations() {
+async function renderOrganizations() {
   // Usar getCurrentUserOrganizations para mostrar solo las del usuario actual
-  const organizations = organizationsService.getCurrentUserOrganizations();
+  const organizations = await organizationsService.getCurrentUserOrganizations();
   const hasOrgs = organizations.length > 0;
+  console.log('📋 Organizaciones cargadas:', organizations.length, organizations);
 
   const noOrgsSection = document.getElementById('no-organizations');
   const orgsList = document.getElementById('organizations-list');
@@ -1055,9 +1056,15 @@ function renderOrganizationCard(org) {
   const isRejected = org.status === ORG_STATUS.REJECTED;
   const canContinueWizard = org.status === ORG_STATUS.MINISTRO_APPROVED;
 
+  // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
+  const orgType = org.organizationType || org.organization?.type;
+  const orgName = org.organizationName || org.organization?.name || 'Sin nombre';
+  const orgAddress = org.address || org.organization?.address || '';
+  const orgComuna = org.comuna || org.organization?.commune || 'Renca';
+
   // Iconos según tipo
-  const typeIcon = getOrgIcon(org.organization?.type);
-  const typeName = getOrgTypeName(org.organization?.type);
+  const typeIcon = getOrgIcon(orgType);
+  const typeName = getOrgTypeName(orgType);
 
   // Formato de fecha
   const createdDate = new Date(org.createdAt).toLocaleDateString('es-CL', {
@@ -1091,8 +1098,11 @@ function renderOrganizationCard(org) {
     `;
   }
 
+  // Usar _id o id para el identificador
+  const orgId = org._id || org.id;
+
   return `
-    <div class="org-card ${isApproved ? 'org-approved' : ''} ${isRejected ? 'org-rejected' : ''}" data-org-id="${org.id}">
+    <div class="org-card ${isApproved ? 'org-approved' : ''} ${isRejected ? 'org-rejected' : ''}" data-org-id="${orgId}">
       <div class="org-card-header">
         <div class="org-type-icon">${typeIcon}</div>
         <div class="org-status-badge" style="background: ${statusColor}20; color: ${statusColor}">
@@ -1101,9 +1111,9 @@ function renderOrganizationCard(org) {
       </div>
 
       <div class="org-card-body">
-        <h3 class="org-name">${org.organization?.name || 'Sin nombre'}</h3>
+        <h3 class="org-name">${orgName}</h3>
         <p class="org-type">${typeName}</p>
-        <p class="org-location">📍 ${org.organization?.commune || 'Sin ubicación'}, ${org.organization?.region || ''}</p>
+        <p class="org-location">📍 ${orgComuna}${orgAddress ? ', ' + orgAddress : ''}</p>
         <p class="org-date">Creada el ${createdDate}</p>
 
         ${progressBar}
