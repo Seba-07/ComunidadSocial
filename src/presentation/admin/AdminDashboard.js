@@ -3616,8 +3616,8 @@ class AdminDashboard {
    * Ver PDF oficial en modal
    */
   viewOfficialPDF(orgId, docId) {
-    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-    const org = orgs.find(o => o.id === orgId);
+    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
+    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
@@ -3735,8 +3735,8 @@ class AdminDashboard {
    * Descargar PDF oficial
    */
   downloadOfficialPDF(orgId, docId) {
-    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-    const org = orgs.find(o => o.id === orgId);
+    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
+    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
@@ -3820,8 +3820,8 @@ class AdminDashboard {
    * Descargar todos los PDFs de una organización
    */
   downloadAllPDFs(orgId) {
-    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-    const org = orgs.find(o => o.id === orgId);
+    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
+    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
