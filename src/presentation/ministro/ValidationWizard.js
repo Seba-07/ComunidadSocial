@@ -214,9 +214,10 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 150000; padding: 20px; box-sizing: border-box;';
 
   // Función para renderizar el wizard
-  const renderWizard = () => {
+  const renderWizard = (skipSave = false) => {
     // Guardar datos del paso actual antes de re-renderizar (para preservar selecciones)
-    if (modal.innerHTML) {
+    // skipSave se usa cuando ya guardamos manualmente antes de modificar el array
+    if (!skipSave && modal.innerHTML) {
       saveCurrentStepData();
     }
     // Actualizar IDs seleccionados antes de renderizar
@@ -830,16 +831,54 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     if (currentStep === 2) {
       // Agregar miembro adicional
       modal.querySelector('#btn-add-additional')?.addEventListener('click', () => {
+        // Guardar primero los miembros actuales del DOM
+        saveCurrentStepData();
+        // Luego agregar el nuevo miembro vacío
         wizardData.additionalMembers.push({ cargo: '', id: null, name: '', rut: '', validated: false });
-        renderWizard();
+        // Renderizar sin volver a guardar (skipSave=true)
+        renderWizard(true);
       });
 
       // Eliminar miembro adicional
       modal.querySelectorAll('.btn-remove-additional').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          // Guardar primero
+          saveCurrentStepData();
           const index = parseInt(e.target.closest('.btn-remove-additional').dataset.index);
           wizardData.additionalMembers.splice(index, 1);
-          renderWizard();
+          // Renderizar sin volver a guardar
+          renderWizard(true);
+        });
+      });
+
+      // Event listener para cambios en select de miembros adicionales
+      modal.querySelectorAll('.additional-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const index = e.target.dataset.index;
+          const manualInputs = modal.querySelector(`.additional-manual-inputs[data-index="${index}"]`);
+          const rutInput = modal.querySelector(`.additional-rut[data-index="${index}"]`);
+
+          if (e.target.value === 'manual') {
+            if (manualInputs) manualInputs.style.display = 'block';
+            if (rutInput) {
+              rutInput.readOnly = false;
+              rutInput.value = '';
+            }
+          } else if (e.target.value) {
+            if (manualInputs) manualInputs.style.display = 'none';
+            const option = e.target.selectedOptions[0];
+            if (rutInput) {
+              rutInput.value = option.dataset.rut || '';
+              rutInput.readOnly = true;
+            }
+          } else {
+            if (manualInputs) manualInputs.style.display = 'none';
+            if (rutInput) {
+              rutInput.value = '';
+              rutInput.readOnly = false;
+            }
+          }
+          updateSelectedIds();
         });
       });
     }
@@ -863,25 +902,29 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     if (currentStep === 4) {
       // Agregar desde lista de miembros
       modal.querySelector('#btn-add-from-members')?.addEventListener('click', () => {
+        saveCurrentStepData();
         showMemberSelectionModal();
       });
 
       // Agregar persona externa
       modal.querySelector('#btn-add-external')?.addEventListener('click', () => {
+        saveCurrentStepData();
         showExternalPersonModal();
       });
 
       // Agregar asistente simple
       modal.querySelector('#btn-add-attendee')?.addEventListener('click', () => {
+        saveCurrentStepData();
         showMemberSelectionModal();
       });
 
       // Eliminar asistente
       modal.querySelectorAll('.btn-remove-attendee').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          saveCurrentStepData();
           const index = parseInt(e.target.closest('.btn-remove-attendee').dataset.index);
           wizardData.attendees.splice(index, 1);
-          renderWizard();
+          renderWizard(true);
         });
       });
     }
@@ -1154,7 +1197,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         });
       });
       selModal.remove();
-      renderWizard();
+      renderWizard(true); // Ya guardamos antes de abrir el modal
     });
   };
 
@@ -1203,7 +1246,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       });
 
       extModal.remove();
-      renderWizard();
+      renderWizard(true); // Ya guardamos antes de abrir el modal
     });
   };
 

@@ -3804,20 +3804,27 @@ class AdminDashboard {
   /**
    * Ver PDF oficial en modal
    */
-  viewOfficialPDF(orgId, docId) {
+  async viewOfficialPDF(orgId, docId) {
     console.log('📄 viewOfficialPDF called:', { orgId, docId });
-    console.log('📄 Organizations loaded:', this.organizations?.length);
 
-    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
-    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+    // Mostrar loading
+    showToast('Generando documento...', 'info');
 
-    console.log('📄 Organization found:', org ? org.organizationName : 'NOT FOUND');
-    console.log('📄 Organization full data:', JSON.stringify(org, null, 2));
+    // Obtener datos frescos del servidor para asegurar que tenemos los datos de validación
+    let org;
+    try {
+      org = await organizationsService.getByIdAsync(orgId);
+      console.log('📄 Organization fetched from server:', org ? org.organizationName : 'NOT FOUND');
+    } catch (e) {
+      console.error('Error fetching organization:', e);
+      // Fallback a datos en caché
+      org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+      console.log('📄 Using cached organization:', org ? org.organizationName : 'NOT FOUND');
+    }
+
     console.log('📄 provisionalDirectorio:', JSON.stringify(org?.provisionalDirectorio, null, 2));
     console.log('📄 comisionElectoral:', JSON.stringify(org?.comisionElectoral, null, 2));
-    console.log('📄 ministroData:', JSON.stringify(org?.ministroData, null, 2));
     console.log('📄 validationData:', JSON.stringify(org?.validationData, null, 2));
-    console.log('📄 organization (nested):', JSON.stringify(org?.organization, null, 2));
     console.log('📄 members:', org?.members?.length);
 
     if (!org) {
@@ -3940,9 +3947,15 @@ class AdminDashboard {
   /**
    * Descargar PDF oficial
    */
-  downloadOfficialPDF(orgId, docId) {
-    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
-    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+  async downloadOfficialPDF(orgId, docId) {
+    // Obtener datos frescos del servidor
+    let org;
+    try {
+      org = await organizationsService.getByIdAsync(orgId);
+    } catch (e) {
+      console.error('Error fetching organization:', e);
+      org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+    }
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
@@ -4025,9 +4038,15 @@ class AdminDashboard {
   /**
    * Descargar todos los PDFs de una organización
    */
-  downloadAllPDFs(orgId) {
-    // Buscar en las organizaciones cargadas (usar _id de MongoDB)
-    const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+  async downloadAllPDFs(orgId) {
+    // Obtener datos frescos del servidor
+    let org;
+    try {
+      org = await organizationsService.getByIdAsync(orgId);
+    } catch (e) {
+      console.error('Error fetching organization:', e);
+      org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
+    }
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
