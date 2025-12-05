@@ -7,6 +7,7 @@ import { getWizardHTML } from './WizardHTML.js';
 import { indexedDBService } from '../../../infrastructure/database/IndexedDBService.js';
 import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
+import { ESTATUTOS_TIPO, generarEstatutos, mapearTipoOrganizacion } from '../../../data/estatutosTipo.js';
 
 // Tipos de organizaciones territoriales
 const TERRITORIAL_TYPES = {
@@ -2311,123 +2312,56 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
 
   /**
    * Estatutos para Centro de Padres y Apoderados
+   * USA ESTATUTOS TIPO OFICIALES de la Municipalidad de Renca
    */
   generateEstatutosCentroPadres() {
     const org = this.formData.organization;
-    const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    return `ESTATUTOS TIPO
-CENTRO DE PADRES Y APODERADOS
-"${(org.name || '[NOMBRE DEL ESTABLECIMIENTO]').toUpperCase()}"
+    // Extraer dirección y número
+    let direccion = org.address || '';
+    let numero = '';
 
-TÍTULO PRIMERO
-DENOMINACIÓN, DOMICILIO Y DURACIÓN
+    // Intentar separar número de la dirección
+    const addressMatch = direccion.match(/(.+?)\s*[Nn]°?\s*(\d+)/);
+    if (addressMatch) {
+      direccion = addressMatch[1].trim();
+      numero = addressMatch[2];
+    }
 
-Artículo 1°: Constitúyese el Centro de Padres y Apoderados del establecimiento educacional "${org.name || '[NOMBRE ESTABLECIMIENTO]'}", en adelante "el Centro", con domicilio en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}.
+    // Preparar datos para los estatutos oficiales
+    const datosEstatutos = {
+      // Campos que se llenan con datos del paso 1 y 2
+      direccion: direccion,
+      numero: numero,
+      nombreEstablecimiento: org.name || '',
+      domicilio: org.address || '',
+      // Campos que se dejan en blanco para ser completados en la asamblea
+      fechaDia: null,
+      fechaMes: null,
+      fechaAnio: null,
+      hora: null,
+      presidenteReunion: null,
+      secretarioReunion: null,
+      depositante: null,
+      mesAsamblea1: null,
+      mesAsamblea2: null,
+      mesInforme: null,
+      mesEleccion: null,
+      cuotaIncMin: null,
+      cuotaIncMax: null,
+      cuotaOrdMin: null,
+      cuotaOrdMax: null,
+      entidadDisolucion: null
+    };
 
-Artículo 2°: El Centro de Padres y Apoderados es un organismo que comparte y colabora en los propósitos educativos y sociales del establecimiento educacional.
-
-Artículo 3°: La duración del Centro será indefinida.
-
-
-TÍTULO SEGUNDO
-OBJETIVOS Y FUNCIONES
-
-Artículo 4°: Son objetivos del Centro:
-a) Promover una estrecha relación entre el hogar y el establecimiento;
-b) Apoyar la labor educativa del establecimiento y estimular el desarrollo de los estudiantes;
-c) Promover el desarrollo y progreso del conjunto de la comunidad escolar;
-d) Representar a los padres y apoderados ante las autoridades del establecimiento;
-e) Gestionar recursos para el mejoramiento de la calidad de la educación.
-
-Artículo 5°: Para el cumplimiento de sus objetivos, el Centro podrá:
-a) Fomentar la vinculación del establecimiento con la comunidad;
-b) Organizar actividades culturales, deportivas y recreativas;
-c) Canalizar inquietudes y propuestas de los apoderados;
-d) Colaborar en los programas del establecimiento;
-e) Administrar los recursos que el Centro genere o reciba.
-
-
-TÍTULO TERCERO
-DE LOS MIEMBROS
-
-Artículo 6°: Serán miembros del Centro los padres, madres y apoderados de los alumnos matriculados en el establecimiento.
-
-Artículo 7°: Son derechos de los miembros:
-a) Participar con derecho a voz y voto en las Asambleas;
-b) Elegir y ser elegidos para cargos del Centro;
-c) Ser informados de las actividades y gestiones del Centro;
-d) Proponer iniciativas y proyectos.
-
-Artículo 8°: Son deberes de los miembros:
-a) Colaborar con las actividades del Centro;
-b) Asistir a las Asambleas y reuniones;
-c) Respetar los estatutos y acuerdos;
-d) Cumplir con los aportes establecidos.
-
-
-TÍTULO CUARTO
-DE LA ORGANIZACIÓN
-
-Artículo 9°: El Centro estará organizado a través de:
-a) La Asamblea General
-b) El Directorio
-c) Los Subcentros de cada curso
-d) El Consejo de Delegados de Curso
-
-Artículo 10°: El Directorio estará compuesto por:
-- Presidente/a
-- Vicepresidente/a
-- Secretario/a
-- Tesorero/a
-- Un Delegado de Enseñanza Básica
-- Un Delegado de Enseñanza Media (si corresponde)
-
-Artículo 11°: El Directorio durará 2 años en funciones, pudiendo ser reelegido por un período.
-
-Artículo 12°: Son atribuciones del Directorio:
-a) Dirigir el Centro conforme a estos estatutos;
-b) Administrar los bienes del Centro;
-c) Representar al Centro ante autoridades;
-d) Convocar a Asambleas;
-e) Designar comisiones de trabajo.
-
-
-TÍTULO QUINTO
-DE LAS ASAMBLEAS
-
-Artículo 13°: La Asamblea General es la máxima autoridad del Centro. Se reunirá ordinariamente al menos 2 veces al año.
-
-Artículo 14°: Son materias de Asamblea Ordinaria:
-a) Aprobar memoria y balance anual;
-b) Aprobar plan de trabajo y presupuesto;
-c) Elegir Directorio cuando corresponda;
-d) Conocer informes de comisiones.
-
-Artículo 15°: La Asamblea Extraordinaria se convocará a solicitud del Directorio o del 20% de los miembros.
-
-
-TÍTULO SEXTO
-DEL PATRIMONIO
-
-Artículo 16°: El patrimonio del Centro estará formado por:
-a) Las cuotas de incorporación y ordinarias;
-b) El producto de actividades del Centro;
-c) Las donaciones y subvenciones;
-d) Los bienes que adquiera.
-
-Artículo 17°: Los fondos se depositarán en cuenta bancaria y serán girados con firma conjunta del Presidente y Tesorero.
-
-
-TÍTULO SÉPTIMO
-DISPOSICIONES GENERALES
-
-Artículo 18°: La modificación de estatutos requiere aprobación de 2/3 de los asistentes a Asamblea Extraordinaria.
-
-Artículo 19°: La disolución del Centro requiere acuerdo de 2/3 de los miembros. Los bienes remanentes se destinarán al establecimiento educacional.
-
-
-Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+    // Usar estatutos oficiales
+    try {
+      return generarEstatutos('CENTRO_PADRES', datosEstatutos);
+    } catch (error) {
+      console.error('Error generando estatutos oficiales:', error);
+      // Fallback: retornar mensaje de error
+      return `ERROR: No se pudieron generar los estatutos oficiales.\n\nPor favor contacte al administrador del sistema.`;
+    }
   }
 
   /**

@@ -21,7 +21,8 @@
       "Bash(cat:*)",
       "Bash(git commit:*)",
       "WebFetch(domain:docplayer.es)",
-      "WebFetch(domain:wikimapia.org)"
+      "WebFetch(domain:wikimapia.org)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

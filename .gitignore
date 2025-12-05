@@ -27,5 +27,6 @@ server/.env
 # Misc
 nul
 
-# Data files (shapefiles, etc.)
-data/
+# Data files (shapefiles, etc.) - root data folder only
+/data/
+!src/data/
