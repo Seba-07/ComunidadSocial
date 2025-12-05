@@ -3898,10 +3898,11 @@ class AdminDashboard {
         return;
       }
 
-      // Crear modal para mostrar el PDF
-      console.log('📄 Getting PDF Data URL...');
-      const pdfDataUrl = pdfService.getPDFDataURL(pdfDoc);
-      console.log('📄 PDF Data URL:', pdfDataUrl ? 'Generated' : 'FAILED');
+      // Crear modal para mostrar el PDF usando Blob URL (más eficiente para PDFs grandes)
+      console.log('📄 Getting PDF Blob...');
+      const pdfBlob = pdfService.getPDFBlob(pdfDoc);
+      const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+      console.log('📄 PDF Blob URL:', pdfBlobUrl ? 'Generated' : 'FAILED');
 
       const previewModal = document.createElement('div');
       previewModal.className = 'pdf-preview-modal';
@@ -3925,15 +3926,21 @@ class AdminDashboard {
             </div>
           </div>
           <div style="flex: 1; overflow: hidden;">
-            <iframe src="${pdfDataUrl}" style="width: 100%; height: 100%; border: none;"></iframe>
+            <iframe src="${pdfBlobUrl}" style="width: 100%; height: 100%; border: none;"></iframe>
           </div>
         </div>
       `;
 
       document.body.appendChild(previewModal);
 
-      previewModal.querySelector('.btn-close-preview').addEventListener('click', () => previewModal.remove());
-      previewModal.addEventListener('click', (e) => { if (e.target === previewModal) previewModal.remove(); });
+      // Función para limpiar el modal y liberar memoria del blob URL
+      const closeModal = () => {
+        URL.revokeObjectURL(pdfBlobUrl);
+        previewModal.remove();
+      };
+
+      previewModal.querySelector('.btn-close-preview').addEventListener('click', closeModal);
+      previewModal.addEventListener('click', (e) => { if (e.target === previewModal) closeModal(); });
       previewModal.querySelector('.btn-download-preview').addEventListener('click', () => {
         this.downloadOfficialPDF(orgId, docId);
       });
