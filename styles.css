@@ -5861,6 +5861,382 @@ body {
     flex-shrink: 0;
 }
 
+/* ===== Paso 3: Comisión Electoral - Modo Visualización ===== */
+.commission-display-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+}
+
+.commission-header-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.commission-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.commission-header-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.commission-header-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.commission-members-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.commission-member-display-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.commission-member-display-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.member-role-icon {
+    font-size: 28px;
+}
+
+.member-display-info {
+    flex: 1;
+}
+
+.member-display-info .member-role-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+}
+
+.member-display-info .member-role-badge.president {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.member-display-info .member-role-badge.secretary {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.member-display-info .member-role-badge.vocal {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.member-display-info .member-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.member-display-info .member-rut {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.member-verified-badge {
+    width: 36px;
+    height: 36px;
+    background: #d1fae5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #059669;
+}
+
+.no-commission-warning {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fef3c7;
+    border-radius: 12px;
+    border: 1px solid #fcd34d;
+}
+
+.no-commission-warning .warning-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.no-commission-warning p {
+    margin: 0 0 8px 0;
+    color: #92400e;
+    font-weight: 500;
+}
+
+.election-date-display {
+    margin-top: 20px;
+}
+
+.election-date-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.election-date-info.confirmed {
+    border-color: #10b981;
+    background: linear-gradient(to right, #ecfdf5, white);
+}
+
+.date-icon {
+    font-size: 28px;
+}
+
+.date-details {
+    flex: 1;
+}
+
+.date-details .date-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.date-details .date-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    text-transform: capitalize;
+}
+
+.date-confirmed-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #d1fae5;
+    color: #059669;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* ===== Paso 4: Firmas - Modo Visualización ===== */
+.signatures-display-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+}
+
+.signatures-header-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.signatures-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.signatures-header-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.signatures-header-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.signatures-header-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.signatures-status-badge {
+    background: #d1fae5;
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+
+.signatures-status-badge .status-complete {
+    color: #059669;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.signatures-members-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.signature-member-display-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.signature-member-display-card.signed {
+    border-color: #10b981;
+    background: linear-gradient(to right, #ecfdf5, white);
+}
+
+.signature-member-icon {
+    font-size: 28px;
+}
+
+.signature-member-display-info {
+    flex: 1;
+    min-width: 150px;
+}
+
+.signature-member-display-info .member-role-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+}
+
+.signature-member-display-info .member-role-badge.president {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.signature-member-display-info .member-role-badge.secretary {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.signature-member-display-info .member-role-badge.vocal {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.signature-member-display-info .member-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.signature-member-display-info .member-rut {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.signature-preview-display {
+    width: 80px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.signature-preview-display .signature-preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.signature-placeholder-display {
+    color: #94a3b8;
+}
+
+.signature-verified-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #d1fae5;
+    color: #059669;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.no-signatures-warning {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fef3c7;
+    border-radius: 12px;
+    border: 1px solid #fcd34d;
+}
+
+.no-signatures-warning .warning-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.no-signatures-warning p {
+    margin: 0 0 8px 0;
+    color: #92400e;
+    font-weight: 500;
+}
+
 /* Sección de correcciones en footer del revisor - mantenida para compatibilidad */
 .review-corrections-section {
     background: #fef2f2;

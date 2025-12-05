@@ -279,7 +279,16 @@ function getStep2HTML() {
           </svg>
           Agregar Miembro
         </button>
-        <button class="btn-outline" id="btn-load-test-members">
+        <button class="btn-outline" id="btn-load-test-members-15">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Cargar 15 de Prueba
+        </button>
+        <button class="btn-outline" id="btn-load-test-members-50">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
@@ -303,39 +312,38 @@ function getStep3HTML() {
   return `
     <div class="wizard-step-content" id="step-3">
       <h3>Paso 3: Comisión Electoral</h3>
-      <p class="step-description">La Comisión Electoral debe estar integrada por 3 miembros con al menos 1 año de antigüedad.</p>
+      <p class="step-description">Verificación de la Comisión Electoral designada en la Asamblea Constitutiva.</p>
 
-      <div class="info-box mb-4">
-        <strong>⚖️ Requisitos según Ley 19.418:</strong>
-        <ul>
-          <li>Exactamente 3 integrantes</li>
-          <li>Mínimo 1 año de antigüedad en la organización</li>
-          <li>No pueden ser miembros del directorio</li>
-          <li>Se establece 2 meses antes de la elección</li>
-        </ul>
+      <div class="info-box info-box-success mb-4">
+        <strong>✅ Comisión Electoral Designada</strong>
+        <p class="mb-2">La Comisión Electoral fue designada durante la Asamblea Constitutiva con presencia del Ministro de Fe.</p>
+        <small class="text-muted">Según Ley 19.418, la comisión debe tener 3 integrantes con al menos 1 año de antigüedad.</small>
       </div>
 
-      <div class="form-group mb-3">
-        <label for="election-date">Fecha de Elección Programada <span class="required">*</span></label>
-        <input
-          type="date"
-          id="election-date"
-          name="electionDate"
-          required
-          min="${new Date().toISOString().split('T')[0]}"
-        >
-      </div>
+      <div class="commission-display-section">
+        <div class="commission-header-display">
+          <div class="commission-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div class="commission-header-info">
+            <h4>Miembros de la Comisión Electoral</h4>
+            <p class="text-muted">Designados en la Asamblea Constitutiva</p>
+          </div>
+        </div>
 
-      <div class="commission-members">
-        <h4>Miembros de la Comisión Electoral</h4>
-        <div id="commission-list">
-          <p class="text-muted">Seleccione 3 miembros de la lista de socios.</p>
+        <div class="commission-members-display" id="commission-list">
+          <!-- Se renderiza dinámicamente -->
+        </div>
+
+        <div class="election-date-display mt-4" id="election-date-display">
+          <!-- Se renderiza dinámicamente -->
         </div>
       </div>
-
-      <button class="btn-secondary mt-3" id="btn-select-commission">
-        Seleccionar Miembros
-      </button>
     </div>
   `;
 }
@@ -423,91 +431,36 @@ function getStep4HTML_Firmas() {
   return `
     <div class="wizard-step-content" id="step-4">
       <h3>Paso 4: Firmas de la Comisión Electoral</h3>
-      <p class="step-description">Cada miembro de la Comisión Electoral debe firmar los documentos. Las firmas se incorporarán automáticamente a los documentos oficiales.</p>
+      <p class="step-description">Verificación de las firmas recolectadas durante la Asamblea Constitutiva.</p>
 
-      <div class="info-box info-box-warning mb-4">
-        <strong>⚠️ Importante</strong>
-        <p>Todas las firmas son obligatorias antes de continuar. Elija el método de firma para cada miembro.</p>
+      <div class="info-box info-box-success mb-4">
+        <strong>✅ Firmas Recolectadas en Asamblea</strong>
+        <p class="mb-2">Las firmas de los miembros de la Comisión Electoral fueron recolectadas durante la Asamblea Constitutiva con presencia del Ministro de Fe.</p>
+        <small class="text-muted">Las firmas se incorporarán automáticamente a los documentos oficiales.</small>
       </div>
 
-      <!-- Sección de Firmas por Miembro -->
-      <div class="signature-section" id="signature-section">
-        <div class="signature-header">
-          <div class="signature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- Sección de Firmas Verificadas -->
+      <div class="signatures-display-section" id="signature-section">
+        <div class="signatures-header-display">
+          <div class="signatures-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
               <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
               <path d="M2 2l7.586 7.586"></path>
               <circle cx="11" cy="11" r="2"></circle>
             </svg>
           </div>
-          <div class="signature-info">
-            <h4>Firmas Requeridas</h4>
-            <p>Presidente, Secretario y Vocal de la Comisión</p>
+          <div class="signatures-header-info">
+            <h4>Firmas de la Comisión Electoral</h4>
+            <p class="text-muted">Recolectadas en la Asamblea Constitutiva</p>
           </div>
-          <div class="signature-status" id="signature-status">
-            <span class="status-pending">0/3 firmas completadas</span>
-          </div>
-        </div>
-
-        <div class="signature-method-selector">
-          <label class="method-label">Método de firma:</label>
-          <div class="method-options">
-            <button class="method-btn active" data-method="draw" id="method-draw">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-              </svg>
-              Dibujar
-            </button>
-            <button class="method-btn" data-method="digital" id="method-digital">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              Clave Única
-            </button>
-            <button class="method-btn" data-method="manual" id="method-manual">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              Manual
-            </button>
+          <div class="signatures-status-badge" id="signature-status">
+            <span class="status-complete">3/3 firmas verificadas</span>
           </div>
         </div>
 
-        <div class="signature-method-description" id="signature-method-description">
-          <div class="method-desc active" data-method="draw">
-            <p><strong>Firma Digital Dibujada:</strong> Dibuje su firma en la pantalla usando el mouse o el dedo (en dispositivos táctiles). Rápido y sencillo.</p>
-          </div>
-          <div class="method-desc" data-method="digital">
-            <p><strong>Clave Única:</strong> Utilice su Clave Única del Registro Civil para una firma electrónica avanzada con validez legal.</p>
-          </div>
-          <div class="method-desc" data-method="manual">
-            <p><strong>Firma Manual:</strong> Descargue los documentos, fírmelos físicamente, escanéelos y súbalos al sistema.</p>
-          </div>
-        </div>
-
-        <div class="members-signatures-list" id="members-signatures-list">
+        <div class="signatures-members-display" id="members-signatures-list">
           <!-- Se genera dinámicamente -->
-        </div>
-      </div>
-
-      <!-- Para firma manual: área de documentos a descargar -->
-      <div class="manual-documents-section" id="manual-documents-section" style="display: none;">
-        <h4>Documentos para Firma Manual</h4>
-        <p class="text-muted mb-3">Descargue los siguientes documentos, fírmelos y luego súbalos:</p>
-        <div class="manual-docs-list">
-          <button class="btn-download-all" id="btn-download-for-signing">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Descargar todos los documentos para firmar
-          </button>
         </div>
       </div>
     </div>

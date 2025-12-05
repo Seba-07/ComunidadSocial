@@ -1810,18 +1810,102 @@ export class WizardController {
   }
 
   /**
-   * Inicializa paso 3: Comisión Electoral
+   * Inicializa paso 3: Comisión Electoral (solo visualización)
    */
   initializeStep3() {
-    this.renderCommissionList();
-
-    document.getElementById('btn-select-commission').addEventListener('click', () => {
-      this.showSelectCommissionModal();
-    });
+    this.renderCommissionListReadOnly();
+    this.renderElectionDateDisplay();
   }
 
   /**
-   * Renderiza lista de comisión electoral
+   * Renderiza lista de comisión electoral (modo lectura)
+   */
+  renderCommissionListReadOnly() {
+    const listContainer = document.getElementById('commission-list');
+    const commission = this.formData.commission.members;
+
+    if (!commission || commission.length === 0) {
+      listContainer.innerHTML = `
+        <div class="no-commission-warning">
+          <div class="warning-icon">⚠️</div>
+          <p>No se ha registrado la Comisión Electoral.</p>
+          <p class="text-muted small">Esta información debió ser definida en la Asamblea Constitutiva.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const roles = ['Presidente', 'Secretario', 'Vocal'];
+    const roleIcons = ['👤', '📝', '🗳️'];
+
+    listContainer.innerHTML = commission.map((member, index) => `
+      <div class="commission-member-display-card">
+        <div class="member-role-icon">${roleIcons[index]}</div>
+        <div class="member-display-info">
+          <div class="member-role-badge ${index === 0 ? 'president' : index === 1 ? 'secretary' : 'vocal'}">${roles[index]}</div>
+          <div class="member-name">${member.firstName} ${member.lastName}</div>
+          <div class="member-rut">${member.rut || 'RUT no registrado'}</div>
+        </div>
+        <div class="member-verified-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * Renderiza la fecha de elección en modo lectura
+   */
+  renderElectionDateDisplay() {
+    const dateContainer = document.getElementById('election-date-display');
+    const electionDate = this.formData.commission.electionDate;
+
+    if (!dateContainer) return;
+
+    if (!electionDate) {
+      dateContainer.innerHTML = `
+        <div class="election-date-info">
+          <div class="date-icon">📅</div>
+          <div class="date-details">
+            <span class="date-label">Fecha de Elección</span>
+            <span class="date-value text-muted">Pendiente de definir</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const date = new Date(electionDate);
+    const formattedDate = date.toLocaleDateString('es-CL', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    dateContainer.innerHTML = `
+      <div class="election-date-info confirmed">
+        <div class="date-icon">📅</div>
+        <div class="date-details">
+          <span class="date-label">Fecha de Elección Programada</span>
+          <span class="date-value">${formattedDate}</span>
+        </div>
+        <div class="date-confirmed-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Confirmada
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renderiza lista de comisión electoral (modo edición - legacy)
    */
   renderCommissionList() {
     const listContainer = document.getElementById('commission-list');
@@ -2078,105 +2162,671 @@ export class WizardController {
   }
 
   /**
-   * Genera los estatutos completos para el editor
+   * Genera los estatutos completos para el editor según el tipo de organización
    */
   generateEstatutosForEditor() {
     const org = this.formData.organization;
+    const orgType = org.type || 'OTRA_FUNCIONAL';
+
+    // Mapear tipo de organización a plantilla de estatutos
+    switch (orgType) {
+      case 'COMITE_VIVIENDA':
+        return this.generateEstatutosComiteVivienda();
+      case 'CENTRO_PADRES':
+        return this.generateEstatutosCentroPadres();
+      case 'JUNTA_VECINOS':
+      case 'COMITE_VECINOS':
+        return this.generateEstatutosTerritorial();
+      case 'COMITE_CONVIVENCIA':
+        return this.generateEstatutosCVPCC();
+      default:
+        // Resto de organizaciones funcionales
+        return this.generateEstatutosFuncionales();
+    }
+  }
+
+  /**
+   * Estatutos para Comité de Vivienda
+   */
+  generateEstatutosComiteVivienda() {
+    const org = this.formData.organization;
     const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    return `ESTATUTOS
-${(org.name || 'NOMBRE DE LA ORGANIZACIÓN').toUpperCase()}
+    return `ESTATUTOS TIPO
+COMITÉ DE VIVIENDA
+"${(org.name || '[NOMBRE DEL COMITÉ]').toUpperCase()}"
 
-TÍTULO I
-NOMBRE, DOMICILIO Y DURACIÓN
+TÍTULO PRIMERO
+DENOMINACIÓN, DOMICILIO, DURACIÓN Y OBJETIVOS
 
-Artículo 1°: Constitúyese una ${org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Comunitaria Funcional'} que se denominará "${org.name || '[NOMBRE]'}", en adelante también "la Organización".
+Artículo 1°: Constitúyese un Comité de Vivienda denominado "${org.name || '[NOMBRE]'}", en adelante también "el Comité", con domicilio en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}.
 
-Artículo 2°: El domicilio de la Organización será en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || '[COMUNA]'}, Región ${org.region || '[REGIÓN]'}, sin perjuicio de las actividades que pueda desarrollar en otras localidades.
+Artículo 2°: La duración del Comité será indefinida o hasta que se haya cumplido el objetivo de obtención de viviendas para todos sus socios.
+
+Artículo 3°: Los objetivos del Comité son:
+a) Gestionar la obtención de viviendas para sus socios, a través de los programas habitacionales vigentes;
+b) Representar a los socios ante organismos públicos y privados relacionados con la vivienda;
+c) Fomentar el ahorro habitacional de los socios;
+d) Postular en forma colectiva a subsidios y programas de vivienda social;
+e) Administrar los recursos destinados al proyecto habitacional;
+f) Realizar todas las gestiones necesarias para lograr el objetivo habitacional común.
+
+
+TÍTULO SEGUNDO
+DE LOS SOCIOS
+
+Artículo 4°: Podrán ser socios del Comité las personas naturales mayores de 18 años que:
+a) Carezcan de vivienda propia o tengan déficit habitacional;
+b) Residan en la comuna de ${org.commune || 'Renca'} o aledañas;
+c) Cumplan con los requisitos de los programas habitacionales a los que se postule;
+d) Se comprometan a cumplir estos estatutos y los acuerdos de la asamblea.
+
+Artículo 5°: Son derechos de los socios:
+a) Participar con derecho a voz y voto en las Asambleas;
+b) Elegir y ser elegidos para cargos directivos;
+c) Acceder a los beneficios que el Comité gestione;
+d) Ser informados sobre el estado de los proyectos y recursos;
+e) Solicitar rendición de cuentas al Directorio.
+
+Artículo 6°: Son obligaciones de los socios:
+a) Cumplir estos estatutos y los acuerdos de la Asamblea;
+b) Asistir a las reuniones y asambleas convocadas;
+c) Pagar las cuotas ordinarias y extraordinarias establecidas;
+d) Mantener al día el ahorro habitacional requerido;
+e) Entregar oportunamente la documentación solicitada;
+f) Comunicar cualquier cambio en su situación personal o familiar.
+
+
+TÍTULO TERCERO
+DEL DIRECTORIO
+
+Artículo 7°: El Comité será dirigido por un Directorio compuesto por:
+- Presidente/a
+- Secretario/a
+- Tesorero/a
+- Dos Directores
+
+Artículo 8°: El Directorio durará 2 años en sus funciones y sus miembros podrán ser reelegidos por un período consecutivo.
+
+Artículo 9°: Son funciones del Presidente:
+a) Representar legal, judicial y extrajudicialmente al Comité;
+b) Presidir las reuniones del Directorio y las Asambleas;
+c) Firmar la correspondencia y documentos oficiales;
+d) Velar por el cumplimiento de los estatutos y acuerdos.
+
+Artículo 10°: Son funciones del Secretario:
+a) Llevar los libros de actas del Directorio y Asambleas;
+b) Mantener actualizado el registro de socios;
+c) Redactar la correspondencia del Comité;
+d) Notificar las citaciones a reuniones.
+
+Artículo 11°: Son funciones del Tesorero:
+a) Custodiar los fondos del Comité;
+b) Llevar la contabilidad al día;
+c) Efectuar los pagos autorizados;
+d) Presentar estados financieros a la Asamblea.
+
+
+TÍTULO CUARTO
+DE LAS ASAMBLEAS
+
+Artículo 12°: La Asamblea General es la máxima autoridad del Comité. Las asambleas serán ordinarias y extraordinarias.
+
+Artículo 13°: La Asamblea Ordinaria se celebrará al menos una vez al año para:
+a) Conocer la memoria y balance del período;
+b) Aprobar el plan de trabajo;
+c) Elegir Directorio cuando corresponda;
+d) Conocer el estado de los proyectos habitacionales.
+
+Artículo 14°: La Asamblea Extraordinaria se convocará cuando lo solicite el Directorio o al menos el 25% de los socios.
+
+
+TÍTULO QUINTO
+DEL PATRIMONIO
+
+Artículo 15°: El patrimonio del Comité estará formado por:
+a) Las cuotas ordinarias y extraordinarias de los socios;
+b) Los aportes de instituciones públicas o privadas;
+c) Las donaciones que reciba;
+d) Los bienes que adquiera a cualquier título.
+
+Artículo 16°: Los fondos del Comité se depositarán en cuenta bancaria y solo podrán ser retirados con la firma conjunta del Presidente y Tesorero.
+
+
+TÍTULO SEXTO
+DISPOSICIONES GENERALES
+
+Artículo 17°: La reforma de estos estatutos requerirá la aprobación de 2/3 de los socios presentes en Asamblea Extraordinaria.
+
+Artículo 18°: La disolución del Comité podrá acordarse por 2/3 de los socios en Asamblea Extraordinaria. Los bienes remanentes pasarán a otra organización comunitaria de la comuna.
+
+
+Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+  }
+
+  /**
+   * Estatutos para Centro de Padres y Apoderados
+   */
+  generateEstatutosCentroPadres() {
+    const org = this.formData.organization;
+    const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    return `ESTATUTOS TIPO
+CENTRO DE PADRES Y APODERADOS
+"${(org.name || '[NOMBRE DEL ESTABLECIMIENTO]').toUpperCase()}"
+
+TÍTULO PRIMERO
+DENOMINACIÓN, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese el Centro de Padres y Apoderados del establecimiento educacional "${org.name || '[NOMBRE ESTABLECIMIENTO]'}", en adelante "el Centro", con domicilio en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}.
+
+Artículo 2°: El Centro de Padres y Apoderados es un organismo que comparte y colabora en los propósitos educativos y sociales del establecimiento educacional.
+
+Artículo 3°: La duración del Centro será indefinida.
+
+
+TÍTULO SEGUNDO
+OBJETIVOS Y FUNCIONES
+
+Artículo 4°: Son objetivos del Centro:
+a) Promover una estrecha relación entre el hogar y el establecimiento;
+b) Apoyar la labor educativa del establecimiento y estimular el desarrollo de los estudiantes;
+c) Promover el desarrollo y progreso del conjunto de la comunidad escolar;
+d) Representar a los padres y apoderados ante las autoridades del establecimiento;
+e) Gestionar recursos para el mejoramiento de la calidad de la educación.
+
+Artículo 5°: Para el cumplimiento de sus objetivos, el Centro podrá:
+a) Fomentar la vinculación del establecimiento con la comunidad;
+b) Organizar actividades culturales, deportivas y recreativas;
+c) Canalizar inquietudes y propuestas de los apoderados;
+d) Colaborar en los programas del establecimiento;
+e) Administrar los recursos que el Centro genere o reciba.
+
+
+TÍTULO TERCERO
+DE LOS MIEMBROS
+
+Artículo 6°: Serán miembros del Centro los padres, madres y apoderados de los alumnos matriculados en el establecimiento.
+
+Artículo 7°: Son derechos de los miembros:
+a) Participar con derecho a voz y voto en las Asambleas;
+b) Elegir y ser elegidos para cargos del Centro;
+c) Ser informados de las actividades y gestiones del Centro;
+d) Proponer iniciativas y proyectos.
+
+Artículo 8°: Son deberes de los miembros:
+a) Colaborar con las actividades del Centro;
+b) Asistir a las Asambleas y reuniones;
+c) Respetar los estatutos y acuerdos;
+d) Cumplir con los aportes establecidos.
+
+
+TÍTULO CUARTO
+DE LA ORGANIZACIÓN
+
+Artículo 9°: El Centro estará organizado a través de:
+a) La Asamblea General
+b) El Directorio
+c) Los Subcentros de cada curso
+d) El Consejo de Delegados de Curso
+
+Artículo 10°: El Directorio estará compuesto por:
+- Presidente/a
+- Vicepresidente/a
+- Secretario/a
+- Tesorero/a
+- Un Delegado de Enseñanza Básica
+- Un Delegado de Enseñanza Media (si corresponde)
+
+Artículo 11°: El Directorio durará 2 años en funciones, pudiendo ser reelegido por un período.
+
+Artículo 12°: Son atribuciones del Directorio:
+a) Dirigir el Centro conforme a estos estatutos;
+b) Administrar los bienes del Centro;
+c) Representar al Centro ante autoridades;
+d) Convocar a Asambleas;
+e) Designar comisiones de trabajo.
+
+
+TÍTULO QUINTO
+DE LAS ASAMBLEAS
+
+Artículo 13°: La Asamblea General es la máxima autoridad del Centro. Se reunirá ordinariamente al menos 2 veces al año.
+
+Artículo 14°: Son materias de Asamblea Ordinaria:
+a) Aprobar memoria y balance anual;
+b) Aprobar plan de trabajo y presupuesto;
+c) Elegir Directorio cuando corresponda;
+d) Conocer informes de comisiones.
+
+Artículo 15°: La Asamblea Extraordinaria se convocará a solicitud del Directorio o del 20% de los miembros.
+
+
+TÍTULO SEXTO
+DEL PATRIMONIO
+
+Artículo 16°: El patrimonio del Centro estará formado por:
+a) Las cuotas de incorporación y ordinarias;
+b) El producto de actividades del Centro;
+c) Las donaciones y subvenciones;
+d) Los bienes que adquiera.
+
+Artículo 17°: Los fondos se depositarán en cuenta bancaria y serán girados con firma conjunta del Presidente y Tesorero.
+
+
+TÍTULO SÉPTIMO
+DISPOSICIONES GENERALES
+
+Artículo 18°: La modificación de estatutos requiere aprobación de 2/3 de los asistentes a Asamblea Extraordinaria.
+
+Artículo 19°: La disolución del Centro requiere acuerdo de 2/3 de los miembros. Los bienes remanentes se destinarán al establecimiento educacional.
+
+
+Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+  }
+
+  /**
+   * Estatutos para Organizaciones Territoriales (Junta de Vecinos)
+   */
+  generateEstatutosTerritorial() {
+    const org = this.formData.organization;
+    const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+    const tipoOrg = org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Comité de Vecinos';
+
+    return `ESTATUTOS TIPO
+${tipoOrg.toUpperCase()}
+"${(org.name || '[NOMBRE]').toUpperCase()}"
+
+TÍTULO PRIMERO
+DENOMINACIÓN, NATURALEZA JURÍDICA, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese la ${tipoOrg} denominada "${org.name || '[NOMBRE]'}", de acuerdo con la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
+
+Artículo 2°: El domicilio de la Organización será en la Unidad Vecinal ${org.neighborhood || '[N° UNIDAD VECINAL]'}, ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}.
 
 Artículo 3°: La duración de la Organización será indefinida.
 
 
-TÍTULO II
-OBJETIVOS
+TÍTULO SEGUNDO
+FINES Y OBJETIVOS
+
+Artículo 4°: La ${tipoOrg} tiene por finalidad:
+a) Promover la integración, participación y desarrollo de los habitantes de la unidad vecinal;
+b) Representar a los vecinos ante las autoridades para lograr mejoras en la comunidad;
+c) Gestionar la solución de problemas comunes;
+d) Velar por la conservación del medioambiente y espacios públicos;
+e) Colaborar con las autoridades en la seguridad ciudadana;
+f) Promover actividades culturales, deportivas y recreativas.
+
+Artículo 5°: Para el cumplimiento de sus fines, la Organización podrá:
+a) Celebrar convenios con instituciones públicas y privadas;
+b) Ejecutar proyectos de desarrollo comunitario;
+c) Administrar bienes de uso público;
+d) Participar en programas de desarrollo local.
+
+
+TÍTULO TERCERO
+DE LOS VECINOS Y AFILIADOS
+
+Artículo 6°: Son vecinos las personas naturales, mayores de 14 años, que residan en la unidad vecinal.
+
+Artículo 7°: Los vecinos pueden afiliarse libremente a la ${tipoOrg}. Cada persona podrá afiliarse a una sola Junta de Vecinos.
+
+Artículo 8°: Son derechos de los afiliados:
+a) Participar con derecho a voz y voto en las Asambleas;
+b) Elegir y ser elegidos para cargos directivos;
+c) Acceder a los beneficios de la organización;
+d) Ser informado de las actividades y finanzas.
+
+Artículo 9°: Son deberes de los afiliados:
+a) Cumplir estos estatutos y acuerdos de asamblea;
+b) Asistir a las reuniones convocadas;
+c) Pagar las cuotas establecidas;
+d) Colaborar en las actividades de la organización.
+
+
+TÍTULO CUARTO
+DE LOS ÓRGANOS
+
+Artículo 10°: Son órganos de la ${tipoOrg}:
+a) La Asamblea
+b) El Directorio
+c) La Comisión Electoral
+d) La Comisión Fiscalizadora de Finanzas
+
+Artículo 11°: El Directorio estará compuesto por:
+- Presidente/a
+- Vicepresidente/a
+- Secretario/a
+- Tesorero/a
+- Al menos un Director/a
+
+Artículo 12°: El Directorio durará 3 años en sus funciones. Sus miembros podrán ser reelegidos por una vez en forma consecutiva.
+
+Artículo 13°: Son atribuciones del Directorio:
+a) Dirigir la organización conforme a estos estatutos;
+b) Administrar los bienes de la organización;
+c) Cumplir los acuerdos de la Asamblea;
+d) Representar a la organización ante terceros;
+e) Convocar a Asambleas ordinarias y extraordinarias.
+
+
+TÍTULO QUINTO
+DE LAS ASAMBLEAS
+
+Artículo 14°: La Asamblea es la máxima autoridad de la organización. Habrá Asambleas Ordinarias y Extraordinarias.
+
+Artículo 15°: La Asamblea Ordinaria se realizará a lo menos una vez al año para:
+a) Aprobar la memoria, balance y cuenta de ingresos y egresos;
+b) Aprobar el presupuesto y plan de actividades;
+c) Elegir Directorio y comisiones cuando corresponda.
+
+Artículo 16°: La Asamblea Extraordinaria se convocará cuando lo requiera el Directorio o al menos el 15% de los afiliados.
+
+Artículo 17°: El quórum para sesionar será de un tercio de los afiliados en primera citación. En segunda citación, se sesionará con los que asistan.
+
+
+TÍTULO SEXTO
+DEL PATRIMONIO
+
+Artículo 18°: El patrimonio estará constituido por:
+a) Las cuotas ordinarias y extraordinarias;
+b) Los bienes muebles e inmuebles que adquiera;
+c) Las subvenciones, donaciones y aportes;
+d) Los frutos y productos de sus bienes;
+e) Los ingresos provenientes de sus actividades.
+
+Artículo 19°: Los fondos se mantendrán en cuenta bancaria y serán girados con firma del Presidente y Tesorero.
+
+
+TÍTULO SÉPTIMO
+DE LA COMISIÓN ELECTORAL
+
+Artículo 20°: La Comisión Electoral estará integrada por 3 miembros elegidos por la Asamblea, con al menos un año de antigüedad en la organización.
+
+Artículo 21°: La Comisión Electoral supervigilará los procesos electorales y se constituirá 2 meses antes de cada elección.
+
+
+TÍTULO OCTAVO
+DISPOSICIONES GENERALES
+
+Artículo 22°: La reforma de estos estatutos requerirá la aprobación de 2/3 de los asistentes a Asamblea Extraordinaria.
+
+Artículo 23°: La disolución requerirá acuerdo de 2/3 de los afiliados en Asamblea Extraordinaria. Los bienes se traspasarán a otra organización comunitaria de la comuna.
+
+
+Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+  }
+
+  /**
+   * Estatutos para CVPCC (Comité Vecinal de Prevención y Convivencia Comunitaria)
+   */
+  generateEstatutosCVPCC() {
+    const org = this.formData.organization;
+    const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    return `ESTATUTOS TIPO
+COMITÉ VECINAL DE PREVENCIÓN Y CONVIVENCIA COMUNITARIA
+"${(org.name || '[NOMBRE DEL CVPCC]').toUpperCase()}"
+
+TÍTULO PRIMERO
+DENOMINACIÓN, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese el Comité Vecinal de Prevención y Convivencia Comunitaria denominado "${org.name || '[NOMBRE]'}", en adelante "el Comité" o "CVPCC", con domicilio en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}.
+
+Artículo 2°: El CVPCC es una organización comunitaria funcional, regida por la Ley N° 19.418 y las normas del Programa de Prevención Comunitaria.
+
+Artículo 3°: La duración del Comité será indefinida.
+
+
+TÍTULO SEGUNDO
+OBJETIVOS Y FUNCIONES
+
+Artículo 4°: El Comité tiene por finalidad:
+a) Contribuir a la prevención de la delincuencia y la violencia en el barrio;
+b) Promover la convivencia pacífica entre los vecinos;
+c) Fortalecer los lazos comunitarios y la participación ciudadana;
+d) Colaborar con las autoridades en materias de seguridad ciudadana;
+e) Implementar estrategias de prevención situacional y social;
+f) Fomentar la recuperación de espacios públicos.
+
+Artículo 5°: Para el cumplimiento de sus objetivos, el Comité podrá:
+a) Desarrollar acciones de prevención comunitaria;
+b) Organizar actividades de integración barrial;
+c) Gestionar recursos para proyectos de seguridad;
+d) Coordinarse con Carabineros, PDI y otras instituciones;
+e) Participar en mesas de seguridad y consejos comunales;
+f) Ejecutar proyectos con fondos públicos o privados.
+
+
+TÍTULO TERCERO
+DE LOS SOCIOS
+
+Artículo 6°: Podrán ser socios del Comité las personas naturales mayores de 14 años que residan en el sector territorial definido.
+
+Artículo 7°: Son derechos de los socios:
+a) Participar con derecho a voz y voto en las Asambleas;
+b) Elegir y ser elegidos para cargos directivos;
+c) Proponer iniciativas y proyectos;
+d) Ser informado de las actividades y gestiones;
+e) Acceder a los beneficios del Comité.
+
+Artículo 8°: Son deberes de los socios:
+a) Cumplir estos estatutos y acuerdos de la Asamblea;
+b) Asistir a las reuniones y asambleas convocadas;
+c) Participar en las actividades de prevención;
+d) Mantener una conducta respetuosa y solidaria;
+e) Contribuir con las cuotas establecidas.
+
+
+TÍTULO CUARTO
+DEL DIRECTORIO
+
+Artículo 9°: El Comité será dirigido por un Directorio compuesto por:
+- Presidente/a
+- Vicepresidente/a
+- Secretario/a
+- Tesorero/a
+- Un Director/a de Prevención
+- Un Director/a de Convivencia
+
+Artículo 10°: El Directorio durará 2 años en sus funciones, pudiendo ser reelegido por un período.
+
+Artículo 11°: Son funciones del Presidente:
+a) Representar al Comité ante autoridades y organismos;
+b) Presidir las reuniones del Directorio y Asambleas;
+c) Coordinar las acciones con instituciones de seguridad;
+d) Firmar documentos y convenios autorizados.
+
+Artículo 12°: Son funciones del Director de Prevención:
+a) Coordinar las acciones de prevención situacional;
+b) Gestionar la relación con Carabineros y PDI;
+c) Liderar las estrategias de recuperación de espacios.
+
+Artículo 13°: Son funciones del Director de Convivencia:
+a) Promover actividades de integración comunitaria;
+b) Mediar en conflictos vecinales;
+c) Coordinar iniciativas de cultura de paz.
+
+
+TÍTULO QUINTO
+DE LAS ASAMBLEAS
+
+Artículo 14°: La Asamblea General es la máxima autoridad del Comité. Se realizarán Asambleas Ordinarias y Extraordinarias.
+
+Artículo 15°: La Asamblea Ordinaria se realizará al menos 2 veces al año para:
+a) Conocer la memoria y balance del período;
+b) Aprobar el plan de actividades de prevención;
+c) Evaluar las estrategias implementadas;
+d) Elegir Directorio cuando corresponda.
+
+Artículo 16°: La Asamblea Extraordinaria se convocará cuando lo solicite el Directorio o el 20% de los socios.
+
+
+TÍTULO SEXTO
+DEL PATRIMONIO
+
+Artículo 17°: El patrimonio del Comité estará formado por:
+a) Las cuotas ordinarias y extraordinarias;
+b) Los recursos de proyectos de seguridad ciudadana;
+c) Los aportes municipales y gubernamentales;
+d) Las donaciones y subvenciones;
+e) Los bienes que adquiera.
+
+Artículo 18°: Los fondos se mantendrán en cuenta bancaria y serán operados con firma conjunta del Presidente y Tesorero.
+
+
+TÍTULO SÉPTIMO
+DISPOSICIONES GENERALES
+
+Artículo 19°: El Comité mantendrá coordinación permanente con el Municipio, Carabineros y organismos de seguridad.
+
+Artículo 20°: La reforma de estatutos requerirá aprobación de 2/3 de los asistentes a Asamblea Extraordinaria.
+
+Artículo 21°: La disolución requerirá acuerdo de 2/3 de los socios. Los bienes pasarán a otra organización comunitaria de la comuna.
+
+
+Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+  }
+
+  /**
+   * Estatutos para Organizaciones Comunitarias Funcionales (genérico)
+   */
+  generateEstatutosFuncionales() {
+    const org = this.formData.organization;
+    const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Obtener nombre legible del tipo de organización
+    const tiposOrganizacion = {
+      'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
+      'COMITE_ADELANTO': 'Comité de Adelanto',
+      'ORG_CULTURAL': 'Organización Cultural',
+      'CLUB_DEPORTIVO': 'Club Deportivo',
+      'AGRUPACION_EMPRENDEDORES': 'Agrupación de Emprendedores',
+      'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
+      'ORG_INDIGENA': 'Organización Indígena',
+      'COMITE_MEJORAMIENTO': 'Comité de Mejoramiento',
+      'ORG_MUJERES': 'Organización de Mujeres',
+      'ORG_SALUD': 'Organización de Salud',
+      'ORG_SOCIAL': 'Organización Social',
+      'OTRA_FUNCIONAL': 'Organización Comunitaria Funcional'
+    };
+    const tipoNombre = tiposOrganizacion[org.type] || 'Organización Comunitaria Funcional';
+
+    return `ESTATUTOS TIPO
+ORGANIZACIÓN COMUNITARIA FUNCIONAL
+${tipoNombre.toUpperCase()}
+"${(org.name || '[NOMBRE DE LA ORGANIZACIÓN]').toUpperCase()}"
+
+TÍTULO PRIMERO
+DENOMINACIÓN, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese una Organización Comunitaria Funcional del tipo "${tipoNombre}" denominada "${org.name || '[NOMBRE]'}", en adelante "la Organización", regida por la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
+
+Artículo 2°: El domicilio de la Organización será en ${org.address || '[DIRECCIÓN]'}, comuna de ${org.commune || 'Renca'}, Región ${org.region || 'Metropolitana'}, sin perjuicio de las actividades que pueda desarrollar en otras localidades.
+
+Artículo 3°: La duración de la Organización será indefinida.
+
+
+TÍTULO SEGUNDO
+OBJETIVOS Y FUNCIONES
 
 Artículo 4°: Los objetivos de la Organización son:
-${org.description || '[OBJETIVOS DE LA ORGANIZACIÓN]'}
+${org.description || `a) Promover el desarrollo comunitario en el ámbito de su especialidad;
+b) Representar a sus socios ante autoridades y organismos;
+c) Fomentar la participación ciudadana y el trabajo colaborativo;
+d) Gestionar recursos para proyectos de beneficio común.`}
 
 Artículo 5°: Para el cumplimiento de sus objetivos, la Organización podrá:
-a) Representar a sus miembros ante las autoridades y organismos públicos y privados;
+a) Representar a sus miembros ante autoridades públicas y privadas;
 b) Gestionar y ejecutar proyectos de desarrollo comunitario;
 c) Celebrar convenios con instituciones públicas y privadas;
 d) Adquirir, administrar y enajenar bienes;
-e) Realizar todas las actividades lícitas conducentes al logro de sus fines.
+e) Organizar actividades culturales, sociales, deportivas o recreativas;
+f) Realizar todas las actividades lícitas conducentes al logro de sus fines.
 
 
-TÍTULO III
+TÍTULO TERCERO
 DE LOS SOCIOS
 
-Artículo 6°: Podrán ser socios de la Organización todas las personas naturales, mayores de 14 años, que residan en la ${org.type === 'JUNTA_VECINOS' ? 'unidad vecinal ' + (org.neighborhood || '[UNIDAD VECINAL]') : 'comuna de ' + (org.commune || '[COMUNA]')}.
+Artículo 6°: Podrán ser socios de la Organización todas las personas naturales, mayores de 14 años, que residan en la comuna de ${org.commune || 'Renca'} y que compartan los objetivos de la Organización.
 
-Artículo 7°: Los socios tendrán los siguientes derechos:
+Artículo 7°: Son derechos de los socios:
 a) Participar con derecho a voz y voto en las Asambleas;
 b) Elegir y ser elegidos para los cargos directivos;
 c) Presentar proyectos e iniciativas;
-d) Acceder a los beneficios que la Organización gestione.
+d) Acceder a los beneficios que la Organización gestione;
+e) Ser informado de las actividades y finanzas de la Organización.
 
 Artículo 8°: Son obligaciones de los socios:
-a) Respetar los estatutos y acuerdos de la Asamblea;
+a) Respetar estos estatutos y acuerdos de la Asamblea;
 b) Asistir a las reuniones y asambleas convocadas;
-c) Pagar las cuotas que se establezcan;
-d) Contribuir al cumplimiento de los objetivos de la Organización.
+c) Pagar las cuotas ordinarias y extraordinarias establecidas;
+d) Contribuir al cumplimiento de los objetivos de la Organización;
+e) Mantener una conducta respetuosa con los demás socios.
 
 
-TÍTULO IV
+TÍTULO CUARTO
 DEL DIRECTORIO
 
-Artículo 9°: El directorio estará compuesto por un mínimo de 5 miembros titulares: Presidente, Vicepresidente, Secretario, Tesorero y un Director. Podrán existir además directores suplentes.
+Artículo 9°: El Directorio estará compuesto por un mínimo de 5 miembros titulares:
+- Presidente/a
+- Vicepresidente/a
+- Secretario/a
+- Tesorero/a
+- Un Director/a
 
-Artículo 10°: El directorio durará 2 años en sus funciones y sus miembros podrán ser reelegidos.
+Podrán existir además directores suplentes.
+
+Artículo 10°: El Directorio durará 2 años en sus funciones y sus miembros podrán ser reelegidos por un período consecutivo.
 
 Artículo 11°: Son funciones del Directorio:
 a) Dirigir la Organización de acuerdo a estos estatutos;
 b) Administrar los bienes de la Organización;
 c) Cumplir los acuerdos de la Asamblea;
 d) Convocar a Asambleas ordinarias y extraordinarias;
-e) Representar a la Organización ante terceros.
+e) Representar a la Organización ante terceros;
+f) Designar comisiones de trabajo.
 
 
-TÍTULO V
+TÍTULO QUINTO
 DE LAS ASAMBLEAS
 
-Artículo 12°: La Asamblea General es la autoridad máxima de la Organización. Habrá asambleas ordinarias y extraordinarias.
+Artículo 12°: La Asamblea General es la autoridad máxima de la Organización. Habrá Asambleas Ordinarias y Extraordinarias.
 
 Artículo 13°: La Asamblea Ordinaria se realizará al menos una vez al año para:
-a) Aprobar la memoria y balance del año anterior;
-b) Aprobar el plan de trabajo y presupuesto del año siguiente;
-c) Elegir al directorio cuando corresponda.
+a) Aprobar la memoria y balance del período anterior;
+b) Aprobar el plan de trabajo y presupuesto;
+c) Elegir al Directorio cuando corresponda;
+d) Tratar otros asuntos incluidos en la citación.
 
 Artículo 14°: La Asamblea Extraordinaria se convocará cuando lo solicite el Directorio o al menos un 20% de los socios.
 
+Artículo 15°: El quórum para sesionar será de un tercio de los socios en primera citación. En segunda citación, se sesionará con los que asistan.
 
-TÍTULO VI
+
+TÍTULO SEXTO
 DEL PATRIMONIO
 
-Artículo 15°: El patrimonio de la Organización estará constituido por:
+Artículo 16°: El patrimonio de la Organización estará constituido por:
 a) Las cuotas ordinarias y extraordinarias de los socios;
 b) Las donaciones, herencias y legados que reciba;
 c) Los bienes muebles e inmuebles que adquiera;
 d) Las subvenciones y aportes fiscales o municipales;
 e) El producto de sus actividades y servicios.
 
+Artículo 17°: Los fondos de la Organización se mantendrán en cuenta bancaria y solo podrán ser retirados con la firma conjunta del Presidente y Tesorero.
 
-TÍTULO VII
+
+TÍTULO SÉPTIMO
 DISPOSICIONES GENERALES
 
-Artículo 16°: La Organización podrá modificar sus estatutos en Asamblea Extraordinaria, con la asistencia de al menos el 50% de los socios y la aprobación de 2/3 de los asistentes.
+Artículo 18°: La Organización podrá modificar estos estatutos en Asamblea Extraordinaria, con la asistencia de al menos el 50% de los socios y la aprobación de 2/3 de los asistentes.
 
-Artículo 17°: La Organización podrá disolverse por acuerdo de 2/3 de los socios en Asamblea Extraordinaria especialmente convocada al efecto. En caso de disolución, los bienes pasarán a otra organización comunitaria de la misma comuna.
+Artículo 19°: La Organización podrá disolverse por acuerdo de 2/3 de los socios en Asamblea Extraordinaria especialmente convocada al efecto. En caso de disolución, los bienes pasarán a otra organización comunitaria de la misma comuna.
 
 
-Estos estatutos fueron aprobados en Asamblea Constitutiva celebrada el día ${today}.`;
+Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
@@ -2251,44 +2901,75 @@ Estos estatutos fueron aprobados en Asamblea Constitutiva celebrada el día ${to
   }
 
   /**
-   * FASE 3: Inicializa paso 4: Firmas (antes era paso 5)
+   * FASE 3: Inicializa paso 4: Firmas (solo visualización)
    */
   initializeStep4_Firmas() {
-    // Renderizar lista de firmas por miembro
-    this.renderSignaturesList();
+    // Renderizar lista de firmas en modo lectura
+    this.renderSignaturesListReadOnly();
+  }
 
-    // Botones de firma - usar setTimeout para asegurar que el DOM esté listo
-    setTimeout(() => {
-      // Método de firma selector
-      document.querySelectorAll('.method-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          this.currentSignatureMethod = btn.dataset.method;
+  /**
+   * Renderiza la lista de firmas en modo lectura (ya completadas)
+   */
+  renderSignaturesListReadOnly() {
+    const container = document.getElementById('members-signatures-list');
+    const commission = this.formData.commission.members;
 
-          // Actualizar descripción del método
-          document.querySelectorAll('.method-desc').forEach(desc => desc.classList.remove('active'));
-          const activeDesc = document.querySelector(`.method-desc[data-method="${btn.dataset.method}"]`);
-          if (activeDesc) activeDesc.classList.add('active');
+    if (!commission || commission.length === 0) {
+      container.innerHTML = `
+        <div class="no-signatures-warning">
+          <div class="warning-icon">⚠️</div>
+          <p>No se han registrado firmas de la Comisión Electoral.</p>
+          <p class="text-muted small">Esta información debió ser recolectada en la Asamblea Constitutiva.</p>
+        </div>
+      `;
+      return;
+    }
 
-          // Mostrar/ocultar sección de documentos para firma manual
-          const manualSection = document.getElementById('manual-documents-section');
-          if (manualSection) {
-            manualSection.style.display = btn.dataset.method === 'manual' ? 'block' : 'none';
-          }
+    const roles = ['Presidente', 'Secretario', 'Vocal'];
+    const roleIcons = ['👤', '📝', '🗳️'];
+    const signatures = this.formData.signatures || {};
 
-          this.renderSignaturesList();
-        });
-      });
+    // Simular que todas las firmas están completadas (fueron hechas en asamblea)
+    container.innerHTML = commission.map((member, index) => {
+      const signatureData = signatures[member.id];
 
-      // Botón descargar documentos para firma manual
-      const btnDownloadForSigning = document.getElementById('btn-download-for-signing');
-      if (btnDownloadForSigning) {
-        btnDownloadForSigning.addEventListener('click', () => {
-          this.downloadAllDocuments();
-        });
-      }
-    }, 100);
+      return `
+        <div class="signature-member-display-card signed">
+          <div class="signature-member-icon">${roleIcons[index]}</div>
+          <div class="signature-member-display-info">
+            <div class="member-role-badge ${index === 0 ? 'president' : index === 1 ? 'secretary' : 'vocal'}">${roles[index]}</div>
+            <div class="member-name">${member.firstName} ${member.lastName}</div>
+            <div class="member-rut">${member.rut || 'RUT no registrado'}</div>
+          </div>
+          <div class="signature-preview-display">
+            ${signatureData && signatureData.type === 'drawn' && signatureData.data ? `
+              <img src="${signatureData.data}" alt="Firma" class="signature-preview-img">
+            ` : `
+              <div class="signature-placeholder-display">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                </svg>
+              </div>
+            `}
+          </div>
+          <div class="signature-verified-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Verificada</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Actualizar el estado de firmas
+    const statusEl = document.getElementById('signature-status');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="status-complete">${commission.length}/${commission.length} firmas verificadas</span>`;
+    }
   }
 
   /**
