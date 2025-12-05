@@ -38,7 +38,26 @@ const organizationSchema = new mongoose.Schema({
   },
   organizationType: {
     type: String,
-    enum: ['JUNTA_VECINOS', 'ORG_COMUNITARIA', 'ORG_FUNCIONAL'],
+    enum: [
+      // Territoriales
+      'JUNTA_VECINOS', 'COMITE_VECINOS',
+      // Clubes
+      'CLUB_DEPORTIVO', 'CLUB_ADULTO_MAYOR', 'CLUB_JUVENIL', 'CLUB_CULTURAL',
+      // Centros
+      'CENTRO_MADRES', 'CENTRO_PADRES', 'CENTRO_CULTURAL',
+      // Agrupaciones
+      'AGRUPACION_FOLCLORICA', 'AGRUPACION_CULTURAL', 'AGRUPACION_JUVENIL',
+      'AGRUPACION_AMBIENTAL', 'AGRUPACION_EMPRENDEDORES',
+      // Comités
+      'COMITE_VIVIENDA', 'COMITE_ALLEGADOS', 'COMITE_APR',
+      'COMITE_ADELANTO', 'COMITE_MEJORAMIENTO', 'COMITE_CONVIVENCIA',
+      // Organizaciones específicas
+      'ORG_SCOUT', 'ORG_MUJERES', 'ORG_INDIGENA', 'ORG_SALUD', 'ORG_SOCIAL', 'ORG_CULTURAL',
+      // Arte y cultura
+      'GRUPO_TEATRO', 'CORO', 'TALLER_ARTESANIA',
+      // Genéricos (mantener para compatibilidad)
+      'ORG_COMUNITARIA', 'ORG_FUNCIONAL', 'OTRA_FUNCIONAL'
+    ],
     required: true
   },
   address: {
@@ -49,8 +68,22 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     default: 'Renca'
   },
+  region: {
+    type: String,
+    default: 'Metropolitana'
+  },
   unidadVecinal: String,
   territory: String,
+
+  // Datos de contacto del solicitante
+  contactEmail: {
+    type: String,
+    trim: true
+  },
+  contactPhone: {
+    type: String,
+    trim: true
+  },
 
   // Members
   members: [memberSchema],

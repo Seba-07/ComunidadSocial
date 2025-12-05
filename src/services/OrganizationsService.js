@@ -287,9 +287,13 @@ class OrganizationsService {
         organizationName: orgInfo.nombre || orgInfo.organizationName || orgInfo.name || 'Sin nombre',
         organizationType: this.mapOrganizationType(orgInfo.tipo || orgInfo.organizationType || orgInfo.type),
         address: orgInfo.direccion || orgInfo.address || requestData.assemblyAddress || '',
-        comuna: orgInfo.comuna || 'Renca',
+        comuna: orgInfo.comuna || orgInfo.commune || 'Renca',
+        region: orgInfo.region || 'Metropolitana',
         unidadVecinal: orgInfo.unidadVecinal || '',
         territory: orgInfo.territory || orgInfo.territorio || '',
+        // Datos de contacto del usuario solicitante (del paso 1)
+        contactEmail: orgInfo.contactEmail || orgInfo.email || '',
+        contactPhone: orgInfo.contactPhone || orgInfo.phone || '',
         members: mappedMembers,
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
@@ -313,18 +317,39 @@ class OrganizationsService {
    * Mapea el tipo de organización al enum del backend
    */
   mapOrganizationType(type) {
+    if (!type) return 'OTRA_FUNCIONAL';
+
+    // Lista de tipos válidos del backend
+    const validTypes = [
+      'JUNTA_VECINOS', 'COMITE_VECINOS',
+      'CLUB_DEPORTIVO', 'CLUB_ADULTO_MAYOR', 'CLUB_JUVENIL', 'CLUB_CULTURAL',
+      'CENTRO_MADRES', 'CENTRO_PADRES', 'CENTRO_CULTURAL',
+      'AGRUPACION_FOLCLORICA', 'AGRUPACION_CULTURAL', 'AGRUPACION_JUVENIL', 'AGRUPACION_AMBIENTAL', 'AGRUPACION_EMPRENDEDORES',
+      'COMITE_VIVIENDA', 'COMITE_ALLEGADOS', 'COMITE_APR', 'COMITE_ADELANTO', 'COMITE_MEJORAMIENTO', 'COMITE_CONVIVENCIA',
+      'ORG_SCOUT', 'ORG_MUJERES', 'ORG_INDIGENA', 'ORG_SALUD', 'ORG_SOCIAL', 'ORG_CULTURAL',
+      'GRUPO_TEATRO', 'CORO', 'TALLER_ARTESANIA',
+      'OTRA_FUNCIONAL'
+    ];
+
+    // Si el tipo ya es válido, devolverlo directamente
+    const upperType = type.toUpperCase();
+    if (validTypes.includes(upperType)) {
+      return upperType;
+    }
+
+    // Mapeo de nombres legibles a códigos
     const typeMap = {
       'junta_vecinos': 'JUNTA_VECINOS',
       'junta de vecinos': 'JUNTA_VECINOS',
-      'JUNTA_VECINOS': 'JUNTA_VECINOS',
-      'org_comunitaria': 'ORG_COMUNITARIA',
-      'organización comunitaria': 'ORG_COMUNITARIA',
-      'ORG_COMUNITARIA': 'ORG_COMUNITARIA',
-      'org_funcional': 'ORG_FUNCIONAL',
-      'organización funcional': 'ORG_FUNCIONAL',
-      'ORG_FUNCIONAL': 'ORG_FUNCIONAL'
+      'club adulto mayor': 'CLUB_ADULTO_MAYOR',
+      'club de adulto mayor': 'CLUB_ADULTO_MAYOR',
+      'centro de padres': 'CENTRO_PADRES',
+      'centro de padres y apoderados': 'CENTRO_PADRES',
+      'comité de vivienda': 'COMITE_VIVIENDA',
+      'club deportivo': 'CLUB_DEPORTIVO'
     };
-    return typeMap[type?.toLowerCase()] || typeMap[type] || 'JUNTA_VECINOS';
+
+    return typeMap[type.toLowerCase()] || type.toUpperCase() || 'OTRA_FUNCIONAL';
   }
 
   /**
