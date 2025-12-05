@@ -215,6 +215,10 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Función para renderizar el wizard
   const renderWizard = () => {
+    // Guardar datos del paso actual antes de re-renderizar (para preservar selecciones)
+    if (modal.innerHTML) {
+      saveCurrentStepData();
+    }
     // Actualizar IDs seleccionados antes de renderizar
     updateSelectedIds();
 
