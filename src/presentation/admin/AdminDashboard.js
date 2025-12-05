@@ -131,10 +131,11 @@ class AdminDashboard {
   async loadOrganizations() {
     try {
       console.log('🔄 Cargando organizaciones del servidor...');
-      await organizationsService.getAllAsync();
-      console.log('✅ Organizaciones cargadas');
+      this.organizations = await organizationsService.getAllAsync();
+      console.log('✅ Organizaciones cargadas:', this.organizations?.length);
     } catch (e) {
       console.error('❌ Error cargando organizaciones:', e);
+      this.organizations = [];
     }
   }
 
@@ -322,6 +323,8 @@ class AdminDashboard {
    */
   updateStats() {
     const orgs = organizationsService.getAll();
+    // Mantener sincronizado this.organizations
+    this.organizations = orgs;
     console.log('📊 Admin Stats - Total orgs:', orgs.length, orgs);
 
     const counts = {
@@ -363,6 +366,8 @@ class AdminDashboard {
    */
   getFilteredOrganizations() {
     let orgs = organizationsService.getAll();
+    // Mantener sincronizado this.organizations
+    this.organizations = orgs;
 
     // Filtrar por estado
     if (this.currentFilter !== 'all') {
