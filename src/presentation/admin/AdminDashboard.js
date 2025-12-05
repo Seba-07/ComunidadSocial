@@ -3495,9 +3495,10 @@ class AdminDashboard {
               <label>Nuevo Ministro de Fe <span class="required">*</span></label>
               <select name="ministroId" id="edit-ministro-select" required class="input-styled">
                 ${ministroService.getActive().map(ministro => {
-                  const isCurrentMinistro = currentAssignment && currentAssignment.ministroId === ministro.id;
+                  const mId = ministro.id || ministro._id;
+                  const isCurrentMinistro = currentAssignment && (currentAssignment.ministroId === ministro.id || currentAssignment.ministroId === ministro._id);
                   return `
-                    <option value="${ministro.id}" ${isCurrentMinistro ? 'selected' : ''}>
+                    <option value="${mId}" ${isCurrentMinistro ? 'selected' : ''}>
                       ${ministro.firstName} ${ministro.lastName} - ${ministro.rut}
                     </option>
                   `;
@@ -3581,10 +3582,11 @@ class AdminDashboard {
       // Filtrar ministros disponibles
       const allMinistros = ministroService.getActive();
       const currentMinistroId = currentAssignment?.ministroId;
-      const availableMinistros = allMinistros.filter(ministro =>
-        ministro.id === currentMinistroId || // Siempre incluir el ministro actual
-        ministroAvailabilityService.isAvailable(ministro.id, selectedDate, selectedTime)
-      );
+      const availableMinistros = allMinistros.filter(ministro => {
+        const mId = ministro.id || ministro._id;
+        return mId === currentMinistroId || // Siempre incluir el ministro actual
+          ministroAvailabilityService.isAvailable(mId, selectedDate, selectedTime);
+      });
 
       // Actualizar dropdown manteniendo la selección actual
       const selectedValue = ministroSelect.value;
@@ -3596,10 +3598,11 @@ class AdminDashboard {
         warning.textContent = '⚠️ Ningún ministro está disponible para esta fecha/hora.';
       } else {
         ministroSelect.innerHTML = availableMinistros.map(ministro => {
-          const isCurrentMinistro = ministro.id === currentMinistroId;
-          const isSelected = ministro.id === selectedValue || (selectedValue === '' && isCurrentMinistro);
+          const mId = ministro.id || ministro._id;
+          const isCurrentMinistro = mId === currentMinistroId;
+          const isSelected = mId === selectedValue || (selectedValue === '' && isCurrentMinistro);
           return `
-            <option value="${ministro.id}" ${isSelected ? 'selected' : ''}>
+            <option value="${mId}" ${isSelected ? 'selected' : ''}>
               ${ministro.firstName} ${ministro.lastName} - ${ministro.rut}${isCurrentMinistro ? ' (Actual)' : ''}
             </option>
           `;
@@ -3611,10 +3614,11 @@ class AdminDashboard {
       }
 
       // Mostrar ministros no disponibles en consola para debug
-      const unavailableMinistros = allMinistros.filter(ministro =>
-        ministro.id !== currentMinistroId &&
-        !ministroAvailabilityService.isAvailable(ministro.id, selectedDate, selectedTime)
-      );
+      const unavailableMinistros = allMinistros.filter(ministro => {
+        const mId = ministro.id || ministro._id;
+        return mId !== currentMinistroId &&
+          !ministroAvailabilityService.isAvailable(mId, selectedDate, selectedTime);
+      });
       if (unavailableMinistros.length > 0) {
         console.log('🚫 Ministros NO disponibles (editar):', unavailableMinistros.map(m => `${m.firstName} ${m.lastName}`));
       }
