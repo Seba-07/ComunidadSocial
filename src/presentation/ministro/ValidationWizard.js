@@ -4,10 +4,11 @@
  */
 
 export function openValidationWizard(assignment, org, currentMinistro, callbacks) {
-  // Extraer datos de la organización
+  // Extraer datos de la organización (org puede venir populado del servidor)
   const orgData = org?.organization || org || {};
-  const orgName = orgData.name || org?.organizationName || assignment.organizationName || 'Organización';
-  const orgType = orgData.type || 'FUNCIONAL';
+  const orgName = orgData.organizationName || orgData.name || org?.organizationName || assignment.organizationName || 'Organización';
+  const orgType = orgData.organizationType || orgData.type || 'FUNCIONAL';
+  // El mínimo de asistentes es ahora solo informativo, no obligatorio
   const minAttendees = orgType === 'JUNTA_VECINOS' ? 50 : 15;
 
   // Extraer miembros y normalizar
@@ -410,8 +411,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
     return `
       <div style="margin-bottom: 20px;">
-        <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 4: Lista de Asistentes</h3>
-        <p style="margin: 0; color: #6b7280; font-size: 14px;">Verifica y completa la lista de socios que asistieron a la asamblea (mínimo ${minAttendees}).</p>
+        <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 4: Lista de Asistentes (Opcional)</h3>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">Los miembros del directorio y comisión ya están incluidos. Agrega asistentes adicionales si lo deseas.</p>
       </div>
 
       <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 2px solid #8b5cf6; border-radius: 16px; padding: 20px;">
@@ -423,7 +424,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
             <div>
               <h4 style="margin: 0; font-size: 18px; font-weight: 700; color: #5b21b6;">Asistentes Registrados</h4>
               <p style="margin: 4px 0 0; font-size: 13px; color: #7c3aed;">
-                <span id="attendee-count">${wizardData.attendees.length}</span> de ${minAttendees} requeridos
+                <span id="attendee-count">${wizardData.attendees.length}</span> personas registradas
               </p>
             </div>
           </div>
@@ -542,7 +543,6 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           </h4>
           <div style="font-size: 13px; color: #5b21b6;">
             <p style="margin: 0;"><strong>${att.length}</strong> personas registradas</p>
-            <p style="margin: 6px 0 0; font-size: 12px; color: #7c3aed;">Mínimo requerido: ${minAttendees}</p>
           </div>
         </div>
       </div>
@@ -976,9 +976,10 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
 
     if (currentStep === 4) {
+      // Los asistentes son opcionales - solo se requiere directorio y comisión electoral
+      // Se muestra advertencia si hay pocos asistentes pero no bloquea
       if (wizardData.attendees.length < minAttendees) {
-        showToast(`Debes registrar al menos ${minAttendees} asistentes (tienes ${wizardData.attendees.length})`, 'error');
-        return false;
+        console.log(`Advertencia: Solo hay ${wizardData.attendees.length} asistentes de ${minAttendees} recomendados`);
       }
     }
 
