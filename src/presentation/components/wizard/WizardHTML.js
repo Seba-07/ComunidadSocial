@@ -37,22 +37,26 @@ export function getWizardHTML() {
             </div>
             <div class="wizard-step" data-step="3">
               <div class="step-number">3</div>
-              <div class="step-label">Estatutos</div>
+              <div class="step-label">Config.</div>
             </div>
             <div class="wizard-step" data-step="4">
               <div class="step-number">4</div>
-              <div class="step-label">Comisión</div>
+              <div class="step-label">Estatutos</div>
             </div>
             <div class="wizard-step" data-step="5">
               <div class="step-number">5</div>
-              <div class="step-label">Firmas</div>
+              <div class="step-label">Comisión</div>
             </div>
             <div class="wizard-step" data-step="6">
               <div class="step-number">6</div>
-              <div class="step-label">Documentos</div>
+              <div class="step-label">Firmas</div>
             </div>
             <div class="wizard-step" data-step="7">
               <div class="step-number">7</div>
+              <div class="step-label">Documentos</div>
+            </div>
+            <div class="wizard-step" data-step="8">
+              <div class="step-number">8</div>
               <div class="step-label">Revisión</div>
             </div>
           </div>
@@ -62,11 +66,12 @@ export function getWizardHTML() {
         <div class="wizard-content">
           ${getStep1HTML()}
           ${getStep2HTML()}
-          ${getStep3HTML_Estatutos()}
-          ${getStep4HTML_Comision()}
-          ${getStep5HTML_Firmas()}
-          ${getStep6HTML()}
-          ${getStep7HTML()}
+          ${getStep3HTML_ConfigEstatutos()}
+          ${getStep4HTML_Estatutos()}
+          ${getStep5HTML_Comision()}
+          ${getStep6HTML_Firmas()}
+          ${getStep7HTML_Documentos()}
+          ${getStep8HTML_Revision()}
         </div>
 
         <!-- Wizard Actions -->
@@ -308,10 +313,186 @@ function getStep2HTML() {
   `;
 }
 
-function getStep4HTML_Comision() {
+function getStep3HTML_ConfigEstatutos() {
   return `
-    <div class="wizard-step-content" id="step-4">
-      <h3>Paso 4: Comisión Electoral</h3>
+    <div class="wizard-step-content" id="step-3">
+      <h3>Paso 3: Configuración de Estatutos</h3>
+      <p class="step-description">Complete los datos que serán incluidos en los estatutos de su organización. Estos valores son preliminares y serán confirmados en la Asamblea Constitutiva con el Ministro de Fe.</p>
+
+      <form class="wizard-form" id="form-step-3-config">
+        <!-- Sección: Asambleas -->
+        <div class="config-section">
+          <h4 class="config-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Asambleas Ordinarias
+          </h4>
+          <p class="config-section-desc">Defina los meses en que se realizarán las asambleas ordinarias anuales.</p>
+
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label for="config-mes-asamblea-1">Primer mes de Asamblea <span class="required">*</span></label>
+              <select id="config-mes-asamblea-1" name="mesAsamblea1" required>
+                <option value="">Seleccione...</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo" selected>Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="config-mes-asamblea-2">Segundo mes de Asamblea <span class="required">*</span></label>
+              <select id="config-mes-asamblea-2" name="mesAsamblea2" required>
+                <option value="">Seleccione...</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre" selected>Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label for="config-mes-informe">Mes para Informe de Comisión <span class="required">*</span></label>
+              <select id="config-mes-informe" name="mesInforme" required>
+                <option value="">Seleccione...</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo" selected>Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+              </select>
+              <small class="form-help">Mes en que se presenta el informe anual</small>
+            </div>
+            <div class="form-group">
+              <label for="config-mes-eleccion">Mes de Elección del Directorio <span class="required">*</span></label>
+              <select id="config-mes-eleccion" name="mesEleccion" required>
+                <option value="">Seleccione...</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo" selected>Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+              </select>
+              <small class="form-help">Mes en que se elige el Directorio</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Cuotas -->
+        <div class="config-section">
+          <h4 class="config-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Cuotas Sociales (en UTM)
+          </h4>
+          <p class="config-section-desc">Defina los rangos de cuotas. Para establecimientos subvencionados, la cuota ordinaria máxima es 0.5 UTM anual.</p>
+
+          <div class="form-row">
+            <label class="config-subsection-label">Cuota de Incorporación</label>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label for="config-cuota-inc-min">Mínimo (UTM)</label>
+              <input type="text" id="config-cuota-inc-min" name="cuotaIncMin" placeholder="Ej: 0.1" value="0.1">
+            </div>
+            <div class="form-group">
+              <label for="config-cuota-inc-max">Máximo (UTM)</label>
+              <input type="text" id="config-cuota-inc-max" name="cuotaIncMax" placeholder="Ej: 0.5" value="0.5">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="config-subsection-label">Cuota Ordinaria (mensual o anual)</label>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label for="config-cuota-ord-min">Mínimo (UTM)</label>
+              <input type="text" id="config-cuota-ord-min" name="cuotaOrdMin" placeholder="Ej: 0.25" value="0.25">
+            </div>
+            <div class="form-group">
+              <label for="config-cuota-ord-max">Máximo (UTM)</label>
+              <input type="text" id="config-cuota-ord-max" name="cuotaOrdMax" placeholder="Ej: 0.5" value="0.5">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Disolución -->
+        <div class="config-section">
+          <h4 class="config-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            En caso de Disolución
+          </h4>
+          <p class="config-section-desc">Indique la entidad que recibirá los bienes en caso de disolución de la organización.</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="config-entidad-disolucion">Entidad destinataria de bienes</label>
+              <input
+                type="text"
+                id="config-entidad-disolucion"
+                name="entidadDisolucion"
+                placeholder="Ej: Corporación Municipal de Renca"
+                value="Corporación Municipal de Renca"
+              >
+              <small class="form-help">Corporación o Fundación con personalidad jurídica vigente</small>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="info-box info-box-warning mt-4">
+        <strong>⚠️ Valores Preliminares</strong>
+        <p class="mb-0">Estos datos serán confirmados y validados durante la Asamblea Constitutiva con presencia del Ministro de Fe.</p>
+      </div>
+    </div>
+  `;
+}
+
+function getStep5HTML_Comision() {
+  return `
+    <div class="wizard-step-content" id="step-5">
+      <h3>Paso 5: Comisión Electoral</h3>
       <p class="step-description">Verificación de la Comisión Electoral designada en la Asamblea Constitutiva.</p>
 
       <div class="info-box info-box-success mb-4">
@@ -348,11 +529,11 @@ function getStep4HTML_Comision() {
   `;
 }
 
-function getStep3HTML_Estatutos() {
+function getStep4HTML_Estatutos() {
   return `
-    <div class="wizard-step-content" id="step-3">
-      <h3>Paso 3: Estatutos de la Organización</h3>
-      <p class="step-description">Revise los estatutos tipo que regirán su organización según la Ley 19.418. Estos estatutos serán presentados al Ministro de Fe en la Asamblea Constitutiva.</p>
+    <div class="wizard-step-content" id="step-4">
+      <h3>Paso 4: Estatutos de la Organización</h3>
+      <p class="step-description">Revise los estatutos tipo con los datos ingresados. Estos estatutos serán presentados al Ministro de Fe en la Asamblea Constitutiva para su validación final.</p>
 
       <div class="statutes-options-row">
         <div class="form-group">
@@ -427,10 +608,10 @@ function getStep3HTML_Estatutos() {
   `;
 }
 
-function getStep5HTML_Firmas() {
+function getStep6HTML_Firmas() {
   return `
-    <div class="wizard-step-content" id="step-5">
-      <h3>Paso 5: Firmas de la Comisión Electoral</h3>
+    <div class="wizard-step-content" id="step-6">
+      <h3>Paso 6: Firmas de la Comisión Electoral</h3>
       <p class="step-description">Verificación de las firmas recolectadas durante la Asamblea Constitutiva.</p>
 
       <div class="info-box info-box-success mb-4">
@@ -540,10 +721,10 @@ function getDocumentItemHTML(type, name, description, required) {
   `;
 }
 
-function getStep6HTML() {
+function getStep7HTML_Documentos() {
   return `
-    <div class="wizard-step-content" id="step-6">
-      <h3>Paso 6: Documentos Oficiales</h3>
+    <div class="wizard-step-content" id="step-7">
+      <h3>Paso 7: Documentos Oficiales</h3>
       <p class="step-description">Los documentos han sido generados con las firmas de la Comisión Electoral. Revise, edite si es necesario y adjunte los documentos adicionales.</p>
 
       <div class="info-box info-box-success mb-4">
@@ -605,10 +786,10 @@ function getStep6HTML() {
   `;
 }
 
-function getStep7HTML() {
+function getStep8HTML_Revision() {
   return `
-    <div class="wizard-step-content" id="step-7">
-      <h3>Paso 7: Revisión y Envío</h3>
+    <div class="wizard-step-content" id="step-8">
+      <h3>Paso 8: Revisión y Envío</h3>
       <p class="step-description">Revise toda la información antes de enviar su solicitud.</p>
 
       <div class="review-section">

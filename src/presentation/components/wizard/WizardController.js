@@ -37,7 +37,7 @@ const FUNCIONAL_TYPES = {
 export class WizardController {
   constructor() {
     this.currentStep = 1;
-    this.totalSteps = 7;
+    this.totalSteps = 8;
     this.storageKey = 'wizardProgress';
     this.formData = {
       organization: {
@@ -637,9 +637,9 @@ export class WizardController {
     // Guardar datos del paso actual
     await this.saveCurrentStep();
 
-    // FASE 2: Interceptar después del paso 3 (Estatutos) para solicitar Ministro de Fe
+    // FASE 2: Interceptar después del paso 4 (Estatutos) para solicitar Ministro de Fe
     // El usuario debe revisar los estatutos antes de agendar la asamblea con el Ministro
-    if (this.currentStep === 3 && !this.formData.ministroApproved) {
+    if (this.currentStep === 4 && !this.formData.ministroApproved) {
       await this.showMinistroRequestScreen();
       return;
     }
@@ -749,15 +749,17 @@ export class WizardController {
       case 2:
         return this.validateStep2();
       case 3:
-        return this.validateStep3_Estatutos(); // Estatutos ahora es paso 3
+        return this.validateStep3_ConfigEstatutos(); // Config Estatutos es paso 3
       case 4:
-        return this.validateStep4_Comision(); // Comisión ahora es paso 4
+        return this.validateStep4_Estatutos(); // Estatutos es paso 4
       case 5:
-        return this.validateStep5_Firmas(); // Firmas ahora es paso 5
+        return this.validateStep5_Comision(); // Comisión es paso 5
       case 6:
-        return this.validateStep6(); // Documentos
+        return this.validateStep6_Firmas(); // Firmas es paso 6
       case 7:
-        return this.validateStep7(); // Revisión
+        return this.validateStep7_Documentos(); // Documentos es paso 7
+      case 8:
+        return this.validateStep8_Revision(); // Revisión es paso 8
       default:
         return true;
     }
@@ -801,9 +803,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 4: Comisión Electoral
+   * Valida paso 5: Comisión Electoral
    */
-  validateStep4_Comision() {
+  validateStep5_Comision() {
     const electionDate = document.getElementById('election-date').value;
 
     if (!electionDate) {
@@ -820,9 +822,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 5: Firmas
+   * Valida paso 6: Firmas
    */
-  validateStep5_Firmas() {
+  validateStep6_Firmas() {
     // Verificar que todos los miembros de la comisión hayan firmado
     const commission = this.formData.commission.members || [];
     const signatures = this.formData.signatures || {};
@@ -843,9 +845,49 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 3: Estatutos (antes de solicitar Ministro de Fe)
+   * Valida paso 3: Configuración de Estatutos
    */
-  validateStep3_Estatutos() {
+  validateStep3_ConfigEstatutos() {
+    const mesAsamblea1 = document.getElementById('config-mes-asamblea-1')?.value;
+    const mesAsamblea2 = document.getElementById('config-mes-asamblea-2')?.value;
+    const mesInforme = document.getElementById('config-mes-informe')?.value;
+    const mesEleccion = document.getElementById('config-mes-eleccion')?.value;
+
+    if (!mesAsamblea1 || !mesAsamblea2) {
+      showToast('Debe seleccionar los meses de asambleas ordinarias', 'error');
+      return false;
+    }
+
+    if (!mesInforme) {
+      showToast('Debe seleccionar el mes para informe de comisión', 'error');
+      return false;
+    }
+
+    if (!mesEleccion) {
+      showToast('Debe seleccionar el mes de elección del directorio', 'error');
+      return false;
+    }
+
+    // Guardar configuración de estatutos en formData
+    this.formData.configEstatutos = {
+      mesAsamblea1: mesAsamblea1,
+      mesAsamblea2: mesAsamblea2,
+      mesInforme: mesInforme,
+      mesEleccion: mesEleccion,
+      cuotaIncMin: document.getElementById('config-cuota-inc-min')?.value || '0.1',
+      cuotaIncMax: document.getElementById('config-cuota-inc-max')?.value || '0.5',
+      cuotaOrdMin: document.getElementById('config-cuota-ord-min')?.value || '0.25',
+      cuotaOrdMax: document.getElementById('config-cuota-ord-max')?.value || '0.5',
+      entidadDisolucion: document.getElementById('config-entidad-disolucion')?.value || 'Corporación Municipal de Renca'
+    };
+
+    return true;
+  }
+
+  /**
+   * Valida paso 4: Estatutos (antes de solicitar Ministro de Fe)
+   */
+  validateStep4_Estatutos() {
     const statutesOption = document.querySelector('input[name="statutes-option"]:checked')?.value;
 
     if (statutesOption === 'custom') {
@@ -873,9 +915,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 6: Documentos
+   * Valida paso 7: Documentos
    */
-  validateStep6() {
+  validateStep7_Documentos() {
     const errors = [];
 
     // Validar documentos auto-generados
@@ -965,9 +1007,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 7: Revisión
+   * Valida paso 8: Revisión
    */
-  validateStep7() {
+  validateStep8_Revision() {
     const termsAccepted = document.getElementById('terms-acceptance').checked;
 
     if (!termsAccepted) {
@@ -1104,19 +1146,22 @@ export class WizardController {
         this.initializeStep2();
         break;
       case 3:
-        this.initializeStep3_Estatutos(); // Estatutos ahora es paso 3
+        this.initializeStep3_ConfigEstatutos(); // Config Estatutos es paso 3
         break;
       case 4:
-        this.initializeStep4_Comision(); // Comisión ahora es paso 4
+        this.initializeStep4_Estatutos(); // Estatutos es paso 4
         break;
       case 5:
-        this.initializeStep5_Firmas(); // Firmas ahora es paso 5
+        this.initializeStep5_Comision(); // Comisión es paso 5
         break;
       case 6:
-        this.initializeStep6(); // Documentos
+        this.initializeStep6_Firmas(); // Firmas es paso 6
         break;
       case 7:
-        this.initializeStep7(); // Revisión
+        this.initializeStep7_Documentos(); // Documentos es paso 7
+        break;
+      case 8:
+        this.initializeStep8_Revision(); // Revisión es paso 8
         break;
     }
   }
@@ -1816,9 +1861,37 @@ export class WizardController {
   }
 
   /**
-   * Inicializa paso 4: Comisión Electoral (solo visualización)
+   * Inicializa paso 3: Configuración de Estatutos
    */
-  initializeStep4_Comision() {
+  initializeStep3_ConfigEstatutos() {
+    // Si ya hay datos guardados, cargarlos en el formulario
+    const config = this.formData.configEstatutos;
+    if (config) {
+      const fields = [
+        { id: 'config-mes-asamblea-1', value: config.mesAsamblea1 },
+        { id: 'config-mes-asamblea-2', value: config.mesAsamblea2 },
+        { id: 'config-mes-informe', value: config.mesInforme },
+        { id: 'config-mes-eleccion', value: config.mesEleccion },
+        { id: 'config-cuota-inc-min', value: config.cuotaIncMin },
+        { id: 'config-cuota-inc-max', value: config.cuotaIncMax },
+        { id: 'config-cuota-ord-min', value: config.cuotaOrdMin },
+        { id: 'config-cuota-ord-max', value: config.cuotaOrdMax },
+        { id: 'config-entidad-disolucion', value: config.entidadDisolucion }
+      ];
+
+      fields.forEach(field => {
+        const el = document.getElementById(field.id);
+        if (el && field.value) {
+          el.value = field.value;
+        }
+      });
+    }
+  }
+
+  /**
+   * Inicializa paso 5: Comisión Electoral (solo visualización)
+   */
+  initializeStep5_Comision() {
     this.renderCommissionListReadOnly();
     this.renderElectionDateDisplay();
   }
@@ -2071,9 +2144,9 @@ export class WizardController {
   }
 
   /**
-   * Inicializa paso 3: Estatutos (antes de solicitar Ministro de Fe)
+   * Inicializa paso 4: Estatutos (antes de solicitar Ministro de Fe)
    */
-  initializeStep3_Estatutos() {
+  initializeStep4_Estatutos() {
     // Alternar entre plantilla y custom
     const radioButtons = document.querySelectorAll('input[name="statutes-option"]');
 
@@ -2328,6 +2401,9 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       numero = addressMatch[2];
     }
 
+    // Obtener configuración de estatutos del paso 3
+    const config = this.formData.configEstatutos || {};
+
     // Preparar datos para los estatutos oficiales
     const datosEstatutos = {
       // Campos que se llenan con datos del paso 1 y 2
@@ -2343,15 +2419,16 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       presidenteReunion: null,
       secretarioReunion: null,
       depositante: null,
-      mesAsamblea1: null,
-      mesAsamblea2: null,
-      mesInforme: null,
-      mesEleccion: null,
-      cuotaIncMin: null,
-      cuotaIncMax: null,
-      cuotaOrdMin: null,
-      cuotaOrdMax: null,
-      entidadDisolucion: null
+      // Campos del paso 3: Configuración de Estatutos
+      mesAsamblea1: config.mesAsamblea1 || null,
+      mesAsamblea2: config.mesAsamblea2 || null,
+      mesInforme: config.mesInforme || null,
+      mesEleccion: config.mesEleccion || null,
+      cuotaIncMin: config.cuotaIncMin || null,
+      cuotaIncMax: config.cuotaIncMax || null,
+      cuotaOrdMin: config.cuotaOrdMin || null,
+      cuotaOrdMax: config.cuotaOrdMax || null,
+      entidadDisolucion: config.entidadDisolucion || null
     };
 
     // Usar estatutos oficiales
@@ -2840,9 +2917,9 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
-   * Inicializa paso 5: Firmas (solo visualización)
+   * Inicializa paso 6: Firmas (solo visualización)
    */
-  initializeStep5_Firmas() {
+  initializeStep6_Firmas() {
     // Renderizar lista de firmas en modo lectura
     this.renderSignaturesListReadOnly();
   }
@@ -4704,9 +4781,9 @@ Vocal`;
   }
 
   /**
-   * Inicializa paso 6: Documentos
+   * Inicializa paso 7: Documentos
    */
-  initializeStep6() {
+  initializeStep7_Documentos() {
     // Generar documentos automáticamente con las firmas ya incluidas
     this.generateAllDocuments();
 
@@ -4758,9 +4835,9 @@ Vocal`;
   }
 
   /**
-   * Inicializa paso 7: Revisión
+   * Inicializa paso 8: Revisión
    */
-  initializeStep7() {
+  initializeStep8_Revision() {
     this.renderReview();
   }
 
