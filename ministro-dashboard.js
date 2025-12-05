@@ -39,6 +39,7 @@ function showToast(message, type = 'info') {
 
 // Check authentication
 let currentMinistro = null;
+let loadedAssignments = []; // Store loaded assignments for later use
 
 try {
   const storedMinistro = localStorage.getItem('currentMinistro');
@@ -93,10 +94,12 @@ async function renderAssignments() {
   try {
     // Cargar desde el servidor
     assignments = await ministroAssignmentService.getByMinistroIdAsync(ministroId);
+    loadedAssignments = assignments; // Store globally for later use
   } catch (error) {
     console.error('Error loading assignments:', error);
     // Fallback a datos locales
     assignments = ministroAssignmentService.getByMinistroId(ministroId);
+    loadedAssignments = assignments;
   }
 
   if (assignments.length === 0) {
@@ -121,25 +124,34 @@ async function renderAssignments() {
   });
 
   container.innerHTML = assignments.map(assignment => {
-    // Obtener datos de la organización desde user_organizations
-    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-    const org = orgs.find(o => o.id === assignment.organizationId);
+    // El ID puede ser _id (MongoDB) o id
+    const assignmentId = assignment._id || assignment.id;
+
+    // La organización viene populada desde el servidor
+    const org = assignment.organizationId; // Ya es un objeto
 
     // Obtener nombre de la organización
     let orgName = assignment.organizationName;
-    if (!orgName) {
-      orgName = org?.organization?.name || org?.organizationName || 'Organización sin nombre';
+    if (!orgName && org) {
+      orgName = org.organizationName || org.name || 'Organización sin nombre';
     }
 
     // Verificar si la cita fue modificada recientemente
-    const wasModified = org?.appointmentWasModified && org?.appointmentChanges?.length > 0;
-    const lastChange = wasModified ? org.appointmentChanges[org.appointmentChanges.length - 1] : null;
+    const wasModified = assignment.appointmentWasModified && assignment.appointmentChanges?.length > 0;
+    const lastChange = wasModified ? assignment.appointmentChanges[assignment.appointmentChanges.length - 1] : null;
 
-    // Formatear fecha correctamente (evitar problema de timezone)
+    // Formatear fecha correctamente (manejar ISO string del servidor)
     let formattedDate = 'Fecha no especificada';
     if (assignment.scheduledDate) {
-      const [year, month, day] = assignment.scheduledDate.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
+      let date;
+      if (assignment.scheduledDate.includes('T')) {
+        // Es un ISO string del servidor
+        date = new Date(assignment.scheduledDate);
+      } else {
+        // Es un string "yyyy-mm-dd"
+        const [year, month, day] = assignment.scheduledDate.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      }
       formattedDate = date.toLocaleDateString('es-CL', {
         weekday: 'long',
         year: 'numeric',
@@ -224,7 +236,7 @@ async function renderAssignments() {
 
         ${assignment.status === 'pending' && !assignment.signaturesValidated ? `
           <div style="display: flex; gap: 12px;">
-            <button class="btn btn-primary" onclick="validateSignatures('${assignment.id}')">
+            <button class="btn btn-primary" onclick="validateSignatures('${assignmentId}')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                 <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
@@ -233,7 +245,7 @@ async function renderAssignments() {
               </svg>
               Validar Firmas
             </button>
-            <button class="btn btn-secondary" onclick="viewDetails('${assignment.id}')">Ver Detalles</button>
+            <button class="btn btn-secondary" onclick="viewDetails('${assignmentId}')">Ver Detalles</button>
           </div>
         ` : assignment.signaturesValidated ? `
           <div style="background: #d1fae5; border-radius: 12px; padding: 16px;">
@@ -249,7 +261,7 @@ async function renderAssignments() {
                   <p style="margin: 2px 0 0; color: #047857; font-size: 13px;">${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
-              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignment.id}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
+              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -424,15 +436,15 @@ window.deleteBlock = deleteBlock;
 window.editValidatedSignatures = editValidatedSignatures;
 
 function validateSignatures(assignmentId) {
-  const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
+  // Buscar en las asignaciones cargadas (usando _id de MongoDB)
+  const assignment = loadedAssignments.find(a => (a._id === assignmentId || a.id === assignmentId));
   if (!assignment) {
     showToast('Asignación no encontrada', 'error');
     return;
   }
 
-  // Obtener los datos de la organización
-  const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-  const org = orgs.find(o => o.id === assignment.organizationId);
+  // La organización viene populada en la asignación desde el servidor
+  const org = assignment.organizationId; // Ya viene como objeto populado
 
   // Abrir el nuevo wizard
   openValidationWizard(assignment, org, currentMinistro, {
@@ -533,7 +545,7 @@ function processValidationComplete(wizardData, assignment, org, ministro) {
 
 // Función para editar firmas ya validadas
 function editValidatedSignatures(assignmentId) {
-  const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
+  const assignment = loadedAssignments.find(a => (a._id === assignmentId || a.id === assignmentId));
   if (!assignment) {
     showToast('Asignación no encontrada', 'error');
     return;
@@ -583,25 +595,23 @@ function editValidatedSignatures(assignmentId) {
 }
 
 function viewDetails(assignmentId) {
-  const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
+  const assignment = loadedAssignments.find(a => (a._id === assignmentId || a.id === assignmentId));
   if (!assignment) {
     showToast('Asignación no encontrada', 'error');
     return;
   }
 
-  // Obtener datos de la organización
-  const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
-  const org = orgs.find(o => o.id === assignment.organizationId);
+  // La organización viene populada en la asignación desde el servidor
+  const org = assignment.organizationId; // Ya viene como objeto populado
 
-  // Extraer datos de la organización (pueden estar en org.organization o directamente en org)
-  const orgData = org?.organization || org || {};
-  const orgName = orgData.name || org?.organizationName || assignment.organizationName || 'Sin nombre';
-  const orgType = orgData.type || org?.organizationType || 'No especificado';
-  const orgAddress = orgData.address || org?.address || 'No especificada';
-  const orgCommune = orgData.commune || org?.commune || '';
-  const orgRegion = orgData.region || org?.region || '';
-  const orgEmail = orgData.email || org?.contactEmail || '';
-  const orgPhone = orgData.phone || org?.contactPhone || '';
+  // Extraer datos de la organización
+  const orgName = org?.organizationName || assignment.organizationName || 'Sin nombre';
+  const orgType = org?.organizationType || 'No especificado';
+  const orgAddress = org?.address || 'No especificada';
+  const orgCommune = org?.commune || '';
+  const orgRegion = org?.region || '';
+  const orgEmail = org?.contactEmail || '';
+  const orgPhone = org?.contactPhone || '';
 
   // Extraer miembros
   const members = org?.members || [];
