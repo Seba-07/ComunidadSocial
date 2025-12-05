@@ -19,7 +19,9 @@
       "Bash(python3:*)",
       "Bash(npm run seed:uv:*)",
       "Bash(cat:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:docplayer.es)",
+      "WebFetch(domain:wikimapia.org)"
     ],
     "deny": [],
     "ask": []
