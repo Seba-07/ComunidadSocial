@@ -965,10 +965,10 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         const select = card.querySelector('.additional-select');
         const signature = signatureData[`additional-sig-${i}`];
 
-        let data = { cargo, validated: !!signature, signature };
+        let data = { cargo, validated: !!signature, signature, id: null, name: '', rut: '' };
 
         if (select?.value === 'manual') {
-          data.id = null;
+          data.id = 'manual';
           data.name = card.querySelector('.additional-manual-name')?.value.trim() || '';
           data.rut = card.querySelector('.additional-rut')?.value.trim() || '';
           data.isManual = true;
@@ -979,9 +979,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           data.rut = option.dataset.rut;
         }
 
-        if (data.name) {
-          wizardData.additionalMembers.push(data);
-        }
+        // Always save the card (even if empty) to preserve newly added cards
+        wizardData.additionalMembers.push(data);
       });
     }
 
