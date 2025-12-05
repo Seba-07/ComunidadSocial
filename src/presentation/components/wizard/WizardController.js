@@ -4520,25 +4520,27 @@ Vocal`;
     if (!stepContent) return;
 
     // Reemplazar el contenido del paso 2 con el formulario de solicitud de Ministro
+    const orgTypeName = this.formData.organization.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' :
+                        this.formData.organization.type === 'ORG_COMUNITARIA' ? 'Organización Comunitaria Funcional' :
+                        this.formData.organization.type || 'N/A';
+
     stepContent.innerHTML = `
       <div class="ministro-request-screen">
-        <div class="success-checkmark">
-          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-            <circle cx="40" cy="40" r="36" stroke="#10b981" stroke-width="4" fill="#f0fdf4"/>
-            <path d="M25 40 L35 50 L55 30" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <!-- Header con checkmark -->
+        <div class="ministro-request-header">
+          <div class="success-checkmark">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+              <circle cx="36" cy="36" r="32" stroke="#10b981" stroke-width="4" fill="#f0fdf4"/>
+              <path d="M22 36 L32 46 L50 28" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2>Pasos 1 y 2 Completados</h2>
+          <p>Has completado exitosamente la información básica y el registro de miembros fundadores.</p>
         </div>
 
-        <h2 style="text-align: center; color: #1f2937; margin: 24px 0 12px;">
-          ✓ Pasos 1 y 2 Completados
-        </h2>
-
-        <p style="text-align: center; color: #6b7280; margin-bottom: 32px;">
-          Has completado exitosamente la información básica y el registro de miembros fundadores.
-        </p>
-
-        <div class="info-box" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <h3 style="color: #1e40af; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+        <!-- Info box -->
+        <div class="ministro-info-box">
+          <h3>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -4546,184 +4548,207 @@ Vocal`;
             </svg>
             Siguiente Paso: Solicitar Ministro de Fe
           </h3>
-          <p style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px;">
-            Antes de continuar con el paso 3, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.
-          </p>
-          <p style="margin: 0; color: #3b82f6; font-size: 14px;">
-            El Ministro de Fe presidirá la asamblea de constitución, designará el <strong>Directorio Provisorio</strong>
-            (Presidente, Secretario y Tesorero) y validará el proceso.
-          </p>
+          <p>Antes de continuar con el paso 3, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.</p>
+          <p>El Ministro de Fe presidirá la asamblea de constitución, designará el <strong>Directorio Provisorio</strong> (Presidente, Secretario y Tesorero) y validará el proceso.</p>
         </div>
 
-        <form id="ministro-request-form" style="max-width: 500px; margin: 0 auto;">
-          <div class="form-group">
-            <label>Resumen de la Organización</label>
-            <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 8px 0;"><strong>Nombre:</strong> ${this.formData.organization.name || 'N/A'}</p>
-              <p style="margin: 0 0 8px 0;"><strong>Tipo:</strong> ${this.formData.organization.type || 'N/A'}</p>
-              <p style="margin: 0;"><strong>Miembros Fundadores:</strong> ${this.formData.members.length}</p>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Selecciona tu Fecha y Hora de Preferencia para Asamblea de Constitución <span class="required">*</span></label>
-            <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-              <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
-                <strong>📌 Nota importante:</strong> La fecha y hora que selecciones es una <strong>preferencia</strong>.
-                La Municipalidad gestiona los horarios finales y puede modificarlos según disponibilidad de Ministros de Fe.
-                Serás contactado para confirmar la fecha definitiva.
-              </p>
-            </div>
-            <div id="schedule-calendar-container" class="schedule-calendar-container">
-              <div class="calendar-header">
-                <button type="button" id="prev-month-btn" class="calendar-nav-btn">
+        <!-- Formulario con layout de 2 columnas -->
+        <form id="ministro-request-form" class="ministro-request-form">
+          <div class="ministro-form-grid">
+            <!-- Columna izquierda: Resumen + Dirección -->
+            <div class="ministro-form-column">
+              <!-- Resumen de la Organización -->
+              <div class="ministro-form-section">
+                <h4>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6"></polyline>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
                   </svg>
-                </button>
-                <h3 id="current-month-year" class="calendar-month-title"></h3>
-                <button type="button" id="next-month-btn" class="calendar-nav-btn">
+                  Resumen de la Organización
+                </h4>
+                <div class="org-summary-card">
+                  <div class="summary-item">
+                    <span class="summary-label">Nombre</span>
+                    <span class="summary-value">${this.formData.organization.name || 'N/A'}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tipo</span>
+                    <span class="summary-value">${orgTypeName}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Miembros Fundadores</span>
+                    <span class="summary-value">${this.formData.members.length} personas</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dirección de la Asamblea -->
+              <div class="ministro-form-section">
+                <h4>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
                   </svg>
-                </button>
-              </div>
-              <div class="calendar-weekdays">
-                <div class="calendar-weekday">Dom</div>
-                <div class="calendar-weekday">Lun</div>
-                <div class="calendar-weekday">Mar</div>
-                <div class="calendar-weekday">Mié</div>
-                <div class="calendar-weekday">Jue</div>
-                <div class="calendar-weekday">Vie</div>
-                <div class="calendar-weekday">Sáb</div>
-              </div>
-              <div id="calendar-days" class="calendar-days"></div>
-              <div id="time-slots-container" class="time-slots-container" style="display: none;">
-                <h4 class="time-slots-title">Horarios Disponibles</h4>
-                <p class="time-slots-date" id="selected-date-display"></p>
-                <div id="time-slots-grid" class="time-slots-grid"></div>
-              </div>
-              <div id="selected-appointment" class="selected-appointment" style="display: none;">
-                <div class="appointment-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
+                  Dirección de la Asamblea <span class="required">*</span>
+                </h4>
+                <div class="address-options-list">
+                  <label class="address-option-card" data-option="org">
+                    <input type="radio" name="assembly-address-type" value="org">
+                    <div class="option-content">
+                      <strong>Dirección de la Organización</strong>
+                      <span id="org-address-preview">${this.formData.organization?.address || 'No especificada'}</span>
+                    </div>
+                  </label>
+                  <label class="address-option-card" data-option="muni">
+                    <input type="radio" name="assembly-address-type" value="muni">
+                    <div class="option-content">
+                      <strong>Municipalidad de Renca</strong>
+                      <span>Blanco Encalada 1335, Renca</span>
+                    </div>
+                  </label>
+                  <label class="address-option-card" data-option="custom">
+                    <input type="radio" name="assembly-address-type" value="custom">
+                    <div class="option-content" style="flex: 1;">
+                      <strong>Otra dirección</strong>
+                      <input type="text" id="custom-assembly-address" placeholder="Escriba la dirección completa..." disabled>
+                    </div>
+                  </label>
                 </div>
-                <div class="appointment-details">
-                  <p class="appointment-label">Cita Agendada:</p>
-                  <p class="appointment-datetime" id="appointment-datetime"></p>
-                </div>
-                <button type="button" id="change-appointment-btn" class="change-appointment-btn">Cambiar</button>
+                <input type="hidden" id="assembly-address" name="assemblyAddress">
               </div>
             </div>
-            <input type="hidden" id="selected-date" name="selectedDate">
-            <input type="hidden" id="selected-time" name="selectedTime">
-            <small style="color: #6b7280; display: block; margin-top: 8px;">
-              <strong style="color: #10b981;">●</strong> Días disponibles
-              <strong style="color: #ef4444; margin-left: 12px;">●</strong> Días sin horarios
-            </small>
-          </div>
 
-          <div class="form-group">
-            <label>Dirección de la Asamblea de Constitución <span class="required">*</span></label>
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="org">
-                <input type="radio" name="assembly-address-type" value="org" style="width: 18px; height: 18px;">
-                <div>
-                  <strong style="display: block; color: #1f2937;">Dirección de la Organización</strong>
-                  <span style="font-size: 13px; color: #6b7280;" id="org-address-preview">${this.formData.organization?.address || 'No especificada'}</span>
-                </div>
-              </label>
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="muni">
-                <input type="radio" name="assembly-address-type" value="muni" style="width: 18px; height: 18px;">
-                <div>
-                  <strong style="display: block; color: #1f2937;">Municipalidad de Renca</strong>
-                  <span style="font-size: 13px; color: #6b7280;">Blanco Encalada 1335, Renca</span>
-                </div>
-              </label>
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="custom">
-                <input type="radio" name="assembly-address-type" value="custom" style="width: 18px; height: 18px;">
-                <div style="flex: 1;">
-                  <strong style="display: block; color: #1f2937;">Otra dirección</strong>
-                  <input type="text" id="custom-assembly-address" placeholder="Escriba la dirección completa..."
-                    style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 6px; display: none;"
-                    disabled>
-                </div>
-              </label>
-            </div>
-            <input type="hidden" id="assembly-address" name="assemblyAddress">
-            <small style="color: #6b7280; display: block; margin-top: 8px;">
-              Seleccione dónde se realizará la asamblea de constitución
-            </small>
-          </div>
-
-          <div class="form-group">
-            <label>Comentarios Adicionales (Opcional)</label>
-            <textarea id="ministro-comments" name="comments" rows="3"
-              placeholder="Información adicional que desees compartir con la municipalidad..."
-              style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
-          </div>
-
-          <!-- Checklist de Libros Requeridos -->
-          <div class="form-group" style="margin-top: 24px;">
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px;">
-              <h4 style="margin: 0 0 12px 0; color: #92400e; display: flex; align-items: center; gap: 10px; font-size: 16px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            <!-- Columna derecha: Calendario -->
+            <div class="ministro-form-section" style="height: fit-content;">
+              <h4>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
                 </svg>
-                Libros Requeridos para la Asamblea
+                Fecha y Hora de Preferencia <span class="required">*</span>
               </h4>
-              <p style="margin: 0 0 16px 0; color: #a16207; font-size: 13px; line-height: 1.5;">
-                <strong>Importante:</strong> El Ministro de Fe solicitará estos 3 libros durante la Asamblea Constitutiva.
-                Es tu responsabilidad adquirirlos antes de la fecha de la asamblea. Puedes comprarlos en cualquier librería.
-              </p>
-
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
-                  <input type="checkbox" id="book-actas" name="bookActas" style="width: 20px; height: 20px; accent-color: #10b981;" required>
-                  <div style="flex: 1;">
-                    <strong style="color: #1f2937; display: block;">📘 Libro de Actas</strong>
-                    <span style="font-size: 12px; color: #6b7280;">Para registrar las actas de las asambleas y reuniones</span>
-                  </div>
-                </label>
-
-                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
-                  <input type="checkbox" id="book-cuentas" name="bookCuentas" style="width: 20px; height: 20px; accent-color: #10b981;" required>
-                  <div style="flex: 1;">
-                    <strong style="color: #1f2937; display: block;">📗 Libro de Cuentas</strong>
-                    <span style="font-size: 12px; color: #6b7280;">Para llevar el registro contable y financiero</span>
-                  </div>
-                </label>
-
-                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
-                  <input type="checkbox" id="book-socios" name="bookSocios" style="width: 20px; height: 20px; accent-color: #10b981;" required>
-                  <div style="flex: 1;">
-                    <strong style="color: #1f2937; display: block;">📕 Libro de Socios</strong>
-                    <span style="font-size: 12px; color: #6b7280;">Para registrar el ingreso y retiro de miembros</span>
-                  </div>
-                </label>
+              <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
+                <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
+                  <strong>📌 Nota:</strong> La fecha y hora es una preferencia. La Municipalidad confirmará según disponibilidad.
+                </p>
               </div>
-
-              <p style="margin: 16px 0 0 0; color: #92400e; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-                Debes confirmar que cuentas con estos 3 libros para continuar
-              </p>
+              <div id="schedule-calendar-container" class="schedule-calendar-container" style="margin-top: 0; border: none; padding: 0;">
+                <div class="calendar-header">
+                  <button type="button" id="prev-month-btn" class="calendar-nav-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                  <h3 id="current-month-year" class="calendar-month-title"></h3>
+                  <button type="button" id="next-month-btn" class="calendar-nav-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+                <div class="calendar-weekdays">
+                  <div class="calendar-weekday">Dom</div>
+                  <div class="calendar-weekday">Lun</div>
+                  <div class="calendar-weekday">Mar</div>
+                  <div class="calendar-weekday">Mié</div>
+                  <div class="calendar-weekday">Jue</div>
+                  <div class="calendar-weekday">Vie</div>
+                  <div class="calendar-weekday">Sáb</div>
+                </div>
+                <div id="calendar-days" class="calendar-days"></div>
+                <div id="time-slots-container" class="time-slots-container" style="display: none;">
+                  <h4 class="time-slots-title">Horarios Disponibles</h4>
+                  <p class="time-slots-date" id="selected-date-display"></p>
+                  <div id="time-slots-grid" class="time-slots-grid"></div>
+                </div>
+                <div id="selected-appointment" class="selected-appointment" style="display: none;">
+                  <div class="appointment-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
+                  <div class="appointment-details">
+                    <p class="appointment-label">Cita Agendada:</p>
+                    <p class="appointment-datetime" id="appointment-datetime"></p>
+                  </div>
+                  <button type="button" id="change-appointment-btn" class="change-appointment-btn">Cambiar</button>
+                </div>
+              </div>
+              <input type="hidden" id="selected-date" name="selectedDate">
+              <input type="hidden" id="selected-time" name="selectedTime">
+              <small style="color: #6b7280; display: block; margin-top: 12px;">
+                <strong style="color: #10b981;">●</strong> Días disponibles
+                <strong style="color: #ef4444; margin-left: 16px;">●</strong> Días sin horarios
+              </small>
             </div>
           </div>
 
-          <div style="display: flex; gap: 12px; margin-top: 32px;">
-            <button type="button" id="ministro-back-btn" class="btn btn-secondary" style="flex: 1;">
+          <!-- Checklist de Libros - Ancho completo -->
+          <div class="books-checklist-container">
+            <h4>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              Libros Requeridos para la Asamblea
+            </h4>
+            <p><strong>Importante:</strong> El Ministro de Fe solicitará estos 3 libros durante la Asamblea Constitutiva. Es tu responsabilidad adquirirlos antes de la fecha. Puedes comprarlos en cualquier librería.</p>
+
+            <div class="books-list">
+              <label class="book-item">
+                <input type="checkbox" id="book-actas" name="bookActas" required>
+                <div class="book-info">
+                  <strong>📘 Libro de Actas</strong>
+                  <span>Para registrar las actas de asambleas y reuniones</span>
+                </div>
+              </label>
+
+              <label class="book-item">
+                <input type="checkbox" id="book-cuentas" name="bookCuentas" required>
+                <div class="book-info">
+                  <strong>📗 Libro de Cuentas</strong>
+                  <span>Para el registro contable y financiero</span>
+                </div>
+              </label>
+
+              <label class="book-item">
+                <input type="checkbox" id="book-socios" name="bookSocios" required>
+                <div class="book-info">
+                  <strong>📕 Libro de Socios</strong>
+                  <span>Para registrar ingreso y retiro de miembros</span>
+                </div>
+              </label>
+            </div>
+
+            <p class="books-checklist-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              Debes confirmar que cuentas con estos 3 libros para continuar
+            </p>
+          </div>
+
+          <!-- Comentarios adicionales -->
+          <div class="comments-section">
+            <label>Comentarios Adicionales (Opcional)</label>
+            <textarea id="ministro-comments" name="comments" rows="3" placeholder="Información adicional que desees compartir con la municipalidad..."></textarea>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="ministro-form-actions">
+            <button type="button" id="ministro-back-btn" class="btn btn-secondary">
               ← Volver
             </button>
-            <button type="submit" id="ministro-submit-btn" class="btn btn-primary" style="flex: 2;" disabled>
+            <button type="submit" id="ministro-submit-btn" class="btn btn-primary" disabled>
               📤 Enviar Solicitud de Ministro de Fe
             </button>
           </div>

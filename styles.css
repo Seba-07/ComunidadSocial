@@ -12709,6 +12709,337 @@ a.header-logo:hover {
 }
 
 /* ======================================
+   MINISTRO REQUEST SCREEN (Wizard Step 2 Complete)
+   ====================================== */
+
+.ministro-request-screen {
+    max-width: 100%;
+    animation: fadeIn 0.4s ease;
+}
+
+.ministro-request-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.ministro-request-header .success-checkmark {
+    margin: 0 auto 16px;
+}
+
+.ministro-request-header h2 {
+    color: var(--text-primary);
+    font-size: 24px;
+    margin: 0 0 8px 0;
+}
+
+.ministro-request-header p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 15px;
+}
+
+.ministro-info-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+}
+
+.ministro-info-box h3 {
+    color: #1e40af;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+}
+
+.ministro-info-box p {
+    margin: 0 0 8px 0;
+    color: #1e40af;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.ministro-info-box p:last-child {
+    margin-bottom: 0;
+    color: #3b82f6;
+}
+
+.ministro-request-form {
+    display: grid;
+    gap: 28px;
+}
+
+.ministro-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+}
+
+.ministro-form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.ministro-form-section {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.ministro-form-section h4 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ministro-form-section h4 svg {
+    color: var(--primary-color);
+}
+
+.org-summary-card {
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.org-summary-card .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.org-summary-card .summary-item:last-child {
+    border-bottom: none;
+}
+
+.org-summary-card .summary-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.org-summary-card .summary-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.address-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.address-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.address-option-card:hover {
+    border-color: var(--primary-color);
+    background: #f0fdf4;
+}
+
+.address-option-card.selected {
+    border-color: var(--primary-color);
+    background: #f0fdf4;
+}
+
+.address-option-card input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--primary-color);
+}
+
+.address-option-card .option-content strong {
+    display: block;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.address-option-card .option-content span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.address-option-card .option-content input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+/* Books checklist */
+.books-checklist-container {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.books-checklist-container h4 {
+    margin: 0 0 12px 0;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.books-checklist-container > p {
+    margin: 0 0 20px 0;
+    color: #a16207;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.books-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.book-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.book-item:hover {
+    border-color: #10b981;
+}
+
+.book-item.checked {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.book-item input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    accent-color: #10b981;
+}
+
+.book-item .book-info strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.book-item .book-info span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.books-checklist-note {
+    margin: 16px 0 0 0;
+    color: #92400e;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Comments section */
+.comments-section {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.comments-section label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.comments-section textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Action buttons */
+.ministro-form-actions {
+    display: flex;
+    gap: 16px;
+    padding-top: 8px;
+}
+
+.ministro-form-actions .btn {
+    padding: 14px 28px;
+    font-size: 15px;
+}
+
+.ministro-form-actions .btn-secondary {
+    flex: 1;
+}
+
+.ministro-form-actions .btn-primary {
+    flex: 2;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .ministro-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .books-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .ministro-form-actions {
+        flex-direction: column;
+    }
+
+    .ministro-form-actions .btn-secondary,
+    .ministro-form-actions .btn-primary {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* ======================================
    SCHEDULE CALENDAR STYLES
    ====================================== */
 
