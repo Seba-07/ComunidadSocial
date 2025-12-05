@@ -15570,3 +15570,841 @@ a.header-logo:hover {
     color: #92400e;
     font-weight: 500;
 }
+
+/* ============================================
+   ESTILOS RESPONSIVOS GLOBALES
+   ============================================ */
+
+/* ============ TABLET (max 1024px) ============ */
+@media (max-width: 1024px) {
+    /* Dashboard stats - 2 columnas */
+    .dashboard-stats,
+    .admin-stats-row,
+    .quick-stats,
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Organization cards */
+    .organizations-grid,
+    .org-cards-grid,
+    .cards-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Admin dashboard sections */
+    .admin-dashboard-content {
+        gap: 20px;
+    }
+
+    /* Modals más pequeños */
+    .admin-review-modal,
+    .modal-content,
+    .wizard-modal {
+        max-width: 90vw !important;
+        margin: 20px auto;
+    }
+
+    /* Formularios en 2 columnas */
+    .form-row,
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============ TABLET PEQUEÑO (max 900px) ============ */
+@media (max-width: 900px) {
+    /* Modal de Ministro a una columna */
+    .ministro-modal-content {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ministro-form-column {
+        order: -1;
+    }
+
+    /* Admin cards */
+    .admin-org-card {
+        padding: 16px;
+    }
+
+    /* Member cards en grid */
+    .members-grid,
+    .member-cards-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============ MÓVIL GRANDE (max 768px) ============ */
+@media (max-width: 768px) {
+    /* Variables ajustadas */
+    :root {
+        --header-height: 56px;
+        --bottom-nav-height: 64px;
+    }
+
+    /* Main content padding reducido */
+    .main-content {
+        padding: 16px 12px !important;
+        margin-bottom: var(--bottom-nav-height);
+    }
+
+    /* Dashboard stats - 1 columna */
+    .dashboard-stats,
+    .admin-stats-row,
+    .quick-stats,
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Organization cards - 1 columna */
+    .organizations-grid,
+    .org-cards-grid,
+    .cards-container {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    /* Cards más compactas */
+    .org-card,
+    .admin-org-card,
+    .card {
+        padding: 16px !important;
+    }
+
+    /* Headers de cards */
+    .org-card-header,
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* Formularios - 1 columna */
+    .form-row,
+    .form-grid,
+    .form-two-columns,
+    .input-row {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Modals full width */
+    .admin-review-modal,
+    .modal-content,
+    .wizard-modal,
+    .review-modal {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        max-height: 100vh !important;
+        height: 100vh !important;
+    }
+
+    .modal-overlay {
+        padding: 0;
+    }
+
+    /* Review modal body scroll */
+    .review-modal-body {
+        max-height: calc(100vh - 60px) !important;
+        overflow-y: auto !important;
+        padding: 16px !important;
+    }
+
+    /* Review modal header */
+    .review-modal-header {
+        padding: 16px !important;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .review-modal-header h2 {
+        font-size: 18px !important;
+    }
+
+    /* Tables responsive - scroll horizontal */
+    .table-container,
+    .data-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    /* Wizard steps */
+    .wizard-steps,
+    .steps-container {
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+
+    .wizard-step,
+    .step-item {
+        min-width: 100px;
+        flex-shrink: 0;
+    }
+
+    /* Members grid - 1 columna */
+    .members-grid,
+    .member-cards-container,
+    .founders-list {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Bottom navigation visible */
+    .bottom-nav {
+        display: flex !important;
+    }
+
+    /* Títulos más pequeños */
+    h1, .page-title {
+        font-size: 1.5rem !important;
+    }
+
+    h2 {
+        font-size: 1.25rem !important;
+    }
+
+    h3 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Buttons más grandes para touch */
+    .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+
+    /* Action buttons en columna */
+    .card-actions,
+    .org-actions,
+    .button-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .card-actions .btn,
+    .org-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Quick actions grid */
+    .quick-actions,
+    .action-buttons {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    /* Status badges */
+    .status-badge,
+    .org-status {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    /* Info grids */
+    .info-grid,
+    .detail-grid,
+    .ministro-data-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Contact row en columna */
+    .ministro-contact-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Location options más pequeñas */
+    .location-option-card {
+        padding: 10px 12px;
+    }
+
+    /* Admin tabs scroll horizontal */
+    .admin-tabs,
+    .tab-navigation {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+    }
+
+    .admin-tab,
+    .tab-item {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    /* Stat cards más compactas */
+    .stat-card,
+    .stat-item {
+        padding: 12px !important;
+    }
+
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+
+    .stat-label {
+        font-size: 12px !important;
+    }
+
+    /* Filter section */
+    .filter-section,
+    .filters-container {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filter-section select,
+    .filter-section input {
+        width: 100%;
+    }
+
+    /* Login/Register forms */
+    .auth-container,
+    .login-container {
+        padding: 20px !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        min-height: 100vh;
+    }
+
+    /* Logo en auth */
+    .auth-logo,
+    .login-logo {
+        width: 80px !important;
+        height: 80px !important;
+    }
+
+    /* PDF/Document viewer */
+    .pdf-viewer,
+    .document-preview {
+        height: 50vh !important;
+    }
+
+    /* Timeline/History */
+    .timeline,
+    .status-history {
+        padding-left: 20px;
+    }
+
+    /* Notifications */
+    .notification-item {
+        padding: 12px;
+    }
+}
+
+/* ============ MÓVIL PEQUEÑO (max 480px) ============ */
+@media (max-width: 480px) {
+    /* Padding aún más reducido */
+    .main-content {
+        padding: 12px 8px !important;
+    }
+
+    /* Cards muy compactas */
+    .org-card,
+    .admin-org-card,
+    .card,
+    .stat-card {
+        padding: 12px !important;
+    }
+
+    /* Header más compacto */
+    .header-content {
+        padding: 0 12px;
+    }
+
+    .header-title {
+        font-size: 14px !important;
+    }
+
+    .logo-img {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    /* Títulos más pequeños */
+    h1, .page-title {
+        font-size: 1.25rem !important;
+    }
+
+    h2 {
+        font-size: 1.1rem !important;
+    }
+
+    h3 {
+        font-size: 1rem !important;
+    }
+
+    /* Stat values más pequeños */
+    .stat-value {
+        font-size: 1.25rem !important;
+    }
+
+    /* Quick actions - 1 columna */
+    .quick-actions,
+    .action-buttons {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Form labels */
+    label {
+        font-size: 13px;
+    }
+
+    /* Inputs */
+    input, select, textarea {
+        font-size: 16px !important; /* Prevenir zoom en iOS */
+        padding: 12px !important;
+    }
+
+    /* Modal padding reducido */
+    .review-modal-body {
+        padding: 12px !important;
+    }
+
+    /* Botones full width */
+    .btn {
+        width: 100%;
+    }
+
+    .button-row,
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* Wizard step indicator más pequeño */
+    .step-number,
+    .step-icon {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    /* Member card info */
+    .member-info h4 {
+        font-size: 14px;
+    }
+
+    .member-info p {
+        font-size: 12px;
+    }
+
+    /* Badge sizes */
+    .badge,
+    .status-badge {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    /* Table font size */
+    table th,
+    table td {
+        font-size: 12px;
+        padding: 8px 6px;
+    }
+
+    /* Timeline más compacto */
+    .timeline-item {
+        padding-left: 24px;
+    }
+
+    /* Bottom nav items */
+    .nav-item span {
+        font-size: 10px;
+    }
+
+    /* Ministro modal - info cards más compactas */
+    .ministro-info-card-body {
+        padding: 12px;
+    }
+
+    .ministro-data-label {
+        font-size: 10px;
+    }
+
+    .ministro-data-value {
+        font-size: 13px;
+    }
+
+    /* Contact icons más pequeños */
+    .ministro-contact-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Action alert */
+    .ministro-action-alert {
+        padding: 10px 12px;
+    }
+
+    .ministro-action-alert svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .ministro-action-alert p {
+        font-size: 12px;
+    }
+}
+
+/* ============ AJUSTES ESPECÍFICOS PARA COMPONENTES ============ */
+
+/* Wizard en móvil */
+@media (max-width: 768px) {
+    .wizard-container {
+        padding: 0;
+    }
+
+    .wizard-content {
+        padding: 16px;
+    }
+
+    .wizard-header {
+        padding: 16px;
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .wizard-navigation {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .wizard-navigation .btn {
+        width: 100%;
+    }
+
+    /* Paso de miembros */
+    .member-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .member-card {
+        padding: 12px;
+    }
+
+    /* Paso de estatutos */
+    .estatutos-editor {
+        min-height: 300px;
+    }
+
+    /* Paso de resumen */
+    .summary-section {
+        padding: 12px;
+    }
+}
+
+/* Admin Dashboard específico */
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .admin-title-section {
+        width: 100%;
+    }
+
+    .admin-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .admin-actions .btn {
+        width: 100%;
+    }
+
+    /* Org detail sections */
+    .org-detail-section {
+        padding: 12px;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-label {
+        font-weight: 600;
+    }
+
+    /* Pending requests cards */
+    .pending-card,
+    .request-card {
+        padding: 12px;
+    }
+
+    .pending-card-header,
+    .request-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* Date time display */
+    .date-time-display {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* Modals específicos en móvil */
+@media (max-width: 768px) {
+    /* Ministro request modal */
+    .ministro-request-modal {
+        max-width: 100% !important;
+    }
+
+    .ministro-info-column,
+    .ministro-form-column {
+        width: 100%;
+    }
+
+    /* Correction modal */
+    .correction-modal .correction-fields {
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    /* Confirmation dialogs */
+    .confirm-dialog,
+    .alert-dialog {
+        width: 90% !important;
+        max-width: 320px;
+    }
+
+    /* Upload modal */
+    .upload-modal {
+        max-width: 100% !important;
+    }
+
+    .upload-dropzone {
+        padding: 24px 16px;
+    }
+}
+
+/* Tablas responsivas */
+@media (max-width: 768px) {
+    .responsive-table {
+        display: block;
+    }
+
+    .responsive-table thead {
+        display: none;
+    }
+
+    .responsive-table tbody {
+        display: block;
+    }
+
+    .responsive-table tr {
+        display: block;
+        margin-bottom: 12px;
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .responsive-table td:last-child {
+        border-bottom: none;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+}
+
+/* User profile en móvil */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .profile-avatar {
+        margin: 0 auto;
+    }
+
+    .profile-info-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .profile-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Notifications panel */
+@media (max-width: 768px) {
+    .notifications-panel {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        right: 0;
+        bottom: var(--bottom-nav-height);
+        max-height: none;
+        border-radius: 0;
+    }
+
+    .notification-item {
+        padding: 12px;
+    }
+
+    .notification-icon {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Empty states */
+@media (max-width: 768px) {
+    .empty-state {
+        padding: 32px 16px;
+    }
+
+    .empty-state-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .empty-state h3 {
+        font-size: 1.1rem;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+}
+
+/* Loading states */
+@media (max-width: 768px) {
+    .loading-spinner {
+        width: 32px;
+        height: 32px;
+    }
+
+    .skeleton-card {
+        height: 120px;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (max-width: 768px) {
+    /* Larger touch targets */
+    button,
+    .btn,
+    a.nav-item,
+    .clickable {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better spacing for touch */
+    .checkbox-label,
+    .radio-label {
+        padding: 12px 0;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Dropdown menus */
+    .dropdown-menu {
+        min-width: 200px;
+    }
+
+    .dropdown-item {
+        padding: 12px 16px;
+    }
+}
+
+/* Safe area para dispositivos con notch */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .header {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .main-content {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
+
+/* Override para grids inline en móvil */
+@media (max-width: 600px) {
+    /* Forzar cualquier grid a 1 columna en móvil pequeño */
+    [style*="grid-template-columns: repeat(2"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Grids con gap grande, reducir */
+    [style*="gap: 24px"],
+    [style*="gap: 20px"] {
+        gap: 12px !important;
+    }
+}
+
+/* Print styles - ocultar elementos de navegación */
+@media print {
+    .header,
+    .bottom-nav,
+    .sidebar,
+    .btn,
+    .card-actions {
+        display: none !important;
+    }
+
+    .main-content {
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+
+    .org-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
