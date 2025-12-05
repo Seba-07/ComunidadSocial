@@ -101,6 +101,21 @@ function showInstallPromotion() {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🎯 DOM Content Loaded - Inicializando eventos...');
 
+  // Check if ministro is logged in - redirect to ministro dashboard
+  const currentMinistro = localStorage.getItem('currentMinistro');
+  if (currentMinistro) {
+    try {
+      const ministro = JSON.parse(currentMinistro);
+      if (ministro.role === 'MINISTRO') {
+        console.log('⚖️ Ministro detectado, redirigiendo al dashboard de ministro...');
+        window.location.href = '/ministro-dashboard.html';
+        return;
+      }
+    } catch (e) {
+      localStorage.removeItem('currentMinistro');
+    }
+  }
+
   // Inicializar aplicación primero
   await initializeApp();
 

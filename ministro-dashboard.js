@@ -67,7 +67,8 @@ document.getElementById('welcome-message').textContent =
 
 // Load stats
 function loadStats() {
-  const stats = ministroAssignmentService.getStatsByMinistro(currentMinistro.id);
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  const stats = ministroAssignmentService.getStatsByMinistro(ministroId);
 
   document.getElementById('stat-pending').textContent = stats.pending;
   document.getElementById('stat-completed').textContent = stats.completed;
@@ -76,7 +77,8 @@ function loadStats() {
 
 // Render assignments list
 function renderAssignments() {
-  const assignments = ministroAssignmentService.getByMinistroId(currentMinistro.id);
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  const assignments = ministroAssignmentService.getByMinistroId(ministroId);
   const container = document.getElementById('assignments-list');
 
   if (assignments.length === 0) {
@@ -259,7 +261,8 @@ function renderAssignments() {
 
 // Render availability blocks
 function renderAvailability() {
-  const blocks = ministroAvailabilityService.getByMinistroId(currentMinistro.id);
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  const blocks = ministroAvailabilityService.getByMinistroId(ministroId);
   const container = document.getElementById('availability-list');
 
   if (blocks.length === 0) {
