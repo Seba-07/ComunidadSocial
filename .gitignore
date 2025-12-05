@@ -22,3 +22,7 @@ Thumbs.db
 .env
 .env.local
 .env.production
+server/.env
+
+# Misc
+nul

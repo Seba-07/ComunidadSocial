@@ -129,262 +129,108 @@
                     </div>
                 </section>
 
-                <!-- Hero Moderno (se muestra solo si no hay organizaciones) -->
-                <section class="hero-modern" id="hero-section">
-                    <div class="hero-badge">✨ Plataforma de Participación Ciudadana</div>
-                    <h1 class="hero-title">Construyamos juntos una mejor comunidad social</h1>
-                    <p class="hero-description">Únete a más de 1,250 personas comprometidas con la participación activa en Renca</p>
-                    <div class="hero-actions">
-                        <button class="btn-primary-lg" id="btn-crear-organizacion">Comenzar ahora</button>
-                        <button class="btn-secondary-lg" data-page="recursos">Ver recursos</button>
-                    </div>
-                    <div class="hero-image-grid">
-                        <img src="/images/comunidad-evento-2.jpeg" alt="Comunidad" class="hero-grid-img">
-                        <img src="/images/estudiantes-palacio.jpeg" alt="Estudiantes" class="hero-grid-img">
-                        <img src="/images/taller-capacitacion-1.jpeg" alt="Talleres" class="hero-grid-img">
-                    </div>
-                </section>
-
-                <!-- Stats Modernos -->
-                <section class="stats-modern">
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="1250">0</div>
-                        <div class="stat-text">Participantes activos</div>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="45">0</div>
-                        <div class="stat-text">Proyectos en curso</div>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="12">0</div>
-                        <div class="stat-text">Eventos este mes</div>
-                    </div>
-                </section>
-
-                <!-- Oportunidades Carousel -->
-                <section class="opportunities-section">
+                <!-- Información para crear organizaciones -->
+                <section class="info-organizaciones-section">
                     <div class="section-header-modern">
-                        <h2>Oportunidades destacadas</h2>
-                        <p>Explora las últimas actividades y programas disponibles</p>
+                        <h2>📋 ¿Cómo crear una organización?</h2>
+                        <p>Información importante sobre el proceso de constitución según la Ley 19.418</p>
                     </div>
-                    <div class="opportunities-carousel-container">
-                        <button class="carousel-btn carousel-btn-prev" aria-label="Anterior">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M15 18l-6-6 6-6"/>
-                            </svg>
-                        </button>
-                        <div class="opportunities-carousel">
-                            <div class="opportunity-card opportunity-featured">
-                                <div class="opportunity-tag">🔥 Más popular</div>
-                                <div class="opportunity-icon">🎓</div>
-                                <h3>Taller de Liderazgo Estudiantil</h3>
-                                <p>Desarrolla habilidades de liderazgo y trabajo en equipo con expertos</p>
-                                <div class="opportunity-meta">
-                                    <span>📅 15 Nov</span>
-                                    <span>👥 25 inscritos</span>
-                                </div>
-                                <button class="btn-opportunity">Inscribirse ahora</button>
-                            </div>
 
-                            <div class="opportunity-card">
-                                <div class="opportunity-tag tag-new">✨ Nuevo</div>
-                                <div class="opportunity-icon">📊</div>
-                                <h3>Portal de Transparencia</h3>
-                                <p>Consulta presupuestos y decisiones en tiempo real</p>
-                                <div class="opportunity-meta">
-                                    <span>🌐 Online</span>
-                                    <span>🆓 Gratuito</span>
-                                </div>
-                                <button class="btn-opportunity">Explorar</button>
-                            </div>
-
-                            <div class="opportunity-card">
-                                <div class="opportunity-tag tag-urgent">⏰ Cierra pronto</div>
-                                <div class="opportunity-icon">💰</div>
-                                <h3>Fondos Concursables</h3>
-                                <p>Financia tu proyecto comunitario o educativo</p>
-                                <div class="opportunity-meta">
-                                    <span>📅 Hasta 20 Nov</span>
-                                    <span>💵 Hasta $500k</span>
-                                </div>
-                                <button class="btn-opportunity">Postular</button>
-                            </div>
+                    <div class="info-cards-grid">
+                        <div class="info-card-home">
+                            <div class="info-card-icon">👥</div>
+                            <h3>Requisitos Mínimos</h3>
+                            <ul class="info-list">
+                                <li><strong>Juntas de Vecinos:</strong> mínimo 50 personas</li>
+                                <li><strong>Otras organizaciones:</strong> mínimo 15 personas</li>
+                                <li>Mayores de 18 años, residentes de la comuna</li>
+                                <li>Cédula de identidad vigente</li>
+                            </ul>
                         </div>
-                        <button class="carousel-btn carousel-btn-next" aria-label="Siguiente">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 18l6-6-6-6"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="carousel-indicators">
-                        <span class="indicator active"></span>
-                        <span class="indicator"></span>
-                        <span class="indicator"></span>
-                    </div>
-                </section>
 
-                <!-- Search Bar -->
-                <section class="search-section">
-                    <div class="search-container">
-                        <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" class="search-input" placeholder="Buscar documentos, eventos, noticias..." id="quick-search">
-                        <button class="search-clear" id="search-clear">✕</button>
-                    </div>
-                    <div class="search-results" id="search-results"></div>
-                </section>
-
-                <section class="quick-actions">
-                    <h3>Acceso Rápido</h3>
-                    <div class="action-grid">
-                        <button class="action-card" data-action="documentos">
-                            <img src="/images/icon-documents.svg" alt="Documentos" class="action-icon-img">
-                            <div class="action-title">Documentos</div>
-                            <div class="action-count">+120</div>
-                        </button>
-                        <button class="action-card" data-action="eventos">
-                            <img src="/images/icon-events.svg" alt="Eventos" class="action-icon-img">
-                            <div class="action-title">Eventos</div>
-                            <div class="action-count">12 próximos</div>
-                        </button>
-                        <button class="action-card" data-action="consultas">
-                            <img src="/images/icon-chat.svg" alt="Consultas" class="action-icon-img">
-                            <div class="action-title">Consultas</div>
-                            <div class="action-count">24h respuesta</div>
-                        </button>
-                        <button class="action-card" data-action="noticias">
-                            <img src="/images/icon-news.svg" alt="Noticias" class="action-icon-img">
-                            <div class="action-title">Noticias</div>
-                            <div class="action-count">5 nuevas</div>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- Upcoming Events -->
-                <section class="events-section">
-                    <div class="section-header">
-                        <h3>📅 Próximos Eventos</h3>
-                        <a href="#" class="view-all-link">Ver todos →</a>
-                    </div>
-                    <div class="events-grid">
-                        <div class="event-card">
-                            <div class="event-image">
-                                <img src="/images/comunidad-evento-1.jpeg" alt="Reunión Consejo">
-                            </div>
-                            <div class="event-content">
-                                <div class="event-date">
-                                    <div class="event-day">15</div>
-                                    <div class="event-month">NOV</div>
-                                </div>
-                                <div class="event-details">
-                                    <h4>Reunión Consejo Escolar</h4>
-                                    <p class="event-time">⏰ 18:00 hrs</p>
-                                    <p class="event-location">📍 Sala Municipal</p>
-                                </div>
-                            </div>
-                            <button class="event-btn">Confirmar</button>
+                        <div class="info-card-home">
+                            <div class="info-card-icon">📝</div>
+                            <h3>Directorio Provisorio</h3>
+                            <ul class="info-list">
+                                <li><strong>Presidente:</strong> Representa legalmente a la organización</li>
+                                <li><strong>Secretario:</strong> Maneja documentación y actas</li>
+                                <li><strong>Tesorero:</strong> Administra los recursos</li>
+                                <li><strong>2 Directores:</strong> Apoyan la gestión</li>
+                            </ul>
                         </div>
-                        <div class="event-card">
-                            <div class="event-image">
-                                <img src="/images/comunidad-evento-3.jpeg" alt="Evento Comunitario">
-                            </div>
-                            <div class="event-content">
-                                <div class="event-date">
-                                    <div class="event-day">20</div>
-                                    <div class="event-month">NOV</div>
-                                </div>
-                                <div class="event-details">
-                                    <h4>Feria de Proyectos Comunitarios</h4>
-                                    <p class="event-time">⏰ 10:00 hrs</p>
-                                    <p class="event-location">📍 Plaza Cívica</p>
-                                </div>
-                            </div>
-                            <button class="event-btn">Confirmar</button>
+
+                        <div class="info-card-home">
+                            <div class="info-card-icon">✅</div>
+                            <h3>Comisión Electoral</h3>
+                            <ul class="info-list">
+                                <li><strong>3 miembros</strong> que no sean del directorio</li>
+                                <li>Organizan las futuras elecciones</li>
+                                <li>Velan por la transparencia del proceso</li>
+                                <li>Son designados en la asamblea constitutiva</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-card-home">
+                            <div class="info-card-icon">📄</div>
+                            <h3>Documentos Generados</h3>
+                            <ul class="info-list">
+                                <li>Acta de Asamblea Constitutiva</li>
+                                <li>Lista de Socios Constitución</li>
+                                <li>Certificado del Ministro de Fe</li>
+                                <li>Declaraciones Juradas del Directorio</li>
+                            </ul>
                         </div>
                     </div>
-                </section>
 
-                <!-- Quick Poll -->
-                <section class="poll-section">
-                    <div class="poll-card">
-                        <h3>🗳️ Encuesta Rápida</h3>
-                        <p class="poll-question">¿Qué tema te gustaría que tratemos en la próxima capacitación?</p>
-                        <div class="poll-options">
-                            <button class="poll-option" data-option="1">
-                                <span>Liderazgo Comunitario</span>
-                                <span class="poll-percentage">45%</span>
-                            </button>
-                            <button class="poll-option" data-option="2">
-                                <span>Gestión de Proyectos</span>
-                                <span class="poll-percentage">30%</span>
-                            </button>
-                            <button class="poll-option" data-option="3">
-                                <span>Comunicación Efectiva</span>
-                                <span class="poll-percentage">25%</span>
-                            </button>
-                        </div>
-                        <div class="poll-footer">
-                            <span>📊 128 votos</span>
-                            <a href="#" class="poll-results-link">Ver resultados completos</a>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Community Gallery -->
-                <section class="gallery-section gallery-compact">
-                    <h3>📸 Nuestra Comunidad</h3>
-                    <div class="gallery-grid-compact">
-                        <div class="gallery-item">
-                            <img src="/images/comunidad-evento-2.jpeg" alt="Evento Comunitario" loading="lazy">
-                            <div class="gallery-overlay">
-                                <p>Encuentro de Líderes</p>
+                    <div class="proceso-steps-modern">
+                        <h3>Proceso de Constitución</h3>
+                        <p class="proceso-subtitle">Sigue estos pasos para formalizar tu organización</p>
+                        <div class="steps-horizontal">
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-icon">📝</div>
+                                </div>
+                                <h4>Crear Solicitud</h4>
+                                <p>Ingresa los datos de la organización, directorio y socios</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-icon">🔍</div>
+                                </div>
+                                <h4>Revisión Municipal</h4>
+                                <p>El municipio verifica que la documentación esté completa</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-icon">✍️</div>
+                                </div>
+                                <h4>Asamblea Constitutiva</h4>
+                                <p>Reunión con Ministro de Fe para firmar documentos oficiales</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-icon">🏛️</div>
+                                </div>
+                                <h4>Registro Civil</h4>
+                                <p>Envío de documentación para personalidad jurídica</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card step-final">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge final">✓</span>
+                                    <div class="step-icon">🎉</div>
+                                </div>
+                                <h4>¡Constituida!</h4>
+                                <p>Recibes tu número de registro y certificado oficial</p>
                             </div>
                         </div>
-                        <div class="gallery-item">
-                            <img src="/images/estudiantes-palacio.jpeg" alt="Visita Educativa" loading="lazy">
-                            <div class="gallery-overlay">
-                                <p>Visita Educativa</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="feed-section">
-                    <h3>Publicaciones Recientes</h3>
-                    <div class="feed-container" id="feed-container">
-                        <article class="feed-card">
-                            <div class="feed-header">
-                                <span class="feed-category">Consejos Escolares</span>
-                                <span class="feed-date">Hace 2 horas</span>
-                            </div>
-                            <h4>Próxima Reunión del Consejo Escolar</h4>
-                            <p>Se convoca a todos los miembros del Consejo Escolar a la reunión ordinaria del mes de noviembre...</p>
-                            <button class="btn-secondary">Ver más</button>
-                        </article>
-
-                        <article class="feed-card">
-                            <div class="feed-header">
-                                <span class="feed-category">Centro de Padres</span>
-                                <span class="feed-date">Hace 5 horas</span>
-                            </div>
-                            <h4>Nuevas Guías de Participación Disponibles</h4>
-                            <p>Descarga las guías actualizadas para la organización de actividades en el centro de padres...</p>
-                            <button class="btn-secondary">Ver más</button>
-                        </article>
-
-                        <article class="feed-card">
-                            <div class="feed-header">
-                                <span class="feed-category">Comunidad</span>
-                                <span class="feed-date">Hace 1 día</span>
-                            </div>
-                            <h4>Fondos Concursables 2024</h4>
-                            <p>Ya están abiertas las postulaciones para los fondos concursables municipales...</p>
-                            <button class="btn-secondary">Ver más</button>
-                        </article>
                     </div>
                 </section>
             </div>
@@ -662,6 +508,15 @@
             <!-- Profile/Settings View -->
             <div id="page-profile" class="page-view">
                 <div class="profile-page">
+                    <div class="profile-back-nav">
+                        <button class="btn-back-home" data-page="home">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5"></path>
+                                <path d="M12 19l-7-7 7-7"></path>
+                            </svg>
+                            Volver al inicio
+                        </button>
+                    </div>
                     <div class="profile-header">
                         <div class="profile-avatar-container">
                             <div class="profile-avatar" id="profile-avatar">

@@ -308,6 +308,9 @@ class OrganizationsService {
    * @param {Object} requestData - Datos de la solicitud
    * @param {Object} requestData.organizationData - Datos de pasos 1-2 (info básica y miembros)
    * @param {string} requestData.electionDate - Fecha programada para elección
+   * @param {string} requestData.electionTime - Hora programada para elección
+   * @param {string} requestData.assemblyAddress - Dirección de la asamblea
+   * @param {string} requestData.comments - Comentarios adicionales
    */
   requestMinistro(requestData) {
     let userId = null;
@@ -327,13 +330,16 @@ class OrganizationsService {
       ...requestData.organizationData,
       status: ORG_STATUS.WAITING_MINISTRO_REQUEST,
       electionDate: requestData.electionDate,
+      electionTime: requestData.electionTime || null,
+      assemblyAddress: requestData.assemblyAddress || null,
+      comments: requestData.comments || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusHistory: [
         {
           status: ORG_STATUS.WAITING_MINISTRO_REQUEST,
           date: new Date().toISOString(),
-          comment: `Solicitud de Ministro de Fe para fecha: ${requestData.electionDate}`
+          comment: `Solicitud de Ministro de Fe para fecha: ${requestData.electionDate}${requestData.electionTime ? ' a las ' + requestData.electionTime : ''}`
         }
       ],
       ministroData: null, // Se llenará cuando admin asigne
@@ -358,15 +364,56 @@ class OrganizationsService {
   scheduleMinistro(id, ministroData) {
     const org = this.getById(id);
     if (org) {
-      // Detectar si es cambio de horario
+      // Detectar si es cambio (ya había datos previos)
       const hadPreviousSchedule = org.ministroData && org.ministroData.scheduledDate && org.ministroData.scheduledTime;
-      const isScheduleChange = hadPreviousSchedule && (
-        org.ministroData.scheduledDate !== ministroData.scheduledDate ||
-        org.ministroData.scheduledTime !== ministroData.scheduledTime
-      );
 
-      // Guardar horario anterior si es cambio
-      if (isScheduleChange) {
+      // Detectar qué cambió
+      const hasMinistroChanged = hadPreviousSchedule && org.ministroData.name !== ministroData.name;
+      const hasDateChanged = hadPreviousSchedule && org.ministroData.scheduledDate !== ministroData.scheduledDate;
+      const hasTimeChanged = hadPreviousSchedule && org.ministroData.scheduledTime !== ministroData.scheduledTime;
+      const hasLocationChanged = hadPreviousSchedule && org.ministroData.location !== ministroData.location;
+      const isAnyChange = hasMinistroChanged || hasDateChanged || hasTimeChanged || hasLocationChanged;
+
+      // Inicializar historial de cambios de cita si no existe
+      if (!org.appointmentChanges) {
+        org.appointmentChanges = [];
+      }
+
+      // Si es un cambio (no la primera asignación), guardar en el historial
+      if (hadPreviousSchedule && isAnyChange) {
+        const changeRecord = {
+          id: `change-${Date.now()}`,
+          changedAt: new Date().toISOString(),
+          previousData: {
+            name: org.ministroData.name,
+            rut: org.ministroData.rut,
+            scheduledDate: org.ministroData.scheduledDate,
+            scheduledTime: org.ministroData.scheduledTime,
+            location: org.ministroData.location
+          },
+          newData: {
+            name: ministroData.name,
+            rut: ministroData.rut,
+            scheduledDate: ministroData.scheduledDate,
+            scheduledTime: ministroData.scheduledTime,
+            location: ministroData.location
+          },
+          changes: {
+            ministro: hasMinistroChanged,
+            date: hasDateChanged,
+            time: hasTimeChanged,
+            location: hasLocationChanged
+          }
+        };
+        org.appointmentChanges.push(changeRecord);
+
+        // Marcar que la cita fue modificada para mostrar alerta al usuario
+        org.appointmentWasModified = true;
+        org.lastModificationDate = new Date().toISOString();
+      }
+
+      // Crear notificaciones
+      if (isAnyChange && hadPreviousSchedule) {
         const oldSchedule = {
           date: org.ministroData.scheduledDate,
           time: org.ministroData.scheduledTime
@@ -400,17 +447,31 @@ class OrganizationsService {
         }
       }
 
+      // Guardar la cita original si es la primera vez
+      if (!hadPreviousSchedule) {
+        org.originalAppointment = {
+          name: ministroData.name,
+          rut: ministroData.rut,
+          scheduledDate: ministroData.scheduledDate,
+          scheduledTime: ministroData.scheduledTime,
+          location: ministroData.location,
+          assignedAt: new Date().toISOString()
+        };
+      }
+
       org.status = ORG_STATUS.MINISTRO_SCHEDULED;
       org.updatedAt = new Date().toISOString();
       org.ministroData = {
         ...ministroData,
-        assignedAt: new Date().toISOString()
+        assignedAt: org.ministroData?.assignedAt || new Date().toISOString()
       };
 
       org.statusHistory.push({
         status: ORG_STATUS.MINISTRO_SCHEDULED,
         date: new Date().toISOString(),
-        comment: `Ministro de Fe agendado: ${ministroData.name} para ${ministroData.scheduledDate} a las ${ministroData.scheduledTime}`
+        comment: hadPreviousSchedule && isAnyChange
+          ? `Cita re-agendada: ${ministroData.name} para ${ministroData.scheduledDate} a las ${ministroData.scheduledTime}`
+          : `Ministro de Fe agendado: ${ministroData.name} para ${ministroData.scheduledDate} a las ${ministroData.scheduledTime}`
       });
 
       this.saveToStorage();

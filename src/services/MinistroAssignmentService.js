@@ -99,6 +99,37 @@ class MinistroAssignmentService {
   }
 
   /**
+   * Resetea la validación para permitir edición
+   */
+  resetValidation(id) {
+    const assignment = this.getAll().find(a => a.id === id);
+    if (!assignment) return null;
+
+    // Guardar historial de la validación anterior
+    const previousValidation = {
+      validatedAt: assignment.validatedAt,
+      validatedBy: assignment.validatedBy,
+      signatures: assignment.signatures,
+      resetAt: new Date().toISOString()
+    };
+
+    // Inicializar historial si no existe
+    if (!assignment.validationHistory) {
+      assignment.validationHistory = [];
+    }
+    assignment.validationHistory.push(previousValidation);
+
+    return this.update(id, {
+      signaturesValidated: false,
+      validatedAt: null,
+      validatedBy: null,
+      signatures: null,
+      validationHistory: assignment.validationHistory,
+      lastEditedAt: new Date().toISOString()
+    });
+  }
+
+  /**
    * Completa una asignación
    */
   complete(id) {

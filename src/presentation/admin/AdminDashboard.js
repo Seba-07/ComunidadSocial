@@ -11,6 +11,7 @@ import { initMinistroManager } from './MinistroManager.js';
 import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
+import { pdfService } from '../../services/PDFService.js';
 
 // Helper: Obtener icono según tipo de organización
 function getOrgIcon(type) {
@@ -699,6 +700,8 @@ class AdminDashboard {
           </button>
         </div>
 
+        ${this.renderNextStepIndicator(org)}
+
         <div class="review-modal-body">
           <div class="review-tab-content active" id="tab-info">
             ${this.renderInfoTab(org)}
@@ -955,6 +958,30 @@ class AdminDashboard {
 
         // Si no está marcado, abrir modal para agregar observación
         openObservationModal(type, key, label, '');
+      });
+    });
+
+    // Event listeners para PDFs oficiales
+    modal.querySelectorAll('.btn-view-official-pdf').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        const orgId = btn.dataset.orgId;
+        this.viewOfficialPDF(orgId, docId);
+      });
+    });
+
+    modal.querySelectorAll('.btn-download-official-pdf').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        const orgId = btn.dataset.orgId;
+        this.downloadOfficialPDF(orgId, docId);
+      });
+    });
+
+    modal.querySelectorAll('.btn-download-all-pdfs').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orgId = btn.dataset.orgId;
+        this.downloadAllPDFs(orgId);
       });
     });
 
@@ -1859,6 +1886,10 @@ class AdminDashboard {
   renderDocumentsTab(org, canReview = true) {
     const documents = org.documents || {};
     const isReviewable = canReview && org.status === ORG_STATUS.IN_REVIEW;
+    const hasMinistroApproval = org.status === ORG_STATUS.MINISTRO_APPROVED ||
+                                org.provisionalDirectorio ||
+                                org.comisionElectoral;
+
     const docNames = {
       'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
       'ESTATUTOS': 'Estatutos',
@@ -1867,53 +1898,183 @@ class AdminDashboard {
       'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
     };
 
+    // Documentos oficiales generados por el sistema
+    const officialDocs = [
+      { id: 'acta_asamblea', name: 'Acta de Asamblea General Constitutiva', icon: '📜', required: true },
+      { id: 'lista_socios', name: 'Lista de Socios Constitución', icon: '📋', required: true },
+      { id: 'certificado', name: 'Certificado del Ministro de Fe', icon: '🏛️', required: true },
+      { id: 'certificacion', name: 'Certificación Municipal', icon: '📄', required: true },
+      { id: 'deposito', name: 'Depósito de Antecedentes', icon: '📁', required: true }
+    ];
+
+    // Declaraciones juradas por director
+    const directorio = org.provisionalDirectorio || {};
+    const declaracionesJuradas = [];
+    if (directorio.president) {
+      declaracionesJuradas.push({ id: 'decl_presidente', name: `Declaración Jurada - Presidente: ${directorio.president.name}`, icon: '✍️' });
+    }
+    if (directorio.secretary) {
+      declaracionesJuradas.push({ id: 'decl_secretario', name: `Declaración Jurada - Secretario: ${directorio.secretary.name}`, icon: '✍️' });
+    }
+    if (directorio.treasurer) {
+      declaracionesJuradas.push({ id: 'decl_tesorero', name: `Declaración Jurada - Tesorero: ${directorio.treasurer.name}`, icon: '✍️' });
+    }
+    if (directorio.additionalMembers) {
+      directorio.additionalMembers.forEach((member, i) => {
+        declaracionesJuradas.push({ id: `decl_adicional_${i}`, name: `Declaración Jurada - ${member.cargo || 'Director'}: ${member.name}`, icon: '✍️' });
+      });
+    }
+
     const docList = Object.entries(documents);
-    if (docList.length === 0 && !org.certificates) {
-      return '<p class="no-data">No hay documentos generados</p>';
+    const hasOfficialDocs = hasMinistroApproval;
+
+    if (docList.length === 0 && !org.certificates && !hasOfficialDocs) {
+      return '<p class="no-data">No hay documentos generados. Los documentos oficiales se generarán automáticamente cuando el Ministro de Fe apruebe la asamblea constitutiva.</p>';
     }
 
     const roles = ['Presidente', 'Secretario', 'Vocal'];
 
     return `
       <div class="review-documents-list">
-        ${docList.map(([type, doc]) => `
-          <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
-            <div class="doc-info">
-              <span class="doc-icon">📄</span>
-              <span class="doc-name">${docNames[type] || type}</span>
-              ${doc.signaturesApplied ? `<span class="doc-signatures">${doc.signaturesApplied} firmas</span>` : ''}
-            </div>
-            <div class="doc-actions">
-              <button class="btn-view-doc-admin" data-doc-type="${type}" title="Ver documento">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
+        ${hasOfficialDocs ? `
+          <div class="official-docs-section">
+            <h4 class="docs-subtitle" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Documentos Oficiales (Ley Nº 19.418)
+            </h4>
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">
+              Documentos generados automáticamente con los datos validados por el Ministro de Fe.
+            </p>
+            ${officialDocs.map(doc => `
+              <div class="document-item-admin official-doc" style="border-left: 3px solid #10b981;">
+                <div class="doc-info">
+                  <span class="doc-icon">${doc.icon}</span>
+                  <span class="doc-name">${doc.name}</span>
+                  <span class="doc-badge" style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Oficial</span>
+                </div>
+                <div class="doc-actions">
+                  <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Ver documento" style="background: #ecfdf5; color: #065f46; border: 1px solid #10b981; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Ver
+                  </button>
+                  <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Descargar PDF" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+
+            ${declaracionesJuradas.length > 0 ? `
+              <h5 style="margin: 16px 0 8px; font-size: 13px; color: #374151; font-weight: 600;">Declaraciones Juradas de Directores</h5>
+              ${declaracionesJuradas.map(doc => `
+                <div class="document-item-admin official-doc" style="border-left: 3px solid #f59e0b;">
+                  <div class="doc-info">
+                    <span class="doc-icon">${doc.icon}</span>
+                    <span class="doc-name" style="font-size: 13px;">${doc.name}</span>
+                  </div>
+                  <div class="doc-actions">
+                    <button class="btn-view-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Ver documento" style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      Ver
+                    </button>
+                    <button class="btn-download-official-pdf" data-doc-id="${doc.id}" data-org-id="${org.id}" title="Descargar PDF" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      Descargar
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            ` : ''}
+
+            <div style="margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+              <button class="btn-download-all-pdfs" data-org-id="${org.id}" style="
+                width: 100%;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+              ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Ver
+                Descargar Todos los Documentos
               </button>
-              <button class="btn-print-doc-admin" data-doc-type="${type}" title="Imprimir documento">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                  <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Imprimir
-              </button>
-              ${isReviewable ? `
-                <button class="btn-mark-error doc-error" data-type="document" data-key="${type}" data-label="${docNames[type] || type}" title="Marcar para corrección">
-                  <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                  </svg>
-                  <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                </button>
-              ` : ''}
             </div>
           </div>
-        `).join('')}
+        ` : ''}
+
+        ${docList.length > 0 ? `
+          <h4 class="docs-subtitle" style="margin-top: ${hasOfficialDocs ? '24px' : '0'};">Documentos Subidos</h4>
+          ${docList.map(([type, doc]) => `
+            <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
+              <div class="doc-info">
+                <span class="doc-icon">📄</span>
+                <span class="doc-name">${docNames[type] || type}</span>
+                ${doc.signaturesApplied ? `<span class="doc-signatures">${doc.signaturesApplied} firmas</span>` : ''}
+              </div>
+              <div class="doc-actions">
+                <button class="btn-view-doc-admin" data-doc-type="${type}" title="Ver documento">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  Ver
+                </button>
+                <button class="btn-print-doc-admin" data-doc-type="${type}" title="Imprimir documento">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  Imprimir
+                </button>
+                ${isReviewable ? `
+                  <button class="btn-mark-error doc-error" data-type="document" data-key="${type}" data-label="${docNames[type] || type}" title="Marcar para corrección">
+                    <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        ` : ''}
 
         ${org.certificates ? `
           <h4 class="docs-subtitle">Certificados de Antecedentes</h4>
@@ -1954,6 +2115,161 @@ class AdminDashboard {
             `;
           }).join('')}
         ` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Renderiza el indicador de próximo paso según el estado
+   */
+  renderNextStepIndicator(org) {
+    const status = org.status;
+    let icon = '';
+    let title = '';
+    let message = '';
+    let bgColor = '';
+    let borderColor = '';
+    let iconBg = '';
+
+    switch (status) {
+      case ORG_STATUS.WAITING_MINISTRO_REQUEST:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>`;
+        title = 'Esperando Accion del Administrador';
+        message = 'El usuario completó los pasos iniciales. Debe agendar un Ministro de Fe para validar la asamblea constitutiva.';
+        bgColor = '#fef3c7';
+        borderColor = '#f59e0b';
+        iconBg = '#f59e0b';
+        break;
+
+      case ORG_STATUS.MINISTRO_SCHEDULED:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>`;
+        title = 'Esperando Validacion del Ministro de Fe';
+        message = 'Ministro de Fe agendado. Se espera que asista a la asamblea constitutiva y valide las firmas de los miembros fundadores.';
+        bgColor = '#dbeafe';
+        borderColor = '#3b82f6';
+        iconBg = '#3b82f6';
+        break;
+
+      case ORG_STATUS.MINISTRO_APPROVED:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <polyline points="16 11 18 13 22 9"></polyline>
+        </svg>`;
+        title = 'Esperando Accion del Usuario';
+        message = 'El Ministro de Fe validó la asamblea. El usuario debe continuar con el proceso completando los pasos restantes del formulario (documentos, comisión electoral, etc.).';
+        bgColor = '#d1fae5';
+        borderColor = '#10b981';
+        iconBg = '#10b981';
+        break;
+
+      case ORG_STATUS.PENDING_REVIEW:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>`;
+        title = 'Esperando Revision del Administrador';
+        message = 'El usuario completó todos los pasos. La solicitud está lista para ser revisada por el administrador.';
+        bgColor = '#fef3c7';
+        borderColor = '#f59e0b';
+        iconBg = '#f59e0b';
+        break;
+
+      case ORG_STATUS.IN_REVIEW:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>`;
+        title = 'En Revision por Administrador';
+        message = 'El administrador está revisando la solicitud. Puede aprobar, solicitar correcciones o enviar al Registro Civil.';
+        bgColor = '#e0e7ff';
+        borderColor = '#6366f1';
+        iconBg = '#6366f1';
+        break;
+
+      case ORG_STATUS.REJECTED:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>`;
+        title = 'Esperando Correcciones del Usuario';
+        message = 'Se solicitaron correcciones al usuario. Debe modificar los campos indicados y reenviar la solicitud.';
+        bgColor = '#fee2e2';
+        borderColor = '#ef4444';
+        iconBg = '#ef4444';
+        break;
+
+      case ORG_STATUS.SENT_TO_REGISTRY:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>`;
+        title = 'Enviada al Registro Civil';
+        message = 'La solicitud fue enviada al Registro Civil para su inscripción oficial. Esperando confirmación.';
+        bgColor = '#dbeafe';
+        borderColor = '#1e3a5f';
+        iconBg = '#1e3a5f';
+        break;
+
+      case ORG_STATUS.APPROVED:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>`;
+        title = 'Proceso Completado';
+        message = 'La organización ha sido aprobada e inscrita oficialmente. No hay acciones pendientes.';
+        bgColor = '#d1fae5';
+        borderColor = '#059669';
+        iconBg = '#059669';
+        break;
+
+      default:
+        return '';
+    }
+
+    return `
+      <div class="next-step-indicator" style="
+        background: ${bgColor};
+        border: 1px solid ${borderColor};
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin: 0 24px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      ">
+        <div style="
+          background: ${iconBg};
+          color: white;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        ">
+          ${icon}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 14px; color: #1f2937; margin-bottom: 4px;">
+            ${title}
+          </div>
+          <div style="font-size: 13px; color: #4b5563; line-height: 1.5;">
+            ${message}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -2196,8 +2512,27 @@ class AdminDashboard {
       });
     }
 
+    // Parsear fecha correctamente para evitar desfase de zona horaria
+    let formattedUserDate = electionDate;
+    if (org.electionDate) {
+      const [year, month, day] = org.electionDate.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      formattedUserDate = date.toLocaleDateString('es-CL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      formattedUserDate = formattedUserDate.charAt(0).toUpperCase() + formattedUserDate.slice(1);
+    }
+
+    // Preferencia de contacto
+    const contactPref = org.organization?.contactPreference;
+    const contactLabel = contactPref === 'email' ? 'Correo Electrónico' : 'Teléfono';
+    const contactValue = contactPref === 'email' ? org.organization?.email : org.organization?.phone;
+
     modal.innerHTML = `
-      <div class="admin-review-modal" style="max-width: 700px;">
+      <div class="admin-review-modal ministro-request-modal">
         <div class="review-modal-header" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%);">
           <div class="review-header-left">
             <h2 style="color: #ff9800;">📝 Solicitud de Ministro de Fe</h2>
@@ -2212,20 +2547,52 @@ class AdminDashboard {
         </div>
 
         <div class="review-modal-body" style="padding: 24px;">
+          <!-- Sección destacada: Solicitud del Usuario -->
+          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 16px 0; color: #1e40af; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              Solicitud del Usuario
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">📅 Fecha Solicitada</span>
+                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${formattedUserDate}</p>
+              </div>
+              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">🕐 Hora Solicitada</span>
+                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${org.electionTime || 'No especificada'}</p>
+              </div>
+              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); grid-column: 1 / -1;">
+                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">📍 Dirección Solicitada para Asamblea</span>
+                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${org.assemblyAddress || 'No especificada'}</p>
+              </div>
+              <div style="background: white; padding: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); grid-column: 1 / -1;">
+                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">${contactPref === 'email' ? '📧' : '📞'} Preferencia de Contacto</span>
+                <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #1e293b;">${contactLabel}: ${contactValue || 'No especificado'}</p>
+              </div>
+            </div>
+            ${org.comments ? `
+              <div style="margin-top: 16px; padding: 14px; background: white; border-radius: 8px; border-left: 3px solid #3b82f6;">
+                <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">💬 Comentarios del Usuario</span>
+                <p style="margin: 6px 0 0; color: #334155; font-size: 14px;">${org.comments}</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Información de la Organización -->
           <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
             <h3 style="margin: 0 0 12px 0; color: #1f2937; font-size: 16px;">Información de la Organización</h3>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; color: #4b5563; font-size: 14px;">
               <div><strong>Tipo:</strong> ${getOrgTypeName(org.organization?.type)}</div>
               <div><strong>Comuna:</strong> ${org.organization?.commune || 'N/A'}</div>
               <div><strong>Miembros Fundadores:</strong> ${org.members?.length || 0}</div>
-              <div><strong>Fecha Propuesta Asamblea:</strong> ${electionDate}</div>
+              <div><strong>Dirección Organización:</strong> ${org.organization?.address || 'N/A'}</div>
             </div>
-            ${org.comments ? `
-              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-                <strong style="color: #1f2937;">Comentarios del Usuario:</strong>
-                <p style="margin: 4px 0 0; color: #6b7280; font-size: 14px;">${org.comments}</p>
-              </div>
-            ` : ''}
           </div>
 
           ${isWaiting ? `
@@ -2266,19 +2633,61 @@ class AdminDashboard {
                   <label>Hora <span class="required">*</span></label>
                   <select name="scheduledTime" required class="input-styled">
                     <option value="">-- Seleccionar Hora --</option>
-                    ${ministroAvailabilityService.getAvailableHours().map(hour => `
-                      <option value="${hour}" ${hour === '10:00' ? 'selected' : ''}>
-                        ${hour}
-                      </option>
-                    `).join('')}
+                    ${(() => {
+                      const baseHours = ministroAvailabilityService.getAvailableHours();
+                      const userTime = org.electionTime || '';
+                      // Include user's requested time if not already in the list
+                      const allHours = userTime && !baseHours.includes(userTime)
+                        ? [...baseHours, userTime].sort()
+                        : baseHours;
+                      return allHours.map(hour => `
+                        <option value="${hour}" ${hour === userTime ? 'selected' : ''}>
+                          ${hour}${hour === userTime && !baseHours.includes(hour) ? ' (solicitado)' : ''}
+                        </option>
+                      `).join('');
+                    })()}
                   </select>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Lugar de la Reunión <span class="required">*</span></label>
-                <input type="text" name="location" required
-                  placeholder="Ej: Municipalidad de Renca, Sala de Reuniones">
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;" id="location-options-container"
+                     data-user-address="${org.assemblyAddress || ''}"
+                     data-org-address="${org.organization?.address || ''}"
+                     data-muni-address="Blanco Encalada 1335, Renca">
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
+                    <input type="radio" name="locationOption" value="user" style="width: 16px; height: 16px;" ${org.assemblyAddress ? 'checked' : ''}>
+                    <div style="flex: 1;">
+                      <strong style="display: block; color: #1f2937; font-size: 14px;">Dirección solicitada por usuario</strong>
+                      <span style="font-size: 13px; color: #6b7280;">${org.assemblyAddress || 'No especificada'}</span>
+                    </div>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
+                    <input type="radio" name="locationOption" value="org" style="width: 16px; height: 16px;" ${!org.assemblyAddress ? 'checked' : ''}>
+                    <div style="flex: 1;">
+                      <strong style="display: block; color: #1f2937; font-size: 14px;">Dirección de la organización</strong>
+                      <span style="font-size: 13px; color: #6b7280;">${org.organization?.address || 'No especificada'}</span>
+                    </div>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
+                    <input type="radio" name="locationOption" value="muni" style="width: 16px; height: 16px;">
+                    <div style="flex: 1;">
+                      <strong style="display: block; color: #1f2937; font-size: 14px;">Municipalidad de Renca</strong>
+                      <span style="font-size: 13px; color: #6b7280;">Blanco Encalada 1335, Renca</span>
+                    </div>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="location-option">
+                    <input type="radio" name="locationOption" value="custom" style="width: 16px; height: 16px;">
+                    <div style="flex: 1;">
+                      <strong style="display: block; color: #1f2937; font-size: 14px;">Otra dirección</strong>
+                      <input type="text" id="custom-location-input" placeholder="Escriba la dirección..."
+                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 6px; display: none;"
+                        disabled>
+                    </div>
+                  </label>
+                </div>
+                <input type="hidden" name="location" id="final-location" value="${org.assemblyAddress || org.organization?.address || ''}" required>
               </div>
 
               <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
@@ -2289,87 +2698,70 @@ class AdminDashboard {
           ` : ''}
 
           ${isScheduled ? `
-            <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                <h3 style="margin: 0; color: #065f46; font-size: 16px;">✓ Ministro de Fe Agendado</h3>
-                <button type="button" id="btn-edit-ministro" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">
+            <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 48px; height: 48px; background: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 style="margin: 0; color: #065f46; font-size: 18px; font-weight: 700;">Ministro de Fe Agendado</h3>
+                    <p style="margin: 4px 0 0; color: #047857; font-size: 13px;">La asamblea ha sido programada exitosamente</p>
+                  </div>
+                </div>
+                <button type="button" id="btn-edit-ministro" class="btn btn-secondary" style="font-size: 13px; padding: 8px 14px; display: flex; align-items: center; gap: 6px;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
-                  Editar
+                  Modificar Asignación
                 </button>
               </div>
-              <div style="color: #047857; font-size: 14px; line-height: 1.6;">
-                <p style="margin: 0 0 8px 0;"><strong>Ministro:</strong> ${org.ministroData?.name}</p>
-                <p style="margin: 0 0 8px 0;"><strong>RUT:</strong> ${org.ministroData?.rut}</p>
-                <p style="margin: 0 0 8px 0;"><strong>Fecha:</strong> ${new Date(org.ministroData?.scheduledDate).toLocaleDateString('es-CL')}</p>
-                <p style="margin: 0 0 8px 0;"><strong>Hora:</strong> ${org.ministroData?.scheduledTime}</p>
-                <p style="margin: 0;"><strong>Lugar:</strong> ${org.ministroData?.location}</p>
-              </div>
-            </div>
 
-            <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-              <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 16px;">Próximo Paso</h3>
-              <p style="margin: 0; color: #b45309; font-size: 14px;">
-                Una vez realizada la asamblea, el Ministro de Fe debe designar el <strong>Directorio Provisorio</strong> y aprobar la constitución.
-              </p>
-            </div>
-
-            <form id="approve-ministro-form">
-              <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px;">Designar Directorio Provisorio</h3>
-              <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">
-                Selecciona 3 miembros fundadores para formar el Directorio Provisorio:
-              </p>
-
-              <div class="form-group">
-                <label>Presidente <span class="required">*</span></label>
-                <select name="president" required>
-                  <option value="">Seleccionar...</option>
-                  ${org.members?.map(m => `
-                    <option value="${m.id}">${m.primerNombre || m.firstName} ${m.apellidoPaterno || m.lastName} - ${m.rut}</option>
-                  `).join('')}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Secretario <span class="required">*</span></label>
-                <select name="secretary" required>
-                  <option value="">Seleccionar...</option>
-                  ${org.members?.map(m => `
-                    <option value="${m.id}">${m.primerNombre || m.firstName} ${m.apellidoPaterno || m.lastName} - ${m.rut}</option>
-                  `).join('')}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Tesorero (Vocal) <span class="required">*</span></label>
-                <select name="treasurer" required>
-                  <option value="">Seleccionar...</option>
-                  ${org.members?.map(m => `
-                    <option value="${m.id}">${m.primerNombre || m.firstName} ${m.apellidoPaterno || m.lastName} - ${m.rut}</option>
-                  `).join('')}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Firma del Ministro de Fe <span class="required">*</span></label>
-                <canvas id="ministro-signature-canvas"
-                  style="border: 2px solid #d1d5db; border-radius: 6px; cursor: crosshair; width: 100%; height: 150px; background: white;">
-                </canvas>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                  <button type="button" id="clear-signature" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">
-                    🗑️ Limpiar
-                  </button>
-                  <small style="color: #6b7280; margin: auto 0;">Firme en el recuadro usando el mouse o táctil</small>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: white; padding: 16px; border-radius: 10px;">
+                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px;">
+                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">⚖️ Ministro de Fe</span>
+                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${org.ministroData?.name}</p>
+                  <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">RUT: ${org.ministroData?.rut}</p>
+                </div>
+                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px;">
+                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">📅 Fecha y Hora</span>
+                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${(() => {
+                    if (org.ministroData?.scheduledDate) {
+                      const [year, month, day] = org.ministroData.scheduledDate.split('-').map(Number);
+                      const date = new Date(year, month - 1, day);
+                      return date.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                    }
+                    return 'No especificada';
+                  })()}</p>
+                  <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">Hora: ${org.ministroData?.scheduledTime || 'No especificada'}</p>
+                </div>
+                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; grid-column: 1 / -1;">
+                  <span style="font-size: 11px; color: #047857; text-transform: uppercase; font-weight: 600;">📍 Lugar</span>
+                  <p style="margin: 6px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">${org.ministroData?.location || 'No especificado'}</p>
                 </div>
               </div>
+            </div>
 
-              <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary ministro-close">Cancelar</button>
-                <button type="submit" class="btn btn-primary">✓ Aprobar y Designar Directorio</button>
+            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+              <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="font-size: 24px;">⏳</div>
+                <div>
+                  <h3 style="margin: 0 0 6px 0; color: #1e40af; font-size: 15px; font-weight: 600;">Esperando Validación del Ministro de Fe</h3>
+                  <p style="margin: 0; color: #3b82f6; font-size: 14px; line-height: 1.5;">
+                    El <strong>Ministro de Fe</strong> debe presidir la asamblea, validar las firmas de los miembros y designar el <strong>Directorio Provisorio</strong>.
+                    Esta acción se realiza desde el panel del Ministro de Fe.
+                  </p>
+                </div>
               </div>
-            </form>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary ministro-close">Cerrar</button>
+            </div>
           ` : ''}
         </div>
       </div>
@@ -2458,6 +2850,82 @@ class AdminDashboard {
 
       // Actualizar al cargar si ya hay fecha y hora
       updateMinistroDropdown();
+
+      // Event listeners para selector de ubicación
+      const locationRadios = scheduleForm.querySelectorAll('input[name="locationOption"]');
+      const customLocationInput = scheduleForm.querySelector('#custom-location-input');
+      const finalLocationInput = scheduleForm.querySelector('#final-location');
+      const locationOptions = scheduleForm.querySelectorAll('.location-option');
+      const locationContainer = scheduleForm.querySelector('#location-options-container');
+
+      // Obtener direcciones de los data attributes
+      const userAddress = locationContainer?.dataset.userAddress || '';
+      const orgAddress = locationContainer?.dataset.orgAddress || '';
+      const muniAddress = locationContainer?.dataset.muniAddress || 'Blanco Encalada 1335, Renca';
+
+      const updateLocationValue = () => {
+        const selectedRadio = scheduleForm.querySelector('input[name="locationOption"]:checked');
+        if (!selectedRadio) return;
+
+        // Actualizar estilos visuales
+        locationOptions.forEach(option => {
+          option.style.borderColor = '#d1d5db';
+          option.style.background = 'white';
+        });
+        const selectedOption = selectedRadio.closest('.location-option');
+        if (selectedOption) {
+          selectedOption.style.borderColor = '#3b82f6';
+          selectedOption.style.background = '#eff6ff';
+        }
+
+        switch (selectedRadio.value) {
+          case 'user':
+            finalLocationInput.value = userAddress;
+            if (customLocationInput) {
+              customLocationInput.style.display = 'none';
+              customLocationInput.disabled = true;
+            }
+            break;
+          case 'org':
+            finalLocationInput.value = orgAddress;
+            if (customLocationInput) {
+              customLocationInput.style.display = 'none';
+              customLocationInput.disabled = true;
+            }
+            break;
+          case 'muni':
+            finalLocationInput.value = muniAddress;
+            if (customLocationInput) {
+              customLocationInput.style.display = 'none';
+              customLocationInput.disabled = true;
+            }
+            break;
+          case 'custom':
+            if (customLocationInput) {
+              customLocationInput.style.display = 'block';
+              customLocationInput.disabled = false;
+              customLocationInput.focus();
+              finalLocationInput.value = customLocationInput.value;
+            }
+            break;
+        }
+      };
+
+      locationRadios.forEach(radio => {
+        radio.addEventListener('change', updateLocationValue);
+      });
+
+      if (customLocationInput) {
+        customLocationInput.addEventListener('input', () => {
+          if (finalLocationInput) {
+            finalLocationInput.value = customLocationInput.value;
+          }
+        });
+      }
+
+      // Inicializar valor de ubicación
+      updateLocationValue();
+
       scheduleForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(scheduleForm);
@@ -2515,13 +2983,40 @@ class AdminDashboard {
               ministroName: `${ministro.firstName} ${ministro.lastName}`,
               ministroRut: ministro.rut,
               organizationId: org.id,
-              organizationName: org.organizationName,
+              organizationName: org.organization?.name || org.organizationName,
               scheduledDate,
               scheduledTime,
               location
             });
 
-            showToast('Ministro de Fe agendado correctamente', 'success');
+            // Enviar notificaciones
+            const { notificationService } = await import('../../services/NotificationService.js');
+
+            // Notificación al usuario - primera asignación
+            notificationService.create({
+              userId: org.userId,
+              type: 'ministro_assigned',
+              title: '✅ Ministro de Fe Asignado',
+              message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${org.organization?.name}.\n\n` +
+                      `Ministro: ${ministro.firstName} ${ministro.lastName}\n` +
+                      `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                      `Lugar: ${location}`,
+              data: { organizationId: org.id, ministroData }
+            });
+
+            // Notificación al ministro - nueva asignación
+            notificationService.create({
+              ministroId: ministro.id,
+              type: 'new_assignment',
+              title: '⚖️ Nueva Asignación de Asamblea',
+              message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
+                      `Organización: ${org.organization?.name}\n` +
+                      `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                      `Lugar: ${location}`,
+              data: { organizationId: org.id, scheduledDate, scheduledTime, location }
+            });
+
+            showToast('Ministro de Fe agendado correctamente. Notificados: usuario y ministro.', 'success');
             modal.remove();
             this.renderApplicationsList();
             this.updateStats();
@@ -2868,11 +3363,31 @@ class AdminDashboard {
         // Enviar notificación al usuario
         const { notificationService } = await import('../../services/NotificationService.js');
 
-        const hasMinistroChanged = oldMinistroData.name !== newMinistroData.name;
-        const hasScheduleChanged = oldMinistroData.scheduledDate !== newMinistroData.scheduledDate ||
-                                   oldMinistroData.scheduledTime !== newMinistroData.scheduledTime;
+        // Verificar si había datos previos válidos
+        const hadPreviousData = oldMinistroData && oldMinistroData.name;
 
-        if (hasMinistroChanged && hasScheduleChanged) {
+        // Detectar cambios reales (solo si hay datos previos para comparar)
+        const hasMinistroChanged = hadPreviousData && oldMinistroData.name !== newMinistroData.name;
+        const hasScheduleChanged = hadPreviousData && (
+          oldMinistroData.scheduledDate !== newMinistroData.scheduledDate ||
+          oldMinistroData.scheduledTime !== newMinistroData.scheduledTime
+        );
+        const hasLocationChanged = hadPreviousData && oldMinistroData.location !== newMinistroData.location;
+
+        // Notificaciones al USUARIO
+        if (!hadPreviousData) {
+          // Primera asignación - notificar al usuario que su solicitud fue agendada
+          notificationService.create({
+            userId: org.userId,
+            type: 'ministro_assigned',
+            title: '✅ Ministro de Fe Asignado',
+            message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${org.organization?.name}.\n\n` +
+                    `Ministro: ${newMinistroData.name}\n` +
+                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Lugar: ${location}`,
+            data: { organizationId: org.id, ministroData: newMinistroData }
+          });
+        } else if (hasMinistroChanged && hasScheduleChanged) {
           notificationService.create({
             userId: org.userId,
             type: 'ministro_changed',
@@ -2893,6 +3408,19 @@ class AdminDashboard {
                     `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
           });
+        } else if (hasScheduleChanged && hasLocationChanged) {
+          // Cambió tanto el horario como el lugar
+          notificationService.create({
+            userId: org.userId,
+            type: 'schedule_location_change',
+            title: '📅📍 Cambio de Horario y Lugar',
+            message: `Se ha modificado el horario y lugar de la asamblea de ${org.organization?.name}.\n\n` +
+                    `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
+                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n\n` +
+                    `Lugar Anterior: ${oldMinistroData.location}\n` +
+                    `Nuevo Lugar: ${location}`,
+            data: { organizationId: org.id, oldData: oldMinistroData, newData: newMinistroData }
+          });
         } else if (hasScheduleChanged) {
           notificationService.create({
             userId: org.userId,
@@ -2903,9 +3431,100 @@ class AdminDashboard {
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldSchedule: oldMinistroData, newSchedule: newMinistroData }
           });
+        } else if (hasLocationChanged) {
+          notificationService.create({
+            userId: org.userId,
+            type: 'location_change',
+            title: '📍 Cambio de Lugar de Asamblea',
+            message: `Se ha modificado el lugar de la asamblea de ${org.organization?.name}.\n\n` +
+                    `Lugar Anterior: ${oldMinistroData.location}\n` +
+                    `Nuevo Lugar: ${location}`,
+            data: { organizationId: org.id, oldLocation: oldMinistroData.location, newLocation: location }
+          });
         }
 
-        showToast('✓ Ministro de Fe actualizado correctamente. Usuario notificado.', 'success');
+        // Notificaciones al MINISTRO DE FE
+        // Obtener el ID del ministro anterior (si existía)
+        const oldMinistroId = currentAssignment?.ministroId;
+        const newMinistroId = ministroId;
+
+        // Si cambió el ministro, notificar al ministro ANTERIOR (si existe) que fue removido
+        if (hasMinistroChanged && oldMinistroId) {
+          notificationService.create({
+            ministroId: oldMinistroId,
+            type: 'assignment_removed',
+            title: '📋 Asignación Removida',
+            message: `Has sido removido de la asamblea de "${org.organization?.name}".\n\n` +
+                    `Fecha original: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
+                    `Lugar: ${oldMinistroData.location}`,
+            data: { organizationId: org.id, reason: 'reassigned' }
+          });
+        }
+
+        // Notificar al ministro NUEVO (o actual si no cambió)
+        if (!hadPreviousData || hasMinistroChanged) {
+          // Primera asignación o ministro nuevo - notificar nueva asignación
+          notificationService.create({
+            ministroId: newMinistroId,
+            type: 'new_assignment',
+            title: '⚖️ Nueva Asignación de Asamblea',
+            message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
+                    `Organización: ${org.organization?.name}\n` +
+                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Lugar: ${location}`,
+            data: { organizationId: org.id, scheduledDate, scheduledTime, location }
+          });
+        } else if (hasScheduleChanged && hasLocationChanged) {
+          // Mismo ministro pero cambió horario Y ubicación
+          notificationService.create({
+            ministroId: newMinistroId,
+            type: 'schedule_location_change',
+            title: '📅📍 Cambio de Horario y Lugar',
+            message: `Se ha modificado el horario y lugar de una asamblea asignada.\n\n` +
+                    `Organización: ${org.organization?.name}\n` +
+                    `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
+                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Lugar Anterior: ${oldMinistroData.location}\n` +
+                    `Nuevo Lugar: ${location}`,
+            data: { organizationId: org.id, oldData: oldMinistroData, newData: { scheduledDate, scheduledTime, location } }
+          });
+        } else if (hasScheduleChanged) {
+          // Mismo ministro pero cambió el horario - notificar cambio
+          notificationService.create({
+            ministroId: newMinistroId,
+            type: 'schedule_change',
+            title: '📅 Cambio de Horario de Asamblea',
+            message: `Se ha modificado el horario de una asamblea asignada.\n\n` +
+                    `Organización: ${org.organization?.name}\n` +
+                    `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
+                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Lugar: ${location}`,
+            data: { organizationId: org.id, oldSchedule: oldMinistroData, newSchedule: { scheduledDate, scheduledTime, location } }
+          });
+        } else if (hasLocationChanged) {
+          // Mismo ministro pero cambió solo la ubicación - notificar cambio
+          notificationService.create({
+            ministroId: newMinistroId,
+            type: 'location_change',
+            title: '📍 Cambio de Lugar de Asamblea',
+            message: `Se ha modificado el lugar de una asamblea asignada.\n\n` +
+                    `Organización: ${org.organization?.name}\n` +
+                    `Lugar Anterior: ${oldMinistroData.location}\n` +
+                    `Nuevo Lugar: ${location}\n` +
+                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
+            data: { organizationId: org.id, oldLocation: oldMinistroData.location, newLocation: location }
+          });
+        }
+
+        // Actualizar mensaje de éxito
+        let successMsg = '✓ Ministro de Fe actualizado correctamente.';
+        if (hasMinistroChanged && oldMinistroId) {
+          successMsg += ' Notificados: usuario, ministro anterior y nuevo ministro.';
+        } else if (!hadPreviousData || hasMinistroChanged || hasScheduleChanged || hasLocationChanged) {
+          successMsg += ' Notificados: usuario y ministro de fe.';
+        }
+
+        showToast(successMsg, 'success');
         modal.remove();
         this.renderApplicationsList();
         this.updateStats();
@@ -2913,6 +3532,248 @@ class AdminDashboard {
         showToast('Error al actualizar el Ministro de Fe', 'error');
       }
     });
+  }
+
+  /**
+   * Ver PDF oficial en modal
+   */
+  viewOfficialPDF(orgId, docId) {
+    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+    const org = orgs.find(o => o.id === orgId);
+
+    if (!org) {
+      showToast('Organización no encontrada', 'error');
+      return;
+    }
+
+    let pdfDoc;
+    let docTitle = '';
+
+    try {
+      const directorio = org.provisionalDirectorio || {};
+
+      switch (docId) {
+        case 'acta_asamblea':
+          pdfDoc = pdfService.generateActaAsamblea(org);
+          docTitle = 'Acta de Asamblea General Constitutiva';
+          break;
+        case 'lista_socios':
+          pdfDoc = pdfService.generateListaSocios(org);
+          docTitle = 'Lista de Socios Constitución';
+          break;
+        case 'certificado':
+          pdfDoc = pdfService.generateCertificado(org);
+          docTitle = 'Certificado del Ministro de Fe';
+          break;
+        case 'certificacion':
+          pdfDoc = pdfService.generateCertificacion(org);
+          docTitle = 'Certificación Municipal';
+          break;
+        case 'deposito':
+          pdfDoc = pdfService.generateDepositoAntecedentes(org);
+          docTitle = 'Depósito de Antecedentes';
+          break;
+        case 'decl_presidente':
+          if (directorio.president) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.president);
+            docTitle = `Declaración Jurada - Presidente: ${directorio.president.name}`;
+          }
+          break;
+        case 'decl_secretario':
+          if (directorio.secretary) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.secretary);
+            docTitle = `Declaración Jurada - Secretario: ${directorio.secretary.name}`;
+          }
+          break;
+        case 'decl_tesorero':
+          if (directorio.treasurer) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.treasurer);
+            docTitle = `Declaración Jurada - Tesorero: ${directorio.treasurer.name}`;
+          }
+          break;
+        default:
+          // Manejar declaraciones de directores adicionales
+          if (docId.startsWith('decl_adicional_')) {
+            const index = parseInt(docId.replace('decl_adicional_', ''));
+            if (directorio.additionalMembers && directorio.additionalMembers[index]) {
+              const member = directorio.additionalMembers[index];
+              pdfDoc = pdfService.generateDeclaracionJurada(org, member);
+              docTitle = `Declaración Jurada - ${member.cargo || 'Director'}: ${member.name}`;
+            }
+          }
+          break;
+      }
+
+      if (!pdfDoc) {
+        showToast('No se pudo generar el documento', 'error');
+        return;
+      }
+
+      // Crear modal para mostrar el PDF
+      const pdfDataUrl = pdfService.getPDFDataURL(pdfDoc);
+
+      const previewModal = document.createElement('div');
+      previewModal.className = 'pdf-preview-modal';
+      previewModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 500000;';
+      previewModal.innerHTML = `
+        <div style="background: white; border-radius: 12px; width: 90%; max-width: 900px; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1f2937;">${docTitle}</h3>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-download-preview" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Descargar
+              </button>
+              <button class="btn-close-preview" style="padding: 8px 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; font-weight: 500; cursor: pointer;">
+                ✕ Cerrar
+              </button>
+            </div>
+          </div>
+          <div style="flex: 1; overflow: hidden;">
+            <iframe src="${pdfDataUrl}" style="width: 100%; height: 100%; border: none;"></iframe>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(previewModal);
+
+      previewModal.querySelector('.btn-close-preview').addEventListener('click', () => previewModal.remove());
+      previewModal.addEventListener('click', (e) => { if (e.target === previewModal) previewModal.remove(); });
+      previewModal.querySelector('.btn-download-preview').addEventListener('click', () => {
+        this.downloadOfficialPDF(orgId, docId);
+      });
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      showToast('Error al generar el documento PDF', 'error');
+    }
+  }
+
+  /**
+   * Descargar PDF oficial
+   */
+  downloadOfficialPDF(orgId, docId) {
+    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+    const org = orgs.find(o => o.id === orgId);
+
+    if (!org) {
+      showToast('Organización no encontrada', 'error');
+      return;
+    }
+
+    let pdfDoc;
+    let filename = '';
+    const orgName = (org.organization?.name || org.organizationName || 'Organizacion').replace(/\s+/g, '_');
+
+    try {
+      const directorio = org.provisionalDirectorio || {};
+
+      switch (docId) {
+        case 'acta_asamblea':
+          pdfDoc = pdfService.generateActaAsamblea(org);
+          filename = `Acta_Asamblea_${orgName}.pdf`;
+          break;
+        case 'lista_socios':
+          pdfDoc = pdfService.generateListaSocios(org);
+          filename = `Lista_Socios_${orgName}.pdf`;
+          break;
+        case 'certificado':
+          pdfDoc = pdfService.generateCertificado(org);
+          filename = `Certificado_${orgName}.pdf`;
+          break;
+        case 'certificacion':
+          pdfDoc = pdfService.generateCertificacion(org);
+          filename = `Certificacion_${orgName}.pdf`;
+          break;
+        case 'deposito':
+          pdfDoc = pdfService.generateDepositoAntecedentes(org);
+          filename = `Deposito_Antecedentes_${orgName}.pdf`;
+          break;
+        case 'decl_presidente':
+          if (directorio.president) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.president);
+            filename = `Declaracion_Jurada_Presidente_${directorio.president.name?.replace(/\s+/g, '_') || 'Presidente'}.pdf`;
+          }
+          break;
+        case 'decl_secretario':
+          if (directorio.secretary) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.secretary);
+            filename = `Declaracion_Jurada_Secretario_${directorio.secretary.name?.replace(/\s+/g, '_') || 'Secretario'}.pdf`;
+          }
+          break;
+        case 'decl_tesorero':
+          if (directorio.treasurer) {
+            pdfDoc = pdfService.generateDeclaracionJurada(org, directorio.treasurer);
+            filename = `Declaracion_Jurada_Tesorero_${directorio.treasurer.name?.replace(/\s+/g, '_') || 'Tesorero'}.pdf`;
+          }
+          break;
+        default:
+          // Manejar declaraciones de directores adicionales
+          if (docId.startsWith('decl_adicional_')) {
+            const index = parseInt(docId.replace('decl_adicional_', ''));
+            if (directorio.additionalMembers && directorio.additionalMembers[index]) {
+              const member = directorio.additionalMembers[index];
+              pdfDoc = pdfService.generateDeclaracionJurada(org, member);
+              filename = `Declaracion_Jurada_${member.cargo || 'Director'}_${member.name?.replace(/\s+/g, '_') || index}.pdf`;
+            }
+          }
+          break;
+      }
+
+      if (!pdfDoc) {
+        showToast('No se pudo generar el documento', 'error');
+        return;
+      }
+
+      pdfService.downloadPDF(pdfDoc, filename);
+      showToast(`Documento "${filename}" descargado`, 'success');
+
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      showToast('Error al descargar el documento PDF', 'error');
+    }
+  }
+
+  /**
+   * Descargar todos los PDFs de una organización
+   */
+  downloadAllPDFs(orgId) {
+    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+    const org = orgs.find(o => o.id === orgId);
+
+    if (!org) {
+      showToast('Organización no encontrada', 'error');
+      return;
+    }
+
+    try {
+      const documents = pdfService.generateAllDocuments(org);
+
+      if (documents.length === 0) {
+        showToast('No hay documentos para descargar', 'warning');
+        return;
+      }
+
+      // Descargar cada documento con un pequeño delay
+      let downloadCount = 0;
+      documents.forEach((doc, index) => {
+        setTimeout(() => {
+          pdfService.downloadPDF(doc.doc, doc.name);
+          downloadCount++;
+          if (downloadCount === documents.length) {
+            showToast(`Se descargaron ${documents.length} documentos`, 'success');
+          }
+        }, index * 300); // 300ms delay entre descargas
+      });
+
+    } catch (error) {
+      console.error('Error downloading all PDFs:', error);
+      showToast('Error al descargar los documentos', 'error');
+    }
   }
 
 }

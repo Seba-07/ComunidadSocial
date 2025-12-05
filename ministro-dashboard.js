@@ -6,6 +6,7 @@
 import { ministroService } from './src/services/MinistroService.js';
 import { ministroAssignmentService } from './src/services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from './src/services/MinistroAvailabilityService.js';
+import { openValidationWizard } from './src/presentation/ministro/ValidationWizard.js';
 
 console.log('⚖️ Ministro dashboard loaded');
 
@@ -100,13 +101,32 @@ function renderAssignments() {
   });
 
   container.innerHTML = assignments.map(assignment => {
-    const date = new Date(assignment.scheduledDate);
-    const formattedDate = date.toLocaleDateString('es-CL', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Obtener datos de la organización desde user_organizations
+    const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+    const org = orgs.find(o => o.id === assignment.organizationId);
+
+    // Obtener nombre de la organización
+    let orgName = assignment.organizationName;
+    if (!orgName) {
+      orgName = org?.organization?.name || org?.organizationName || 'Organización sin nombre';
+    }
+
+    // Verificar si la cita fue modificada recientemente
+    const wasModified = org?.appointmentWasModified && org?.appointmentChanges?.length > 0;
+    const lastChange = wasModified ? org.appointmentChanges[org.appointmentChanges.length - 1] : null;
+
+    // Formatear fecha correctamente (evitar problema de timezone)
+    let formattedDate = 'Fecha no especificada';
+    if (assignment.scheduledDate) {
+      const [year, month, day] = assignment.scheduledDate.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      formattedDate = date.toLocaleDateString('es-CL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
 
     const statusColors = {
       pending: { bg: '#dbeafe', color: '#1e40af', label: 'Pendiente' },
@@ -116,23 +136,52 @@ function renderAssignments() {
 
     const status = statusColors[assignment.status] || statusColors.pending;
 
+    // HTML de alerta de modificación
+    let modificationAlertHTML = '';
+    if (wasModified && lastChange) {
+      const modDate = new Date(lastChange.changedAt);
+      const modDateFormatted = modDate.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+
+      const changesList = [];
+      if (lastChange.changes.ministro) changesList.push('Ministro');
+      if (lastChange.changes.date) changesList.push('Fecha');
+      if (lastChange.changes.time) changesList.push('Hora');
+      if (lastChange.changes.location) changesList.push('Lugar');
+
+      modificationAlertHTML = `
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; animation: pulse-ministro 2s ease-in-out infinite;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 22px;">🔔</span>
+            <div style="flex: 1;">
+              <p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Cita Modificada (${modDateFormatted})</p>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">Cambios: ${changesList.join(', ')}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="assignment-card" style="
-        border: 2px solid #e5e7eb;
+        border: 2px solid ${wasModified ? '#f59e0b' : '#e5e7eb'};
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 16px;
         transition: all 0.2s;
         cursor: pointer;
-      " onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#e5e7eb'">
+        ${wasModified ? 'box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);' : ''}
+      " onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='${wasModified ? '#f59e0b' : '#e5e7eb'}'">
+
+        ${modificationAlertHTML}
+
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
           <div>
             <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #1f2937;">
-              ${assignment.organizationName}
+              ${orgName}
             </h3>
             <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: #6b7280;">
               <span><strong>📅 Fecha:</strong> ${formattedDate}</span>
-              <span><strong>🕐 Hora:</strong> ${assignment.scheduledTime}</span>
+              <span><strong>🕐 Hora:</strong> ${assignment.scheduledTime || 'No especificada'}</span>
             </div>
           </div>
           <span style="
@@ -149,7 +198,7 @@ function renderAssignments() {
 
         <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
           <div style="font-size: 14px; color: #374151;">
-            <strong>📍 Lugar:</strong> ${assignment.location}
+            <strong>📍 Lugar:</strong> ${assignment.location || 'No especificado'}
           </div>
         </div>
 
@@ -167,13 +216,45 @@ function renderAssignments() {
             <button class="btn btn-secondary" onclick="viewDetails('${assignment.id}')">Ver Detalles</button>
           </div>
         ` : assignment.signaturesValidated ? `
-          <div style="padding: 12px; background: #d1fae5; border-radius: 8px; color: #065f46; font-size: 14px; font-weight: 600;">
-            ✅ Firmas validadas el ${new Date(assignment.validatedAt).toLocaleDateString('es-CL')}
+          <div style="background: #d1fae5; border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <p style="margin: 0; color: #065f46; font-size: 15px; font-weight: 700;">Firmas Validadas</p>
+                  <p style="margin: 2px 0 0; color: #047857; font-size: 13px;">${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignment.id}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar
+              </button>
+            </div>
           </div>
         ` : ''}
       </div>
     `;
   }).join('');
+
+  // Agregar estilos de animación si hay modificaciones
+  if (!document.getElementById('ministro-pulse-styles')) {
+    const style = document.createElement('style');
+    style.id = 'ministro-pulse-styles';
+    style.textContent = `
+      @keyframes pulse-ministro {
+        0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
+        50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
 // Render availability blocks
@@ -308,7 +389,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
     localStorage.removeItem('currentMinistro');
     localStorage.removeItem('isMinistroAuthenticated');
-    window.location.href = '/ministro-login.html';
+    window.location.href = '/';
   }
 });
 
@@ -319,6 +400,7 @@ document.getElementById('btn-add-block').addEventListener('click', showAddBlockM
 window.validateSignatures = validateSignatures;
 window.viewDetails = viewDetails;
 window.deleteBlock = deleteBlock;
+window.editValidatedSignatures = editValidatedSignatures;
 
 function validateSignatures(assignmentId) {
   const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
@@ -327,227 +409,323 @@ function validateSignatures(assignmentId) {
     return;
   }
 
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.display = 'flex';
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width: 600px;">
-      <div class="modal-header" style="padding: 24px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border-bottom: none;">
-        <h3 style="margin: 0; display: flex; align-items: center; gap: 12px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-            <path d="M2 2l7.586 7.586"></path>
-            <circle cx="11" cy="11" r="2"></circle>
-          </svg>
-          Validación de Firmas
-        </h3>
-        <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">${assignment.organizationName}</p>
+  // Obtener los datos de la organización
+  const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+  const org = orgs.find(o => o.id === assignment.organizationId);
+
+  // Abrir el nuevo wizard
+  openValidationWizard(assignment, org, currentMinistro, {
+    onComplete: (wizardData, assignment, org, ministro) => {
+      // Procesar la validación
+      processValidationComplete(wizardData, assignment, org, ministro);
+    }
+  });
+}
+
+// Procesar la validación completada del wizard
+function processValidationComplete(wizardData, assignment, org, ministro) {
+  const president = wizardData.directorio.president;
+  const secretary = wizardData.directorio.secretary;
+  const treasurer = wizardData.directorio.treasurer;
+  const additionalMembers = wizardData.additionalMembers;
+  const commissionMembers = wizardData.comisionElectoral;
+  const assemblyAttendees = wizardData.attendees;
+
+  const validationData = {
+    validatedBy: 'MINISTRO',
+    validatorId: ministro.id,
+    validatorName: `${ministro.firstName} ${ministro.lastName}`,
+    ministroSignature: wizardData.ministroSignature,
+    provisionalDirectorio: {
+      president,
+      secretary,
+      treasurer,
+      additionalMembers
+    },
+    comisionElectoral: commissionMembers,
+    signatures: {
+      president,
+      secretary,
+      treasurer,
+      additionalMembers,
+      commissionMembers,
+      notes: wizardData.notes
+    }
+  };
+
+  try {
+    ministroAssignmentService.markSignaturesValidated(assignment.id, validationData);
+
+    // Actualizar la organización
+    if (org) {
+      const orgsUpdated = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+      const orgIndex = orgsUpdated.findIndex(o => o.id === assignment.organizationId);
+      if (orgIndex !== -1) {
+        orgsUpdated[orgIndex].provisionalDirectorio = {
+          president,
+          secretary,
+          treasurer,
+          additionalMembers,
+          designatedAt: new Date().toISOString(),
+          type: 'PROVISIONAL',
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        orgsUpdated[orgIndex].comisionElectoral = {
+          members: commissionMembers,
+          designatedAt: new Date().toISOString()
+        };
+        orgsUpdated[orgIndex].assemblyAttendees = assemblyAttendees;
+        orgsUpdated[orgIndex].ministroSignature = wizardData.ministroSignature;
+        orgsUpdated[orgIndex].validationData = {
+          validatedBy: 'MINISTRO',
+          validatorId: ministro.id,
+          validatorName: `${ministro.firstName} ${ministro.lastName}`,
+          validatedAt: new Date().toISOString()
+        };
+        orgsUpdated[orgIndex].status = 'ministro_approved';
+        orgsUpdated[orgIndex].statusHistory = orgsUpdated[orgIndex].statusHistory || [];
+
+        // Generar resumen
+        let directorioResumen = `Presidente: ${president.name}, Secretario: ${secretary.name}, Tesorero: ${treasurer.name}`;
+        if (additionalMembers.length > 0) {
+          directorioResumen += `. Miembros adicionales: ${additionalMembers.map(m => `${m.cargo}: ${m.name}`).join(', ')}`;
+        }
+        const comisionResumen = `Comisión Electoral: ${commissionMembers.map(m => m.name).join(', ')}`;
+
+        orgsUpdated[orgIndex].statusHistory.push({
+          status: 'ministro_approved',
+          date: new Date().toISOString(),
+          comment: `Aprobado por Ministro de Fe ${ministro.firstName} ${ministro.lastName}. Directorio Provisorio: ${directorioResumen}. ${comisionResumen}. Asistentes: ${assemblyAttendees.length}`
+        });
+        localStorage.setItem('user_organizations', JSON.stringify(orgsUpdated));
+      }
+    }
+
+    showToast('✅ Validación completada exitosamente', 'success');
+    loadStats();
+    renderAssignments();
+  } catch (error) {
+    console.error('Error en validación:', error);
+    showToast(error.message || 'Error al procesar la validación', 'error');
+  }
+}
+
+// Función para editar firmas ya validadas
+function editValidatedSignatures(assignmentId) {
+  const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
+  if (!assignment) {
+    showToast('Asignación no encontrada', 'error');
+    return;
+  }
+
+  // Mostrar confirmación antes de editar
+  const confirmEdit = document.createElement('div');
+  confirmEdit.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 400000;';
+  confirmEdit.innerHTML = `
+    <div style="background: white; border-radius: 20px; max-width: 480px; width: 90%; padding: 32px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+      <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
       </div>
-      <form id="validate-signatures-form" style="padding: 24px;">
-        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #3b82f6;">
-          <p style="margin: 0; font-size: 14px; color: #1e40af; font-weight: 500;">
-            ℹ️ Verifica y valida la identidad de cada firmante y la autenticidad de sus firmas en los documentos presentados.
-          </p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          <!-- Presidente -->
-          <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; transition: all 0.2s;">
-            <div style="display: flex; align-items: start; gap: 12px;">
-              <input type="checkbox" id="validate-president" name="president" required style="
-                width: 20px;
-                height: 20px;
-                margin-top: 4px;
-                cursor: pointer;
-                accent-color: #3b82f6;
-              ">
-              <div style="flex: 1;">
-                <label for="validate-president" style="cursor: pointer; display: block; font-weight: 600; font-size: 15px; color: #1f2937; margin-bottom: 4px;">
-                  👤 Presidente/a
-                </label>
-                <p style="margin: 0; font-size: 13px; color: #6b7280;">Verificar identidad, firma y documentación del presidente de la organización</p>
-                <input type="text" id="president-name" placeholder="Nombre completo" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 12px;
-                ">
-                <input type="text" id="president-rut" placeholder="RUT (ej: 12.345.678-9)" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 8px;
-                ">
-              </div>
-            </div>
-          </div>
-
-          <!-- Secretario -->
-          <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px;">
-            <div style="display: flex; align-items: start; gap: 12px;">
-              <input type="checkbox" id="validate-secretary" name="secretary" required style="
-                width: 20px;
-                height: 20px;
-                margin-top: 4px;
-                cursor: pointer;
-                accent-color: #3b82f6;
-              ">
-              <div style="flex: 1;">
-                <label for="validate-secretary" style="cursor: pointer; display: block; font-weight: 600; font-size: 15px; color: #1f2937; margin-bottom: 4px;">
-                  📝 Secretario/a
-                </label>
-                <p style="margin: 0; font-size: 13px; color: #6b7280;">Verificar identidad, firma y documentación del secretario de la organización</p>
-                <input type="text" id="secretary-name" placeholder="Nombre completo" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 12px;
-                ">
-                <input type="text" id="secretary-rut" placeholder="RUT (ej: 12.345.678-9)" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 8px;
-                ">
-              </div>
-            </div>
-          </div>
-
-          <!-- Tesorero -->
-          <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px;">
-            <div style="display: flex; align-items: start; gap: 12px;">
-              <input type="checkbox" id="validate-treasurer" name="treasurer" required style="
-                width: 20px;
-                height: 20px;
-                margin-top: 4px;
-                cursor: pointer;
-                accent-color: #3b82f6;
-              ">
-              <div style="flex: 1;">
-                <label for="validate-treasurer" style="cursor: pointer; display: block; font-weight: 600; font-size: 15px; color: #1f2937; margin-bottom: 4px;">
-                  💰 Tesorero/a
-                </label>
-                <p style="margin: 0; font-size: 13px; color: #6b7280;">Verificar identidad, firma y documentación del tesorero de la organización</p>
-                <input type="text" id="treasurer-name" placeholder="Nombre completo" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 12px;
-                ">
-                <input type="text" id="treasurer-rut" placeholder="RUT (ej: 12.345.678-9)" required style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #e5e7eb;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  box-sizing: border-box;
-                  margin-top: 8px;
-                ">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 24px;">
-          <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #374151;">
-            Observaciones (opcional)
-          </label>
-          <textarea id="validation-notes" rows="3" style="
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            box-sizing: border-box;
-            resize: vertical;
-          " placeholder="Notas adicionales sobre la validación..."></textarea>
-        </div>
-
-        <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #f59e0b;">
-          <p style="margin: 0; font-size: 13px; color: #92400e;">
-            ⚠️ Al confirmar, certificas que has verificado la identidad de los firmantes y la autenticidad de sus firmas.
-          </p>
-        </div>
-
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-          <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn btn-primary" style="background: #10b981;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Confirmar Validación
-          </button>
-        </div>
-      </form>
+      <h3 style="margin: 0 0 16px; font-size: 22px; color: #1f2937;">Rehacer Validacion</h3>
+      <p style="margin: 0 0 24px; color: #6b7280; font-size: 15px; line-height: 1.6;">
+        Las firmas ya fueron validadas el <strong>${new Date(assignment.validatedAt).toLocaleDateString('es-CL')}</strong>.<br><br>
+        <span style="color: #d97706;">Al continuar, la validacion anterior sera anulada y debera realizar una nueva validacion desde cero.</span><br><br>
+        <span style="font-size: 13px;">El historial de validaciones anteriores quedara registrado.</span>
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="cancel-edit" style="padding: 14px 28px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 15px;">
+          Cancelar
+        </button>
+        <button id="confirm-edit" style="padding: 14px 28px; border: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          Rehacer Validacion
+        </button>
+      </div>
     </div>
   `;
+  document.body.appendChild(confirmEdit);
 
-  document.body.appendChild(modal);
+  confirmEdit.querySelector('#cancel-edit').addEventListener('click', () => confirmEdit.remove());
 
-  const form = modal.querySelector('#validate-signatures-form');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const validationData = {
-      validatedBy: 'MINISTRO',
-      validatorId: currentMinistro.id,
-      validatorName: `${currentMinistro.firstName} ${currentMinistro.lastName}`,
-      signatures: {
-        president: {
-          name: document.getElementById('president-name').value.trim(),
-          rut: document.getElementById('president-rut').value.trim(),
-          validated: document.getElementById('validate-president').checked
-        },
-        secretary: {
-          name: document.getElementById('secretary-name').value.trim(),
-          rut: document.getElementById('secretary-rut').value.trim(),
-          validated: document.getElementById('validate-secretary').checked
-        },
-        treasurer: {
-          name: document.getElementById('treasurer-name').value.trim(),
-          rut: document.getElementById('treasurer-rut').value.trim(),
-          validated: document.getElementById('validate-treasurer').checked
-        },
-        notes: document.getElementById('validation-notes').value.trim()
-      }
-    };
-
-    try {
-      ministroAssignmentService.markSignaturesValidated(assignmentId, validationData);
-      showToast('✅ Firmas validadas exitosamente', 'success');
-      modal.remove();
-      loadStats();
-      renderAssignments();
-    } catch (error) {
-      showToast(error.message, 'error');
-    }
+  confirmEdit.querySelector('#confirm-edit').addEventListener('click', () => {
+    confirmEdit.remove();
+    // Resetear el estado de validación y abrir el formulario
+    ministroAssignmentService.resetValidation(assignmentId);
+    validateSignatures(assignmentId);
   });
 }
 
 function viewDetails(assignmentId) {
   const assignment = ministroAssignmentService.getAll().find(a => a.id === assignmentId);
-  if (!assignment) return;
+  if (!assignment) {
+    showToast('Asignación no encontrada', 'error');
+    return;
+  }
 
-  showToast('Vista de detalles en desarrollo', 'info');
-  // TODO: Implement details modal
+  // Obtener datos de la organización
+  const orgs = JSON.parse(localStorage.getItem('user_organizations') || '[]');
+  const org = orgs.find(o => o.id === assignment.organizationId);
+
+  // Extraer datos de la organización (pueden estar en org.organization o directamente en org)
+  const orgData = org?.organization || org || {};
+  const orgName = orgData.name || org?.organizationName || assignment.organizationName || 'Sin nombre';
+  const orgType = orgData.type || org?.organizationType || 'No especificado';
+  const orgAddress = orgData.address || org?.address || 'No especificada';
+  const orgCommune = orgData.commune || org?.commune || '';
+  const orgRegion = orgData.region || org?.region || '';
+  const orgEmail = orgData.email || org?.contactEmail || '';
+  const orgPhone = orgData.phone || org?.contactPhone || '';
+
+  // Extraer miembros
+  const members = org?.members || [];
+
+  // Formatear fecha
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'No especificada';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-CL', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+      <div class="modal-header" style="padding: 24px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border-bottom: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <div>
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Detalles de la Asamblea
+            </h3>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">${orgName}</p>
+          </div>
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="padding: 24px;">
+        <!-- Información de la Cita -->
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #1e40af;">📅 Información de la Cita</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+              <p style="margin: 0; font-size: 12px; color: #3b82f6; font-weight: 600; text-transform: uppercase;">Fecha</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1e40af; font-weight: 600;">${formatDate(assignment.scheduledDate)}</p>
+            </div>
+            <div>
+              <p style="margin: 0; font-size: 12px; color: #3b82f6; font-weight: 600; text-transform: uppercase;">Hora</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1e40af; font-weight: 600;">${assignment.scheduledTime || 'No especificada'}</p>
+            </div>
+            <div>
+              <p style="margin: 0; font-size: 12px; color: #3b82f6; font-weight: 600; text-transform: uppercase;">Lugar</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1e40af; font-weight: 600;">${assignment.location || 'No especificado'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de la Organización -->
+        ${org ? `
+          <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+            <h4 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #374151;">🏢 Datos de la Organización</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div>
+                <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Nombre</p>
+                <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${orgName}</p>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Tipo</p>
+                <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${orgType}</p>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Dirección</p>
+                <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${orgAddress}</p>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Comuna</p>
+                <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${orgCommune || 'No especificada'}</p>
+              </div>
+            </div>
+
+            ${orgEmail || orgPhone ? `
+              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <h5 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #374151;">Contacto</h5>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                  ${orgEmail ? `<p style="margin: 0; font-size: 14px; color: #1f2937;">📧 ${orgEmail}</p>` : ''}
+                  ${orgPhone ? `<p style="margin: 0; font-size: 14px; color: #1f2937;">📱 ${orgPhone}</p>` : ''}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Miembros Registrados -->
+          ${members.length > 0 ? `
+            <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 16px; padding: 24px;">
+              <h4 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #374151;">👥 Miembros Registrados (${members.length})</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+                ${members.map((member, index) => `
+                  <div style="background: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <p style="margin: 0; font-weight: 600; color: #1f2937; font-size: 14px;">${index + 1}. ${member.firstName ? `${member.firstName} ${member.lastName || ''}` : member.name || 'Sin nombre'}</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">RUT: ${member.rut || 'No especificado'}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : `
+            <div style="background: #fef3c7; padding: 16px; border-radius: 12px; text-align: center;">
+              <p style="margin: 0; color: #92400e;">No hay miembros registrados aún.</p>
+            </div>
+          `}
+        ` : `
+          <div style="background: #fef3c7; padding: 20px; border-radius: 12px; text-align: center;">
+            <p style="margin: 0; color: #92400e; font-weight: 600;">
+              ⚠️ No se encontraron datos adicionales de la organización.
+            </p>
+          </div>
+        `}
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+            Cerrar
+          </button>
+          ${!assignment.signaturesValidated ? `
+            <button type="button" class="btn btn-primary" onclick="this.closest('.modal-overlay').remove(); validateSignatures('${assignmentId}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+              </svg>
+              Validar Firmas
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
 }
 
 function deleteBlock(blockId) {

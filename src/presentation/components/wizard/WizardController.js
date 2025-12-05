@@ -58,6 +58,7 @@ export class WizardController {
     };
     this.otherDocumentCounter = 0;
     this.currentSignatureMethod = 'draw';
+    this.existingOrganizationId = null; // Para continuar org existente después de Ministro de Fe
   }
 
   /**
@@ -67,6 +68,7 @@ export class WizardController {
     const progress = {
       currentStep: this.currentStep,
       formData: this.formData,
+      organizationId: this.existingOrganizationId || null, // Guardar ID si es org existente
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(this.storageKey, JSON.stringify(progress));
@@ -235,6 +237,8 @@ export class WizardController {
         signatures: savedProgress.formData.signatures || {}
       };
       this.currentStep = savedProgress.currentStep;
+      // Restaurar organizationId si existe (para actualizar org existente)
+      this.existingOrganizationId = savedProgress.organizationId || null;
       this.startWizard(true);
     });
   }
@@ -4552,6 +4556,39 @@ Vocal`;
           </div>
 
           <div class="form-group">
+            <label>Dirección de la Asamblea de Constitución <span class="required">*</span></label>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="org">
+                <input type="radio" name="assembly-address-type" value="org" style="width: 18px; height: 18px;">
+                <div>
+                  <strong style="display: block; color: #1f2937;">Dirección de la Organización</strong>
+                  <span style="font-size: 13px; color: #6b7280;" id="org-address-preview">${this.formData.organization?.address || 'No especificada'}</span>
+                </div>
+              </label>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="muni">
+                <input type="radio" name="assembly-address-type" value="muni" style="width: 18px; height: 18px;">
+                <div>
+                  <strong style="display: block; color: #1f2937;">Municipalidad de Renca</strong>
+                  <span style="font-size: 13px; color: #6b7280;">Blanco Encalada 1335, Renca</span>
+                </div>
+              </label>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; transition: all 0.2s;" class="address-option" data-option="custom">
+                <input type="radio" name="assembly-address-type" value="custom" style="width: 18px; height: 18px;">
+                <div style="flex: 1;">
+                  <strong style="display: block; color: #1f2937;">Otra dirección</strong>
+                  <input type="text" id="custom-assembly-address" placeholder="Escriba la dirección completa..."
+                    style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 6px; display: none;"
+                    disabled>
+                </div>
+              </label>
+            </div>
+            <input type="hidden" id="assembly-address" name="assemblyAddress">
+            <small style="color: #6b7280; display: block; margin-top: 8px;">
+              Seleccione dónde se realizará la asamblea de constitución
+            </small>
+          </div>
+
+          <div class="form-group">
             <label>Comentarios Adicionales (Opcional)</label>
             <textarea id="ministro-comments" name="comments" rows="3"
               placeholder="Información adicional que desees compartir con la municipalidad..."
@@ -4585,6 +4622,7 @@ Vocal`;
         e.preventDefault();
         const selectedDate = document.getElementById('selected-date').value;
         const selectedTime = document.getElementById('selected-time').value;
+        const assemblyAddress = document.getElementById('assembly-address').value;
         const comments = document.getElementById('ministro-comments').value;
 
         if (!selectedDate || !selectedTime) {
@@ -4592,12 +4630,19 @@ Vocal`;
           return;
         }
 
-        await this.submitMinistroRequest(selectedDate, selectedTime, comments);
+        if (!assemblyAddress) {
+          showToast('Por favor selecciona la dirección donde se realizará la asamblea', 'error');
+          return;
+        }
+
+        await this.submitMinistroRequest(selectedDate, selectedTime, comments, assemblyAddress);
       });
     }
 
     if (backBtn) {
       backBtn.addEventListener('click', () => {
+        // Restaurar el HTML original del paso 2
+        this.restoreStep2HTML();
         // Volver a mostrar el paso 2 normal
         this.updateUI();
         this.initializeCurrentStep();
@@ -4606,6 +4651,9 @@ Vocal`;
 
     // Inicializar calendario interactivo
     this.initializeScheduleCalendar();
+
+    // Inicializar selector de dirección de asamblea
+    this.initializeAssemblyAddressSelector();
   }
 
   /**
@@ -4777,7 +4825,7 @@ Vocal`;
   /**
    * FASE 2: Envía la solicitud de Ministro de Fe
    */
-  async submitMinistroRequest(electionDate, electionTime, comments = '') {
+  async submitMinistroRequest(electionDate, electionTime, comments = '', assemblyAddress = '') {
     try {
       showToast('Enviando solicitud de Ministro de Fe...', 'info');
 
@@ -4796,7 +4844,8 @@ Vocal`;
         userName: `${this.userProfile?.firstName || ''} ${this.userProfile?.lastName || ''}`.trim(),
         userEmail: this.userEmail || '',
         userPhone: this.userProfile?.phone || '',
-        comments: comments
+        comments: comments,
+        assemblyAddress: assemblyAddress
       });
 
       // Crear la solicitud con los datos de pasos 1 y 2
@@ -4807,6 +4856,7 @@ Vocal`;
         },
         electionDate: electionDate,
         electionTime: electionTime,
+        assemblyAddress: assemblyAddress,
         bookingId: booking.id,
         comments: comments
       };
@@ -4850,8 +4900,16 @@ Vocal`;
             <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 16px; max-width: 500px; margin: 24px auto;">
               <p style="color: #047857; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">📅 Cita Agendada:</p>
               <p style="color: #065f46; margin: 0; font-size: 16px;">
-                <strong>${new Date(electionDate).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong><br>
+                <strong>${(() => {
+                  const [year, month, day] = electionDate.split('-').map(Number);
+                  const date = new Date(year, month - 1, day);
+                  return date.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                })()}</strong><br>
                 a las <strong>${electionTime}</strong>
+              </p>
+              <p style="color: #047857; margin: 12px 0 4px 0; font-size: 14px; font-weight: 600;">📍 Lugar:</p>
+              <p style="color: #065f46; margin: 0; font-size: 15px;">
+                ${assemblyAddress}
               </p>
             </div>
 
@@ -4907,19 +4965,41 @@ Vocal`;
 
       // Guardar en el servicio de organizaciones para mostrar en home
       if (window.organizationsService) {
-        window.organizationsService.create({
-          organization: this.formData.organization,
-          members: this.formData.members,
-          commission: this.formData.commission,
-          statutes: this.formData.statutes,
-          documents: this.formData.documents,
-          signatures: this.formData.signatures,
-          certificates: this.formData.certificates
-        });
+        // Si es una organización existente (continuando después de Ministro de Fe), actualizar
+        if (this.existingOrganizationId) {
+          window.organizationsService.update(this.existingOrganizationId, {
+            organization: this.formData.organization,
+            members: this.formData.members,
+            commission: this.formData.commission,
+            statutes: this.formData.statutes,
+            documents: this.formData.documents,
+            signatures: this.formData.signatures,
+            certificates: this.formData.certificates
+          });
+          // Actualizar el estado a PENDING_REVIEW
+          window.organizationsService.updateStatus(
+            this.existingOrganizationId,
+            'pending_review',
+            'Usuario completó el proceso después de aprobación del Ministro de Fe'
+          );
+        } else {
+          // Crear nueva organización
+          window.organizationsService.create({
+            organization: this.formData.organization,
+            members: this.formData.members,
+            commission: this.formData.commission,
+            statutes: this.formData.statutes,
+            documents: this.formData.documents,
+            signatures: this.formData.signatures,
+            certificates: this.formData.certificates
+          });
+        }
       }
 
       // Limpiar progreso guardado
       this.clearProgress();
+      // Limpiar referencia a organización existente
+      this.existingOrganizationId = null;
 
       showToast('¡Solicitud enviada correctamente!', 'success');
 
@@ -4935,5 +5015,124 @@ Vocal`;
       console.error('Error al enviar solicitud:', error);
       showToast('Error al enviar la solicitud', 'error');
     }
+  }
+
+  /**
+   * Inicializa el selector de dirección para la asamblea
+   */
+  initializeAssemblyAddressSelector() {
+    const addressRadios = document.querySelectorAll('input[name="assembly-address-type"]');
+    const customAddressInput = document.getElementById('custom-assembly-address');
+    const assemblyAddressHidden = document.getElementById('assembly-address');
+    const addressOptions = document.querySelectorAll('.address-option');
+
+    const updateAssemblyAddress = () => {
+      const selectedRadio = document.querySelector('input[name="assembly-address-type"]:checked');
+      if (!selectedRadio) {
+        assemblyAddressHidden.value = '';
+        return;
+      }
+
+      // Actualizar estilos visuales
+      addressOptions.forEach(option => {
+        option.style.borderColor = '#d1d5db';
+        option.style.background = 'white';
+      });
+      const selectedOption = selectedRadio.closest('.address-option');
+      if (selectedOption) {
+        selectedOption.style.borderColor = '#3b82f6';
+        selectedOption.style.background = '#eff6ff';
+      }
+
+      switch (selectedRadio.value) {
+        case 'org':
+          assemblyAddressHidden.value = this.formData.organization?.address || '';
+          if (customAddressInput) {
+            customAddressInput.style.display = 'none';
+            customAddressInput.disabled = true;
+          }
+          break;
+        case 'muni':
+          assemblyAddressHidden.value = 'Blanco Encalada 1335, Renca';
+          if (customAddressInput) {
+            customAddressInput.style.display = 'none';
+            customAddressInput.disabled = true;
+          }
+          break;
+        case 'custom':
+          if (customAddressInput) {
+            customAddressInput.style.display = 'block';
+            customAddressInput.disabled = false;
+            customAddressInput.focus();
+            assemblyAddressHidden.value = customAddressInput.value;
+          }
+          break;
+      }
+    };
+
+    addressRadios.forEach(radio => {
+      radio.addEventListener('change', updateAssemblyAddress);
+    });
+
+    if (customAddressInput) {
+      customAddressInput.addEventListener('input', () => {
+        if (assemblyAddressHidden) {
+          assemblyAddressHidden.value = customAddressInput.value;
+        }
+      });
+    }
+  }
+
+  /**
+   * Restaura el HTML original del paso 2 después de mostrar la pantalla de Ministro de Fe
+   */
+  restoreStep2HTML() {
+    const stepContent = document.querySelector('#step-2');
+    if (!stepContent) return;
+
+    // Obtener el mínimo de miembros requerido según el tipo de organización
+    const orgType = this.formData.organization?.type;
+    const minMembers = orgType === 'JUNTA_VECINOS' ? 50 : 15;
+
+    stepContent.innerHTML = `
+      <h3>Paso 2: Miembros Fundadores</h3>
+      <p class="step-description" id="step2-description">Registre a los miembros fundadores de la organización (mínimo ${minMembers} personas).</p>
+
+      <div class="members-summary">
+        <div class="summary-stat">
+          <span class="stat-label">Total de miembros:</span>
+          <span class="stat-value" id="members-count">0</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">Mínimo requerido:</span>
+          <span class="stat-value" id="min-members-required">${minMembers}</span>
+        </div>
+      </div>
+
+      <div class="members-actions">
+        <button class="btn-primary" id="btn-add-member">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+          Agregar Miembro
+        </button>
+        <button class="btn-outline" id="btn-load-test-members">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Cargar 50 de Prueba
+        </button>
+      </div>
+
+      <div id="members-list" class="members-list">
+        <p class="text-muted">No hay miembros agregados aún.</p>
+      </div>
+    `;
   }
 }
