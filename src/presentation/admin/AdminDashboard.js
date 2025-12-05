@@ -8,6 +8,7 @@ import { alertsService } from '../../services/AlertsService.js';
 import { showToast } from '../../app.js';
 import { initScheduleManager } from './ScheduleManager.js';
 import { initMinistroManager } from './MinistroManager.js';
+import { initUnidadesVecinalesManager } from './UnidadesVecinalesManager.js';
 import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
@@ -112,9 +113,10 @@ class AdminDashboard {
   constructor() {
     this.currentFilter = 'all';
     this.searchQuery = '';
-    this.currentView = 'applications'; // 'applications', 'schedule', o 'ministro'
+    this.currentView = 'applications'; // 'applications', 'schedule', 'ministro', 'uv'
     this.scheduleManager = null;
     this.ministroManager = null;
+    this.uvManager = null;
   }
 
   /**
@@ -131,6 +133,7 @@ class AdminDashboard {
     this.setupEventListeners();
     this.setupScheduleManagerButton();
     this.setupMinistroManagerButton();
+    this.setupUVManagerButton();
   }
 
   /**
@@ -193,6 +196,22 @@ class AdminDashboard {
   }
 
   /**
+   * Configura el botón de gestión de unidades vecinales
+   */
+  setupUVManagerButton() {
+    const btn = document.getElementById('btn-uv-manager');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (this.currentView === 'uv') {
+          this.showApplications();
+        } else {
+          this.showUVManager();
+        }
+      });
+    }
+  }
+
+  /**
    * Muestra la vista de gestión de horarios
    */
   showScheduleManager() {
@@ -239,6 +258,7 @@ class AdminDashboard {
     document.querySelector('.admin-toolbar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
+    document.getElementById('uv-manager-view').style.display = 'none';
 
     // Mostrar vista de ministro manager
     const ministroView = document.getElementById('ministro-manager-view');
@@ -258,9 +278,57 @@ class AdminDashboard {
     scheduleBtn.disabled = true;
     scheduleBtn.style.opacity = '0.5';
 
+    const uvBtn = document.getElementById('btn-uv-manager');
+    if (uvBtn) {
+      uvBtn.disabled = true;
+      uvBtn.style.opacity = '0.5';
+    }
+
     // Inicializar ministro manager si no existe
     if (!this.ministroManager) {
       this.ministroManager = initMinistroManager(ministroView);
+    }
+  }
+
+  /**
+   * Muestra la vista de gestión de unidades vecinales
+   */
+  showUVManager() {
+    this.currentView = 'uv';
+
+    // Ocultar elementos de la vista de solicitudes
+    document.querySelector('.admin-stats-row').style.display = 'none';
+    document.querySelector('.admin-toolbar').style.display = 'none';
+    document.getElementById('admin-applications-list').style.display = 'none';
+    document.getElementById('schedule-manager-view').style.display = 'none';
+    document.getElementById('ministro-manager-view').style.display = 'none';
+
+    // Mostrar vista de UV manager
+    const uvView = document.getElementById('uv-manager-view');
+    uvView.style.display = 'block';
+
+    // Cambiar texto del botón UV
+    const uvBtn = document.getElementById('btn-uv-manager');
+    uvBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Volver a Solicitudes
+    `;
+
+    // Deshabilitar otros botones
+    const scheduleBtn = document.getElementById('btn-schedule-manager');
+    scheduleBtn.disabled = true;
+    scheduleBtn.style.opacity = '0.5';
+
+    const ministroBtn = document.getElementById('btn-ministro-manager');
+    ministroBtn.disabled = true;
+    ministroBtn.style.opacity = '0.5';
+
+    // Inicializar UV manager si no existe
+    if (!this.uvManager) {
+      this.uvManager = initUnidadesVecinalesManager(uvView);
     }
   }
 
@@ -281,6 +349,7 @@ class AdminDashboard {
     // Ocultar vistas de managers
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
+    document.getElementById('uv-manager-view').style.display = 'none';
 
     // Actualizar lista y stats
     this.renderApplicationsList();
@@ -313,6 +382,20 @@ class AdminDashboard {
     `;
     ministroBtn.disabled = false;
     ministroBtn.style.opacity = '1';
+
+    // Restaurar botón de unidades vecinales
+    const uvBtn = document.getElementById('btn-uv-manager');
+    if (uvBtn) {
+      uvBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        Unidades Vecinales
+      `;
+      uvBtn.disabled = false;
+      uvBtn.style.opacity = '1';
+    }
   }
 
   /**

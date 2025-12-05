@@ -16408,3 +16408,77 @@ a.header-logo:hover {
         page-break-inside: avoid;
     }
 }
+
+/* ================================
+   UNIDADES VECINALES MANAGER
+   ================================ */
+
+.uv-manager-view { padding: 20px; background: var(--background); min-height: calc(100vh - 200px); }
+.uv-manager { max-width: 1200px; margin: 0 auto; }
+.uv-manager-header { margin-bottom: 24px; }
+.uv-manager-header h2 { font-size: 24px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px 0; }
+.uv-manager-header p { font-size: 14px; color: var(--text-secondary); margin: 0; }
+.uv-stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.uv-stat-card { flex: 1; min-width: 100px; padding: 16px; background: white; border-radius: 12px; border: 2px solid var(--border-color); text-align: center; cursor: pointer; transition: all 0.2s; }
+.uv-stat-card:hover { border-color: #8b5cf6; transform: translateY(-2px); }
+.uv-stat-card.active { border-color: #8b5cf6; background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); }
+.uv-stat-number { font-size: 28px; font-weight: 700; color: #8b5cf6; }
+.uv-stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.uv-controls { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
+.uv-search { flex: 1; }
+.uv-search input { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+.uv-search input:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+.btn-uv-seed { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: white; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.btn-uv-seed:hover { border-color: #8b5cf6; color: #8b5cf6; }
+.uv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.uv-card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; transition: all 0.2s; }
+.uv-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+.uv-card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-bottom: 1px solid var(--border-color); }
+.uv-card-numero { font-size: 18px; font-weight: 700; color: #7c3aed; }
+.uv-card-macrozona { font-size: 12px; padding: 4px 10px; background: rgba(124, 58, 237, 0.1); color: #7c3aed; border-radius: 20px; font-weight: 500; }
+.uv-card-body { padding: 16px; }
+.uv-card-info { display: flex; gap: 8px; margin-bottom: 12px; }
+.uv-card-badge { font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
+.uv-card-badge.has-data { background: #d1fae5; color: #065f46; }
+.uv-card-badge.no-data { background: #fee2e2; color: #991b1b; }
+.uv-card-poblaciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.uv-poblacion-tag { font-size: 11px; padding: 4px 8px; background: #f3f4f6; color: var(--text-secondary); border-radius: 4px; }
+.uv-more { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+.uv-card-actions { padding: 12px 16px; border-top: 1px solid var(--border-color); background: #fafafa; }
+.btn-uv-edit { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #8b5cf6; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-uv-edit:hover { background: #7c3aed; }
+.uv-empty { grid-column: 1 / -1; text-align: center; padding: 48px; color: var(--text-secondary); }
+.uv-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 100000; padding: 20px; }
+.uv-modal-content { background: white; border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+.uv-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border-color); }
+.uv-modal-header h3 { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.uv-modal-close { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 0; line-height: 1; }
+.uv-modal-close:hover { color: var(--text-primary); }
+.uv-modal-body { padding: 24px; overflow-y: auto; }
+.uv-edit-form { display: flex; flex-direction: column; gap: 20px; }
+.uv-form-group { display: flex; flex-direction: column; gap: 8px; }
+.uv-form-group label { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.uv-form-group input, .uv-form-group select, .uv-form-group textarea { padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; }
+.uv-form-group input:focus, .uv-form-group select:focus, .uv-form-group textarea:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+.uv-tags-container { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: #f9fafb; border-radius: 8px; min-height: 48px; }
+.uv-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #8b5cf6; color: white; border-radius: 20px; font-size: 13px; }
+.uv-tag-remove { background: none; border: none; color: white; cursor: pointer; padding: 0; font-size: 16px; line-height: 1; opacity: 0.8; }
+.uv-tag-remove:hover { opacity: 1; }
+.uv-add-tag { display: flex; gap: 8px; margin-top: 8px; }
+.uv-add-tag input { flex: 1; }
+.btn-add-tag { padding: 10px 16px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+.btn-add-tag:hover { background: #7c3aed; }
+.uv-limites-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.uv-limites-grid label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.uv-form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+.uv-form-actions .btn-cancel { padding: 10px 20px; background: white; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); font-weight: 500; cursor: pointer; }
+.uv-form-actions .btn-save { padding: 10px 20px; background: #8b5cf6; border: none; border-radius: 8px; color: white; font-weight: 500; cursor: pointer; }
+.uv-form-actions .btn-save:hover { background: #7c3aed; }
+
+@media (max-width: 768px) {
+    .uv-stats-row { flex-wrap: wrap; }
+    .uv-stat-card { flex: 0 0 calc(50% - 6px); min-width: auto; }
+    .uv-list { grid-template-columns: 1fr; }
+    .uv-limites-grid { grid-template-columns: 1fr; }
+    .uv-modal-content { max-height: 95vh; }
+}

@@ -10,6 +10,7 @@ import ministrosRoutes from './routes/ministros.js';
 import assignmentsRoutes from './routes/assignments.js';
 import notificationsRoutes from './routes/notifications.js';
 import usersRoutes from './routes/users.js';
+import unidadesVecinalesRoutes from './routes/unidadesVecinales.js';
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use('/api/ministros', ministrosRoutes);
 app.use('/api/assignments', assignmentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/unidades-vecinales', unidadesVecinalesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
