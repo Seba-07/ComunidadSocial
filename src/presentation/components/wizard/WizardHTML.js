@@ -529,7 +529,7 @@ function getStep5HTML_Comision() {
   `;
 }
 
-function getStep4HTML_Estatutos() {
+export function getStep4HTML_Estatutos() {
   return `
     <div class="wizard-step-content" id="step-4">
       <h3>Paso 4: Estatutos de la Organización</h3>

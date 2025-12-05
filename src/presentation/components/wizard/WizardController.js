@@ -3,7 +3,7 @@
  * Controla la lógica del wizard de creación de organizaciones
  */
 
-import { getWizardHTML } from './WizardHTML.js';
+import { getWizardHTML, getStep4HTML_Estatutos } from './WizardHTML.js';
 import { indexedDBService } from '../../../infrastructure/database/IndexedDBService.js';
 import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
@@ -5485,9 +5485,9 @@ Vocal`;
 
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        // Restaurar el HTML original del paso 2
-        this.restoreStep2HTML();
-        // Volver a mostrar el paso 2 normal
+        // Restaurar el HTML original del paso 4 (Estatutos)
+        this.restoreStep4HTML();
+        // Volver a mostrar el paso 4 normal
         this.updateUI();
         this.initializeCurrentStep();
       });
@@ -5773,7 +5773,7 @@ Vocal`;
       }
 
       // Mostrar mensaje de confirmación
-      const stepContent = document.querySelector('#step-2');
+      const stepContent = document.querySelector('#step-4');
       if (stepContent) {
         stepContent.innerHTML = `
           <div style="text-align: center; padding: 60px 20px;">
@@ -6046,5 +6046,20 @@ Vocal`;
         <p class="text-muted">No hay miembros agregados aún.</p>
       </div>
     `;
+  }
+
+  /**
+   * Restaura el HTML original del paso 4 (Estatutos) después de mostrar la pantalla de Ministro de Fe
+   */
+  restoreStep4HTML() {
+    const stepContent = document.querySelector('#step-4');
+    if (!stepContent) return;
+
+    // Usar el HTML del paso 4 desde WizardHTML
+    const step4HTML = getStep4HTML_Estatutos();
+    // Extraer solo el contenido interno (sin el div contenedor)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = step4HTML;
+    stepContent.innerHTML = tempDiv.firstElementChild.innerHTML;
   }
 }
