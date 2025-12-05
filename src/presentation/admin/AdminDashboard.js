@@ -15,7 +15,7 @@ import { pdfService } from '../../services/PDFService.js';
 
 // Helper: Obtener nombre de organización (soporta formato nuevo y legacy)
 function getOrgName(org) {
-  return org.organizationName || getOrgName(org);
+  return org.organizationName || org.organization?.name || 'Sin nombre';
 }
 
 // Helper: Obtener tipo de organización (soporta formato nuevo y legacy)
@@ -99,12 +99,27 @@ class AdminDashboard {
   /**
    * Inicializa el dashboard de administrador
    */
-  init() {
+  async init() {
+    // Cargar organizaciones del servidor
+    await this.loadOrganizations();
     this.renderApplicationsList();
     this.updateStats();
     this.setupEventListeners();
     this.setupScheduleManagerButton();
     this.setupMinistroManagerButton();
+  }
+
+  /**
+   * Carga las organizaciones desde el servidor
+   */
+  async loadOrganizations() {
+    try {
+      console.log('🔄 Cargando organizaciones del servidor...');
+      await organizationsService.getAllAsync();
+      console.log('✅ Organizaciones cargadas');
+    } catch (e) {
+      console.error('❌ Error cargando organizaciones:', e);
+    }
   }
 
   /**
@@ -214,8 +229,11 @@ class AdminDashboard {
   /**
    * Muestra la vista de solicitudes
    */
-  showApplications() {
+  async showApplications() {
     this.currentView = 'applications';
+
+    // Recargar organizaciones del servidor
+    await this.loadOrganizations();
 
     // Mostrar elementos de la vista de solicitudes
     document.querySelector('.admin-stats-row').style.display = 'grid';
@@ -225,6 +243,10 @@ class AdminDashboard {
     // Ocultar vistas de managers
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
+
+    // Actualizar lista y stats
+    this.renderApplicationsList();
+    this.updateStats();
 
     // Restaurar botón de horarios
     const scheduleBtn = document.getElementById('btn-schedule-manager');
@@ -398,10 +420,13 @@ class AdminDashboard {
 
     const membersCount = org.members?.length || 0;
 
+    // Usar _id o id para el identificador de MongoDB
+    const orgId = org._id || org.id;
+
     // FASE 5: Verificar si es organización fantasma
     let ghostBadge = '';
     if (org.status === ORG_STATUS.APPROVED) {
-      const ghostStatus = alertsService.isGhostOrganization(org.id);
+      const ghostStatus = alertsService.isGhostOrganization(orgId);
       if (ghostStatus.isGhost) {
         const severityColors = {
           severe: '#dc2626',
@@ -424,7 +449,7 @@ class AdminDashboard {
     }
 
     return `
-      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''}" data-org-id="${org.id}">
+      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''}" data-org-id="${orgId}">
         <div class="app-row-main">
           <div class="app-row-icon">${typeIcon}</div>
           <div class="app-row-info">
