@@ -1083,30 +1083,34 @@ export class WizardController {
    * Guarda datos del paso 4: Estatutos
    */
   async saveStep4_Estatutos() {
-    const statutesOption = document.querySelector('input[name="statutes-option"]:checked').value;
+    try {
+      const statutesOption = document.querySelector('input[name="statutes-option"]:checked')?.value || 'template';
 
-    if (statutesOption === 'template') {
-      // Guardar el contenido editado del editor
-      const editor = document.getElementById('statutes-editor');
-      const editedContent = editor ? editor.value : this.generateEstatutosForEditor();
-
-      this.formData.statutes = {
-        type: 'template',
-        editedContent: editedContent,
-        content: this.generateStatutesFromTemplate()
-      };
-    } else {
-      const fileInput = document.getElementById('custom-statutes-file');
-      if (fileInput.files.length || this.formData.statutes?.customFile) {
-        const file = fileInput.files[0] || this.formData.statutes.customFile;
-        const savedFile = await indexedDBService.saveFile(file);
+      if (statutesOption === 'template') {
+        // Guardar el contenido editado del editor
+        const editor = document.getElementById('statutes-editor');
+        const editedContent = editor ? editor.value : this.generateEstatutosForEditor();
 
         this.formData.statutes = {
-          type: 'custom',
-          content: savedFile,
-          customFile: file
+          type: 'template',
+          editedContent: editedContent,
+          content: this.generateStatutesFromTemplate()
         };
+      } else {
+        const fileInput = document.getElementById('custom-statutes-file');
+        if (fileInput?.files?.length || this.formData.statutes?.customFile) {
+          const file = fileInput.files[0] || this.formData.statutes.customFile;
+          const savedFile = await indexedDBService.saveFile(file);
+
+          this.formData.statutes = {
+            type: 'custom',
+            content: savedFile,
+            customFile: file
+          };
+        }
       }
+    } catch (error) {
+      console.error('Error en saveStep4_Estatutos:', error);
     }
   }
 
@@ -5207,7 +5211,7 @@ Vocal`;
    * FASE 2: Muestra pantalla de solicitud de Ministro de Fe
    */
   async showMinistroRequestScreen() {
-    const stepContent = document.querySelector('#step-2');
+    const stepContent = document.querySelector('#step-4');
     if (!stepContent) return;
 
     // Reemplazar el contenido del paso 2 con el formulario de solicitud de Ministro
@@ -5225,8 +5229,8 @@ Vocal`;
               <path d="M22 36 L32 46 L50 28" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <h2>Pasos 1 y 2 Completados</h2>
-          <p>Has completado exitosamente la información básica y el registro de miembros fundadores.</p>
+          <h2>Pasos 1 a 4 Completados</h2>
+          <p>Has completado exitosamente la información básica, miembros fundadores, configuración y estatutos.</p>
         </div>
 
         <!-- Info box -->
@@ -5239,7 +5243,7 @@ Vocal`;
             </svg>
             Siguiente Paso: Solicitar Ministro de Fe
           </h3>
-          <p>Antes de continuar con el paso 3, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.</p>
+          <p>Antes de continuar con el paso 5, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.</p>
           <p>El Ministro de Fe presidirá la asamblea de constitución, designará el <strong>Directorio Provisorio</strong> (Presidente, Secretario y Tesorero) y validará el proceso.</p>
         </div>
 
