@@ -31,20 +31,9 @@ export const ESTATUTOS_TIPO = {
   CENTRO_PADRES: {
     nombre: 'Centro de Padres y Apoderados',
     tipo: 'CENTRO_PADRES',
-    documento: `ACTA DE CONSTITUCIÓN Y ESTATUTO DEL CENTRO DE PADRES Y APODERADOS:
-
-En Santiago, a {{FECHA_DIA}} de {{FECHA_MES}} de {{FECHA_ANIO}} siendo las {{HORA}} horas, en calle {{DIRECCION}} N°{{NUMERO}}, ciudad de Santiago, comuna de Renca, provincia de Santiago, se llevó a efecto una reunión con la asistencia de las personas que firman y se individualizan por sus nombres y cédula nacional de identidad al final de la presente Acta.
-
-La reunión fue presidida por don {{PRESIDENTE_REUNION}} y actuó de secretario don {{SECRETARIO_REUNION}} y su objetivo fue el de adoptar los acuerdos necesarios para constituir una Organización Comunitaria Funcional, regida por la Ley Nº19.418, que se denominará "Centro de Padres y Apoderados {{NOMBRE_ESTABLECIMIENTO}}" (indicar el nombre del establecimiento educacional). Después de un amplio debate se acordó por unanimidad:
-
-Primero: Constituir una Organización Comunitaria Funcional denominada "Centro de Padres y Apoderados {{NOMBRE_ESTABLECIMIENTO}}". (indicar el nombre del establecimiento educacional).
-
-Segundo: Aprobar los estatutos que han de regir la Organización, cuyo texto fue leído íntegramente en la reunión y que se incorpora a la presente acta, antes de la firma e individualización de los asistentes.
-
-Tercero: Autorizar a don {{DEPOSITANTE}} para que deposite copia autorizada de la presente acta en cumplimiento de lo dispuesto en la Ley Nº 19.418.
-
-
-ESTATUTOS
+    documento: `ESTATUTOS
+CENTRO DE PADRES Y APODERADOS
+{{NOMBRE_ESTABLECIMIENTO}}
 
 TITULO PRIMERO
 Disposiciones generales
