@@ -33,6 +33,27 @@ function getOrgComuna(org) {
   return org.comuna || org.organization?.commune || 'Renca';
 }
 
+// Helper: Formatear fecha sin problemas de timezone
+function formatDateSafe(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    // Si es string en formato YYYY-MM-DD o ISO
+    if (typeof dateStr === 'string') {
+      // Tomar solo la parte de la fecha si viene con hora
+      const datePart = dateStr.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      if (year && month && day) {
+        const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+        return dateObj.toLocaleDateString('es-CL');
+      }
+    }
+    // Fallback para objetos Date
+    return new Date(dateStr).toLocaleDateString('es-CL');
+  } catch (e) {
+    return dateStr;
+  }
+}
+
 // Helper: Obtener icono según tipo de organización
 function getOrgIcon(type) {
   // Organizaciones territoriales
@@ -3045,12 +3066,25 @@ class AdminDashboard {
           return;
         }
 
-        // Verificar conflictos de horario
-        const hasConflict = ministroAssignmentService.hasScheduleConflict(mId, scheduledDate, scheduledTime);
+        // Verificar conflictos de horario (await porque es async)
+        const hasConflict = await ministroAssignmentService.hasScheduleConflict(mId, scheduledDate, scheduledTime);
         if (hasConflict) {
+          // Formatear fecha correctamente sin problemas de timezone
+          let formattedConflictDate = scheduledDate;
+          if (scheduledDate && typeof scheduledDate === 'string') {
+            const [year, month, day] = scheduledDate.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+            formattedConflictDate = dateObj.toLocaleDateString('es-CL', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            });
+          }
+
           const confirmed = confirm(
             `⚠️ ADVERTENCIA: El ministro ${ministro.firstName} ${ministro.lastName} ya tiene otra asamblea agendada en esta fecha y hora.\n\n` +
-            `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')}\n` +
+            `Fecha: ${formattedConflictDate}\n` +
             `Hora: ${scheduledTime}\n\n` +
             `¿Estás seguro de que deseas continuar con esta asignación?\n` +
             `(El ministro podría realizar múltiples asambleas al mismo horario)`
@@ -3095,7 +3129,7 @@ class AdminDashboard {
               title: '✅ Ministro de Fe Asignado',
               message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                       `Ministro: ${ministro.firstName} ${ministro.lastName}\n` +
-                      `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                      `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
               data: { organizationId: orgId, ministroData }
             });
@@ -3107,7 +3141,7 @@ class AdminDashboard {
               title: '⚖️ Nueva Asignación de Asamblea',
               message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
                       `Organización: ${getOrgName(org)}\n` +
-                      `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                      `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
               data: { organizationId: orgId, scheduledDate, scheduledTime, location }
             });
@@ -3479,7 +3513,7 @@ class AdminDashboard {
             title: '✅ Ministro de Fe Asignado',
             message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Ministro: ${newMinistroData.name}\n` +
-                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
             data: { organizationId: org.id, ministroData: newMinistroData }
           });
@@ -3490,7 +3524,7 @@ class AdminDashboard {
             title: '⚖️ Cambio de Ministro de Fe y Horario',
             message: `Se ha actualizado el Ministro de Fe y el horario para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Nuevo Ministro: ${newMinistroData.name}\n` +
-                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
+                    `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
           });
         } else if (hasMinistroChanged) {
@@ -3501,7 +3535,7 @@ class AdminDashboard {
             message: `Se ha asignado un nuevo Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Ministro Anterior: ${oldMinistroData.name}\n` +
                     `Nuevo Ministro: ${newMinistroData.name}\n` +
-                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
+                    `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
           });
         } else if (hasScheduleChanged && hasLocationChanged) {
@@ -3512,7 +3546,7 @@ class AdminDashboard {
             title: '📅📍 Cambio de Horario y Lugar',
             message: `Se ha modificado el horario y lugar de la asamblea de ${getOrgName(org)}.\n\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
-                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n\n` +
+                    `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
                     `Nuevo Lugar: ${location}`,
             data: { organizationId: org.id, oldData: oldMinistroData, newData: newMinistroData }
@@ -3524,7 +3558,7 @@ class AdminDashboard {
             title: '📅 Cambio de Horario de Asamblea',
             message: `Se ha modificado el horario de la asamblea de ${getOrgName(org)}.\n\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
-                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
+                    `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldSchedule: oldMinistroData, newSchedule: newMinistroData }
           });
         } else if (hasLocationChanged) {
@@ -3566,7 +3600,7 @@ class AdminDashboard {
             title: '⚖️ Nueva Asignación de Asamblea',
             message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
                     `Organización: ${getOrgName(org)}\n` +
-                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
             data: { organizationId: org.id, scheduledDate, scheduledTime, location }
           });
@@ -3579,7 +3613,7 @@ class AdminDashboard {
             message: `Se ha modificado el horario y lugar de una asamblea asignada.\n\n` +
                     `Organización: ${getOrgName(org)}\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
-                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
                     `Nuevo Lugar: ${location}`,
             data: { organizationId: org.id, oldData: oldMinistroData, newData: { scheduledDate, scheduledTime, location } }
@@ -3593,7 +3627,7 @@ class AdminDashboard {
             message: `Se ha modificado el horario de una asamblea asignada.\n\n` +
                     `Organización: ${getOrgName(org)}\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
-                    `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
+                    `Nueva Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
             data: { organizationId: org.id, oldSchedule: oldMinistroData, newSchedule: { scheduledDate, scheduledTime, location } }
           });
@@ -3607,7 +3641,7 @@ class AdminDashboard {
                     `Organización: ${getOrgName(org)}\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
                     `Nuevo Lugar: ${location}\n` +
-                    `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
+                    `Fecha: ${formatDateSafe(scheduledDate)} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldLocation: oldMinistroData.location, newLocation: location }
           });
         }
