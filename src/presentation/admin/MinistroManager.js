@@ -185,21 +185,23 @@ export class MinistroManager {
     }
 
     container.innerHTML = ministros.map(ministro => {
+      // Usar _id o id para MongoDB
+      const ministroId = ministro._id || ministro.id;
       // Obtener bloqueos del ministro
-      const blocks = ministroAvailabilityService.getByMinistroId(ministro.id);
+      const blocks = ministroAvailabilityService.getByMinistroId(ministroId);
       const activeBlocks = blocks.filter(b => b.active);
       const hasBlocks = activeBlocks.length > 0;
 
       return `
       <div class="ministro-card ${ministro.active ? '' : 'ministro-inactive'}">
         <div class="ministro-avatar">
-          ${ministro.firstName.charAt(0)}${ministro.lastName.charAt(0)}
+          ${ministro.firstName?.charAt(0) || ''}${ministro.lastName?.charAt(0) || ''}
         </div>
         <div class="ministro-info">
           <h4>${ministro.firstName} ${ministro.lastName}</h4>
           <div class="ministro-details">
             <span><strong>RUT:</strong> ${ministro.rut}</span>
-            <span><strong>Especialidad:</strong> ${ministro.specialty}</span>
+            <span><strong>Especialidad:</strong> ${ministro.specialty || 'General'}</span>
             ${ministro.email ? `<span><strong>Email:</strong> ${ministro.email}</span>` : ''}
             ${ministro.phone ? `<span><strong>Teléfono:</strong> ${ministro.phone}</span>` : ''}
             ${ministro.address ? `<span><strong>Dirección:</strong> ${ministro.address}</span>` : ''}
@@ -214,7 +216,7 @@ export class MinistroManager {
                 </svg>
                 <strong style="color: #92400e; font-size: 13px;">⚠️ ${activeBlocks.length} Bloqueo${activeBlocks.length !== 1 ? 's' : ''} de Disponibilidad</strong>
               </div>
-              <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="window.ministroManagerInstance.viewBlocks('${ministro.id}')">
+              <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="window.ministroManagerInstance.viewBlocks('${ministroId}')">
                 Ver Detalles
               </button>
             </div>
@@ -226,20 +228,20 @@ export class MinistroManager {
           </span>
         </div>
         <div class="ministro-actions">
-          <button type="button" class="btn-icon" title="Editar" onclick="window.ministroManagerInstance.editMinistro('${ministro.id}')">
+          <button type="button" class="btn-icon" title="Editar" onclick="window.ministroManagerInstance.editMinistro('${ministroId}')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
           </button>
-          <button type="button" class="btn-icon" title="${ministro.active ? 'Desactivar' : 'Activar'}" onclick="window.ministroManagerInstance.toggleActive('${ministro.id}')">
+          <button type="button" class="btn-icon" title="${ministro.active ? 'Desactivar' : 'Activar'}" onclick="window.ministroManagerInstance.toggleActive('${ministroId}')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               ${ministro.active ?
                 '<path d="M10 9v6m4-6v6m7-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path>' :
                 '<path d="M5 3l14 9-14 9V3z"></path>'}
             </svg>
           </button>
-          <button type="button" class="btn-delete-ministro" title="Eliminar" onclick="window.ministroManagerInstance.deleteMinistro('${ministro.id}')">
+          <button type="button" class="btn-delete-ministro" title="Eliminar" onclick="window.ministroManagerInstance.deleteMinistro('${ministroId}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -324,7 +326,7 @@ export class MinistroManager {
     this.currentMinistro = null;
   }
 
-  saveMinistro() {
+  async saveMinistro() {
     const data = {
       rut: document.getElementById('ministro-rut').value.trim(),
       firstName: document.getElementById('ministro-firstName').value.trim(),
@@ -338,11 +340,11 @@ export class MinistroManager {
 
     try {
       if (this.currentMinistro) {
-        ministroService.update(this.currentMinistro, data);
+        await ministroService.update(this.currentMinistro, data);
         showToast('Ministro actualizado correctamente', 'success');
         this.closeModal();
       } else {
-        const result = ministroService.create(data);
+        const result = await ministroService.create(data);
         this.closeModal();
 
         // Mostrar credenciales
@@ -352,7 +354,7 @@ export class MinistroManager {
       this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
-      showToast(error.message, 'error');
+      showToast(error.message || 'Error al guardar ministro', 'error');
     }
   }
 
@@ -418,18 +420,18 @@ export class MinistroManager {
     this.openModal(id);
   }
 
-  toggleActive(id) {
+  async toggleActive(id) {
     try {
-      ministroService.toggleActive(id);
+      await ministroService.toggleActive(id);
       showToast('Estado actualizado', 'success');
       this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
-      showToast(error.message, 'error');
+      showToast(error.message || 'Error al cambiar estado', 'error');
     }
   }
 
-  deleteMinistro(id) {
+  async deleteMinistro(id) {
     const ministro = ministroService.getById(id);
     if (!ministro) return;
 
@@ -437,12 +439,12 @@ export class MinistroManager {
     if (!confirmed) return;
 
     try {
-      ministroService.delete(id);
+      await ministroService.delete(id);
       showToast('Ministro eliminado correctamente', 'success');
       this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
-      showToast(error.message, 'error');
+      showToast(error.message || 'Error al eliminar ministro', 'error');
     }
   }
 

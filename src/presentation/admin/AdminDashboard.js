@@ -100,13 +100,29 @@ class AdminDashboard {
    * Inicializa el dashboard de administrador
    */
   async init() {
-    // Cargar organizaciones del servidor
-    await this.loadOrganizations();
+    // Cargar datos del servidor
+    await Promise.all([
+      this.loadOrganizations(),
+      this.loadMinistros()
+    ]);
     this.renderApplicationsList();
     this.updateStats();
     this.setupEventListeners();
     this.setupScheduleManagerButton();
     this.setupMinistroManagerButton();
+  }
+
+  /**
+   * Carga los ministros desde el servidor
+   */
+  async loadMinistros() {
+    try {
+      console.log('🔄 Cargando ministros del servidor...');
+      await ministroService.loadFromServer();
+      console.log('✅ Ministros cargados:', ministroService.getAll().length);
+    } catch (e) {
+      console.error('❌ Error cargando ministros:', e);
+    }
   }
 
   /**
@@ -2545,36 +2561,44 @@ class AdminDashboard {
     const modal = document.createElement('div');
     modal.className = 'admin-review-modal-overlay';
 
-    // Parsear fecha correctamente para evitar desfase de zona horaria
+    // Parsear fecha correctamente - puede venir como Date object o string
     let electionDate = 'No especificada';
+    let electionDateForInput = '';
     if (org.electionDate) {
-      const [year, month, day] = org.electionDate.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      electionDate = date.toLocaleDateString('es-CL', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+      const date = new Date(org.electionDate);
+      if (!isNaN(date.getTime())) {
+        electionDate = date.toLocaleDateString('es-CL', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+        // Formato para input date (yyyy-mm-dd)
+        electionDateForInput = date.toISOString().split('T')[0];
+      }
     }
 
-    // Parsear fecha correctamente para evitar desfase de zona horaria
+    // Formatear fecha para mostrar
     let formattedUserDate = electionDate;
     if (org.electionDate) {
-      const [year, month, day] = org.electionDate.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      formattedUserDate = date.toLocaleDateString('es-CL', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      formattedUserDate = formattedUserDate.charAt(0).toUpperCase() + formattedUserDate.slice(1);
+      const date = new Date(org.electionDate);
+      if (!isNaN(date.getTime())) {
+        formattedUserDate = date.toLocaleDateString('es-CL', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        formattedUserDate = formattedUserDate.charAt(0).toUpperCase() + formattedUserDate.slice(1);
+      }
     }
 
-    // Preferencia de contacto
-    const contactPref = org.organization?.contactPreference;
+    // Preferencia de contacto - buscar en el primer miembro (presidente) o en org
+    const president = org.members?.find(m => m.role === 'president') || org.members?.[0];
+    const contactPhone = president?.phone || org.phone || org.organization?.phone;
+    const contactEmail = president?.email || org.email || org.organization?.email;
+    const contactPref = org.contactPreference || org.organization?.contactPreference || 'phone';
     const contactLabel = contactPref === 'email' ? 'Correo Electrónico' : 'Teléfono';
-    const contactValue = contactPref === 'email' ? org.organization?.email : org.organization?.phone;
+    const contactValue = contactPref === 'email' ? contactEmail : contactPhone;
 
     modal.innerHTML = `
       <div class="admin-review-modal ministro-request-modal">
@@ -2633,10 +2657,10 @@ class AdminDashboard {
           <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
             <h3 style="margin: 0 0 12px 0; color: #1f2937; font-size: 16px;">Información de la Organización</h3>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; color: #4b5563; font-size: 14px;">
-              <div><strong>Tipo:</strong> ${getOrgTypeName(org.organization?.type)}</div>
-              <div><strong>Comuna:</strong> ${org.organization?.commune || 'N/A'}</div>
+              <div><strong>Tipo:</strong> ${getOrgTypeName(getOrgType(org))}</div>
+              <div><strong>Comuna:</strong> ${getOrgComuna(org)}</div>
               <div><strong>Miembros Fundadores:</strong> ${org.members?.length || 0}</div>
-              <div><strong>Dirección Organización:</strong> ${org.organization?.address || 'N/A'}</div>
+              <div><strong>Dirección Organización:</strong> ${getOrgAddress(org) || 'No especificada'}</div>
             </div>
           </div>
 
@@ -2670,7 +2694,7 @@ class AdminDashboard {
                 <div class="form-group">
                   <label>Fecha de la Asamblea <span class="required">*</span></label>
                   <input type="date" name="scheduledDate" required
-                    value="${org.electionDate || ''}"
+                    value="${electionDateForInput}"
                     min="${new Date().toISOString().split('T')[0]}">
                 </div>
 
