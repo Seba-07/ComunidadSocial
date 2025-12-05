@@ -3630,11 +3630,13 @@ class AdminDashboard {
     const org = this.organizations.find(o => (o._id === orgId || o.id === orgId));
 
     console.log('📄 Organization found:', org ? org.organizationName : 'NOT FOUND');
-    console.log('📄 Organization full data:', org);
-    console.log('📄 provisionalDirectorio:', org?.provisionalDirectorio);
-    console.log('📄 comisionElectoral:', org?.comisionElectoral);
-    console.log('📄 ministroAssignment:', org?.ministroAssignment);
-    console.log('📄 validationData:', org?.validationData);
+    console.log('📄 Organization full data:', JSON.stringify(org, null, 2));
+    console.log('📄 provisionalDirectorio:', JSON.stringify(org?.provisionalDirectorio, null, 2));
+    console.log('📄 comisionElectoral:', JSON.stringify(org?.comisionElectoral, null, 2));
+    console.log('📄 ministroData:', JSON.stringify(org?.ministroData, null, 2));
+    console.log('📄 validationData:', JSON.stringify(org?.validationData, null, 2));
+    console.log('📄 organization (nested):', JSON.stringify(org?.organization, null, 2));
+    console.log('📄 members:', org?.members?.length);
 
     if (!org) {
       showToast('Organización no encontrada', 'error');
