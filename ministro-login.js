@@ -99,18 +99,18 @@ form.addEventListener('submit', async (e) => {
   btn.disabled = true;
 
   try {
-    const ministro = ministroService.authenticate(email, password);
+    const result = await ministroService.authenticate(email, password);
 
-    console.log('✅ Ministro login successful:', ministro);
+    console.log('✅ Ministro login successful:', result);
 
     // Save to localStorage
-    localStorage.setItem('currentMinistro', JSON.stringify(ministro));
+    localStorage.setItem('currentMinistro', JSON.stringify(result));
     localStorage.setItem('isMinistroAuthenticated', 'true');
 
-    showToast(`¡Bienvenido ${ministro.firstName}!`, 'success');
+    showToast(`¡Bienvenido ${result.firstName}!`, 'success');
 
     // Check if must change password
-    if (ministro.mustChangePassword) {
+    if (result.mustChangePassword) {
       setTimeout(() => {
         window.location.href = '/ministro-dashboard.html?changePassword=true';
       }, 500);
@@ -123,10 +123,11 @@ form.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('❌ Login error:', error);
 
-    if (error.message.includes('Credenciales inválidas')) {
+    const errorMsg = error.message || 'Error al iniciar sesión';
+    if (errorMsg.includes('Credenciales') || errorMsg.includes('inválidas')) {
       showError('password', 'Correo o contraseña incorrectos');
     } else {
-      showToast(error.message, 'error');
+      showToast(errorMsg, 'error');
     }
 
     btn.textContent = originalText;
