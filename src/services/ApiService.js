@@ -2,7 +2,11 @@
  * API Service - Centralized HTTP client for backend communication
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use production API URL as fallback
+const API_URL = import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://comunidadsocial-production.up.railway.app/api'
+    : 'http://localhost:3001/api');
 
 class ApiService {
   constructor() {
