@@ -42,6 +42,7 @@ class PDFService {
     if (member.firstName) {
       return `${member.firstName} ${member.lastName || ''}`.trim();
     }
+
     // Si tiene _id o id, buscar en la lista de miembros
     const memberId = member._id || member.id;
     if (memberId && membersList.length > 0) {
@@ -54,6 +55,16 @@ class PDFService {
         if (found.firstName) return `${found.firstName} ${found.lastName || ''}`.trim();
       }
     }
+
+    // Buscar por RUT como fallback (el RUT es único por persona)
+    if (member.rut && membersList.length > 0) {
+      const foundByRut = membersList.find(m => m.rut === member.rut);
+      if (foundByRut) {
+        if (foundByRut.name) return foundByRut.name;
+        if (foundByRut.firstName) return `${foundByRut.firstName} ${foundByRut.lastName || ''}`.trim();
+      }
+    }
+
     return '______________________';
   }
 
@@ -184,7 +195,9 @@ class PDFService {
     console.log('🔍 PDFService.generateActaAsamblea - organization:', organization);
     console.log('🔍 PDFService - provisionalDirectorio:', directorio);
     console.log('🔍 PDFService - president:', directorio.president);
+    console.log('🔍 PDFService - president RUT:', directorio.president?.rut);
     console.log('🔍 PDFService - members count:', members.length);
+    console.log('🔍 PDFService - members[0]:', members[0]);
     console.log('🔍 PDFService - comisionElectoral:', comision);
 
     this.drawHeader(doc, 'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO', 'Departamento de Registro y Certificación');
