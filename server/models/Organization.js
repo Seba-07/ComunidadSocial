@@ -59,11 +59,12 @@ const organizationSchema = new mongoose.Schema({
   // Electoral Commission
   electoralCommission: [memberSchema],
 
-  // Directorio Provisorio
+  // Directorio Provisorio (flexible schema para datos del wizard)
   provisionalDirectorio: {
-    president: memberSchema,
-    secretary: memberSchema,
-    treasurer: memberSchema,
+    president: mongoose.Schema.Types.Mixed,
+    secretary: mongoose.Schema.Types.Mixed,
+    treasurer: mongoose.Schema.Types.Mixed,
+    additionalMembers: [mongoose.Schema.Types.Mixed],
     designatedAt: Date,
     type: { type: String, default: 'PROVISIONAL' },
     expiresAt: Date
@@ -104,10 +105,8 @@ const organizationSchema = new mongoose.Schema({
   },
   ministroSignature: String, // Base64
 
-  // Comision Electoral (from validation wizard)
-  comisionElectoral: {
-    members: [memberSchema]
-  },
+  // Comision Electoral (from validation wizard - flexible schema)
+  comisionElectoral: [mongoose.Schema.Types.Mixed],
 
   // Validated attendees from assembly
   validatedAttendees: [memberSchema],
