@@ -13,6 +13,26 @@ import { ministroAssignmentService } from '../../services/MinistroAssignmentServ
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
 import { pdfService } from '../../services/PDFService.js';
 
+// Helper: Obtener nombre de organización (soporta formato nuevo y legacy)
+function getOrgName(org) {
+  return org.organizationName || getOrgName(org);
+}
+
+// Helper: Obtener tipo de organización (soporta formato nuevo y legacy)
+function getOrgType(org) {
+  return org.organizationType || org.organization?.type;
+}
+
+// Helper: Obtener dirección de organización
+function getOrgAddress(org) {
+  return org.address || org.organization?.address || '';
+}
+
+// Helper: Obtener comuna de organización
+function getOrgComuna(org) {
+  return org.comuna || org.organization?.commune || 'Renca';
+}
+
 // Helper: Obtener icono según tipo de organización
 function getOrgIcon(type) {
   // Organizaciones territoriales
@@ -314,7 +334,7 @@ class AdminDashboard {
     // Filtrar por búsqueda
     if (this.searchQuery) {
       orgs = orgs.filter(o =>
-        o.organization?.name?.toLowerCase().includes(this.searchQuery) ||
+        getOrgName(o)?.toLowerCase().includes(this.searchQuery) ||
         o.organization?.commune?.toLowerCase().includes(this.searchQuery)
       );
     }
@@ -408,7 +428,7 @@ class AdminDashboard {
         <div class="app-row-main">
           <div class="app-row-icon">${typeIcon}</div>
           <div class="app-row-info">
-            <span class="app-row-name">${org.organization?.name || 'Sin nombre'}</span>
+            <span class="app-row-name">${getOrgName(org)}</span>
             <span class="app-row-meta">${createdDate} • ${membersCount} miembros</span>
           </div>
           <div class="app-row-status" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30">
@@ -475,7 +495,7 @@ class AdminDashboard {
         <div class="review-modal-header">
           <div class="review-header-left">
             <span class="review-type-badge">${typeIcon} ${typeName}</span>
-            <h2>${org.organization?.name || 'Sin nombre'}</h2>
+            <h2>${getOrgName(org)}</h2>
             <div class="review-header-meta">
               <span>📍 ${org.organization?.commune || 'Sin ubicación'}</span>
               <span>📅 ${createdDate}</span>
@@ -637,7 +657,7 @@ class AdminDashboard {
         <div class="review-modal-header">
           <div class="review-header-left">
             <span class="review-type-badge">${typeIcon} ${typeName}</span>
-            <h2>${org.organization?.name || 'Sin nombre'}</h2>
+            <h2>${getOrgName(org)}</h2>
             <div class="review-header-meta">
               <span>📍 ${org.organization?.commune || 'Sin ubicación'}</span>
               <span>👥 ${membersCount} miembros</span>
@@ -1534,7 +1554,7 @@ class AdminDashboard {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${docNames[docType] || docType} - ${org.organization?.name || 'Documento'}</title>
+        <title>${docNames[docType] || docType} - ${getOrgName(org) || 'Documento'}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -1629,7 +1649,7 @@ class AdminDashboard {
       <body>
         <div class="document-header">
           <h1>${docNames[docType] || docType}</h1>
-          <p>${org.organization?.name || ''}</p>
+          <p>${getOrgName(org) || ''}</p>
         </div>
         <div class="document-content">${this.escapeHtml(contentText)}</div>
         ${this.generatePrintSignaturesHTML(org, requiredSigners)}
@@ -2419,7 +2439,7 @@ class AdminDashboard {
           </div>
 
           <div style="margin-bottom: 16px;">
-            <strong>Organización:</strong> ${org.organization?.name}
+            <strong>Organización:</strong> ${getOrgName(org)}
           </div>
 
           <form id="dissolve-form">
@@ -2536,7 +2556,7 @@ class AdminDashboard {
         <div class="review-modal-header" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%);">
           <div class="review-header-left">
             <h2 style="color: #ff9800;">📝 Solicitud de Ministro de Fe</h2>
-            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${org.organization?.name}</p>
+            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${getOrgName(org)}</p>
           </div>
           <button class="review-close-btn ministro-close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2983,7 +3003,7 @@ class AdminDashboard {
               ministroName: `${ministro.firstName} ${ministro.lastName}`,
               ministroRut: ministro.rut,
               organizationId: org.id,
-              organizationName: org.organization?.name || org.organizationName,
+              organizationName: getOrgName(org) || org.organizationName,
               scheduledDate,
               scheduledTime,
               location
@@ -2997,7 +3017,7 @@ class AdminDashboard {
               userId: org.userId,
               type: 'ministro_assigned',
               title: '✅ Ministro de Fe Asignado',
-              message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${org.organization?.name}.\n\n` +
+              message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                       `Ministro: ${ministro.firstName} ${ministro.lastName}\n` +
                       `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
@@ -3010,7 +3030,7 @@ class AdminDashboard {
               type: 'new_assignment',
               title: '⚖️ Nueva Asignación de Asamblea',
               message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
-                      `Organización: ${org.organization?.name}\n` +
+                      `Organización: ${getOrgName(org)}\n` +
                       `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                       `Lugar: ${location}`,
               data: { organizationId: org.id, scheduledDate, scheduledTime, location }
@@ -3121,7 +3141,7 @@ class AdminDashboard {
         <div class="review-modal-header" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%);">
           <div class="review-header-left">
             <h2 style="color: #ff9800;">✏️ Editar Ministro de Fe Asignado</h2>
-            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${org.organization?.name}</p>
+            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${getOrgName(org)}</p>
           </div>
           <button class="review-close-btn edit-ministro-close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3353,7 +3373,7 @@ class AdminDashboard {
             ministroName: `${ministro.firstName} ${ministro.lastName}`,
             ministroRut: ministro.rut,
             organizationId: org.id,
-            organizationName: org.organization?.name,
+            organizationName: getOrgName(org),
             scheduledDate,
             scheduledTime,
             location
@@ -3381,7 +3401,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'ministro_assigned',
             title: '✅ Ministro de Fe Asignado',
-            message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${org.organization?.name}.\n\n` +
+            message: `¡Tu solicitud ha sido procesada! Se ha asignado un Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Ministro: ${newMinistroData.name}\n` +
                     `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
@@ -3392,7 +3412,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'ministro_changed',
             title: '⚖️ Cambio de Ministro de Fe y Horario',
-            message: `Se ha actualizado el Ministro de Fe y el horario para la asamblea de ${org.organization?.name}.\n\n` +
+            message: `Se ha actualizado el Ministro de Fe y el horario para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Nuevo Ministro: ${newMinistroData.name}\n` +
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldMinistroData, newMinistroData }
@@ -3402,7 +3422,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'ministro_changed',
             title: '⚖️ Cambio de Ministro de Fe',
-            message: `Se ha asignado un nuevo Ministro de Fe para la asamblea de ${org.organization?.name}.\n\n` +
+            message: `Se ha asignado un nuevo Ministro de Fe para la asamblea de ${getOrgName(org)}.\n\n` +
                     `Ministro Anterior: ${oldMinistroData.name}\n` +
                     `Nuevo Ministro: ${newMinistroData.name}\n` +
                     `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
@@ -3414,7 +3434,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'schedule_location_change',
             title: '📅📍 Cambio de Horario y Lugar',
-            message: `Se ha modificado el horario y lugar de la asamblea de ${org.organization?.name}.\n\n` +
+            message: `Se ha modificado el horario y lugar de la asamblea de ${getOrgName(org)}.\n\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
@@ -3426,7 +3446,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'schedule_change',
             title: '📅 Cambio de Horario de Asamblea',
-            message: `Se ha modificado el horario de la asamblea de ${org.organization?.name}.\n\n` +
+            message: `Se ha modificado el horario de la asamblea de ${getOrgName(org)}.\n\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
             data: { organizationId: org.id, oldSchedule: oldMinistroData, newSchedule: newMinistroData }
@@ -3436,7 +3456,7 @@ class AdminDashboard {
             userId: org.userId,
             type: 'location_change',
             title: '📍 Cambio de Lugar de Asamblea',
-            message: `Se ha modificado el lugar de la asamblea de ${org.organization?.name}.\n\n` +
+            message: `Se ha modificado el lugar de la asamblea de ${getOrgName(org)}.\n\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
                     `Nuevo Lugar: ${location}`,
             data: { organizationId: org.id, oldLocation: oldMinistroData.location, newLocation: location }
@@ -3454,7 +3474,7 @@ class AdminDashboard {
             ministroId: oldMinistroId,
             type: 'assignment_removed',
             title: '📋 Asignación Removida',
-            message: `Has sido removido de la asamblea de "${org.organization?.name}".\n\n` +
+            message: `Has sido removido de la asamblea de "${getOrgName(org)}".\n\n` +
                     `Fecha original: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
                     `Lugar: ${oldMinistroData.location}`,
             data: { organizationId: org.id, reason: 'reassigned' }
@@ -3469,7 +3489,7 @@ class AdminDashboard {
             type: 'new_assignment',
             title: '⚖️ Nueva Asignación de Asamblea',
             message: `Se te ha asignado una nueva asamblea constitutiva.\n\n` +
-                    `Organización: ${org.organization?.name}\n` +
+                    `Organización: ${getOrgName(org)}\n` +
                     `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
             data: { organizationId: org.id, scheduledDate, scheduledTime, location }
@@ -3481,7 +3501,7 @@ class AdminDashboard {
             type: 'schedule_location_change',
             title: '📅📍 Cambio de Horario y Lugar',
             message: `Se ha modificado el horario y lugar de una asamblea asignada.\n\n` +
-                    `Organización: ${org.organization?.name}\n` +
+                    `Organización: ${getOrgName(org)}\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
@@ -3495,7 +3515,7 @@ class AdminDashboard {
             type: 'schedule_change',
             title: '📅 Cambio de Horario de Asamblea',
             message: `Se ha modificado el horario de una asamblea asignada.\n\n` +
-                    `Organización: ${org.organization?.name}\n` +
+                    `Organización: ${getOrgName(org)}\n` +
                     `Fecha Anterior: ${new Date(oldMinistroData.scheduledDate).toLocaleDateString('es-CL')} a las ${oldMinistroData.scheduledTime}\n` +
                     `Nueva Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}\n` +
                     `Lugar: ${location}`,
@@ -3508,7 +3528,7 @@ class AdminDashboard {
             type: 'location_change',
             title: '📍 Cambio de Lugar de Asamblea',
             message: `Se ha modificado el lugar de una asamblea asignada.\n\n` +
-                    `Organización: ${org.organization?.name}\n` +
+                    `Organización: ${getOrgName(org)}\n` +
                     `Lugar Anterior: ${oldMinistroData.location}\n` +
                     `Nuevo Lugar: ${location}\n` +
                     `Fecha: ${new Date(scheduledDate).toLocaleDateString('es-CL')} a las ${scheduledTime}`,
@@ -3667,7 +3687,7 @@ class AdminDashboard {
 
     let pdfDoc;
     let filename = '';
-    const orgName = (org.organization?.name || org.organizationName || 'Organizacion').replace(/\s+/g, '_');
+    const orgName = (getOrgName(org) || org.organizationName || 'Organizacion').replace(/\s+/g, '_');
 
     try {
       const directorio = org.provisionalDirectorio || {};
