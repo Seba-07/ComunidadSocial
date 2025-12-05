@@ -1657,21 +1657,40 @@ function viewOrganization(orgId) {
     // Parsear fecha correctamente para evitar desfase de zona horaria
     let formattedDate = '-';
     if (org.electionDate) {
-      const [year, month, day] = org.electionDate.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      formattedDate = date.toLocaleDateString('es-CL', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      // Capitalizar primera letra
-      formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+      try {
+        let dateStr = org.electionDate;
+        // Manejar diferentes formatos de fecha
+        if (typeof dateStr === 'string') {
+          // Si tiene 'T' (ISO format), tomar solo la parte de la fecha
+          if (dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          }
+          const [year, month, day] = dateStr.split('-').map(Number);
+          if (year && month && day) {
+            const date = new Date(year, month - 1, day, 12, 0, 0);
+            formattedDate = date.toLocaleDateString('es-CL', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            // Capitalizar primera letra
+            formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+          }
+        }
+      } catch (e) {
+        console.error('Error parseando fecha:', e);
+        formattedDate = '-';
+      }
     }
 
-    const contactPreference = org.organization?.contactPreference;
+    // Obtener datos de contacto - buscar en múltiples lugares
+    const president = org.members?.find(m => m.role === 'president') || org.members?.[0];
+    const contactPreference = org.contactPreference || org.organization?.contactPreference || 'phone';
     const contactPreferenceLabel = contactPreference === 'email' ? '📧 Correo Electrónico' : '📞 Teléfono';
-    const contactValue = contactPreference === 'email' ? org.organization?.email : org.organization?.phone;
+    const contactValue = contactPreference === 'email'
+      ? (org.contactEmail || org.organization?.email || president?.email || '-')
+      : (org.contactPhone || org.organization?.phone || president?.phone || '-');
 
     appointmentHTML = `
       <div class="org-appointment-highlight">
@@ -1769,27 +1788,27 @@ function viewOrganization(orgId) {
           <h4>Información General</h4>
           <div class="detail-row ${corrections?.fields?.name ? 'needs-correction' : ''}">
             <span class="detail-label">Tipo:</span>
-            <span class="detail-value">${getOrgTypeName(org.organization?.type)}</span>
+            <span class="detail-value">${getOrgTypeName(org.organizationType || org.organization?.type)}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.address ? 'needs-correction' : ''}">
             <span class="detail-label">Dirección:</span>
-            <span class="detail-value">${org.organization?.address || '-'}</span>
+            <span class="detail-value">${org.address || org.organization?.address || org.assemblyAddress || '-'}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.commune ? 'needs-correction' : ''}">
             <span class="detail-label">Comuna:</span>
-            <span class="detail-value">${org.organization?.commune || '-'}</span>
+            <span class="detail-value">${org.commune || org.organization?.commune || 'Renca'}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.region ? 'needs-correction' : ''}">
             <span class="detail-label">Región:</span>
-            <span class="detail-value">${org.organization?.region || '-'}</span>
+            <span class="detail-value">${org.region || org.organization?.region || 'Metropolitana'}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.email ? 'needs-correction' : ''}">
             <span class="detail-label">Email:</span>
-            <span class="detail-value">${org.organization?.email || '-'}</span>
+            <span class="detail-value">${org.contactEmail || org.organization?.email || org.members?.[0]?.email || '-'}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.phone ? 'needs-correction' : ''}">
             <span class="detail-label">Teléfono:</span>
-            <span class="detail-value">${org.organization?.phone || '-'}</span>
+            <span class="detail-value">${org.contactPhone || org.organization?.phone || org.members?.[0]?.phone || '-'}</span>
           </div>
         </div>
 
@@ -1801,17 +1820,7 @@ function viewOrganization(orgId) {
           </div>
         </div>
 
-        <div class="org-detail-section">
-          <h4>Comisión Electoral</h4>
-          ${org.commission?.members?.map((m, i) => `
-            <div class="detail-row">
-              <span class="detail-label">${['Presidente', 'Secretario', 'Vocal'][i]}:</span>
-              <span class="detail-value">${m.firstName} ${m.lastName}</span>
-            </div>
-          `).join('') || '<p>Sin información</p>'}
-        </div>
-
-        ${org.provisionalDirectorio || org.comisionElectoral ? `
+        ${(org.status === 'ministro_approved' || org.status === 'registered') && (org.provisionalDirectorio || org.comisionElectoral) ? `
         <div class="org-detail-section">
           <h4 style="display: flex; align-items: center; gap: 8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">

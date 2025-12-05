@@ -4625,11 +4625,63 @@ Vocal`;
               style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
           </div>
 
+          <!-- Checklist de Libros Requeridos -->
+          <div class="form-group" style="margin-top: 24px;">
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px;">
+              <h4 style="margin: 0 0 12px 0; color: #92400e; display: flex; align-items: center; gap: 10px; font-size: 16px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                Libros Requeridos para la Asamblea
+              </h4>
+              <p style="margin: 0 0 16px 0; color: #a16207; font-size: 13px; line-height: 1.5;">
+                <strong>Importante:</strong> El Ministro de Fe solicitará estos 3 libros durante la Asamblea Constitutiva.
+                Es tu responsabilidad adquirirlos antes de la fecha de la asamblea. Puedes comprarlos en cualquier librería.
+              </p>
+
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
+                  <input type="checkbox" id="book-actas" name="bookActas" style="width: 20px; height: 20px; accent-color: #10b981;" required>
+                  <div style="flex: 1;">
+                    <strong style="color: #1f2937; display: block;">📘 Libro de Actas</strong>
+                    <span style="font-size: 12px; color: #6b7280;">Para registrar las actas de las asambleas y reuniones</span>
+                  </div>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
+                  <input type="checkbox" id="book-cuentas" name="bookCuentas" style="width: 20px; height: 20px; accent-color: #10b981;" required>
+                  <div style="flex: 1;">
+                    <strong style="color: #1f2937; display: block;">📗 Libro de Cuentas</strong>
+                    <span style="font-size: 12px; color: #6b7280;">Para llevar el registro contable y financiero</span>
+                  </div>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 12px; background: white; padding: 14px 16px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s;" class="book-checkbox-item">
+                  <input type="checkbox" id="book-socios" name="bookSocios" style="width: 20px; height: 20px; accent-color: #10b981;" required>
+                  <div style="flex: 1;">
+                    <strong style="color: #1f2937; display: block;">📕 Libro de Socios</strong>
+                    <span style="font-size: 12px; color: #6b7280;">Para registrar el ingreso y retiro de miembros</span>
+                  </div>
+                </label>
+              </div>
+
+              <p style="margin: 16px 0 0 0; color: #92400e; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Debes confirmar que cuentas con estos 3 libros para continuar
+              </p>
+            </div>
+          </div>
+
           <div style="display: flex; gap: 12px; margin-top: 32px;">
             <button type="button" id="ministro-back-btn" class="btn btn-secondary" style="flex: 1;">
               ← Volver
             </button>
-            <button type="submit" class="btn btn-primary" style="flex: 2;">
+            <button type="submit" id="ministro-submit-btn" class="btn btn-primary" style="flex: 2;" disabled>
               📤 Enviar Solicitud de Ministro de Fe
             </button>
           </div>
@@ -4684,6 +4736,58 @@ Vocal`;
 
     // Inicializar selector de dirección de asamblea
     this.initializeAssemblyAddressSelector();
+
+    // Inicializar checkboxes de libros requeridos
+    this.initializeBooksChecklist();
+  }
+
+  /**
+   * Inicializa el checklist de libros requeridos
+   */
+  initializeBooksChecklist() {
+    const bookActas = document.getElementById('book-actas');
+    const bookCuentas = document.getElementById('book-cuentas');
+    const bookSocios = document.getElementById('book-socios');
+    const submitBtn = document.getElementById('ministro-submit-btn');
+
+    if (!bookActas || !bookCuentas || !bookSocios || !submitBtn) return;
+
+    const checkAllBooks = () => {
+      const allChecked = bookActas.checked && bookCuentas.checked && bookSocios.checked;
+      submitBtn.disabled = !allChecked;
+
+      if (allChecked) {
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+      } else {
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    };
+
+    // Estilizar checkboxes cuando se marcan
+    const styleCheckbox = (checkbox) => {
+      const label = checkbox.closest('.book-checkbox-item');
+      if (label) {
+        if (checkbox.checked) {
+          label.style.borderColor = '#10b981';
+          label.style.background = '#f0fdf4';
+        } else {
+          label.style.borderColor = '#e5e7eb';
+          label.style.background = 'white';
+        }
+      }
+    };
+
+    [bookActas, bookCuentas, bookSocios].forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        styleCheckbox(checkbox);
+        checkAllBooks();
+      });
+    });
+
+    // Estado inicial
+    checkAllBooks();
   }
 
   /**
