@@ -129,6 +129,22 @@ export class MinistroManager {
               <input type="text" id="ministro-address" class="input-styled" placeholder="Calle Ejemplo 123, Renca">
             </div>
 
+            <div class="form-group" id="password-group">
+              <label for="ministro-password">Contraseña Temporal *</label>
+              <div style="position: relative;">
+                <input type="password" id="ministro-password" class="input-styled" placeholder="Ingrese contraseña" minlength="6" required>
+                <button type="button" id="toggle-password-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6b7280;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 4px;">
+                El ministro deberá cambiar esta contraseña en su primer inicio de sesión
+              </small>
+            </div>
+
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" id="ministro-active" checked>
@@ -290,6 +306,25 @@ export class MinistroManager {
     document.getElementById('ministro-rut').addEventListener('input', (e) => {
       e.target.value = this.formatRut(e.target.value);
     });
+
+    // Toggle mostrar/ocultar contraseña
+    document.getElementById('toggle-password-btn').addEventListener('click', () => {
+      const passwordInput = document.getElementById('ministro-password');
+      const icon = document.getElementById('toggle-password-btn');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>`;
+      } else {
+        passwordInput.type = 'password';
+        icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>`;
+      }
+    });
   }
 
   openModal(ministroId = null) {
@@ -297,6 +332,8 @@ export class MinistroManager {
     const modal = document.getElementById('ministro-modal');
     const title = document.getElementById('modal-title');
     const form = document.getElementById('ministro-form');
+    const passwordGroup = document.getElementById('password-group');
+    const passwordInput = document.getElementById('ministro-password');
 
     if (ministroId) {
       const ministro = ministroService.getById(ministroId);
@@ -311,10 +348,19 @@ export class MinistroManager {
       document.getElementById('ministro-address').value = ministro.address || '';
       document.getElementById('ministro-specialty').value = ministro.specialty || 'General';
       document.getElementById('ministro-active').checked = ministro.active;
+
+      // Ocultar campo de contraseña al editar
+      passwordGroup.style.display = 'none';
+      passwordInput.removeAttribute('required');
     } else {
       title.textContent = 'Agregar Ministro de Fe';
       form.reset();
       document.getElementById('ministro-active').checked = true;
+
+      // Mostrar campo de contraseña al crear
+      passwordGroup.style.display = 'block';
+      passwordInput.setAttribute('required', 'required');
+      passwordInput.value = '';
     }
 
     modal.style.display = 'flex';
@@ -327,16 +373,24 @@ export class MinistroManager {
   }
 
   async saveMinistro() {
+    const email = document.getElementById('ministro-email').value.trim();
+    const password = document.getElementById('ministro-password').value;
+
     const data = {
       rut: document.getElementById('ministro-rut').value.trim(),
       firstName: document.getElementById('ministro-firstName').value.trim(),
       lastName: document.getElementById('ministro-lastName').value.trim(),
-      email: document.getElementById('ministro-email').value.trim(),
+      email: email,
       phone: document.getElementById('ministro-phone').value.trim(),
       address: document.getElementById('ministro-address').value.trim(),
       specialty: document.getElementById('ministro-specialty').value,
       active: document.getElementById('ministro-active').checked
     };
+
+    // Solo incluir contraseña al crear (no al editar)
+    if (!this.currentMinistro && password) {
+      data.password = password;
+    }
 
     try {
       if (this.currentMinistro) {
@@ -347,8 +401,13 @@ export class MinistroManager {
         const result = await ministroService.create(data);
         this.closeModal();
 
-        // Mostrar credenciales
-        this.showCredentialsModal(result);
+        // Mostrar credenciales con el email y contraseña ingresados
+        this.showCredentialsModal({
+          email: email,
+          password: password,
+          firstName: data.firstName,
+          lastName: data.lastName
+        });
       }
 
       this.renderStats();
@@ -366,11 +425,14 @@ export class MinistroManager {
       <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header" style="background: #10b981; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
           <h3 style="margin: 0; color: white;">✅ Ministro Creado Exitosamente</h3>
+          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
+            ${ministro.firstName} ${ministro.lastName}
+          </p>
         </div>
         <div class="modal-body" style="padding: 32px;">
           <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <p style="margin: 0 0 16px 0; font-size: 14px; color: #15803d; font-weight: 600;">
-              ⚠️ Guarda estas credenciales. Solo se mostrarán una vez:
+              📋 Credenciales de acceso:
             </p>
             <div style="background: white; padding: 16px; border-radius: 8px; font-family: monospace;">
               <div style="margin-bottom: 12px;">
@@ -378,17 +440,16 @@ export class MinistroManager {
                 <span style="color: #1f2937; font-size: 15px;">${ministro.email}</span>
               </div>
               <div>
-                <strong style="color: #374151;">Contraseña Temporal:</strong><br>
-                <span style="color: #dc2626; font-size: 18px; font-weight: 700;">${ministro.temporaryPassword}</span>
+                <strong style="color: #374151;">Contraseña:</strong><br>
+                <span style="color: #dc2626; font-size: 18px; font-weight: 700;">${ministro.password}</span>
               </div>
             </div>
           </div>
 
-          <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
-            <p style="margin: 0; font-size: 14px; color: #1e40af;">
-              <strong>📧 Instrucciones:</strong><br>
-              Envía estas credenciales al Ministro de Fe por correo electrónico o mensaje seguro.
-              Deberá cambiar su contraseña en el primer inicio de sesión.
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              <strong>⚠️ Importante:</strong><br>
+              El Ministro de Fe deberá cambiar su contraseña en el primer inicio de sesión.
             </p>
           </div>
 
@@ -396,12 +457,7 @@ export class MinistroManager {
             <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
               Cerrar
             </button>
-            <button type="button" class="btn btn-primary" onclick="
-              const text = 'Email: ${ministro.email}\\nContraseña: ${ministro.temporaryPassword}';
-              navigator.clipboard.writeText(text);
-              this.textContent = '✓ Copiado';
-              setTimeout(() => this.textContent = 'Copiar Credenciales', 2000);
-            ">
+            <button type="button" class="btn btn-primary" id="copy-credentials-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -414,6 +470,19 @@ export class MinistroManager {
     `;
 
     document.body.appendChild(modal);
+
+    // Event listener para copiar (guardar valores en closure)
+    const emailToCopy = ministro.email;
+    const passwordToCopy = ministro.password;
+
+    modal.querySelector('#copy-credentials-btn').addEventListener('click', function() {
+      const text = `Email: ${emailToCopy}\nContraseña: ${passwordToCopy}`;
+      navigator.clipboard.writeText(text);
+      this.textContent = '✓ Copiado';
+      setTimeout(() => {
+        this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar Credenciales';
+      }, 2000);
+    });
   }
 
   editMinistro(id) {

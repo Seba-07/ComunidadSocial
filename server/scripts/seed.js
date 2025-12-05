@@ -9,157 +9,106 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
 
-// Datos de miembros de prueba (15 miembros)
-const testMembers = [
-  {
-    rut: '15.234.567-8',
-    firstName: 'Juan',
-    lastName: 'Pérez González',
-    email: 'juan.perez@email.cl',
-    phone: '+56 9 1111 2222',
-    address: 'Av. Dorsal 1234, Renca',
-    birthDate: '1985-03-15'
-  },
-  {
-    rut: '16.345.678-9',
-    firstName: 'María',
-    lastName: 'Rodríguez Silva',
-    email: 'maria.rodriguez@email.cl',
-    phone: '+56 9 2222 3333',
-    address: 'Calle Los Olivos 567, Renca',
-    birthDate: '1990-07-22'
-  },
-  {
-    rut: '14.456.789-0',
-    firstName: 'Carlos',
-    lastName: 'Muñoz Soto',
-    email: 'carlos.munoz@email.cl',
-    phone: '+56 9 3333 4444',
-    address: 'Pasaje Las Rosas 89, Renca',
-    birthDate: '1978-11-08'
-  },
-  {
-    rut: '17.567.890-1',
-    firstName: 'Ana',
-    lastName: 'López Fernández',
-    email: 'ana.lopez@email.cl',
-    phone: '+56 9 4444 5555',
-    address: 'Av. Condell 2345, Renca',
-    birthDate: '1992-01-30'
-  },
-  {
-    rut: '13.678.901-2',
-    firstName: 'Pedro',
-    lastName: 'Hernández Díaz',
-    email: 'pedro.hernandez@email.cl',
-    phone: '+56 9 5555 6666',
-    address: 'Calle Nueva 456, Renca',
-    birthDate: '1975-05-12'
-  },
-  {
-    rut: '18.789.012-3',
-    firstName: 'Sofía',
-    lastName: 'Torres Vargas',
-    email: 'sofia.torres@email.cl',
-    phone: '+56 9 6666 7777',
-    address: 'Pasaje Central 123, Renca',
-    birthDate: '1995-09-18'
-  },
-  {
-    rut: '12.890.123-4',
-    firstName: 'Roberto',
-    lastName: 'Sánchez Morales',
-    email: 'roberto.sanchez@email.cl',
-    phone: '+56 9 7777 8888',
-    address: 'Av. Einstein 789, Renca',
-    birthDate: '1970-12-25'
-  },
-  {
-    rut: '19.901.234-5',
-    firstName: 'Camila',
-    lastName: 'Contreras Reyes',
-    email: 'camila.contreras@email.cl',
-    phone: '+56 9 8888 9999',
-    address: 'Calle Libertad 321, Renca',
-    birthDate: '1998-04-07'
-  },
-  {
-    rut: '11.012.345-6',
-    firstName: 'Francisco',
-    lastName: 'Vega Castillo',
-    email: 'francisco.vega@email.cl',
-    phone: '+56 9 9999 0000',
-    address: 'Pasaje Norte 654, Renca',
-    birthDate: '1968-08-14'
-  },
-  {
-    rut: '20.123.456-7',
-    firstName: 'Valentina',
-    lastName: 'Rojas Fuentes',
-    email: 'valentina.rojas@email.cl',
-    phone: '+56 9 1234 5678',
-    address: 'Av. Sur 987, Renca',
-    birthDate: '2000-02-28'
-  },
-  {
-    rut: '10.234.567-8',
-    firstName: 'Miguel',
-    lastName: 'Espinoza Bravo',
-    email: 'miguel.espinoza@email.cl',
-    phone: '+56 9 2345 6789',
-    address: 'Calle Oriente 147, Renca',
-    birthDate: '1965-06-03'
-  },
-  {
-    rut: '21.345.678-9',
-    firstName: 'Isabella',
-    lastName: 'Araya Núñez',
-    email: 'isabella.araya@email.cl',
-    phone: '+56 9 3456 7890',
-    address: 'Pasaje Poniente 258, Renca',
-    birthDate: '2001-10-11'
-  },
-  {
-    rut: '9.456.789-0',
-    firstName: 'Jorge',
-    lastName: 'Figueroa Lagos',
-    email: 'jorge.figueroa@email.cl',
-    phone: '+56 9 4567 8901',
-    address: 'Av. Central 369, Renca',
-    birthDate: '1960-03-20'
-  },
-  {
-    rut: '22.567.890-1',
-    firstName: 'Martina',
-    lastName: 'Guzmán Pizarro',
-    email: 'martina.guzman@email.cl',
-    phone: '+56 9 5678 9012',
-    address: 'Calle Principal 741, Renca',
-    birthDate: '2008-07-16' // 16 años - menor de edad
-  },
-  {
-    rut: '23.678.901-2',
-    firstName: 'Tomás',
-    lastName: 'Ortiz Valenzuela',
-    email: 'tomas.ortiz@email.cl',
-    phone: '+56 9 6789 0123',
-    address: 'Pasaje Sur 852, Renca',
-    birthDate: '2010-03-15' // 14 años - menor de edad
+// Configuración: cambiar a 50 para cargar 50 miembros
+const TOTAL_MEMBERS = 15; // Opciones: 15 o 50
+
+// Función para generar fecha de nacimiento entre 14-17 años
+function generateBirthDate(minAge = 14, maxAge = 17) {
+  const today = new Date();
+  const age = minAge + Math.floor(Math.random() * (maxAge - minAge + 1));
+  const year = today.getFullYear() - age;
+  const month = Math.floor(Math.random() * 12);
+  const day = 1 + Math.floor(Math.random() * 28);
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+// Función para generar RUT chileno aleatorio
+function generateRut(index) {
+  const num = 20000000 + index * 111111 + Math.floor(Math.random() * 100000);
+  const numStr = num.toString();
+  // Calcular dígito verificador
+  let sum = 0;
+  let mul = 2;
+  for (let i = numStr.length - 1; i >= 0; i--) {
+    sum += parseInt(numStr[i]) * mul;
+    mul = mul === 7 ? 2 : mul + 1;
   }
+  const dv = 11 - (sum % 11);
+  const dvStr = dv === 11 ? '0' : dv === 10 ? 'K' : dv.toString();
+  return `${numStr.slice(0, 2)}.${numStr.slice(2, 5)}.${numStr.slice(5, 8)}-${dvStr}`;
+}
+
+// Nombres y apellidos chilenos para generar miembros
+const firstNames = [
+  'Sofía', 'Martina', 'Florencia', 'Valentina', 'Isidora', 'Agustina', 'Catalina', 'Emilia',
+  'Antonella', 'Fernanda', 'Josefa', 'Amanda', 'Trinidad', 'Antonia', 'Constanza', 'Javiera',
+  'Matías', 'Benjamín', 'Vicente', 'Martín', 'Agustín', 'Joaquín', 'Tomás', 'Lucas',
+  'Sebastián', 'Nicolás', 'Maximiliano', 'Felipe', 'Diego', 'Gabriel', 'Daniel', 'Francisco',
+  'Camila', 'Isabella', 'Renata', 'Maite', 'Paz', 'Ignacia', 'Pascuala', 'Magdalena',
+  'Alonso', 'Cristóbal', 'Gaspar', 'León', 'Simón', 'Emiliano', 'Santiago', 'Facundo'
 ];
+
+const lastNames = [
+  'González', 'Muñoz', 'Rojas', 'Díaz', 'Pérez', 'Soto', 'Contreras', 'Silva',
+  'Martínez', 'Sepúlveda', 'Morales', 'Rodríguez', 'López', 'Fuentes', 'Hernández', 'García',
+  'Vargas', 'Castillo', 'Torres', 'Araya', 'Reyes', 'Núñez', 'Espinoza', 'Bravo',
+  'Valenzuela', 'Tapia', 'Figueroa', 'Cortés', 'Castro', 'Carrasco', 'Vera', 'Vega',
+  'Flores', 'Pizarro', 'Guzmán', 'Ortiz', 'Lagos', 'Campos', 'Sandoval', 'Herrera'
+];
+
+const streets = [
+  'Av. Dorsal', 'Calle Los Olivos', 'Pasaje Las Rosas', 'Av. Condell', 'Calle Nueva',
+  'Pasaje Central', 'Av. Einstein', 'Calle Libertad', 'Pasaje Norte', 'Av. Sur',
+  'Calle Oriente', 'Pasaje Poniente', 'Av. Central', 'Calle Principal', 'Pasaje Sur',
+  'Av. Los Aromos', 'Calle San Martín', 'Pasaje Esperanza', 'Av. Pedro Fontova', 'Calle Mapocho'
+];
+
+// Generar miembros de prueba (todos menores de edad 14-17)
+function generateTestMembers(count) {
+  const members = [];
+  const usedNames = new Set();
+
+  for (let i = 0; i < count; i++) {
+    let firstName, lastName, fullName;
+
+    // Asegurar nombres únicos
+    do {
+      firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      lastName = lastNames[Math.floor(Math.random() * lastNames.length)] + ' ' +
+                 lastNames[Math.floor(Math.random() * lastNames.length)];
+      fullName = `${firstName} ${lastName}`;
+    } while (usedNames.has(fullName));
+    usedNames.add(fullName);
+
+    const streetNum = 100 + Math.floor(Math.random() * 9000);
+    const street = streets[Math.floor(Math.random() * streets.length)];
+
+    members.push({
+      rut: generateRut(i),
+      firstName,
+      lastName,
+      email: `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.${lastName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}${i}@email.cl`,
+      phone: `+56 9 ${String(1000 + i).padStart(4, '0')} ${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+      address: `${street} ${streetNum}, Renca`,
+      birthDate: generateBirthDate(14, 17) // Todos entre 14-17 años
+    });
+  }
+
+  return members;
+}
 
 async function seed() {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Limpiar base de datos
-    console.log('\n🗑️  Limpiando base de datos...');
+    // Limpiar TODA la base de datos
+    console.log('\n🗑️  Limpiando TODA la base de datos...');
     await User.deleteMany({});
     await Organization.deleteMany({});
     await Assignment.deleteMany({});
     await Notification.deleteMany({});
-    console.log('Base de datos limpiada');
+    console.log('✅ Base de datos completamente limpiada');
 
     // Crear administrador
     console.log('\n👤 Creando administrador...');
@@ -177,26 +126,11 @@ async function seed() {
     await admin.save();
     console.log('✅ Admin creado: admin@renca.cl / admin123');
 
-    // Crear ministro de fe
-    console.log('\n⚖️  Creando ministro de fe...');
-    const ministro = new User({
-      rut: '12.345.678-9',
-      firstName: 'María',
-      lastName: 'González López',
-      email: 'maria.gonzalez@renca.cl',
-      password: 'ministro123',
-      phone: '+56 9 8765 4321',
-      address: 'Av. Dorsal 2000, Renca',
-      role: 'MINISTRO',
-      active: true,
-      mustChangePassword: false
-    });
-    await ministro.save();
-    console.log('✅ Ministro creado: maria.gonzalez@renca.cl / ministro123');
-
-    // Crear usuarios de prueba (15 miembros)
-    console.log('\n👥 Creando 15 usuarios de prueba...');
+    // Generar y crear usuarios de prueba (todos menores de edad)
+    console.log(`\n👥 Creando ${TOTAL_MEMBERS} usuarios de prueba (14-17 años)...`);
+    const testMembers = generateTestMembers(TOTAL_MEMBERS);
     const createdUsers = [];
+
     for (let i = 0; i < testMembers.length; i++) {
       const member = testMembers[i];
       const user = new User({
@@ -211,10 +145,19 @@ async function seed() {
         active: true
       });
       await user.save();
-      createdUsers.push({ ...member, _id: user._id });
-      console.log(`  ✅ Usuario ${i + 1}/15: ${member.firstName} ${member.lastName}`);
-    }
 
+      // Calcular edad para mostrar
+      const birthDate = new Date(member.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      createdUsers.push({ ...member, _id: user._id, age });
+      console.log(`  ✅ Usuario ${i + 1}/${TOTAL_MEMBERS}: ${member.firstName} ${member.lastName} (${age} años)`);
+    }
 
     console.log('\n' + '='.repeat(50));
     console.log('🎉 SEED COMPLETADO EXITOSAMENTE');
@@ -225,18 +168,16 @@ async function seed() {
     console.log('  Email: admin@renca.cl');
     console.log('  Password: admin123');
     console.log('');
-    console.log('MINISTRO DE FE:');
-    console.log('  Email: maria.gonzalez@renca.cl');
-    console.log('  Password: ministro123');
-    console.log('');
-    console.log('USUARIOS DE PRUEBA (15):');
+    console.log(`USUARIOS DE PRUEBA (${TOTAL_MEMBERS} menores de edad 14-17 años):`);
     console.log('  Password común: user123');
-    console.log('  Ejemplo: juan.perez@email.cl / user123');
+    console.log('  Ejemplo: ' + testMembers[0].email + ' / user123');
     console.log('─'.repeat(50));
     console.log('\n📊 DATOS CREADOS:');
     console.log(`  - 1 Administrador`);
-    console.log(`  - 1 Ministro de Fe`);
-    console.log(`  - 15 Usuarios de prueba`);
+    console.log(`  - ${TOTAL_MEMBERS} Usuarios de prueba (todos 14-17 años)`);
+    console.log('');
+    console.log('⚠️  NOTA: No se creó Ministro de Fe.');
+    console.log('    Créalo manualmente desde el panel de admin.');
     console.log('');
 
     process.exit(0);

@@ -44,7 +44,14 @@ router.get('/:id', authenticate, async (req, res) => {
 // Create ministro (Admin only)
 router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
   try {
-    const { rut, firstName, lastName, email, phone, address, specialty } = req.body;
+    const { rut, firstName, lastName, email, phone, address, specialty, password } = req.body;
+
+    // Validar contraseña
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        error: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
 
     // Check if exists
     const existing = await User.findOne({ $or: [{ email }, { rut }] });
@@ -56,27 +63,24 @@ router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
       });
     }
 
-    // Generate temporary password
-    const tempPassword = generateTempPassword();
-
     const ministro = new User({
       rut,
       firstName,
       lastName,
       email,
-      password: tempPassword, // Will be hashed by pre-save hook
+      password: password, // Will be hashed by pre-save hook
       phone,
       address,
       specialty,
       role: 'MINISTRO',
-      mustChangePassword: true
+      mustChangePassword: true // El ministro deberá cambiar la contraseña
     });
 
     await ministro.save();
 
     res.status(201).json({
       ministro,
-      temporaryPassword: tempPassword // Show once for admin to provide to ministro
+      message: 'Ministro creado exitosamente'
     });
   } catch (error) {
     console.error('Create ministro error:', error);
