@@ -1,6 +1,6 @@
 import express from 'express';
 import UnidadVecinal from '../models/UnidadVecinal.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -108,7 +108,7 @@ router.get('/:id', async (req, res) => {
  * PUT /api/unidades-vecinales/:id
  * Actualizar una unidad vecinal (solo admin)
  */
-router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre } = req.body;
 
@@ -143,7 +143,7 @@ router.put('/:id', authenticateToken, requireRole('admin'), async (req, res) => 
  * POST /api/unidades-vecinales/:id/poblaciones
  * Agregar poblaciones a una unidad vecinal (solo admin)
  */
-router.post('/:id/poblaciones', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/poblaciones', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { poblaciones } = req.body;
 
@@ -172,7 +172,7 @@ router.post('/:id/poblaciones', authenticateToken, requireRole('admin'), async (
  * POST /api/unidades-vecinales/:id/calles
  * Agregar calles a una unidad vecinal (solo admin)
  */
-router.post('/:id/calles', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/:id/calles', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { calles } = req.body;
 
@@ -201,7 +201,7 @@ router.post('/:id/calles', authenticateToken, requireRole('admin'), async (req, 
  * DELETE /api/unidades-vecinales/:id/poblaciones/:poblacion
  * Eliminar una población de una unidad vecinal (solo admin)
  */
-router.delete('/:id/poblaciones/:poblacion', authenticateToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id/poblaciones/:poblacion', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const poblacion = decodeURIComponent(req.params.poblacion);
 
@@ -226,7 +226,7 @@ router.delete('/:id/poblaciones/:poblacion', authenticateToken, requireRole('adm
  * POST /api/unidades-vecinales/seed
  * Ejecutar seed de unidades vecinales (solo admin)
  */
-router.post('/seed', authenticateToken, requireRole('admin'), async (req, res) => {
+router.post('/seed', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { seedUnidadesVecinales } = await import('../scripts/seedUnidadesVecinales.js');
     await seedUnidadesVecinales();
