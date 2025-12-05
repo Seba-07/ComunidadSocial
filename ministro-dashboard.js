@@ -447,16 +447,37 @@ function validateSignatures(assignmentId) {
   const org = assignment.organizationId; // Ya viene como objeto populado
 
   // Abrir el nuevo wizard
+  // Guardar el ID antes de abrir el wizard
+  const savedAssignmentId = assignment._id || assignment.id;
+  console.log('🚀 Abriendo wizard para assignment:', savedAssignmentId);
+
   openValidationWizard(assignment, org, currentMinistro, {
-    onComplete: (wizardData, assignment, org, ministro) => {
+    onComplete: (wizardData, returnedAssignment, returnedOrg, returnedMinistro) => {
+      // Usar el assignment original si el retornado no tiene ID
+      const finalAssignment = (returnedAssignment?._id || returnedAssignment?.id)
+        ? returnedAssignment
+        : assignment;
+      console.log('📦 onComplete recibido:', {
+        returnedAssignmentId: returnedAssignment?._id || returnedAssignment?.id,
+        originalAssignmentId: savedAssignmentId,
+        usingOriginal: !(returnedAssignment?._id || returnedAssignment?.id)
+      });
       // Procesar la validación
-      processValidationComplete(wizardData, assignment, org, ministro);
+      processValidationComplete(wizardData, finalAssignment, returnedOrg || org, returnedMinistro || currentMinistro);
     }
   });
 }
 
 // Procesar la validación completada del wizard
 async function processValidationComplete(wizardData, assignment, org, ministro) {
+  console.log('🔍 processValidationComplete llamado con:', {
+    wizardData: wizardData ? 'presente' : 'undefined',
+    assignment: assignment,
+    assignmentId: assignment?._id || assignment?.id,
+    org: org ? 'presente' : 'undefined',
+    ministro: ministro ? 'presente' : 'undefined'
+  });
+
   const president = wizardData.directorio.president;
   const secretary = wizardData.directorio.secretary;
   const treasurer = wizardData.directorio.treasurer;
@@ -467,6 +488,14 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
   // Obtener IDs correctos (MongoDB usa _id)
   const ministroId = ministro._id || ministro.id;
   const assignmentId = assignment._id || assignment.id;
+
+  console.log('🆔 IDs obtenidos:', { ministroId, assignmentId });
+
+  if (!assignmentId) {
+    console.error('❌ assignmentId es undefined! assignment:', assignment);
+    showToast('Error: No se encontró el ID de la asignación', 'error');
+    return;
+  }
 
   const validationData = {
     validatedBy: 'MINISTRO',
