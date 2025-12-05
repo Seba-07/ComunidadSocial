@@ -456,7 +456,7 @@ function validateSignatures(assignmentId) {
 }
 
 // Procesar la validación completada del wizard
-function processValidationComplete(wizardData, assignment, org, ministro) {
+async function processValidationComplete(wizardData, assignment, org, ministro) {
   const president = wizardData.directorio.president;
   const secretary = wizardData.directorio.secretary;
   const treasurer = wizardData.directorio.treasurer;
@@ -464,9 +464,13 @@ function processValidationComplete(wizardData, assignment, org, ministro) {
   const commissionMembers = wizardData.comisionElectoral;
   const assemblyAttendees = wizardData.attendees;
 
+  // Obtener IDs correctos (MongoDB usa _id)
+  const ministroId = ministro._id || ministro.id;
+  const assignmentId = assignment._id || assignment.id;
+
   const validationData = {
     validatedBy: 'MINISTRO',
-    validatorId: ministro.id,
+    validatorId: ministroId,
     validatorName: `${ministro.firstName} ${ministro.lastName}`,
     ministroSignature: wizardData.ministroSignature,
     provisionalDirectorio: {
@@ -483,11 +487,13 @@ function processValidationComplete(wizardData, assignment, org, ministro) {
       additionalMembers,
       commissionMembers,
       notes: wizardData.notes
-    }
+    },
+    attendees: assemblyAttendees
   };
 
   try {
-    ministroAssignmentService.markSignaturesValidated(assignment.id, validationData);
+    console.log('📝 Enviando validación al servidor...', { assignmentId, validationData });
+    await ministroAssignmentService.markSignaturesValidated(assignmentId, validationData);
 
     // Actualizar la organización
     if (org) {
@@ -535,10 +541,11 @@ function processValidationComplete(wizardData, assignment, org, ministro) {
     }
 
     showToast('✅ Validación completada exitosamente', 'success');
-    loadStats();
-    renderAssignments();
+    console.log('✅ Validación guardada, recargando datos...');
+    await loadStats();
+    await renderAssignments();
   } catch (error) {
-    console.error('Error en validación:', error);
+    console.error('❌ Error en validación:', error);
     showToast(error.message || 'Error al procesar la validación', 'error');
   }
 }

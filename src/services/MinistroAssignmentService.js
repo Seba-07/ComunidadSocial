@@ -155,7 +155,21 @@ class MinistroAssignmentService {
    */
   async markSignaturesValidated(id, validatedData) {
     try {
-      const updated = await apiService.validateSignatures(id, validatedData.signatures, validatedData.wizardData);
+      // El backend espera { signatures, wizardData }
+      // validatedData contiene: signatures, provisionalDirectorio, comisionElectoral, attendees, etc.
+      const signatures = validatedData.signatures || validatedData;
+      const wizardData = {
+        provisionalDirectorio: validatedData.provisionalDirectorio,
+        comisionElectoral: validatedData.comisionElectoral,
+        attendees: validatedData.attendees,
+        ministroSignature: validatedData.ministroSignature,
+        validatorId: validatedData.validatorId,
+        validatorName: validatedData.validatorName,
+        validatedBy: validatedData.validatedBy
+      };
+
+      console.log('📤 Enviando validación:', { id, signatures, wizardData });
+      const updated = await apiService.validateSignatures(id, signatures, wizardData);
       const index = this.assignments.findIndex(a => a.id === id || a._id === id);
       if (index !== -1) {
         this.assignments[index] = updated;
