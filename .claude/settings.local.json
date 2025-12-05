@@ -19,7 +19,8 @@
       "Bash(npm run seed:*)",
       "WebFetch(domain:comunidad-social.vercel.app)",
       "Bash(set \"MONGODB_URI=mongodb+srv://comunidad_admin:caKSw2xTsPnm9IXo@comunidadsocial.ebklrle.mongodb.net/comunidad_social?retryWrites=true&w=majority\")",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

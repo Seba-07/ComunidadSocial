@@ -267,14 +267,37 @@ class OrganizationsService {
    */
   async requestMinistro(requestData) {
     try {
+      const orgInfo = requestData.organizationData?.organization || {};
+      const members = requestData.organizationData?.members || [];
+
+      // Mapear miembros al formato del backend
+      const mappedMembers = members.map((m, index) => ({
+        rut: m.rut,
+        firstName: m.firstName || m.nombre?.split(' ')[0] || '',
+        lastName: m.lastName || m.nombre?.split(' ').slice(1).join(' ') || m.apellido || '',
+        address: m.address || m.direccion || '',
+        phone: m.phone || m.telefono || '',
+        email: m.email || '',
+        birthDate: m.birthDate || m.fechaNacimiento || '',
+        occupation: m.occupation || m.profesion || '',
+        role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
+      }));
+
       const orgData = {
-        ...requestData.organizationData,
-        status: 'waiting_ministro',
+        organizationName: orgInfo.nombre || orgInfo.organizationName || orgInfo.name || 'Sin nombre',
+        organizationType: this.mapOrganizationType(orgInfo.tipo || orgInfo.organizationType || orgInfo.type),
+        address: orgInfo.direccion || orgInfo.address || requestData.assemblyAddress || '',
+        comuna: orgInfo.comuna || 'Renca',
+        unidadVecinal: orgInfo.unidadVecinal || '',
+        territory: orgInfo.territory || orgInfo.territorio || '',
+        members: mappedMembers,
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
         assemblyAddress: requestData.assemblyAddress || null,
         comments: requestData.comments || null
       };
+
+      console.log('📤 Enviando organización:', orgData);
 
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
@@ -284,6 +307,24 @@ class OrganizationsService {
       console.error('Error requesting ministro:', e);
       throw e;
     }
+  }
+
+  /**
+   * Mapea el tipo de organización al enum del backend
+   */
+  mapOrganizationType(type) {
+    const typeMap = {
+      'junta_vecinos': 'JUNTA_VECINOS',
+      'junta de vecinos': 'JUNTA_VECINOS',
+      'JUNTA_VECINOS': 'JUNTA_VECINOS',
+      'org_comunitaria': 'ORG_COMUNITARIA',
+      'organización comunitaria': 'ORG_COMUNITARIA',
+      'ORG_COMUNITARIA': 'ORG_COMUNITARIA',
+      'org_funcional': 'ORG_FUNCIONAL',
+      'organización funcional': 'ORG_FUNCIONAL',
+      'ORG_FUNCIONAL': 'ORG_FUNCIONAL'
+    };
+    return typeMap[type?.toLowerCase()] || typeMap[type] || 'JUNTA_VECINOS';
   }
 
   /**

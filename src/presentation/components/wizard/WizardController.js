@@ -4862,12 +4862,19 @@ Vocal`;
       };
 
       // Guardar en el servicio de organizaciones con estado WAITING_MINISTRO_REQUEST
-      const org = organizationsService.requestMinistro(requestData);
+      try {
+        const org = await organizationsService.requestMinistro(requestData);
+        console.log('✅ Organización creada:', org);
 
-      // Limpiar progreso del wizard
-      this.clearProgress();
+        // Limpiar progreso del wizard
+        this.clearProgress();
 
-      showToast('¡Solicitud de Ministro de Fe enviada correctamente!', 'success');
+        showToast('¡Solicitud de Ministro de Fe enviada correctamente!', 'success');
+      } catch (error) {
+        console.error('❌ Error al crear organización:', error);
+        showToast('Error al enviar la solicitud: ' + error.message, 'error');
+        return;
+      }
 
       // Mostrar mensaje de confirmación
       const stepContent = document.querySelector('#step-2');
