@@ -34,11 +34,163 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     notes: ''
   };
 
-  // Almacén de firmas
-  const signatureCanvases = {};
+  // Almacén de firmas (guarda las imágenes en base64)
+  const signatureData = {};
 
   // IDs seleccionados (para bloquear en otros selects)
   const selectedIds = new Set();
+
+  // Función para abrir modal de firma grande
+  const openSignatureModal = (signatureKey, title, onSave) => {
+    const sigModal = document.createElement('div');
+    sigModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 250000; padding: 20px; box-sizing: border-box;';
+    sigModal.innerHTML = `
+      <div style="background: white; border-radius: 20px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.4);">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px 24px;">
+          <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+            </svg>
+            ${title}
+          </h3>
+          <p style="margin: 8px 0 0; opacity: 0.9; font-size: 13px;">Dibuja tu firma en el área de abajo</p>
+        </div>
+        <div style="padding: 24px;">
+          <div style="border: 3px solid #3b82f6; border-radius: 12px; background: #f8fafc; margin-bottom: 16px;">
+            <canvas id="sig-modal-canvas" width="552" height="200" style="width: 100%; height: 200px; display: block; cursor: crosshair; touch-action: none;"></canvas>
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: space-between;">
+            <button type="button" id="sig-clear" style="padding: 12px 24px; border: 2px solid #ef4444; background: white; color: #ef4444; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Limpiar
+            </button>
+            <div style="display: flex; gap: 12px;">
+              <button type="button" id="sig-cancel" style="padding: 12px 24px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 10px; font-weight: 600; cursor: pointer;">Cancelar</button>
+              <button type="button" id="sig-save" style="padding: 12px 24px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Guardar Firma
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(sigModal);
+
+    // Configurar el canvas
+    const canvas = sigModal.querySelector('#sig-modal-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let hasDrawn = false;
+
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      if (e.touches) {
+        return {
+          x: (e.touches[0].clientX - rect.left) * scaleX,
+          y: (e.touches[0].clientY - rect.top) * scaleY
+        };
+      }
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    };
+
+    const startDrawing = (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      hasDrawn = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    };
+
+    const draw = (e) => {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    };
+
+    const stopDrawing = () => { isDrawing = false; };
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    // Botón limpiar
+    sigModal.querySelector('#sig-clear').addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasDrawn = false;
+    });
+
+    // Botón cancelar
+    sigModal.querySelector('#sig-cancel').addEventListener('click', () => {
+      sigModal.remove();
+    });
+
+    // Botón guardar
+    sigModal.querySelector('#sig-save').addEventListener('click', () => {
+      if (!hasDrawn) {
+        showToast('Debes firmar antes de guardar', 'error');
+        return;
+      }
+      const dataURL = canvas.toDataURL('image/png');
+      signatureData[signatureKey] = dataURL;
+      if (onSave) onSave(dataURL);
+      sigModal.remove();
+      renderWizard(); // Re-render para mostrar firma guardada
+    });
+  };
+
+  // Función para renderizar área de firma (preview o botón para firmar)
+  const renderSignatureArea = (signatureKey, label = 'Firma') => {
+    const hasSig = signatureData[signatureKey];
+    if (hasSig) {
+      return `
+        <div class="signature-area" data-key="${signatureKey}" style="cursor: pointer;">
+          <label style="display: block; font-weight: 600; font-size: 12px; color: #374151; margin-bottom: 6px;">${label}</label>
+          <div style="border: 2px solid #10b981; border-radius: 8px; background: #f0fdf4; padding: 8px; position: relative;">
+            <img src="${hasSig}" alt="Firma" style="max-height: 60px; display: block; margin: 0 auto;">
+            <div style="position: absolute; top: 4px; right: 4px; background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">✓ Firmado</div>
+          </div>
+          <p style="margin: 6px 0 0; font-size: 11px; color: #059669; text-align: center;">Toca para modificar la firma</p>
+        </div>
+      `;
+    }
+    return `
+      <div class="signature-area" data-key="${signatureKey}" style="cursor: pointer;">
+        <label style="display: block; font-weight: 600; font-size: 12px; color: #374151; margin-bottom: 6px;">${label}</label>
+        <div style="border: 2px dashed #3b82f6; border-radius: 8px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; text-align: center; transition: all 0.3s;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="margin-bottom: 8px;">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          </svg>
+          <p style="margin: 0; font-size: 13px; font-weight: 600; color: #3b82f6;">Toca aquí para firmar</p>
+        </div>
+      </div>
+    `;
+  };
 
   // Crear modal
   const modal = document.createElement('div');
@@ -159,8 +311,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
         ${roles.map(role => {
           const saved = wizardData.directorio[role.key];
+          const hasSig = signatureData[`${role.key}-signature`];
           return `
-            <div class="role-card" data-role="${role.key}" style="border: 2px solid ${saved ? '#10b981' : '#e5e7eb'}; border-radius: 12px; padding: 20px; transition: all 0.3s; background: ${saved ? '#f0fdf4' : 'white'};">
+            <div class="role-card" data-role="${role.key}" style="border: 2px solid ${hasSig ? '#10b981' : '#e5e7eb'}; border-radius: 12px; padding: 20px; transition: all 0.3s; background: ${hasSig ? '#f0fdf4' : 'white'};">
               <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                 <div style="width: 48px; height: 48px; background: linear-gradient(135deg, ${role.color} 0%, ${role.color}dd 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                   <span style="font-size: 24px;">${role.icon}</span>
@@ -191,18 +344,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
                 <p style="margin: 4px 0 0; font-size: 12px; color: #166534;"><strong>RUT:</strong> <span id="${role.key}-rut-display">${saved?.rut || ''}</span></p>
               </div>
 
-              <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 600; font-size: 12px; color: #374151; margin-bottom: 6px;">Firma</label>
-                <div style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; position: relative;">
-                  <canvas id="${role.key}-signature" width="300" height="120" style="width: 100%; height: 120px; display: block; cursor: crosshair;"></canvas>
-                  <button type="button" class="clear-sig-btn" data-canvas="${role.key}-signature" style="position: absolute; top: 6px; right: 6px; background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Limpiar</button>
-                </div>
-              </div>
-
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" id="validate-${role.key}" class="validate-check" data-role="${role.key}" ${saved?.validated ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #10b981;">
-                <span style="font-size: 13px; color: #374151; font-weight: 500;">Identidad verificada</span>
-              </label>
+              ${renderSignatureArea(`${role.key}-signature`, `Firma del ${role.label}`)}
             </div>
           `;
         }).join('')}
@@ -256,8 +398,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   };
 
   const renderAdditionalMemberCard = (member, index) => {
+    const hasSig = signatureData[`additional-sig-${index}`];
     return `
-      <div class="additional-card" data-index="${index}" style="border: 2px solid ${member.validated ? '#10b981' : '#e5e7eb'}; border-radius: 12px; padding: 16px; background: white;">
+      <div class="additional-card" data-index="${index}" style="border: 2px solid ${hasSig ? '#10b981' : '#e5e7eb'}; border-radius: 12px; padding: 16px; background: ${hasSig ? '#f0fdf4' : 'white'};">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <div style="width: 32px; height: 32px; background: #6b7280; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 600;">${index + 1}</div>
@@ -283,18 +426,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           <input type="text" class="additional-manual-name" data-index="${index}" value="${member.manualName || ''}" placeholder="Nombre completo" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
         </div>
 
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 11px; color: #6b7280; margin-bottom: 4px;">Firma</label>
-          <div style="border: 2px dashed #d1d5db; border-radius: 6px; background: #f9fafb; position: relative;">
-            <canvas id="additional-sig-${index}" width="300" height="100" style="width: 100%; height: 100px; display: block; cursor: crosshair;"></canvas>
-            <button type="button" class="clear-sig-btn" data-canvas="additional-sig-${index}" style="position: absolute; top: 4px; right: 4px; background: #ef4444; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Limpiar</button>
-          </div>
-        </div>
-
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="additional-validated" data-index="${index}" ${member.validated ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: #10b981;">
-          <span style="font-size: 12px; color: #374151;">Identidad verificada</span>
-        </label>
+        ${renderSignatureArea(`additional-sig-${index}`, 'Firma')}
       </div>
     `;
   };
@@ -321,8 +453,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
           ${[1, 2, 3].map(num => {
             const saved = wizardData.comisionElectoral[num - 1];
+            const hasSig = signatureData[`commission-${num}-signature`];
             return `
-              <div class="commission-card" data-num="${num}" style="border: 2px solid ${saved?.validated ? '#059669' : '#10b981'}; border-radius: 12px; padding: 16px; background: white;">
+              <div class="commission-card" data-num="${num}" style="border: 2px solid ${hasSig ? '#059669' : '#10b981'}; border-radius: 12px; padding: 16px; background: ${hasSig ? '#ecfdf5' : 'white'};">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                   <div style="width: 32px; height: 32px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">${num}</div>
                   <h5 style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">Miembro Comisión</h5>
@@ -343,18 +476,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
                   <input type="text" id="commission-${num}-manual-rut" placeholder="RUT" style="width: 100%; padding: 8px; border: 2px solid #d1fae5; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
                 </div>
 
-                <div style="margin-bottom: 10px;">
-                  <label style="display: block; font-size: 11px; color: #065f46; margin-bottom: 4px;">Firma</label>
-                  <div style="border: 2px dashed #86efac; border-radius: 6px; background: #f0fdf4; position: relative;">
-                    <canvas id="commission-${num}-signature" width="300" height="100" style="width: 100%; height: 100px; display: block; cursor: crosshair;"></canvas>
-                    <button type="button" class="clear-sig-btn" data-canvas="commission-${num}-signature" style="position: absolute; top: 4px; right: 4px; background: #ef4444; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Limpiar</button>
-                  </div>
-                </div>
-
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                  <input type="checkbox" id="validate-commission-${num}" class="commission-validated" data-num="${num}" ${saved?.validated ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: #10b981;">
-                  <span style="font-size: 12px; color: #065f46; font-weight: 500;">Identidad verificada</span>
-                </label>
+                ${renderSignatureArea(`commission-${num}-signature`, `Firma Miembro ${num}`)}
               </div>
             `;
           }).join('')}
@@ -463,10 +585,11 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   const renderAttendeeRow = (attendee, index) => {
     const isFromPrevious = attendee.signatureFromPrevious;
     const sourceLabel = attendee.source === 'directorio' ? '🏛️' : attendee.source === 'comision' ? '🗳️' : attendee.source === 'adicional' ? '👤' : '';
+    const hasSig = signatureData[`attendee-sig-${index}`];
 
     return `
-      <div class="attendee-row" data-index="${index}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 10px; border: 2px solid ${isFromPrevious ? '#c4b5fd' : '#e5e7eb'};">
-        <div style="width: 28px; height: 28px; background: ${isFromPrevious ? '#8b5cf6' : '#6b7280'}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">
+      <div class="attendee-row" data-index="${index}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 10px; border: 2px solid ${isFromPrevious || hasSig ? '#c4b5fd' : '#e5e7eb'};">
+        <div style="width: 28px; height: 28px; background: ${isFromPrevious || hasSig ? '#8b5cf6' : '#6b7280'}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">
           ${index + 1}
         </div>
         <div style="flex: 1; min-width: 0;">
@@ -480,9 +603,15 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         <div style="width: 140px; flex-shrink: 0;">
           ${isFromPrevious ? `
             <div style="background: #d1fae5; color: #065f46; padding: 8px 12px; border-radius: 6px; font-size: 11px; text-align: center; font-weight: 600;">✓ Firmado</div>
+          ` : hasSig ? `
+            <div class="signature-area" data-key="attendee-sig-${index}" style="cursor: pointer;">
+              <div style="background: #d1fae5; color: #065f46; padding: 8px 12px; border-radius: 6px; font-size: 11px; text-align: center; font-weight: 600;">✓ Firmado</div>
+            </div>
           ` : `
-            <div style="border: 2px dashed #c4b5fd; border-radius: 6px; background: #f9fafb; position: relative; height: 50px;">
-              <canvas id="attendee-sig-${index}" width="140" height="50" style="width: 100%; height: 100%; display: block; cursor: crosshair;"></canvas>
+            <div class="signature-area" data-key="attendee-sig-${index}" style="cursor: pointer;">
+              <div style="border: 2px dashed #c4b5fd; border-radius: 6px; background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 12px 8px; text-align: center;">
+                <p style="margin: 0; font-size: 11px; font-weight: 600; color: #7c3aed;">Toca para firmar</p>
+              </div>
             </div>
           `}
         </div>
@@ -556,11 +685,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           </svg>
           Firma del Ministro de Fe
         </h4>
-        <div style="border: 2px solid #3b82f6; border-radius: 8px; background: white; position: relative;">
-          <canvas id="ministro-signature" width="400" height="120" style="width: 100%; display: block; cursor: crosshair;"></canvas>
-          <button type="button" class="clear-sig-btn" data-canvas="ministro-signature" style="position: absolute; top: 8px; right: 8px; background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Limpiar</button>
-        </div>
-        <p style="margin: 8px 0 0; font-size: 12px; color: #1e40af;">
+        ${renderSignatureArea('ministro-signature', 'Tu firma como Ministro de Fe')}
+        <p style="margin: 12px 0 0; font-size: 12px; color: #1e40af;">
           Firma digital que certifica la validación de identidades y firmas.
         </p>
       </div>
@@ -610,88 +736,27 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       }
     });
 
-    // Inicializar canvases de firma
-    initializeSignatureCanvases();
+    // Click en áreas de firma para abrir modal
+    modal.querySelectorAll('.signature-area').forEach(area => {
+      area.addEventListener('click', () => {
+        const key = area.dataset.key;
+        let title = 'Firma';
+
+        // Determinar título según el key
+        if (key.includes('president')) title = 'Firma del Presidente/a';
+        else if (key.includes('secretary')) title = 'Firma del Secretario/a';
+        else if (key.includes('treasurer')) title = 'Firma del Tesorero/a';
+        else if (key.includes('commission')) title = 'Firma Miembro Comisión Electoral';
+        else if (key.includes('additional')) title = 'Firma Miembro Adicional';
+        else if (key.includes('ministro')) title = 'Firma del Ministro de Fe';
+        else if (key.includes('attendee')) title = 'Firma de Asistente';
+
+        openSignatureModal(key, title);
+      });
+    });
 
     // Event listeners específicos por paso
     setupStepSpecificListeners();
-  };
-
-  // Inicializar canvases de firma
-  const initializeSignatureCanvases = () => {
-    modal.querySelectorAll('canvas').forEach(canvas => {
-      const id = canvas.id;
-      if (!id) return;
-
-      const ctx = canvas.getContext('2d');
-      let isDrawing = false;
-      let hasDrawn = false;
-
-      ctx.strokeStyle = '#1f2937';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-
-      const getPos = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        if (e.touches) {
-          return {
-            x: (e.touches[0].clientX - rect.left) * scaleX,
-            y: (e.touches[0].clientY - rect.top) * scaleY
-          };
-        }
-        return {
-          x: (e.clientX - rect.left) * scaleX,
-          y: (e.clientY - rect.top) * scaleY
-        };
-      };
-
-      const startDrawing = (e) => {
-        e.preventDefault();
-        isDrawing = true;
-        hasDrawn = true;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-      };
-
-      const draw = (e) => {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-      };
-
-      const stopDrawing = () => { isDrawing = false; };
-
-      canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', stopDrawing);
-      canvas.addEventListener('mouseleave', stopDrawing);
-      canvas.addEventListener('touchstart', startDrawing, { passive: false });
-      canvas.addEventListener('touchmove', draw, { passive: false });
-      canvas.addEventListener('touchend', stopDrawing);
-
-      signatureCanvases[id] = {
-        canvas,
-        ctx,
-        clear: () => { ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; },
-        hasSignature: () => hasDrawn,
-        getDataURL: () => hasDrawn ? canvas.toDataURL('image/png') : null
-      };
-    });
-
-    // Botones de limpiar firma
-    modal.querySelectorAll('.clear-sig-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const canvasId = btn.dataset.canvas;
-        if (signatureCanvases[canvasId]) {
-          signatureCanvases[canvasId].clear();
-        }
-      });
-    });
   };
 
   // Event listeners específicos por paso
@@ -813,20 +878,19 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     if (currentStep === 1) {
       ['president', 'secretary', 'treasurer'].forEach(role => {
         const select = modal.querySelector(`#${role}-select`);
-        const validated = modal.querySelector(`#validate-${role}`)?.checked || false;
-        const signature = signatureCanvases[`${role}-signature`]?.getDataURL();
+        const signature = signatureData[`${role}-signature`];
 
         if (select?.value === 'manual') {
           const name = modal.querySelector(`#${role}-manual-name`)?.value.trim();
           const rut = modal.querySelector(`#${role}-manual-rut`)?.value.trim();
-          wizardData.directorio[role] = { id: null, name, rut, validated, signature, isManual: true };
+          wizardData.directorio[role] = { id: null, name, rut, validated: !!signature, signature, isManual: true };
         } else if (select?.value) {
           const option = select.selectedOptions[0];
           wizardData.directorio[role] = {
             id: select.value,
             name: option.dataset.name,
             rut: option.dataset.rut,
-            validated,
+            validated: !!signature,
             signature
           };
         }
@@ -838,10 +902,9 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       modal.querySelectorAll('.additional-card').forEach((card, i) => {
         const cargo = card.querySelector('.additional-cargo')?.value.trim();
         const select = card.querySelector('.additional-select');
-        const validated = card.querySelector('.additional-validated')?.checked || false;
-        const signature = signatureCanvases[`additional-sig-${i}`]?.getDataURL();
+        const signature = signatureData[`additional-sig-${i}`];
 
-        let data = { cargo, validated, signature };
+        let data = { cargo, validated: !!signature, signature };
 
         if (select?.value === 'manual') {
           data.id = null;
@@ -865,20 +928,19 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       wizardData.comisionElectoral = [];
       [1, 2, 3].forEach(num => {
         const select = modal.querySelector(`#commission-${num}-select`);
-        const validated = modal.querySelector(`#validate-commission-${num}`)?.checked || false;
-        const signature = signatureCanvases[`commission-${num}-signature`]?.getDataURL();
+        const signature = signatureData[`commission-${num}-signature`];
 
         if (select?.value === 'manual') {
           const name = modal.querySelector(`#commission-${num}-manual-name`)?.value.trim();
           const rut = modal.querySelector(`#commission-${num}-manual-rut`)?.value.trim();
-          wizardData.comisionElectoral.push({ id: null, name, rut, validated, signature, isManual: true });
+          wizardData.comisionElectoral.push({ id: null, name, rut, validated: !!signature, signature, isManual: true });
         } else if (select?.value) {
           const option = select.selectedOptions[0];
           wizardData.comisionElectoral.push({
             id: select.value,
             name: option.dataset.name,
             rut: option.dataset.rut,
-            validated,
+            validated: !!signature,
             signature
           });
         } else {
@@ -891,14 +953,14 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       // Guardar firmas de asistentes que no son del paso anterior
       wizardData.attendees.forEach((att, i) => {
         if (!att.signatureFromPrevious) {
-          att.signature = signatureCanvases[`attendee-sig-${i}`]?.getDataURL();
+          att.signature = signatureData[`attendee-sig-${i}`];
         }
       });
     }
 
     if (currentStep === 5) {
       wizardData.notes = modal.querySelector('#validation-notes')?.value.trim() || '';
-      wizardData.ministroSignature = signatureCanvases['ministro-signature']?.getDataURL();
+      wizardData.ministroSignature = signatureData['ministro-signature'];
     }
   };
 
@@ -912,11 +974,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           showToast(`Debes seleccionar un ${role === 'president' ? 'Presidente' : role === 'secretary' ? 'Secretario' : 'Tesorero'}`, 'error');
           return false;
         }
-        if (!modal.querySelector(`#validate-${role}`)?.checked) {
-          showToast(`Debes verificar la identidad del ${role === 'president' ? 'Presidente' : role === 'secretary' ? 'Secretario' : 'Tesorero'}`, 'error');
-          return false;
-        }
-        if (!signatureCanvases[`${role}-signature`]?.hasSignature()) {
+        if (!signatureData[`${role}-signature`]) {
           showToast(`Falta la firma del ${role === 'president' ? 'Presidente' : role === 'secretary' ? 'Secretario' : 'Tesorero'}`, 'error');
           return false;
         }
@@ -925,17 +983,17 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
     if (currentStep === 2) {
       const cards = modal.querySelectorAll('.additional-card');
-      for (const card of cards) {
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
         const cargo = card.querySelector('.additional-cargo')?.value.trim();
         const select = card.querySelector('.additional-select');
-        const validated = card.querySelector('.additional-validated')?.checked;
 
         if (select?.value && !cargo) {
           showToast('Debes especificar el cargo de cada miembro adicional', 'error');
           return false;
         }
-        if (select?.value && !validated) {
-          showToast('Debes verificar la identidad de todos los miembros adicionales', 'error');
+        if (select?.value && !signatureData[`additional-sig-${i}`]) {
+          showToast('Falta la firma de un miembro adicional', 'error');
           return false;
         }
       }
@@ -948,11 +1006,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           showToast(`Debes seleccionar el miembro ${num} de la Comisión Electoral`, 'error');
           return false;
         }
-        if (!modal.querySelector(`#validate-commission-${num}`)?.checked) {
-          showToast(`Debes verificar la identidad del miembro ${num} de la Comisión Electoral`, 'error');
-          return false;
-        }
-        if (!signatureCanvases[`commission-${num}-signature`]?.hasSignature()) {
+        if (!signatureData[`commission-${num}-signature`]) {
           showToast(`Falta la firma del miembro ${num} de la Comisión Electoral`, 'error');
           return false;
         }
@@ -984,7 +1038,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
 
     if (currentStep === 5) {
-      if (!signatureCanvases['ministro-signature']?.hasSignature()) {
+      if (!signatureData['ministro-signature']) {
         showToast('Debes firmar como Ministro de Fe para validar', 'error');
         return false;
       }
