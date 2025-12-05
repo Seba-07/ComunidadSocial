@@ -109,6 +109,28 @@ export class ScheduleManager {
                 <button type="button" id="set-default-hours-btn" class="btn btn-secondary btn-block">
                   Aplicar Horario Laboral (9:00 - 17:00)
                 </button>
+                <div class="block-period-buttons">
+                  <button type="button" id="block-morning-btn" class="btn btn-warning btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="5"></circle>
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                      <line x1="1" y1="12" x2="3" y2="12"></line>
+                      <line x1="21" y1="12" x2="23" y2="12"></line>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    Bloquear Mañana
+                  </button>
+                  <button type="button" id="block-afternoon-btn" class="btn btn-warning btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    Bloquear Tarde
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -125,6 +147,17 @@ export class ScheduleManager {
             <h4>📅 Próximas Reservas</h4>
             <div id="upcoming-bookings-list"></div>
           </div>
+        </div>
+
+        <!-- Acciones Globales -->
+        <div class="schedule-global-actions">
+          <button type="button" id="reset-schedule-btn" class="btn btn-danger-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Reiniciar Calendario (Borrar todas las reservas)
+          </button>
         </div>
       </div>
     `;
@@ -399,6 +432,53 @@ export class ScheduleManager {
       const daySchedule = scheduleService.getDaySchedule(date);
       this.renderTimeSlots(daySchedule.slots);
       this.renderCalendar();
+    });
+
+    // Bloquear mañana
+    document.getElementById('block-morning-btn').addEventListener('click', () => {
+      if (!this.selectedDate) return;
+
+      scheduleService.blockMorning(this.selectedDate);
+      showToast('Mañana bloqueada (horarios antes de 13:00 eliminados)', 'success');
+
+      const date = this.parseDateKey(this.selectedDate);
+      const daySchedule = scheduleService.getDaySchedule(date);
+      this.renderTimeSlots(daySchedule?.slots || []);
+      this.renderCalendar();
+    });
+
+    // Bloquear tarde
+    document.getElementById('block-afternoon-btn').addEventListener('click', () => {
+      if (!this.selectedDate) return;
+
+      scheduleService.blockAfternoon(this.selectedDate);
+      showToast('Tarde bloqueada (horarios desde 13:00 eliminados)', 'success');
+
+      const date = this.parseDateKey(this.selectedDate);
+      const daySchedule = scheduleService.getDaySchedule(date);
+      this.renderTimeSlots(daySchedule?.slots || []);
+      this.renderCalendar();
+    });
+
+    // Reiniciar calendario completo
+    document.getElementById('reset-schedule-btn').addEventListener('click', () => {
+      const confirmed = confirm('⚠️ ¿Estás seguro de que deseas reiniciar el calendario?\n\nEsto eliminará TODAS las reservas y configuraciones de horarios.\nEsta acción no se puede deshacer.');
+
+      if (!confirmed) return;
+
+      scheduleService.clearAllData();
+      scheduleService.init(); // Regenerar horarios por defecto
+
+      showToast('Calendario reiniciado correctamente', 'success');
+
+      // Cerrar editor si está abierto
+      document.getElementById('day-editor').style.display = 'none';
+      this.selectedDate = null;
+
+      // Actualizar vistas
+      this.renderCalendar();
+      this.renderStats();
+      this.renderUpcomingBookings();
     });
   }
 

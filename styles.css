@@ -13465,6 +13465,71 @@ a.header-logo:hover {
 /* Editor Actions */
 .editor-actions {
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.block-period-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.block-period-buttons .btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+}
+
+.btn-warning svg {
+    flex-shrink: 0;
+}
+
+/* Schedule Global Actions */
+.schedule-global-actions {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-danger-outline {
+    background: transparent;
+    color: #dc2626;
+    border: 1px solid #dc2626;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-danger-outline:hover {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-danger-outline svg {
+    flex-shrink: 0;
 }
 
 /* Schedule Stats */

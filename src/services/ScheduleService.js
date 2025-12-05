@@ -440,6 +440,46 @@ class ScheduleService {
     localStorage.removeItem(this.bookingsKey);
     this.init();
   }
+
+  /**
+   * Bloquea la mañana de un día (horarios antes de las 13:00)
+   */
+  blockMorning(date) {
+    const schedule = this.getSchedule();
+    const dateKey = this.getDateKey(date);
+
+    if (schedule[dateKey] && schedule[dateKey].slots) {
+      schedule[dateKey].slots = schedule[dateKey].slots.filter(slot => {
+        const hour = parseInt(slot.time.split(':')[0]);
+        return hour >= 13; // Mantener solo horarios de 13:00 en adelante
+      });
+      this.saveSchedule(schedule);
+    }
+  }
+
+  /**
+   * Bloquea la tarde de un día (horarios desde las 13:00)
+   */
+  blockAfternoon(date) {
+    const schedule = this.getSchedule();
+    const dateKey = this.getDateKey(date);
+
+    if (schedule[dateKey] && schedule[dateKey].slots) {
+      schedule[dateKey].slots = schedule[dateKey].slots.filter(slot => {
+        const hour = parseInt(slot.time.split(':')[0]);
+        return hour < 13; // Mantener solo horarios antes de las 13:00
+      });
+      this.saveSchedule(schedule);
+    }
+  }
+
+  /**
+   * Limpia todos los datos del calendario (para reseteo de DB)
+   */
+  clearAllData() {
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.bookingsKey);
+  }
 }
 
 // Instancia singleton
