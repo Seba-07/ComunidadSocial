@@ -2,11 +2,28 @@
  * API Service - Centralized HTTP client for backend communication
  */
 
-// Use production API URL as fallback
-const API_URL = import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://comunidadsocial-production.up.railway.app/api'
-    : 'http://localhost:3001/api');
+// Determine API URL based on environment
+function getApiUrl() {
+  // Check for environment variable first
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // In browser, check hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3001/api';
+    }
+    // Production - use Railway backend
+    return 'https://comunidadsocial-production.up.railway.app/api';
+  }
+
+  return 'http://localhost:3001/api';
+}
+
+const API_URL = getApiUrl();
+console.log('🔗 API URL:', API_URL);
 
 class ApiService {
   constructor() {
