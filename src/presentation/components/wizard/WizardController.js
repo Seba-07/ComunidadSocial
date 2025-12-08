@@ -3,7 +3,7 @@
  * Controla la lógica del wizard de creación de organizaciones
  */
 
-import { getWizardHTML, getStep4HTML_Estatutos } from './WizardHTML.js';
+import { getWizardHTML, getStep4HTML_Estatutos, getStep5HTML_Comision } from './WizardHTML.js';
 import { indexedDBService } from '../../../infrastructure/database/IndexedDBService.js';
 import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
@@ -659,9 +659,9 @@ export class WizardController {
     // Guardar datos del paso actual
     await this.saveCurrentStep();
 
-    // FASE 2: Interceptar después del paso 4 (Estatutos) para solicitar Ministro de Fe
-    // El usuario debe revisar los estatutos antes de agendar la asamblea con el Ministro
-    if (this.currentStep === 4 && !this.formData.ministroApproved) {
+    // FASE 2: Interceptar después del paso 5 (Directorio Provisorio + Comisión Electoral)
+    // El usuario debe completar el directorio, comisión y certificados antes de solicitar Ministro de Fe
+    if (this.currentStep === 5 && !this.formData.ministroApproved) {
       await this.showMinistroRequestScreen();
       return;
     }
@@ -825,20 +825,56 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 5: Comisión Electoral
+   * Valida paso 5: Directorio Provisorio y Comisión Electoral
    */
   validateStep5_Comision() {
-    const electionDate = document.getElementById('election-date').value;
+    // Validar que se seleccionaron todos los miembros del directorio
+    const presidente = document.getElementById('dir-presidente')?.value;
+    const secretario = document.getElementById('dir-secretario')?.value;
+    const tesorero = document.getElementById('dir-tesorero')?.value;
 
-    if (!electionDate) {
-      showToast('Debe especificar la fecha de elección', 'error');
+    if (!presidente || !secretario || !tesorero) {
+      showToast('Debe seleccionar todos los miembros del Directorio Provisorio (Presidente, Secretario y Tesorero)', 'error');
       return false;
     }
 
-    if (this.formData.commission.members.length !== 3) {
+    // Validar que se seleccionaron todos los miembros de la comisión
+    const com1 = document.getElementById('com-miembro1')?.value;
+    const com2 = document.getElementById('com-miembro2')?.value;
+    const com3 = document.getElementById('com-miembro3')?.value;
+
+    if (!com1 || !com2 || !com3) {
       showToast('La Comisión Electoral debe tener exactamente 3 miembros', 'error');
       return false;
     }
+
+    // Validar que no hay miembros duplicados
+    if (!this.validateUniqueSelections()) {
+      showToast('Un miembro no puede tener más de un cargo. Revise las selecciones.', 'error');
+      return false;
+    }
+
+    // Validar que se subieron todos los certificados
+    const certs = this.formData.certificatesStep5 || {};
+    const requiredCerts = ['presidente', 'secretario', 'tesorero', 'comision1', 'comision2', 'comision3'];
+    const missingCerts = requiredCerts.filter(key => !certs[key]);
+
+    if (missingCerts.length > 0) {
+      const missingNames = {
+        'presidente': 'Presidente',
+        'secretario': 'Secretario',
+        'tesorero': 'Tesorero',
+        'comision1': 'Miembro 1 Comisión',
+        'comision2': 'Miembro 2 Comisión',
+        'comision3': 'Miembro 3 Comisión'
+      };
+      const names = missingCerts.map(k => missingNames[k]).join(', ');
+      showToast('Faltan certificados de antecedentes: ' + names, 'error');
+      return false;
+    }
+
+    // Guardar datos antes de continuar
+    this.saveStep5Data();
 
     return true;
   }
@@ -1092,13 +1128,11 @@ export class WizardController {
   }
 
   /**
-   * Guarda datos del paso 5: Comisión Electoral
+   * Guarda datos del paso 5: Directorio Provisorio y Comisión Electoral
    */
   saveStep5_Comision() {
-    const electionDate = document.getElementById('election-date')?.value;
-    if (electionDate) {
-      this.formData.commission.electionDate = electionDate;
-    }
+    // Llamar al nuevo método de guardado
+    this.saveStep5Data();
   }
 
   /**
@@ -1913,11 +1947,307 @@ export class WizardController {
   }
 
   /**
-   * Inicializa paso 5: Comisión Electoral (solo visualización)
+   * Inicializa paso 5: Directorio Provisorio y Comisión Electoral
    */
   initializeStep5_Comision() {
-    this.renderCommissionListReadOnly();
-    this.renderElectionDateDisplay();
+    // Poblar los selects con los miembros fundadores
+    this.populateMemberSelects();
+
+    // Configurar eventos para los selects
+    this.setupDirectorioSelects();
+
+    // Configurar eventos para los inputs de certificados
+    this.setupCertificateInputs();
+
+    // Restaurar datos guardados si existen
+    this.restoreStep5Data();
+
+    // Actualizar el estado de los badges de certificados
+    this.updateCertificateBadges();
+  }
+
+  /**
+   * Pobla los selects de miembros con los miembros fundadores
+   */
+  populateMemberSelects() {
+    const members = this.formData.members || [];
+    const selects = document.querySelectorAll('.member-select');
+
+    selects.forEach(select => {
+      // Limpiar opciones existentes excepto la primera
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+
+      // Agregar miembros
+      members.forEach((member, index) => {
+        const option = document.createElement('option');
+        option.value = index.toString();
+        option.textContent = member.firstName + ' ' + member.lastName + ' (' + (member.rut || 'Sin RUT') + ')';
+        select.appendChild(option);
+      });
+    });
+  }
+
+  /**
+   * Configura eventos para los selects del directorio y comisión
+   */
+  setupDirectorioSelects() {
+    const allSelects = [
+      'dir-presidente', 'dir-secretario', 'dir-tesorero',
+      'com-miembro1', 'com-miembro2', 'com-miembro3'
+    ];
+
+    allSelects.forEach(selectId => {
+      const select = document.getElementById(selectId);
+      if (select) {
+        select.addEventListener('change', () => {
+          this.validateUniqueSelections();
+          this.saveStep5Data();
+        });
+      }
+    });
+  }
+
+  /**
+   * Valida que no se repitan miembros entre directorio y comisión
+   */
+  validateUniqueSelections() {
+    const allSelects = [
+      'dir-presidente', 'dir-secretario', 'dir-tesorero',
+      'com-miembro1', 'com-miembro2', 'com-miembro3'
+    ];
+
+    const selectedValues = [];
+    let hasDuplicates = false;
+
+    allSelects.forEach(selectId => {
+      const select = document.getElementById(selectId);
+      if (select && select.value) {
+        if (selectedValues.includes(select.value)) {
+          hasDuplicates = true;
+          select.style.borderColor = '#ef4444';
+        } else {
+          selectedValues.push(select.value);
+          select.style.borderColor = '';
+        }
+      }
+    });
+
+    if (hasDuplicates) {
+      showToast('Un miembro no puede tener más de un cargo', 'warning');
+    }
+
+    return !hasDuplicates;
+  }
+
+  /**
+   * Configura eventos para los inputs de certificados
+   */
+  setupCertificateInputs() {
+    const certInputs = [
+      { id: 'cert-presidente', badge: 'cert-badge-presidente', name: 'cert-presidente-name', key: 'presidente' },
+      { id: 'cert-secretario', badge: 'cert-badge-secretario', name: 'cert-secretario-name', key: 'secretario' },
+      { id: 'cert-tesorero', badge: 'cert-badge-tesorero', name: 'cert-tesorero-name', key: 'tesorero' },
+      { id: 'cert-com1', badge: 'cert-badge-com1', name: 'cert-com1-name', key: 'comision1' },
+      { id: 'cert-com2', badge: 'cert-badge-com2', name: 'cert-com2-name', key: 'comision2' },
+      { id: 'cert-com3', badge: 'cert-badge-com3', name: 'cert-com3-name', key: 'comision3' }
+    ];
+
+    certInputs.forEach(certInfo => {
+      const input = document.getElementById(certInfo.id);
+      if (input) {
+        input.addEventListener('change', async (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+
+            // Guardar el archivo
+            if (!this.formData.certificatesStep5) {
+              this.formData.certificatesStep5 = {};
+            }
+            this.formData.certificatesStep5[certInfo.key] = {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              file: file
+            };
+
+            // Actualizar UI
+            const nameDisplay = document.getElementById(certInfo.name);
+            if (nameDisplay) {
+              nameDisplay.textContent = file.name;
+              nameDisplay.style.color = '#22c55e';
+            }
+
+            // Cambiar el botón
+            const button = input.previousElementSibling || input.parentElement.querySelector('.btn-upload-cert');
+            if (button && button.tagName === 'BUTTON') {
+              button.textContent = '✅ ' + file.name.substring(0, 15) + (file.name.length > 15 ? '...' : '');
+              button.style.background = '#dcfce7';
+              button.style.borderColor = '#22c55e';
+              button.style.color = '#166534';
+            }
+
+            // Actualizar badge
+            this.updateCertificateBadges();
+
+            // Guardar progreso
+            this.saveProgress();
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Actualiza los badges de estado de certificados
+   */
+  updateCertificateBadges() {
+    const certs = this.formData.certificatesStep5 || {};
+
+    const badgeMap = {
+      'presidente': 'cert-badge-presidente',
+      'secretario': 'cert-badge-secretario',
+      'tesorero': 'cert-badge-tesorero',
+      'comision1': 'cert-badge-com1',
+      'comision2': 'cert-badge-com2',
+      'comision3': 'cert-badge-com3'
+    };
+
+    const labelMap = {
+      'presidente': 'Presidente',
+      'secretario': 'Secretario',
+      'tesorero': 'Tesorero',
+      'comision1': 'Com. 1',
+      'comision2': 'Com. 2',
+      'comision3': 'Com. 3'
+    };
+
+    Object.keys(badgeMap).forEach(key => {
+      const badge = document.getElementById(badgeMap[key]);
+      if (badge) {
+        if (certs[key]) {
+          badge.textContent = '✅ ' + labelMap[key];
+          badge.style.background = '#dcfce7';
+          badge.style.color = '#166534';
+          badge.style.border = '1px solid #22c55e';
+        } else {
+          badge.textContent = '❌ ' + labelMap[key];
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#991b1b';
+          badge.style.border = '1px solid #fecaca';
+        }
+        badge.style.padding = '4px 8px';
+        badge.style.borderRadius = '12px';
+        badge.style.fontSize = '12px';
+        badge.style.fontWeight = '500';
+      }
+    });
+  }
+
+  /**
+   * Guarda los datos del paso 5
+   */
+  saveStep5Data() {
+    if (!this.formData.directorioProvisorio) {
+      this.formData.directorioProvisorio = {};
+    }
+    if (!this.formData.comisionElectoral) {
+      this.formData.comisionElectoral = {};
+    }
+
+    const members = this.formData.members || [];
+
+    // Guardar directorio
+    const presidenteIdx = document.getElementById('dir-presidente')?.value;
+    const secretarioIdx = document.getElementById('dir-secretario')?.value;
+    const tesoreroIdx = document.getElementById('dir-tesorero')?.value;
+
+    if (presidenteIdx) this.formData.directorioProvisorio.presidente = members[parseInt(presidenteIdx)];
+    if (secretarioIdx) this.formData.directorioProvisorio.secretario = members[parseInt(secretarioIdx)];
+    if (tesoreroIdx) this.formData.directorioProvisorio.tesorero = members[parseInt(tesoreroIdx)];
+
+    // Guardar comisión electoral
+    const com1Idx = document.getElementById('com-miembro1')?.value;
+    const com2Idx = document.getElementById('com-miembro2')?.value;
+    const com3Idx = document.getElementById('com-miembro3')?.value;
+
+    const comisionMembers = [];
+    if (com1Idx) comisionMembers.push(members[parseInt(com1Idx)]);
+    if (com2Idx) comisionMembers.push(members[parseInt(com2Idx)]);
+    if (com3Idx) comisionMembers.push(members[parseInt(com3Idx)]);
+
+    this.formData.commission.members = comisionMembers;
+
+    // Guardar progreso
+    this.saveProgress();
+  }
+
+  /**
+   * Restaura los datos guardados del paso 5
+   */
+  restoreStep5Data() {
+    const members = this.formData.members || [];
+    const dir = this.formData.directorioProvisorio || {};
+    const com = this.formData.commission?.members || [];
+
+    // Restaurar selects del directorio
+    if (dir.presidente) {
+      const idx = members.findIndex(m => m.rut === dir.presidente.rut);
+      if (idx >= 0) document.getElementById('dir-presidente').value = idx.toString();
+    }
+    if (dir.secretario) {
+      const idx = members.findIndex(m => m.rut === dir.secretario.rut);
+      if (idx >= 0) document.getElementById('dir-secretario').value = idx.toString();
+    }
+    if (dir.tesorero) {
+      const idx = members.findIndex(m => m.rut === dir.tesorero.rut);
+      if (idx >= 0) document.getElementById('dir-tesorero').value = idx.toString();
+    }
+
+    // Restaurar selects de la comisión
+    com.forEach((member, i) => {
+      const idx = members.findIndex(m => m.rut === member.rut);
+      if (idx >= 0) {
+        const selectId = 'com-miembro' + (i + 1);
+        const select = document.getElementById(selectId);
+        if (select) select.value = idx.toString();
+      }
+    });
+
+    // Restaurar nombres de archivos de certificados
+    const certs = this.formData.certificatesStep5 || {};
+    const certMap = {
+      'presidente': 'cert-presidente-name',
+      'secretario': 'cert-secretario-name',
+      'tesorero': 'cert-tesorero-name',
+      'comision1': 'cert-com1-name',
+      'comision2': 'cert-com2-name',
+      'comision3': 'cert-com3-name'
+    };
+
+    Object.keys(certMap).forEach(key => {
+      if (certs[key]) {
+        const nameEl = document.getElementById(certMap[key]);
+        if (nameEl) {
+          nameEl.textContent = certs[key].name;
+          nameEl.style.color = '#22c55e';
+        }
+
+        // Actualizar botón
+        const inputId = key.replace('comision', 'cert-com').replace('presidente', 'cert-presidente').replace('secretario', 'cert-secretario').replace('tesorero', 'cert-tesorero');
+        const input = document.getElementById(inputId.includes('cert-') ? inputId : 'cert-' + key);
+        if (input) {
+          const button = input.parentElement?.querySelector('.btn-upload-cert');
+          if (button) {
+            button.textContent = '✅ ' + certs[key].name.substring(0, 15) + '...';
+            button.style.background = '#dcfce7';
+            button.style.borderColor = '#22c55e';
+            button.style.color = '#166534';
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -5233,10 +5563,10 @@ Vocal`;
    * FASE 2: Muestra pantalla de solicitud de Ministro de Fe
    */
   async showMinistroRequestScreen() {
-    const stepContent = document.querySelector('#step-4');
+    const stepContent = document.querySelector('#step-5');
     if (!stepContent) return;
 
-    // Reemplazar el contenido del paso 2 con el formulario de solicitud de Ministro
+    // Reemplazar el contenido del paso 5 con el formulario de solicitud de Ministro
     const orgTypeName = getOrgTypeName(this.formData.organization.type);
 
     stepContent.innerHTML = `
@@ -5505,9 +5835,9 @@ Vocal`;
 
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        // Restaurar el HTML original del paso 4 (Estatutos)
-        this.restoreStep4HTML();
-        // Volver a mostrar el paso 4 normal
+        // Restaurar el HTML original del paso 5 (Directorio Provisorio + Comisión Electoral)
+        this.restoreStep5HTML();
+        // Volver a mostrar el paso 5 normal
         this.updateUI();
         this.initializeCurrentStep();
       });
@@ -6069,17 +6399,17 @@ Vocal`;
   }
 
   /**
-   * Restaura el HTML original del paso 4 (Estatutos) después de mostrar la pantalla de Ministro de Fe
+   * Restaura el HTML original del paso 5 (Directorio Provisorio + Comisión Electoral) después de mostrar la pantalla de Ministro de Fe
    */
-  restoreStep4HTML() {
-    const stepContent = document.querySelector('#step-4');
+  restoreStep5HTML() {
+    const stepContent = document.querySelector('#step-5');
     if (!stepContent) return;
 
-    // Usar el HTML del paso 4 desde WizardHTML
-    const step4HTML = getStep4HTML_Estatutos();
+    // Usar el HTML del paso 5 desde WizardHTML
+    const step5HTML = getStep5HTML_Comision();
     // Extraer solo el contenido interno (sin el div contenedor)
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = step4HTML;
+    tempDiv.innerHTML = step5HTML;
     stepContent.innerHTML = tempDiv.firstElementChild.innerHTML;
   }
 }

@@ -7885,6 +7885,61 @@ body {
     color: #ef4444;
 }
 
+/* File Upload Wrapper for Step 5 */
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.file-name-display {
+    font-size: 12px;
+    color: var(--text-secondary);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cert-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.cert-badge.pending {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.cert-badge.complete {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #22c55e;
+}
+
+/* Responsive styles for Step 5 */
+@media (max-width: 768px) {
+    .file-upload-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .directivo-card .form-row-2,
+    .comision-card .form-row-2 {
+        flex-direction: column;
+    }
+
+    .directivo-card .form-group,
+    .comision-card .form-group {
+        width: 100%;
+    }
+}
+
 /* Other Documents List */
 .other-documents-list {
     display: flex;

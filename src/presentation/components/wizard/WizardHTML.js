@@ -96,6 +96,23 @@ function getStep1HTML() {
       <h3>Paso 1: Datos Básicos de la Organización</h3>
       <p class="step-description">Complete la información fundamental de su organización comunitaria.</p>
 
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">📋</span>
+          <div>
+            <strong style="color: #1e40af; font-size: 14px;">¿Qué es este paso?</strong>
+            <p style="margin: 6px 0 0; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
+              Aquí ingresará los datos básicos de su organización: nombre, tipo, dirección y contacto.
+              Esta información será usada en todos los documentos oficiales y en la solicitud al Registro Civil.
+            </p>
+            <p style="margin: 8px 0 0; color: #3b82f6; font-size: 12px;">
+              💡 <strong>Tip:</strong> El nombre debe ser único y representar claramente a su comunidad.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form class="wizard-form" id="form-step-1">
         <div class="form-row">
           <div class="form-group">
@@ -263,6 +280,23 @@ function getStep2HTML() {
       <h3>Paso 2: Miembros Fundadores</h3>
       <p class="step-description" id="step2-description">Registre a los miembros fundadores de la organización.</p>
 
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #22c55e; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">👥</span>
+          <div>
+            <strong style="color: #166534; font-size: 14px;">¿Qué son los Miembros Fundadores?</strong>
+            <p style="margin: 6px 0 0; color: #166534; font-size: 13px; line-height: 1.5;">
+              Son las personas que participarán en la <strong>Asamblea Constitutiva</strong> y firmarán el acta de constitución.
+              Serán los primeros socios oficiales de su organización.
+            </p>
+            <p style="margin: 8px 0 0; color: #15803d; font-size: 12px;">
+              📌 <strong>Requisitos según Ley 19.418:</strong> Mínimo 15 personas mayores de 14 años que residan en la unidad vecinal.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div class="members-summary">
         <div class="summary-stat">
           <span class="stat-label">Total de miembros:</span>
@@ -318,6 +352,23 @@ function getStep3HTML_ConfigEstatutos() {
     <div class="wizard-step-content" id="step-3">
       <h3>Paso 3: Configuración de Estatutos</h3>
       <p class="step-description">Complete los datos que serán incluidos en los estatutos de su organización. Estos valores son preliminares y serán confirmados en la Asamblea Constitutiva con el Ministro de Fe.</p>
+
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">⚙️</span>
+          <div>
+            <strong style="color: #92400e; font-size: 14px;">¿Qué es la Configuración de Estatutos?</strong>
+            <p style="margin: 6px 0 0; color: #92400e; font-size: 13px; line-height: 1.5;">
+              Aquí definirá las reglas internas de su organización: cuándo se realizarán las asambleas,
+              las cuotas de los socios y qué pasará con los bienes en caso de disolución.
+            </p>
+            <p style="margin: 8px 0 0; color: #b45309; font-size: 12px;">
+              💡 <strong>Importante:</strong> Estos valores serán presentados en la Asamblea Constitutiva y pueden ser modificados allí si los socios lo deciden.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form class="wizard-form" id="form-step-3-config">
         <!-- Sección: Asambleas -->
@@ -489,40 +540,244 @@ function getStep3HTML_ConfigEstatutos() {
   `;
 }
 
-function getStep5HTML_Comision() {
+export function getStep5HTML_Comision() {
   return `
     <div class="wizard-step-content" id="step-5">
-      <h3>Paso 5: Comisión Electoral</h3>
-      <p class="step-description">Verificación de la Comisión Electoral designada en la Asamblea Constitutiva.</p>
+      <h3>Paso 5: Directorio Provisorio y Comisión Electoral</h3>
+      <p class="step-description">Designe a los miembros del Directorio Provisorio y la Comisión Electoral que participarán en la Asamblea Constitutiva.</p>
 
-      <div class="info-box info-box-success mb-4">
-        <strong>✅ Comisión Electoral Designada</strong>
-        <p class="mb-2">La Comisión Electoral fue designada durante la Asamblea Constitutiva con presencia del Ministro de Fe.</p>
-        <small class="text-muted">Según Ley 19.418, la comisión debe tener 3 integrantes con al menos 1 año de antigüedad.</small>
+      <!-- Info Box explicativo principal -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); border: 1px solid #f97316; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">⚠️</span>
+          <div>
+            <strong style="color: #c2410c; font-size: 14px;">¿Por qué es "Provisorio"?</strong>
+            <p style="margin: 6px 0 0; color: #c2410c; font-size: 13px; line-height: 1.5;">
+              Según la <strong>Ley 19.418</strong>, el Directorio Provisorio que se designa ahora solo tiene la función de
+              constituir legalmente la organización. <strong>Una vez obtenida la personalidad jurídica</strong>, se debe
+              realizar una nueva elección para elegir el Directorio Definitivo.
+            </p>
+            <p style="margin: 8px 0 0; color: #ea580c; font-size: 12px;">
+              📅 <strong>Plazo:</strong> El Directorio Definitivo debe ser elegido dentro de los 90 días siguientes a la obtención de la personalidad jurídica.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div class="commission-display-section">
-        <div class="commission-header-display">
-          <div class="commission-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
-          <div class="commission-header-info">
-            <h4>Miembros de la Comisión Electoral</h4>
-            <p class="text-muted">Designados en la Asamblea Constitutiva</p>
+      <!-- SECCIÓN 1: DIRECTORIO PROVISORIO -->
+      <div class="commission-section mb-4">
+        <div class="commission-section-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 1px solid #3b82f6; border-radius: 12px 12px 0 0; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 28px;">👔</span>
+            <div>
+              <h4 style="margin: 0; color: #1e40af; font-size: 16px;">Directorio Provisorio</h4>
+              <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;">
+                Estos cargos son solo para constituir la organización. El directorio definitivo se elegirá después.
+              </p>
+            </div>
           </div>
         </div>
 
-        <div class="commission-members-display" id="commission-list">
-          <!-- Se renderiza dinámicamente -->
+        <div style="border: 1px solid #3b82f6; border-top: none; border-radius: 0 0 12px 12px; padding: 20px; background: #fff;">
+          <form id="form-directorio-provisorio">
+            <!-- Presidente -->
+            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">PRESIDENTE/A</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="dir-presidente">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="dir-presidente" name="presidente" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-presidente">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-presidente" name="certPresidente" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-presidente').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-presidente-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Secretario -->
+            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">SECRETARIO/A</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="dir-secretario">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="dir-secretario" name="secretario" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-secretario">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-secretario" name="certSecretario" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-secretario').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-secretario-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tesorero -->
+            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">TESORERO/A</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="dir-tesorero">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="dir-tesorero" name="tesorero" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-tesorero">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-tesorero" name="certTesorero" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-tesorero').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-tesorero-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: COMISIÓN ELECTORAL -->
+      <div class="commission-section mb-4">
+        <div class="commission-section-header" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border: 1px solid #22c55e; border-radius: 12px 12px 0 0; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 28px;">🗳️</span>
+            <div>
+              <h4 style="margin: 0; color: #166534; font-size: 16px;">Comisión Electoral</h4>
+              <p style="margin: 4px 0 0; color: #22c55e; font-size: 13px;">
+                Esta comisión supervisará la elección del Directorio Definitivo después de obtener la personalidad jurídica.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div class="election-date-display mt-4" id="election-date-display">
-          <!-- Se renderiza dinámicamente -->
+        <div style="border: 1px solid #22c55e; border-top: none; border-radius: 0 0 12px 12px; padding: 20px; background: #fff;">
+          <div class="info-box" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <p style="margin: 0; color: #166534; font-size: 13px;">
+              📌 <strong>Requisito Ley 19.418:</strong> La Comisión Electoral debe tener <strong>3 integrantes</strong> que sean socios.
+              Sus funciones son: calificar las elecciones, resolver reclamos y proclamar a los elegidos.
+            </p>
+          </div>
+
+          <form id="form-comision-electoral">
+            <!-- Miembro 1 -->
+            <div class="comision-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #22c55e; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">MIEMBRO 1</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="com-miembro1">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="com-miembro1" name="comisionMiembro1" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-com1">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-com1" name="certComision1" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-com1').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-com1-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Miembro 2 -->
+            <div class="comision-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #22c55e; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">MIEMBRO 2</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="com-miembro2">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="com-miembro2" name="comisionMiembro2" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-com2">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-com2" name="certComision2" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-com2').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-com2-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Miembro 3 -->
+            <div class="comision-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="background: #22c55e; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">MIEMBRO 3</span>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label for="com-miembro3">Seleccionar Miembro <span class="required">*</span></label>
+                  <select id="com-miembro3" name="comisionMiembro3" required class="member-select">
+                    <option value="">Seleccione un miembro fundador...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cert-com3">Certificado de Antecedentes <span class="required">*</span></label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="cert-com3" name="certComision3" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
+                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-com3').click()">
+                      📎 Subir Certificado
+                    </button>
+                    <span class="file-name-display" id="cert-com3-name"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Resumen de certificados -->
+      <div class="certificates-summary" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #ef4444; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 24px;">📄</span>
+          <div>
+            <strong style="color: #991b1b; font-size: 14px;">Certificados de Antecedentes Requeridos</strong>
+            <p style="margin: 6px 0 0; color: #991b1b; font-size: 13px; line-height: 1.5;">
+              Debe subir el <strong>certificado de antecedentes</strong> de cada miembro del Directorio Provisorio
+              y la Comisión Electoral (6 certificados en total). Puede obtenerlos en <a href="https://www.registrocivil.cl" target="_blank" style="color: #dc2626;">www.registrocivil.cl</a>
+            </p>
+            <div id="cert-progress" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <span class="cert-badge pending" id="cert-badge-presidente">❌ Presidente</span>
+              <span class="cert-badge pending" id="cert-badge-secretario">❌ Secretario</span>
+              <span class="cert-badge pending" id="cert-badge-tesorero">❌ Tesorero</span>
+              <span class="cert-badge pending" id="cert-badge-com1">❌ Com. 1</span>
+              <span class="cert-badge pending" id="cert-badge-com2">❌ Com. 2</span>
+              <span class="cert-badge pending" id="cert-badge-com3">❌ Com. 3</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -534,6 +789,23 @@ export function getStep4HTML_Estatutos() {
     <div class="wizard-step-content" id="step-4">
       <h3>Paso 4: Estatutos de la Organización</h3>
       <p class="step-description">Revise los estatutos tipo con los datos ingresados. Estos estatutos serán presentados al Ministro de Fe en la Asamblea Constitutiva para su validación final.</p>
+
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%); border: 1px solid #d946ef; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">📜</span>
+          <div>
+            <strong style="color: #86198f; font-size: 14px;">¿Qué son los Estatutos?</strong>
+            <p style="margin: 6px 0 0; color: #86198f; font-size: 13px; line-height: 1.5;">
+              Los estatutos son el <strong>documento legal</strong> que define las reglas, derechos y obligaciones de su organización.
+              Este documento será inscrito en el Registro Civil junto con el acta constitutiva.
+            </p>
+            <p style="margin: 8px 0 0; color: #a21caf; font-size: 12px;">
+              📌 <strong>Recomendación:</strong> Use la plantilla predefinida que cumple con todos los requisitos legales. Puede personalizarla según sus necesidades.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div class="statutes-options-row">
         <div class="form-group">
@@ -611,12 +883,29 @@ export function getStep4HTML_Estatutos() {
 function getStep6HTML_Firmas() {
   return `
     <div class="wizard-step-content" id="step-6">
-      <h3>Paso 6: Firmas de la Comisión Electoral</h3>
-      <p class="step-description">Verificación de las firmas recolectadas durante la Asamblea Constitutiva.</p>
+      <h3>Paso 6: Firmas del Directorio Provisorio</h3>
+      <p class="step-description">Registre las firmas de los miembros del Directorio Provisorio y la Comisión Electoral.</p>
+
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">✍️</span>
+          <div>
+            <strong style="color: #0369a1; font-size: 14px;">¿Para qué son las firmas?</strong>
+            <p style="margin: 6px 0 0; color: #0369a1; font-size: 13px; line-height: 1.5;">
+              Las firmas de los directivos se incluirán en el <strong>Acta Constitutiva</strong> y demás documentos oficiales
+              que serán presentados al Registro Civil para obtener la personalidad jurídica.
+            </p>
+            <p style="margin: 8px 0 0; color: #0284c7; font-size: 12px;">
+              ✏️ <strong>Tip:</strong> Use un lápiz stylus o el dedo para firmar. Puede borrar y volver a firmar si no queda bien.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div class="info-box info-box-success mb-4">
-        <strong>✅ Firmas Recolectadas en Asamblea</strong>
-        <p class="mb-2">Las firmas de los miembros de la Comisión Electoral fueron recolectadas durante la Asamblea Constitutiva con presencia del Ministro de Fe.</p>
+        <strong>✅ Firmas Requeridas</strong>
+        <p class="mb-2">Las firmas de los miembros del Directorio Provisorio y la Comisión Electoral serán verificadas por el Ministro de Fe en la Asamblea Constitutiva.</p>
         <small class="text-muted">Las firmas se incorporarán automáticamente a los documentos oficiales.</small>
       </div>
 
@@ -725,11 +1014,28 @@ function getStep7HTML_Documentos() {
   return `
     <div class="wizard-step-content" id="step-7">
       <h3>Paso 7: Documentos Oficiales</h3>
-      <p class="step-description">Los documentos han sido generados con las firmas de la Comisión Electoral. Revise, edite si es necesario y adjunte los documentos adicionales.</p>
+      <p class="step-description">Los documentos han sido generados con las firmas del Directorio Provisorio. Revise, edite si es necesario y adjunte los documentos adicionales.</p>
+
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #10b981; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">📄</span>
+          <div>
+            <strong style="color: #065f46; font-size: 14px;">¿Qué documentos se generan?</strong>
+            <p style="margin: 6px 0 0; color: #065f46; font-size: 13px; line-height: 1.5;">
+              El sistema genera automáticamente todos los documentos requeridos por ley: Acta Constitutiva, Estatutos,
+              Registro de Socios, Declaración Jurada y Acta de la Comisión Electoral.
+            </p>
+            <p style="margin: 8px 0 0; color: #047857; font-size: 12px;">
+              📝 <strong>Importante:</strong> Puede revisar y editar cada documento antes de enviarlo. También debe subir las fotos de carnet de identidad para validación.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div class="info-box info-box-success mb-4">
         <strong>✅ Documentos Generados con Firmas</strong>
-        <p>Todos los documentos incluyen las firmas digitales de los miembros de la Comisión Electoral.</p>
+        <p>Todos los documentos incluyen las firmas digitales de los miembros del Directorio Provisorio y la Comisión Electoral.</p>
       </div>
 
       <div class="documents-list" id="documents-list">
@@ -791,6 +1097,24 @@ function getStep8HTML_Revision() {
     <div class="wizard-step-content" id="step-8">
       <h3>Paso 8: Revisión y Envío</h3>
       <p class="step-description">Revise toda la información antes de enviar su solicitud.</p>
+
+      <!-- Info Box explicativo -->
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">🔍</span>
+          <div>
+            <strong style="color: #92400e; font-size: 14px;">Último paso antes de enviar</strong>
+            <p style="margin: 6px 0 0; color: #92400e; font-size: 13px; line-height: 1.5;">
+              Revise cuidadosamente toda la información ingresada. Al enviar la solicitud, se creará un <strong>borrador</strong>
+              que podrá editar hasta que se agende la cita con el Ministro de Fe.
+            </p>
+            <p style="margin: 8px 0 0; color: #b45309; font-size: 12px;">
+              ⚠️ <strong>Importante:</strong> La solicitud del Ministro de Fe se realizará <strong>después</strong> de completar este paso.
+              La Municipalidad coordinará la fecha de la Asamblea Constitutiva.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div class="review-section">
         <h4>📋 Datos de la Organización</h4>
