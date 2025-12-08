@@ -25,7 +25,9 @@
       "Bash(find:*)",
       "Bash(firebase deploy:*)",
       "Bash(vercel:*)",
-      "Bash(netlify deploy:*)"
+      "Bash(netlify deploy:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

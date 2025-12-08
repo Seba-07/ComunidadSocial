@@ -1257,28 +1257,57 @@ function renderOrganizationCard(org) {
           </div>
         ` : ''}
 
-        ${org.appointmentWasModified && org.status === ORG_STATUS.MINISTRO_SCHEDULED ? `
-          <div class="org-appointment-modified-notice" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 12px; margin-top: 12px; animation: pulse-card 2s ease-in-out infinite;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 24px; animation: bell-shake 1s ease-in-out infinite;">🔔</span>
-              <div style="flex: 1;">
-                <p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Cita Re-agendada</p>
-                <p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">Tu cita fue modificada. Ver detalles.</p>
-              </div>
-            </div>
-          </div>
-          <style>
-            @keyframes pulse-card {
-              0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
-              50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5); }
-            }
-            @keyframes bell-shake {
-              0%, 100% { transform: rotate(0deg); }
-              10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); }
-              20%, 40%, 60%, 80% { transform: rotate(5deg); }
-            }
-          </style>
-        ` : ''}
+        ${(() => {
+          // Detectar si hay diferencias entre lo solicitado y lo asignado
+          if (org.status !== ORG_STATUS.MINISTRO_SCHEDULED || !org.ministroData) return '';
+
+          const requestedDate = org.electionDate;
+          const requestedTime = org.electionTime;
+          const requestedLocation = org.assemblyAddress || org.organization?.address;
+
+          const assignedDate = org.ministroData.scheduledDate;
+          const assignedTime = org.ministroData.scheduledTime;
+          const assignedLocation = org.ministroData.location;
+
+          // Comparar valores (normalizar fechas para comparación)
+          const dateChanged = requestedDate && assignedDate && requestedDate.split('T')[0] !== assignedDate.split('T')[0];
+          const timeChanged = requestedTime && assignedTime && requestedTime !== assignedTime;
+          const locationChanged = requestedLocation && assignedLocation && requestedLocation.toLowerCase().trim() !== assignedLocation.toLowerCase().trim();
+
+          const hasChanges = org.appointmentWasModified || dateChanged || timeChanged || locationChanged;
+
+          if (!hasChanges) return '';
+
+          // Formatear fechas para mostrar
+          const formatDateShort = (dateStr) => {
+            if (!dateStr) return '-';
+            try {
+              const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+              const [y, m, day] = d.split('-').map(Number);
+              return new Date(y, m - 1, day).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+            } catch { return dateStr; }
+          };
+
+          const changes = [];
+          if (dateChanged) changes.push('📅 ' + formatDateShort(requestedDate) + ' → ' + formatDateShort(assignedDate));
+          if (timeChanged) changes.push('🕐 ' + requestedTime + ' → ' + assignedTime);
+          if (locationChanged) changes.push('📍 Lugar modificado');
+
+          return '<div class="org-appointment-modified-notice" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 12px; margin-top: 12px; animation: pulse-card 2s ease-in-out infinite;">' +
+            '<div style="display: flex; align-items: flex-start; gap: 10px;">' +
+              '<span style="font-size: 24px; animation: bell-shake 1s ease-in-out infinite;">🔔</span>' +
+              '<div style="flex: 1;">' +
+                '<p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Cita con Cambios</p>' +
+                '<p style="margin: 4px 0 0; font-size: 11px; color: #a16207; line-height: 1.4;">' + changes.join(' • ') + '</p>' +
+                '<p style="margin: 4px 0 0; font-size: 10px; color: #b45309;">Click para ver detalles</p>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<style>' +
+            '@keyframes pulse-card { 0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); } 50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5); } }' +
+            '@keyframes bell-shake { 0%, 100% { transform: rotate(0deg); } 10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); } 20%, 40%, 60%, 80% { transform: rotate(5deg); } }' +
+          '</style>';
+        })()}
 
         ${canContinueWizard ? `
           <div class="org-continue-wizard-notice" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #10b981; border-radius: 12px; padding: 14px; margin-top: 12px;">
@@ -1620,15 +1649,27 @@ function viewOrganization(orgId) {
     let formattedDate = '-';
     const dateToUse = org.ministroData.scheduledDate || org.electionDate;
     if (dateToUse) {
-      const [year, month, day] = dateToUse.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      formattedDate = date.toLocaleDateString('es-CL', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+      try {
+        let dateStr = dateToUse;
+        // Si tiene 'T' (ISO format), tomar solo la parte de la fecha
+        if (typeof dateStr === 'string' && dateStr.includes('T')) {
+          dateStr = dateStr.split('T')[0];
+        }
+        const [year, month, day] = String(dateStr).split('-').map(Number);
+        if (year && month && day) {
+          const date = new Date(year, month - 1, day, 12, 0, 0);
+          formattedDate = date.toLocaleDateString('es-CL', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+        }
+      } catch (e) {
+        console.error('Error parseando fecha:', e);
+        formattedDate = '-';
+      }
     }
 
     const timeToUse = org.ministroData.scheduledTime || org.electionTime || '-';
@@ -1637,6 +1678,64 @@ function viewOrganization(orgId) {
     // Verificar si la cita fue modificada
     const wasModified = org.appointmentWasModified && org.appointmentChanges && org.appointmentChanges.length > 0;
     const lastChange = wasModified ? org.appointmentChanges[org.appointmentChanges.length - 1] : null;
+
+    // Detectar diferencias entre lo solicitado y lo asignado
+    const requestedDate = org.electionDate;
+    const requestedTime = org.electionTime;
+    const requestedLocation = org.assemblyAddress || org.organization?.address;
+
+    const assignedDate = org.ministroData.scheduledDate;
+    const assignedTime = org.ministroData.scheduledTime;
+    const assignedLocation = org.ministroData.location;
+
+    // Normalizar fechas para comparación
+    const normDate = (d) => d ? (d.includes('T') ? d.split('T')[0] : d) : null;
+    const dateChanged = requestedDate && assignedDate && normDate(requestedDate) !== normDate(assignedDate);
+    const timeChanged = requestedTime && assignedTime && requestedTime !== assignedTime;
+    const locationChanged = requestedLocation && assignedLocation && requestedLocation.toLowerCase().trim() !== assignedLocation.toLowerCase().trim();
+
+    const hasAnyChanges = dateChanged || timeChanged || locationChanged;
+
+    // Función para formatear fechas de forma corta
+    const formatDateCompare = (dateStr) => {
+      if (!dateStr) return '-';
+      try {
+        const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+        const [y, m, day] = d.split('-').map(Number);
+        return new Date(y, m - 1, day).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+      } catch { return dateStr; }
+    };
+
+    // HTML de comparación solicitado vs asignado
+    let changesComparisonHTML = '';
+    if (hasAnyChanges) {
+      changesComparisonHTML = `
+        <div style="background: rgba(251, 191, 36, 0.15); border: 2px solid #fbbf24; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <span style="font-size: 24px;">📋</span>
+            <div>
+              <h4 style="margin: 0; color: #92400e; font-weight: 700; font-size: 16px;">Cambios respecto a tu solicitud</h4>
+              <p style="margin: 2px 0 0; color: #a16207; font-size: 12px;">El administrador ajustó los siguientes datos:</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="background: rgba(239, 68, 68, 0.1); border-radius: 12px; padding: 14px; border-left: 4px solid #ef4444;">
+              <p style="margin: 0 0 10px 0; font-size: 11px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">📤 Lo que solicitaste</p>
+              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #b91c1c;"><strong>Fecha:</strong> ${formatDateCompare(requestedDate)}</p>` : ''}
+              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #b91c1c;"><strong>Hora:</strong> ${requestedTime}</p>` : ''}
+              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #b91c1c;"><strong>Lugar:</strong> ${requestedLocation}</p>` : ''}
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border-radius: 12px; padding: 14px; border-left: 4px solid #10b981;">
+              <p style="margin: 0 0 10px 0; font-size: 11px; color: #065f46; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">✅ Lo confirmado</p>
+              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #047857;"><strong>Fecha:</strong> ${formatDateCompare(assignedDate)}</p>` : ''}
+              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #047857;"><strong>Hora:</strong> ${assignedTime}</p>` : ''}
+              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #047857;"><strong>Lugar:</strong> ${assignedLocation}</p>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     // Generar HTML de alerta de modificación si aplica
     let modificationAlertHTML = '';
@@ -1706,6 +1805,8 @@ function viewOrganization(orgId) {
         </div>
 
         ${modificationAlertHTML}
+
+        ${changesComparisonHTML}
 
         <!-- Información del Ministro -->
         <div style="background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
