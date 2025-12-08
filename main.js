@@ -1710,27 +1710,27 @@ function viewOrganization(orgId) {
     let changesComparisonHTML = '';
     if (hasAnyChanges) {
       changesComparisonHTML = `
-        <div style="background: rgba(251, 191, 36, 0.15); border: 2px solid #fbbf24; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f3f4f6;">
             <span style="font-size: 24px;">📋</span>
             <div>
-              <h4 style="margin: 0; color: #92400e; font-weight: 700; font-size: 16px;">Cambios respecto a tu solicitud</h4>
-              <p style="margin: 2px 0 0; color: #a16207; font-size: 12px;">El administrador ajustó los siguientes datos:</p>
+              <h4 style="margin: 0; color: #1f2937; font-weight: 700; font-size: 16px;">Cambios respecto a tu solicitud</h4>
+              <p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">El administrador ajustó los siguientes datos:</p>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="background: rgba(239, 68, 68, 0.1); border-radius: 12px; padding: 14px; border-left: 4px solid #ef4444;">
+            <div style="background: #fef2f2; border-radius: 12px; padding: 14px; border-left: 4px solid #ef4444;">
               <p style="margin: 0 0 10px 0; font-size: 11px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">📤 Lo que solicitaste</p>
-              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #b91c1c;"><strong>Fecha:</strong> ${formatDateCompare(requestedDate)}</p>` : ''}
-              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #b91c1c;"><strong>Hora:</strong> ${requestedTime}</p>` : ''}
-              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #b91c1c;"><strong>Lugar:</strong> ${requestedLocation}</p>` : ''}
+              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Fecha:</strong> ${formatDateCompare(requestedDate)}</p>` : ''}
+              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Hora:</strong> ${requestedTime}</p>` : ''}
+              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Lugar:</strong> ${requestedLocation}</p>` : ''}
             </div>
-            <div style="background: rgba(16, 185, 129, 0.1); border-radius: 12px; padding: 14px; border-left: 4px solid #10b981;">
+            <div style="background: #ecfdf5; border-radius: 12px; padding: 14px; border-left: 4px solid #10b981;">
               <p style="margin: 0 0 10px 0; font-size: 11px; color: #065f46; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">✅ Lo confirmado</p>
-              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #047857;"><strong>Fecha:</strong> ${formatDateCompare(assignedDate)}</p>` : ''}
-              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #047857;"><strong>Hora:</strong> ${assignedTime}</p>` : ''}
-              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #047857;"><strong>Lugar:</strong> ${assignedLocation}</p>` : ''}
+              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Fecha:</strong> ${formatDateCompare(assignedDate)}</p>` : ''}
+              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Hora:</strong> ${assignedTime}</p>` : ''}
+              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Lugar:</strong> ${assignedLocation}</p>` : ''}
             </div>
           </div>
         </div>
