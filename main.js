@@ -1855,15 +1855,136 @@ function viewOrganization(orgId) {
           </div>
         </div>
 
-        <!-- Aviso -->
-        <div style="margin-top: 20px; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;">
-          <div style="font-size: 20px;">💡</div>
-          <div>
-            <p style="margin: 0; font-size: 14px; line-height: 1.5;">
-              <strong>Importante:</strong> Los miembros que conformarán el Directorio Provisorio deben asistir puntualmente con sus cédulas de identidad.
-              El Ministro de Fe presidirá la asamblea y validará las firmas del directorio.
-            </p>
+      </div>
+
+      <!-- Sección Informativa para la Asamblea -->
+      <div style="background: white; border-radius: 20px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 20px 0; color: #1f2937; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+          📚 Prepárate para la Asamblea Constitutiva
+        </h4>
+
+        <!-- ¿Qué es el Ministro de Fe? -->
+        <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #10b981;">
+          <h5 style="margin: 0 0 8px 0; color: #065f46; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            ⚖️ ¿Quién es el Ministro de Fe?
+          </h5>
+          <p style="margin: 0; color: #047857; font-size: 13px; line-height: 1.6;">
+            <strong>${org.ministroData?.name || 'El Ministro de Fe asignado'}</strong> es un funcionario municipal autorizado para dar fe pública de los actos realizados en la asamblea.
+            Su rol es verificar la identidad de los asistentes, certificar las firmas y validar que el proceso se realice conforme a la Ley 19.418.
+          </p>
+        </div>
+
+        <!-- ¿Qué se hará en la asamblea? -->
+        <div style="background: #eff6ff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #3b82f6;">
+          <h5 style="margin: 0 0 12px 0; color: #1e40af; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            📋 ¿Qué se hará en la Asamblea?
+          </h5>
+          <ol style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 13px; line-height: 1.8;">
+            <li><strong>Lectura del Acta de Constitución</strong> - Se leerá el documento que formaliza la creación de la organización</li>
+            <li><strong>Aprobación de Estatutos</strong> - Los socios fundadores aprobarán las normas internas</li>
+            <li><strong>Elección del Directorio Provisorio</strong> - Se elegirá presidente, secretario y tesorero</li>
+            <li><strong>Firma del Acta</strong> - Todos los miembros del directorio firmarán ante el Ministro de Fe</li>
+            <li><strong>Certificación</strong> - El Ministro certificará la validez del acto</li>
+          </ol>
+        </div>
+
+        <!-- Quiénes deben asistir -->
+        <div style="background: #fef3c7; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #f59e0b;">
+          <h5 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            👥 ¿Quiénes deben asistir? (OBLIGATORIO)
+          </h5>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div style="background: white; border-radius: 8px; padding: 12px;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio Provisorio</p>
+              ${(() => {
+                const directors = org.members?.filter(m => ['president', 'secretary', 'treasurer'].includes(m.role)) || [];
+                if (directors.length === 0) {
+                  return '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros del directorio definidos en tu solicitud</p>';
+                }
+                return directors.map(m => {
+                  const roleNames = { president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero' };
+                  return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>' + (roleNames[m.role] || m.role) + ':</strong> ' + (m.firstName || '') + ' ' + (m.lastName || '') + '</p>';
+                }).join('');
+              })()}
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 12px;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Comisión Electoral</p>
+              ${(() => {
+                const commission = org.electoralCommission || [];
+                if (commission.length === 0) {
+                  return '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros de la comisión definidos en tu solicitud</p>';
+                }
+                return commission.map(m => {
+                  return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '') + '</p>';
+                }).join('');
+              })()}
+            </div>
           </div>
+        </div>
+
+        <!-- Qué llevar -->
+        <div style="background: #fdf2f8; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #ec4899;">
+          <h5 style="margin: 0 0 12px 0; color: #9d174d; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            🎒 ¿Qué debes llevar?
+          </h5>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">🪪</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Cédula de Identidad</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">De TODOS los asistentes</p>
+              </div>
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📕</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Actas</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Foliado y empastado</p>
+              </div>
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📗</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Socios</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Registro de miembros</p>
+              </div>
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📘</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Contabilidad</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Para registro financiero</p>
+              </div>
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">🖊️</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Lápiz Azul</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Para firmar documentos</p>
+              </div>
+            </div>
+            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📄</span>
+              <div>
+                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Estatutos Impresos</p>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">3 copias firmadas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consejos finales -->
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 16px; color: white;">
+          <h5 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            💡 Consejos Importantes
+          </h5>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+            <li>Lleguen <strong>15 minutos antes</strong> de la hora programada</li>
+            <li>Asegúrense de que <strong>todos los miembros del directorio</strong> estén presentes</li>
+            <li>Verifiquen que las <strong>cédulas de identidad estén vigentes</strong></li>
+            <li>Los libros deben estar <strong>foliados (numerados) y empastados</strong></li>
+            <li>Si tienen dudas, pueden contactar a la municipalidad</li>
+          </ul>
         </div>
       </div>
     `;
