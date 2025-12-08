@@ -34,6 +34,28 @@ const FUNCIONAL_TYPES = {
   'OTRA_FUNCIONAL': 'Otra'
 };
 
+// Helper: Obtener nombre legible del tipo de organización
+function getOrgTypeName(type) {
+  const allTypes = {
+    ...TERRITORIAL_TYPES,
+    ...FUNCIONAL_TYPES,
+    'CLUB_JUVENIL': 'Club Juvenil',
+    'CLUB_CULTURAL': 'Club Cultural',
+    'CENTRO_MADRES': 'Centro de Madres',
+    'CENTRO_CULTURAL': 'Centro Cultural',
+    'AGRUPACION_CULTURAL': 'Agrupación Cultural',
+    'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
+    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental',
+    'COMITE_ALLEGADOS': 'Comité de Allegados',
+    'COMITE_APR': 'Comité de Agua Potable Rural',
+    'ORG_SCOUT': 'Organización Scout',
+    'GRUPO_TEATRO': 'Grupo de Teatro',
+    'CORO': 'Coro o Agrupación Musical',
+    'TALLER_ARTESANIA': 'Taller de Artesanía'
+  };
+  return allTypes[type] || 'Organización Comunitaria';
+}
+
 export class WizardController {
   constructor() {
     this.currentStep = 1;
@@ -4850,7 +4872,7 @@ Vocal`;
     // Organización
     const org = this.formData.organization;
     document.getElementById('review-organization').innerHTML = `
-      <p><strong>Tipo:</strong> ${org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Funcional'}</p>
+      <p><strong>Tipo:</strong> ${getOrgTypeName(org.type)}</p>
       <p><strong>Nombre:</strong> ${org.name}</p>
       <p><strong>Región:</strong> ${org.region}</p>
       <p><strong>Comuna:</strong> ${org.commune}</p>
@@ -5215,9 +5237,7 @@ Vocal`;
     if (!stepContent) return;
 
     // Reemplazar el contenido del paso 2 con el formulario de solicitud de Ministro
-    const orgTypeName = this.formData.organization.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' :
-                        this.formData.organization.type === 'ORG_COMUNITARIA' ? 'Organización Comunitaria Funcional' :
-                        this.formData.organization.type || 'N/A';
+    const orgTypeName = getOrgTypeName(this.formData.organization.type);
 
     stepContent.innerHTML = `
       <div class="ministro-request-screen">

@@ -24,6 +24,24 @@ const MARGIN_RIGHT = 20;
 const MARGIN_TOP = 15;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 
+// Helper: Obtener nombre legible del tipo de organización
+function getOrgTypeName(type) {
+  const types = {
+    'JUNTA_VECINOS': 'Junta de Vecinos', 'COMITE_VECINOS': 'Comité de Vecinos',
+    'CLUB_DEPORTIVO': 'Club Deportivo', 'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
+    'CLUB_JUVENIL': 'Club Juvenil', 'CLUB_CULTURAL': 'Club Cultural',
+    'CENTRO_MADRES': 'Centro de Madres', 'CENTRO_PADRES': 'Centro de Padres y Apoderados',
+    'CENTRO_CULTURAL': 'Centro Cultural', 'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
+    'AGRUPACION_CULTURAL': 'Agrupación Cultural', 'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
+    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental', 'COMITE_VIVIENDA': 'Comité de Vivienda',
+    'COMITE_ALLEGADOS': 'Comité de Allegados', 'COMITE_APR': 'Comité de Agua Potable Rural',
+    'ORG_SCOUT': 'Organización Scout', 'ORG_MUJERES': 'Organización de Mujeres',
+    'GRUPO_TEATRO': 'Grupo de Teatro', 'CORO': 'Coro o Agrupación Musical',
+    'TALLER_ARTESANIA': 'Taller de Artesanía', 'OTRA_FUNCIONAL': 'Otra Organización Funcional'
+  };
+  return types[type] || type || 'Organización Comunitaria';
+}
+
 class PDFService {
   constructor() {
     this.currentY = 0;
@@ -214,7 +232,7 @@ class PDFService {
     doc.setFont('helvetica', 'bold');
     doc.text('TIPO DE ORGANIZACIÓN', MARGIN_LEFT, this.currentY);
     doc.setFont('helvetica', 'normal');
-    const orgType = org.organizationType || org.type || '_________________________________';
+    const orgType = getOrgTypeName(org.organizationType || org.type);
     doc.text(orgType, MARGIN_LEFT + 55, this.currentY);
     this.currentY += 8;
 
@@ -796,7 +814,7 @@ class PDFService {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
 
-    doc.text(`TIPO DE ORGANIZACIÓN: ${org.organizationType || org.type || '___________________________________________'}`, MARGIN_LEFT, this.currentY);
+    doc.text(`TIPO DE ORGANIZACIÓN: ${getOrgTypeName(org.organizationType || org.type)}`, MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
     doc.text(`NOMBRE DE LA ORGANIZACIÓN: ${org.organizationName || org.name || '_____________________________________'}`, MARGIN_LEFT, this.currentY);
