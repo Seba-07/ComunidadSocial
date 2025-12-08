@@ -16,6 +16,26 @@ import { apiService } from './src/services/ApiService.js';
 
 console.log('📦 main.js cargado');
 
+// Función global para abrir wizard con progreso guardado (accesible desde onclick)
+window.openLocalDraftWizard = function() {
+  console.log('openLocalDraftWizard llamada');
+  const wizard = new WizardController();
+  wizard.open();
+};
+
+// Función global para descartar borrador local
+window.discardLocalDraft = function() {
+  if (confirm('¿Estás seguro de que deseas descartar este borrador? Esta acción no se puede deshacer.')) {
+    localStorage.removeItem('wizardProgress');
+    showToast('Borrador descartado', 'info');
+    if (typeof renderOrganizations === 'function') {
+      renderOrganizations();
+    } else {
+      location.reload();
+    }
+  }
+};
+
 // Helper: Obtener icono según tipo de organización
 function getOrgIcon(type) {
   if (type === 'JUNTA_VECINOS' || type === 'COMITE_VECINOS') return '🏘️';
@@ -1076,12 +1096,8 @@ async function renderOrganizations() {
 
       card.querySelector('.btn-org-continue-draft')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (orgId === 'local-draft') {
-          // Continuar el wizard con el progreso guardado
-          openWizard();
-        } else {
-          continueDraftOrganization(orgId);
-        }
+        // Solo para drafts del servidor (no local-draft, que usa onclick)
+        continueDraftOrganization(orgId);
       });
 
       card.querySelector('.btn-org-discard-draft')?.addEventListener('click', (e) => {
@@ -1300,13 +1316,13 @@ function renderOrganizationCard(org) {
           </button>
         ` : ''}
         ${isLocalDraft ? `
-          <button class="btn-org-continue-draft" data-org-id="${orgId}" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;">
+          <button onclick="event.stopPropagation(); window.openLocalDraftWizard();" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
             Continuar
           </button>
-          <button class="btn-org-discard-draft" data-org-id="${orgId}" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 12px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Descartar borrador">
+          <button onclick="event.stopPropagation(); window.discardLocalDraft();" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 12px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Descartar borrador">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
