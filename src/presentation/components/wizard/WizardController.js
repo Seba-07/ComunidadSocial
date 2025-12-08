@@ -5656,8 +5656,8 @@ Vocal`;
               <path d="M22 36 L32 46 L50 28" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <h2>Pasos 1 a 4 Completados</h2>
-          <p>Has completado exitosamente la información básica, miembros fundadores, configuración y estatutos.</p>
+          <h2>Pasos 1 a 5 Completados</h2>
+          <p>Has completado exitosamente la información básica, miembros fundadores, configuración, estatutos, y el Directorio Provisorio con la Comisión Electoral.</p>
         </div>
 
         <!-- Info box -->
