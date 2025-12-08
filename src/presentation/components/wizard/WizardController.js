@@ -77,7 +77,10 @@ export class WizardController {
       documents: {},
       certificates: {},
       otherDocuments: [],
-      signatures: {} // Firmas por miembro: { memberId: { type, data, ... } }
+      signatures: {}, // Firmas por miembro: { memberId: { type, data, ... } }
+      // Campos del Paso 5: Directorio Provisorio y Certificados
+      directorioProvisorio: {},
+      certificatesStep5: {}
     };
     this.otherDocumentCounter = 0;
     this.currentSignatureMethod = 'draw';
@@ -268,7 +271,10 @@ export class WizardController {
         documents: savedProgress.formData.documents || {},
         certificates: savedProgress.formData.certificates || {},
         otherDocuments: savedProgress.formData.otherDocuments || [],
-        signatures: savedProgress.formData.signatures || {}
+        signatures: savedProgress.formData.signatures || {},
+        // Campos del Paso 5: Directorio Provisorio y Certificados
+        directorioProvisorio: savedProgress.formData.directorioProvisorio || {},
+        certificatesStep5: savedProgress.formData.certificatesStep5 || {}
       };
       this.currentStep = savedProgress.currentStep;
       // Restaurar organizationId si existe (para actualizar org existente)
