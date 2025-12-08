@@ -1967,11 +1967,33 @@ export class WizardController {
   }
 
   /**
-   * Pobla los selects de miembros con los miembros fundadores
+   * Pobla los selects de miembros con los miembros fundadores MAYORES DE 18 AÑOS
+   * Según la ley, solo mayores de edad pueden ser parte del Directorio y Comisión Electoral
    */
   populateMemberSelects() {
     const members = this.formData.members || [];
     const selects = document.querySelectorAll('.member-select');
+
+    // Filtrar solo miembros mayores de 18 años
+    const adultMembers = members.filter((member, index) => {
+      const age = this.calculateAge(member.birthDate);
+      return age !== null && age >= 18;
+    });
+
+    // Mostrar advertencia si no hay suficientes mayores de edad
+    if (adultMembers.length < 6) {
+      const warningEl = document.querySelector('.certificates-summary');
+      if (warningEl) {
+        const existingWarning = document.getElementById('no-adults-warning');
+        if (!existingWarning) {
+          const warning = document.createElement('div');
+          warning.id = 'no-adults-warning';
+          warning.style.cssText = 'background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 16px;';
+          warning.innerHTML = '<strong style="color: #991b1b;">⚠️ Atención:</strong> <span style="color: #991b1b;">Solo hay ' + adultMembers.length + ' miembros mayores de 18 años. Se requieren al menos 6 para completar el Directorio Provisorio (3) y la Comisión Electoral (3).</span>';
+          warningEl.parentNode.insertBefore(warning, warningEl);
+        }
+      }
+    }
 
     selects.forEach(select => {
       // Limpiar opciones existentes excepto la primera
@@ -1979,12 +2001,16 @@ export class WizardController {
         select.remove(1);
       }
 
-      // Agregar miembros
+      // Agregar solo miembros mayores de 18 años
       members.forEach((member, index) => {
-        const option = document.createElement('option');
-        option.value = index.toString();
-        option.textContent = member.firstName + ' ' + member.lastName + ' (' + (member.rut || 'Sin RUT') + ')';
-        select.appendChild(option);
+        const age = this.calculateAge(member.birthDate);
+        if (age !== null && age >= 18) {
+          const option = document.createElement('option');
+          option.value = index.toString();
+          const fullName = (member.firstName || member.primerNombre || '') + ' ' + (member.lastName || ((member.apellidoPaterno || '') + ' ' + (member.apellidoMaterno || '')).trim());
+          option.textContent = fullName.trim() + ' (' + (member.rut || 'Sin RUT') + ') - ' + age + ' años';
+          select.appendChild(option);
+        }
       });
     });
   }

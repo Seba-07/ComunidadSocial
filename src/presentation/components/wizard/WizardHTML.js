@@ -287,11 +287,14 @@ function getStep2HTML() {
           <div>
             <strong style="color: #166534; font-size: 14px;">¿Qué son los Miembros Fundadores?</strong>
             <p style="margin: 6px 0 0; color: #166534; font-size: 13px; line-height: 1.5;">
-              Son las personas que participarán en la <strong>Asamblea Constitutiva</strong> y firmarán el acta de constitución.
-              Serán los primeros socios oficiales de su organización.
+              Son las personas que serán los <strong>primeros socios oficiales</strong> de su organización y quedarán registrados en el acta constitutiva.
+              <strong>No es obligatorio que asistan a la Asamblea Constitutiva</strong>, solo deben estar inscritos.
             </p>
             <p style="margin: 8px 0 0; color: #15803d; font-size: 12px;">
               📌 <strong>Requisitos según Ley 19.418:</strong> Mínimo 15 personas mayores de 14 años que residan en la unidad vecinal.
+            </p>
+            <p style="margin: 4px 0 0; color: #15803d; font-size: 12px;">
+              ⚠️ <strong>Importante:</strong> Para el Directorio y Comisión Electoral se requieren al menos 6 miembros <strong>mayores de 18 años</strong>.
             </p>
           </div>
         </div>

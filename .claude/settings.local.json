@@ -27,7 +27,8 @@
       "Bash(vercel:*)",
       "Bash(netlify deploy:*)",
       "Bash(npm run build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(node scripts/clear-organizations.js:*)"
     ],
     "deny": [],
     "ask": []
