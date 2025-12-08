@@ -44,7 +44,7 @@
     --gradient-secondary: linear-gradient(135deg, #f0f7f0 0%, #e8f2e8 100%);
 
     /* Dimensiones */
-    --header-height: 100px;
+    --header-height: 64px;
     --bottom-nav-height: 72px;
     --border-radius-sm: 12px;
     --border-radius-md: 16px;
@@ -98,10 +98,10 @@ body {
 }
 
 .logo-img {
-    height: 120px;
-    width: auto;
+    height: 48px;
+    width: 48px;
     object-fit: contain;
-    max-width: 320px;
+    border-radius: 8px;
 }
 
 .header-title {
@@ -111,14 +111,6 @@ body {
 }
 
 @media (max-width: 480px) {
-    .header-title {
-        font-size: 16px;
-    }
-    .logo-img {
-        height: 90px;
-        width: auto;
-        max-width: 240px;
-    }
     .gallery-grid {
         grid-template-columns: 1fr;
     }
@@ -15643,6 +15635,74 @@ a.header-logo:hover {
         --bottom-nav-height: 64px;
     }
 
+    /* ===== HEADER MÓVIL ===== */
+    .header-content {
+        padding: 0 12px;
+    }
+
+    .header-logo {
+        gap: 8px;
+        flex: 1;
+        justify-content: flex-start;
+    }
+
+    .logo-img {
+        height: 36px !important;
+        width: 36px !important;
+    }
+
+    .header-title {
+        font-size: 15px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    /* Ocultar nombre de usuario en móvil, solo mostrar avatar */
+    .user-name-btn .user-name {
+        display: none !important;
+    }
+
+    .user-name-btn svg {
+        display: none !important;
+    }
+
+    .user-name-btn {
+        padding: 4px !important;
+        gap: 0 !important;
+    }
+
+    /* Avatar más pequeño en móvil */
+    .header-avatar {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .header-avatar span {
+        font-size: 10px !important;
+    }
+
+    /* Ocultar botón Salir en móvil (se accede desde menú) */
+    #logout-btn {
+        display: none !important;
+    }
+
+    /* Botones del header más compactos */
+    .menu-btn, .notifications-btn {
+        padding: 6px !important;
+    }
+
+    .menu-btn svg, .notifications-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* User info más compacto */
+    .user-info {
+        gap: 6px !important;
+    }
+
     /* Main content padding reducido */
     .main-content {
         padding: 16px 12px !important;
@@ -15918,18 +15978,43 @@ a.header-logo:hover {
         padding: 12px !important;
     }
 
-    /* Header más compacto */
+    /* ===== HEADER MÓVIL PEQUEÑO ===== */
     .header-content {
-        padding: 0 12px;
+        padding: 0 8px;
     }
 
+    /* En pantallas muy pequeñas, mostrar título más corto */
     .header-title {
-        font-size: 14px !important;
+        font-size: 13px !important;
+        max-width: 100px !important;
     }
 
     .logo-img {
-        width: 28px !important;
-        height: 28px !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .header-logo {
+        gap: 6px !important;
+    }
+
+    /* Reducir aún más el padding de botones */
+    .menu-btn, .notifications-btn {
+        padding: 4px !important;
+    }
+
+    .menu-btn svg, .notifications-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* Notification badge más pequeño */
+    .notification-badge {
+        width: 14px !important;
+        height: 14px !important;
+        font-size: 9px !important;
+        top: 0 !important;
+        right: 0 !important;
     }
 
     /* Títulos más pequeños */
