@@ -4,6 +4,7 @@
  */
 
 import { apiService } from './ApiService.js';
+import { scheduleService } from './ScheduleService.js';
 
 // Estados posibles de una organización
 export const ORG_STATUS = {
@@ -67,10 +68,34 @@ class OrganizationsService {
       this.loaded = true;
       // Cache local para acceso sincrónico
       localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+
+      // Limpiar reservas de organizaciones que ya no existen
+      this.cleanOrphanedBookings();
     } catch (e) {
       console.error('Error loading organizations from server:', e);
       // Fallback a cache local
       this.loadFromStorage();
+    }
+  }
+
+  /**
+   * Limpia reservas de organizaciones que ya no existen en el servidor
+   */
+  cleanOrphanedBookings() {
+    try {
+      // Obtener todas las organizaciones del servidor (para admin) o usar las cargadas
+      const allOrgsJson = localStorage.getItem('user_organizations');
+      const allOrgs = allOrgsJson ? JSON.parse(allOrgsJson) : [];
+
+      // Extraer IDs válidos
+      const validOrgIds = allOrgs.map(org => org._id || org.id).filter(id => id);
+
+      // Limpiar reservas huérfanas
+      if (validOrgIds.length > 0 || allOrgs.length === 0) {
+        scheduleService.cleanOrphanedBookings(validOrgIds);
+      }
+    } catch (e) {
+      console.error('Error limpiando reservas huérfanas:', e);
     }
   }
 
@@ -111,6 +136,10 @@ class OrganizationsService {
       const orgs = await apiService.getOrganizations();
       this.organizations = orgs;
       localStorage.setItem('user_organizations', JSON.stringify(orgs));
+
+      // Limpiar reservas de organizaciones que ya no existen
+      this.cleanOrphanedBookings();
+
       return orgs;
     } catch (e) {
       console.error('Error fetching organizations:', e);

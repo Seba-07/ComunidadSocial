@@ -480,6 +480,38 @@ class ScheduleService {
     localStorage.removeItem(this.storageKey);
     localStorage.removeItem(this.bookingsKey);
   }
+
+  /**
+   * Limpia solo las reservas (mantiene la configuración del calendario)
+   */
+  clearAllBookings() {
+    localStorage.removeItem(this.bookingsKey);
+    console.log('🗑️ Todas las reservas han sido eliminadas');
+  }
+
+  /**
+   * Limpia reservas de organizaciones que ya no existen
+   * @param {Array} validOrgIds - Lista de IDs de organizaciones válidas
+   * @returns {number} Cantidad de reservas eliminadas
+   */
+  cleanOrphanedBookings(validOrgIds) {
+    const bookings = this.getAllBookings();
+    const validIds = new Set(validOrgIds.map(id => String(id)));
+
+    const validBookings = bookings.filter(booking => {
+      const orgId = String(booking.organizationId);
+      return validIds.has(orgId);
+    });
+
+    const removedCount = bookings.length - validBookings.length;
+
+    if (removedCount > 0) {
+      this.saveBookings(validBookings);
+      console.log(`🧹 Se eliminaron ${removedCount} reservas huérfanas (organizaciones eliminadas)`);
+    }
+
+    return removedCount;
+  }
 }
 
 // Instancia singleton

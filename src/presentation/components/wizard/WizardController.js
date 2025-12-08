@@ -857,7 +857,8 @@ export class WizardController {
     // Validar que se subieron todos los certificados
     const certs = this.formData.certificatesStep5 || {};
     const requiredCerts = ['presidente', 'secretario', 'tesorero', 'comision1', 'comision2', 'comision3'];
-    const missingCerts = requiredCerts.filter(key => !certs[key]);
+    // Verificar que cada certificado tenga datos (base64 o al menos nombre)
+    const missingCerts = requiredCerts.filter(key => !certs[key] || (!certs[key].base64 && !certs[key].name));
 
     if (missingCerts.length > 0) {
       const missingNames = {
@@ -2138,7 +2139,10 @@ export class WizardController {
           if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
 
-            // Guardar el archivo
+            // Convertir archivo a base64 para poder guardarlo en localStorage
+            const base64Data = await this.fileToBase64(file);
+
+            // Guardar el archivo (con base64 en lugar de File object)
             if (!this.formData.certificatesStep5) {
               this.formData.certificatesStep5 = {};
             }
@@ -2146,7 +2150,7 @@ export class WizardController {
               name: file.name,
               size: file.size,
               type: file.type,
-              file: file
+              base64: base64Data // Guardar como base64 en lugar de File object
             };
 
             // Actualizar UI
@@ -2177,6 +2181,18 @@ export class WizardController {
   }
 
   /**
+   * Convierte un archivo a base64
+   */
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  /**
    * Actualiza los badges de estado de certificados
    */
   updateCertificateBadges() {
@@ -2203,7 +2219,9 @@ export class WizardController {
     Object.keys(badgeMap).forEach(key => {
       const badge = document.getElementById(badgeMap[key]);
       if (badge) {
-        if (certs[key]) {
+        // Verificar que el certificado tenga datos válidos (base64 o nombre)
+        const hasCert = certs[key] && (certs[key].base64 || certs[key].name);
+        if (hasCert) {
           badge.textContent = '✅ ' + labelMap[key];
           badge.style.background = '#dcfce7';
           badge.style.color = '#166534';
@@ -2294,30 +2312,33 @@ export class WizardController {
 
     // Restaurar nombres de archivos de certificados
     const certs = this.formData.certificatesStep5 || {};
-    const certMap = {
-      'presidente': 'cert-presidente-name',
-      'secretario': 'cert-secretario-name',
-      'tesorero': 'cert-tesorero-name',
-      'comision1': 'cert-com1-name',
-      'comision2': 'cert-com2-name',
-      'comision3': 'cert-com3-name'
-    };
+    const certConfig = [
+      { key: 'presidente', inputId: 'cert-presidente', nameId: 'cert-presidente-name' },
+      { key: 'secretario', inputId: 'cert-secretario', nameId: 'cert-secretario-name' },
+      { key: 'tesorero', inputId: 'cert-tesorero', nameId: 'cert-tesorero-name' },
+      { key: 'comision1', inputId: 'cert-com1', nameId: 'cert-com1-name' },
+      { key: 'comision2', inputId: 'cert-com2', nameId: 'cert-com2-name' },
+      { key: 'comision3', inputId: 'cert-com3', nameId: 'cert-com3-name' }
+    ];
 
-    Object.keys(certMap).forEach(key => {
-      if (certs[key]) {
-        const nameEl = document.getElementById(certMap[key]);
+    certConfig.forEach(({ key, inputId, nameId }) => {
+      if (certs[key] && certs[key].name) {
+        // Actualizar nombre del archivo
+        const nameEl = document.getElementById(nameId);
         if (nameEl) {
           nameEl.textContent = certs[key].name;
           nameEl.style.color = '#22c55e';
         }
 
         // Actualizar botón
-        const inputId = key.replace('comision', 'cert-com').replace('presidente', 'cert-presidente').replace('secretario', 'cert-secretario').replace('tesorero', 'cert-tesorero');
-        const input = document.getElementById(inputId.includes('cert-') ? inputId : 'cert-' + key);
+        const input = document.getElementById(inputId);
         if (input) {
           const button = input.parentElement?.querySelector('.btn-upload-cert');
           if (button) {
-            button.textContent = '✅ ' + certs[key].name.substring(0, 15) + '...';
+            const shortName = certs[key].name.length > 15
+              ? certs[key].name.substring(0, 15) + '...'
+              : certs[key].name;
+            button.textContent = '✅ ' + shortName;
             button.style.background = '#dcfce7';
             button.style.borderColor = '#22c55e';
             button.style.color = '#166534';
