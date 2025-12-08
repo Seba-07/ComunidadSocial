@@ -1962,6 +1962,9 @@ export class WizardController {
     // Restaurar datos guardados si existen
     this.restoreStep5Data();
 
+    // Actualizar opciones deshabilitadas según selecciones previas
+    this.updateDisabledOptions();
+
     // Actualizar el estado de los badges de certificados
     this.updateCertificateBadges();
   }
@@ -2028,10 +2031,64 @@ export class WizardController {
       const select = document.getElementById(selectId);
       if (select) {
         select.addEventListener('change', () => {
-          this.validateUniqueSelections();
+          this.updateDisabledOptions();
           this.saveStep5Data();
         });
       }
+    });
+  }
+
+  /**
+   * Actualiza las opciones deshabilitadas en todos los selects
+   * Los miembros ya seleccionados en un cargo quedan deshabilitados en los demás
+   */
+  updateDisabledOptions() {
+    const allSelectIds = [
+      'dir-presidente', 'dir-secretario', 'dir-tesorero',
+      'com-miembro1', 'com-miembro2', 'com-miembro3'
+    ];
+
+    // Obtener todos los valores seleccionados actualmente
+    const selectedValues = {};
+    allSelectIds.forEach(selectId => {
+      const select = document.getElementById(selectId);
+      if (select && select.value) {
+        selectedValues[selectId] = select.value;
+      }
+    });
+
+    // Actualizar cada select
+    allSelectIds.forEach(selectId => {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      const currentValue = select.value;
+
+      // Para cada opción en este select
+      Array.from(select.options).forEach(option => {
+        if (option.value === '') return; // Saltar la opción vacía
+
+        // Verificar si este valor está seleccionado en OTRO select
+        let isSelectedElsewhere = false;
+        for (const [otherSelectId, otherValue] of Object.entries(selectedValues)) {
+          if (otherSelectId !== selectId && otherValue === option.value) {
+            isSelectedElsewhere = true;
+            break;
+          }
+        }
+
+        // Deshabilitar si está seleccionado en otro lugar
+        option.disabled = isSelectedElsewhere;
+
+        // Agregar estilo visual para opciones deshabilitadas
+        if (isSelectedElsewhere) {
+          option.style.color = '#9ca3af';
+          option.style.fontStyle = 'italic';
+        } else {
+          option.style.color = '';
+          option.style.fontStyle = '';
+        }
+      });
     });
   }
 
@@ -2052,17 +2109,11 @@ export class WizardController {
       if (select && select.value) {
         if (selectedValues.includes(select.value)) {
           hasDuplicates = true;
-          select.style.borderColor = '#ef4444';
         } else {
           selectedValues.push(select.value);
-          select.style.borderColor = '';
         }
       }
     });
-
-    if (hasDuplicates) {
-      showToast('Un miembro no puede tener más de un cargo', 'warning');
-    }
 
     return !hasDuplicates;
   }

@@ -288,13 +288,28 @@ function getStep2HTML() {
             <strong style="color: #166534; font-size: 14px;">¿Qué son los Miembros Fundadores?</strong>
             <p style="margin: 6px 0 0; color: #166534; font-size: 13px; line-height: 1.5;">
               Son las personas que serán los <strong>primeros socios oficiales</strong> de su organización y quedarán registrados en el acta constitutiva.
-              <strong>No es obligatorio que asistan a la Asamblea Constitutiva</strong>, solo deben estar inscritos.
             </p>
             <p style="margin: 8px 0 0; color: #15803d; font-size: 12px;">
               📌 <strong>Requisitos según Ley 19.418:</strong> Mínimo 15 personas mayores de 14 años que residan en la unidad vecinal.
             </p>
             <p style="margin: 4px 0 0; color: #15803d; font-size: 12px;">
               ⚠️ <strong>Importante:</strong> Para el Directorio y Comisión Electoral se requieren al menos 6 miembros <strong>mayores de 18 años</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Box ASISTENCIA -->
+      <div class="info-box info-box-warning mb-4" style="background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border: 2px solid #eab308; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">📢</span>
+          <div>
+            <strong style="color: #854d0e; font-size: 14px;">¿Quién debe asistir a la Asamblea Constitutiva?</strong>
+            <p style="margin: 6px 0 0; color: #854d0e; font-size: 13px; line-height: 1.5;">
+              <strong style="color: #dc2626;">❌ Los miembros fundadores NO están obligados a asistir</strong> a la Asamblea Constitutiva con el Ministro de Fe.
+            </p>
+            <p style="margin: 6px 0 0; color: #854d0e; font-size: 13px; line-height: 1.5;">
+              <strong style="color: #16a34a;">✅ SÍ deben asistir OBLIGATORIAMENTE:</strong> El Directorio Provisorio (Presidente, Secretario, Tesorero) y los 3 miembros de la Comisión Electoral.
             </p>
           </div>
         </div>
@@ -562,6 +577,23 @@ export function getStep5HTML_Comision() {
             </p>
             <p style="margin: 8px 0 0; color: #ea580c; font-size: 12px;">
               📅 <strong>Plazo:</strong> El Directorio Definitivo debe ser elegido dentro de los 90 días siguientes a la obtención de la personalidad jurídica.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Box IMPORTANTE: Asistencia obligatoria -->
+      <div class="info-box info-box-danger mb-4" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 24px;">🚨</span>
+          <div>
+            <strong style="color: #991b1b; font-size: 14px;">ASISTENCIA OBLIGATORIA A LA ASAMBLEA</strong>
+            <p style="margin: 6px 0 0; color: #991b1b; font-size: 13px; line-height: 1.5;">
+              <strong>Todos los miembros del Directorio Provisorio y la Comisión Electoral DEBEN asistir</strong>
+              a la Asamblea Constitutiva con el Ministro de Fe. Sin su presencia, no se podrá realizar la asamblea.
+            </p>
+            <p style="margin: 8px 0 0; color: #dc2626; font-size: 12px;">
+              ✅ <strong>Deben asistir:</strong> Presidente, Secretario, Tesorero + 3 miembros de la Comisión Electoral (6 personas)
             </p>
           </div>
         </div>
