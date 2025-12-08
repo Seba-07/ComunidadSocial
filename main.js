@@ -1025,8 +1025,18 @@ function initOrganizations() {
 async function renderOrganizations() {
   // Usar getCurrentUserOrganizations para mostrar solo las del usuario actual
   const organizations = await organizationsService.getCurrentUserOrganizations();
-  const hasOrgs = organizations.length > 0;
-  console.log('📋 Organizaciones cargadas:', organizations.length, organizations);
+
+  // Verificar si hay un progreso guardado en localStorage
+  const savedProgress = getSavedWizardProgress();
+
+  // Combinar organizaciones con el borrador local si existe
+  let allOrganizations = [...organizations];
+  if (savedProgress) {
+    allOrganizations.unshift(savedProgress); // Agregar al inicio
+  }
+
+  const hasOrgs = allOrganizations.length > 0;
+  console.log('📋 Organizaciones cargadas:', allOrganizations.length, allOrganizations);
 
   const noOrgsSection = document.getElementById('no-organizations');
   const orgsList = document.getElementById('organizations-list');
@@ -1043,7 +1053,7 @@ async function renderOrganizations() {
     if (btnNuevaOrg) btnNuevaOrg.style.display = 'flex';
 
     // Renderizar cards de organizaciones
-    orgsList.innerHTML = organizations.map(org => renderOrganizationCard(org)).join('');
+    orgsList.innerHTML = allOrganizations.map(org => renderOrganizationCard(org)).join('');
 
     // Agregar event listeners a las cards
     orgsList.querySelectorAll('.org-card').forEach(card => {
@@ -1066,7 +1076,21 @@ async function renderOrganizations() {
 
       card.querySelector('.btn-org-continue-draft')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        continueDraftOrganization(orgId);
+        if (orgId === 'local-draft') {
+          // Continuar el wizard con el progreso guardado
+          openWizard();
+        } else {
+          continueDraftOrganization(orgId);
+        }
+      });
+
+      card.querySelector('.btn-org-discard-draft')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('¿Estás seguro de que deseas descartar este borrador? Esta acción no se puede deshacer.')) {
+          localStorage.removeItem('wizardProgress');
+          showToast('Borrador descartado', 'info');
+          renderOrganizations(); // Re-renderizar sin el borrador
+        }
       });
     });
   } else {
@@ -1078,13 +1102,61 @@ async function renderOrganizations() {
   }
 }
 
+// Helper: Obtener progreso guardado del wizard como objeto de organización
+function getSavedWizardProgress() {
+  try {
+    const saved = localStorage.getItem('wizardProgress');
+    if (!saved) return null;
+
+    const progress = JSON.parse(saved);
+
+    // Verificar que no sea muy antiguo (7 días)
+    const savedDate = new Date(progress.savedAt);
+    const now = new Date();
+    const daysDiff = (now - savedDate) / (1000 * 60 * 60 * 24);
+
+    if (daysDiff >= 7) {
+      localStorage.removeItem('wizardProgress');
+      return null;
+    }
+
+    // Verificar que tenga datos mínimos de organización
+    const orgData = progress.formData?.organization;
+    if (!orgData || !orgData.name) {
+      // Si no tiene nombre, no mostrar (está muy incompleto)
+      return null;
+    }
+
+    // Crear objeto de organización falso para mostrar en el dashboard
+    return {
+      id: 'local-draft',
+      _id: 'local-draft',
+      status: 'draft',
+      isLocalDraft: true,
+      organizationType: orgData.type,
+      organizationName: orgData.name,
+      address: orgData.address,
+      comuna: orgData.commune || 'Renca',
+      organization: orgData,
+      members: progress.formData?.members || [],
+      createdAt: progress.savedAt,
+      currentStep: progress.currentStep,
+      totalSteps: 8
+    };
+  } catch (e) {
+    console.error('Error loading wizard progress:', e);
+    return null;
+  }
+}
+
 function renderOrganizationCard(org) {
   const statusLabel = ORG_STATUS_LABELS[org.status] || org.status;
   const statusColor = ORG_STATUS_COLORS[org.status] || '#6b7280';
   const isApproved = org.status === ORG_STATUS.APPROVED;
   const isPending = [ORG_STATUS.PENDING_REVIEW, ORG_STATUS.IN_REVIEW, ORG_STATUS.SENT_TO_REGISTRY].includes(org.status);
   const isRejected = org.status === ORG_STATUS.REJECTED;
-  const isDraft = org.status === ORG_STATUS.DRAFT;
+  const isDraft = org.status === ORG_STATUS.DRAFT || org.status === 'draft';
+  const isLocalDraft = org.isLocalDraft === true;
   const canContinueWizard = org.status === ORG_STATUS.MINISTRO_APPROVED;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
@@ -1136,8 +1208,8 @@ function renderOrganizationCard(org) {
     <div class="org-card ${isApproved ? 'org-approved' : ''} ${isRejected ? 'org-rejected' : ''} ${isDraft ? 'org-draft' : ''}" data-org-id="${orgId}">
       <div class="org-card-header">
         <div class="org-type-icon">${typeIcon}</div>
-        <div class="org-status-badge" style="background: ${statusColor}20; color: ${statusColor}">
-          ${isDraft ? '📝 Guardado' : statusLabel}
+        <div class="org-status-badge" style="background: ${isLocalDraft ? '#6366f120' : statusColor + '20'}; color: ${isLocalDraft ? '#6366f1' : statusColor}">
+          ${isLocalDraft ? '📝 Borrador' : isDraft ? '📝 Guardado' : statusLabel}
         </div>
       </div>
 
@@ -1145,7 +1217,20 @@ function renderOrganizationCard(org) {
         <h3 class="org-name">${orgName}</h3>
         <p class="org-type">${typeName}</p>
         <p class="org-location">📍 ${orgComuna}${orgAddress ? ', ' + orgAddress : ''}</p>
-        <p class="org-date">Creada el ${createdDate}</p>
+        <p class="org-date">${isLocalDraft ? 'Guardado el' : 'Creada el'} ${createdDate}</p>
+
+        ${isLocalDraft ? `
+          <div class="local-draft-progress" style="margin-top: 12px; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 16px;">📋</span>
+              <span style="font-weight: 600; color: #4f46e5;">Paso ${org.currentStep || 1} de ${org.totalSteps || 8}</span>
+            </div>
+            <div style="background: #c7d2fe; border-radius: 4px; height: 6px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #6366f1, #4f46e5); height: 100%; width: ${((org.currentStep || 1) / (org.totalSteps || 8)) * 100}%; transition: width 0.3s;"></div>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 12px; color: #6366f1;">Continúa donde lo dejaste para completar el registro.</p>
+          </div>
+        ` : ''}
 
         ${progressBar}
 
@@ -1191,7 +1276,7 @@ function renderOrganizationCard(org) {
           </div>
         ` : ''}
 
-        ${isDraft ? `
+        ${isDraft && !isLocalDraft ? `
           <div class="org-draft-notice" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); border: 2px dashed #6366f1; border-radius: 12px; padding: 14px; margin-top: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 24px;">📋</span>
@@ -1205,7 +1290,7 @@ function renderOrganizationCard(org) {
       </div>
 
       <div class="org-card-actions">
-        ${!isDraft ? `
+        ${!isDraft && !isLocalDraft ? `
           <button class="btn-org-view">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -1214,7 +1299,21 @@ function renderOrganizationCard(org) {
             Ver detalles
           </button>
         ` : ''}
-        ${isDraft ? `
+        ${isLocalDraft ? `
+          <button class="btn-org-continue-draft" data-org-id="${orgId}" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Continuar
+          </button>
+          <button class="btn-org-discard-draft" data-org-id="${orgId}" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 12px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Descartar borrador">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        ` : ''}
+        ${isDraft && !isLocalDraft ? `
           <button class="btn-org-continue-draft" data-org-id="${orgId}" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
