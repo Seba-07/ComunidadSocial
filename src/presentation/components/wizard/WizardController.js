@@ -668,7 +668,14 @@ export class WizardController {
     // FASE 2: Interceptar después del paso 5 (Directorio Provisorio + Comisión Electoral)
     // El usuario debe completar el directorio, comisión y certificados antes de solicitar Ministro de Fe
     if (this.currentStep === 5 && !this.formData.ministroApproved) {
-      await this.showMinistroRequestScreen();
+      try {
+        console.log('🔄 Mostrando pantalla de solicitud de Ministro de Fe...');
+        await this.showMinistroRequestScreen();
+        console.log('✅ Pantalla de Ministro de Fe mostrada correctamente');
+      } catch (error) {
+        console.error('❌ Error mostrando pantalla de Ministro:', error);
+        showToast('Error al cargar la pantalla de Ministro de Fe: ' + error.message, 'error');
+      }
       return;
     }
 
@@ -5948,7 +5955,11 @@ Vocal`;
     }
 
     // Inicializar calendario interactivo
-    this.initializeScheduleCalendar();
+    try {
+      await this.initializeScheduleCalendar();
+    } catch (error) {
+      console.error('Error inicializando calendario:', error);
+    }
 
     // Inicializar selector de dirección de asamblea
     this.initializeAssemblyAddressSelector();
