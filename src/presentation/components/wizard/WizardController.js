@@ -6297,7 +6297,7 @@ Vocal`;
       }
 
       // Mostrar mensaje de confirmación
-      const stepContent = document.querySelector('#step-4');
+      const stepContent = document.querySelector('#step-5');
       if (stepContent) {
         stepContent.innerHTML = `
           <div style="text-align: center; padding: 60px 20px;">
