@@ -89,15 +89,56 @@ export class WizardController {
 
   /**
    * Guarda el progreso en localStorage
+   * Nota: Los certificados base64 NO se guardan en localStorage por límites de espacio
    */
   saveProgress() {
+    // Crear copia del formData sin los datos base64 de certificados (son muy grandes)
+    const formDataForStorage = { ...this.formData };
+
+    // Guardar solo metadatos de certificados (sin base64)
+    if (formDataForStorage.certificatesStep5) {
+      const certsMetadata = {};
+      Object.keys(formDataForStorage.certificatesStep5).forEach(key => {
+        const cert = formDataForStorage.certificatesStep5[key];
+        if (cert) {
+          certsMetadata[key] = {
+            name: cert.name,
+            size: cert.size,
+            type: cert.type
+            // NO incluir base64 - es muy grande para localStorage
+          };
+        }
+      });
+      formDataForStorage.certificatesStep5 = certsMetadata;
+    }
+
     const progress = {
       currentStep: this.currentStep,
-      formData: this.formData,
-      organizationId: this.existingOrganizationId || null, // Guardar ID si es org existente
+      formData: formDataForStorage,
+      organizationId: this.existingOrganizationId || null,
       savedAt: new Date().toISOString()
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(progress));
+
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(progress));
+    } catch (e) {
+      console.warn('No se pudo guardar en localStorage:', e.message);
+      // Si aún falla, intentar limpiar y guardar sin certificados
+      if (e.name === 'QuotaExceededError') {
+        formDataForStorage.certificatesStep5 = {};
+        const minimalProgress = {
+          currentStep: this.currentStep,
+          formData: formDataForStorage,
+          organizationId: this.existingOrganizationId || null,
+          savedAt: new Date().toISOString()
+        };
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(minimalProgress));
+        } catch (e2) {
+          console.error('Error crítico guardando progreso:', e2);
+        }
+      }
+    }
   }
 
   /**
@@ -868,10 +909,11 @@ export class WizardController {
     }
 
     // Validar que se subieron todos los certificados
+    // IMPORTANTE: Deben tener base64 (archivo real), no solo metadatos
     const certs = this.formData.certificatesStep5 || {};
     const requiredCerts = ['presidente', 'secretario', 'tesorero', 'comision1', 'comision2', 'comision3'];
-    // Verificar que cada certificado tenga datos (base64 o al menos nombre)
-    const missingCerts = requiredCerts.filter(key => !certs[key] || (!certs[key].base64 && !certs[key].name));
+    // Verificar que cada certificado tenga el archivo real (base64)
+    const missingCerts = requiredCerts.filter(key => !certs[key] || !certs[key].base64);
 
     if (missingCerts.length > 0) {
       const missingNames = {
@@ -2232,8 +2274,8 @@ export class WizardController {
     Object.keys(badgeMap).forEach(key => {
       const badge = document.getElementById(badgeMap[key]);
       if (badge) {
-        // Verificar que el certificado tenga datos válidos (base64 o nombre)
-        const hasCert = certs[key] && (certs[key].base64 || certs[key].name);
+        // Verificar que el certificado tenga el archivo real (base64)
+        const hasCert = certs[key] && certs[key].base64;
         if (hasCert) {
           badge.textContent = '✅ ' + labelMap[key];
           badge.style.background = '#dcfce7';
@@ -2324,6 +2366,9 @@ export class WizardController {
     });
 
     // Restaurar nombres de archivos de certificados
+    // Nota: Los certificados base64 NO se guardan en localStorage, solo metadatos
+    // Si el certificado tiene base64 (sesión actual), mostrar como subido
+    // Si solo tiene metadatos (restaurado), indicar que debe re-subirse
     const certs = this.formData.certificatesStep5 || {};
     const certConfig = [
       { key: 'presidente', inputId: 'cert-presidente', nameId: 'cert-presidente-name' },
@@ -2336,17 +2381,17 @@ export class WizardController {
 
     certConfig.forEach(({ key, inputId, nameId }) => {
       if (certs[key] && certs[key].name) {
-        // Actualizar nombre del archivo
+        const hasBase64 = certs[key].base64; // ¿Tiene el archivo real?
         const nameEl = document.getElementById(nameId);
-        if (nameEl) {
-          nameEl.textContent = certs[key].name;
-          nameEl.style.color = '#22c55e';
-        }
-
-        // Actualizar botón
         const input = document.getElementById(inputId);
-        if (input) {
-          const button = input.parentElement?.querySelector('.btn-upload-cert');
+        const button = input?.parentElement?.querySelector('.btn-upload-cert');
+
+        if (hasBase64) {
+          // Certificado completo (sesión actual)
+          if (nameEl) {
+            nameEl.textContent = certs[key].name;
+            nameEl.style.color = '#22c55e';
+          }
           if (button) {
             const shortName = certs[key].name.length > 15
               ? certs[key].name.substring(0, 15) + '...'
@@ -2356,6 +2401,20 @@ export class WizardController {
             button.style.borderColor = '#22c55e';
             button.style.color = '#166534';
           }
+        } else {
+          // Solo metadatos (debe re-subirse)
+          if (nameEl) {
+            nameEl.textContent = '⚠️ Re-subir: ' + certs[key].name;
+            nameEl.style.color = '#f59e0b';
+          }
+          if (button) {
+            button.textContent = '⚠️ Re-subir archivo';
+            button.style.background = '#fef3c7';
+            button.style.borderColor = '#f59e0b';
+            button.style.color = '#92400e';
+          }
+          // Limpiar el certificado incompleto para que la validación lo detecte
+          delete certs[key];
         }
       }
     });
