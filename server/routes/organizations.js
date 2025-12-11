@@ -57,6 +57,7 @@ router.post('/', authenticate, async (req, res) => {
   try {
     // DEBUG: Log incoming data
     console.log('📥 CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
+    console.log('📥 CREATE ORG - electoralCommission recibido:', JSON.stringify(req.body.electoralCommission, null, 2));
     console.log('📥 CREATE ORG - members count:', req.body.members?.length);
 
     const orgData = {
@@ -82,11 +83,23 @@ router.post('/', authenticate, async (req, res) => {
       console.log('📤 CREATE ORG - provisionalDirectorio a guardar:', JSON.stringify(orgData.provisionalDirectorio, null, 2));
     }
 
+    // Asegurar que electoralCommission se guarde explícitamente
+    if (req.body.electoralCommission && req.body.electoralCommission.length > 0) {
+      orgData.electoralCommission = req.body.electoralCommission.map(m => ({
+        rut: m.rut,
+        firstName: m.firstName || '',
+        lastName: m.lastName || '',
+        role: 'electoral_commission'
+      }));
+      console.log('📤 CREATE ORG - electoralCommission a guardar:', JSON.stringify(orgData.electoralCommission, null, 2));
+    }
+
     const organization = new Organization(orgData);
     await organization.save();
 
     // DEBUG: Verificar que se guardó
     console.log('✅ CREATE ORG - provisionalDirectorio guardado:', JSON.stringify(organization.provisionalDirectorio, null, 2));
+    console.log('✅ CREATE ORG - electoralCommission guardado:', JSON.stringify(organization.electoralCommission, null, 2));
 
     res.status(201).json(organization);
   } catch (error) {
@@ -605,6 +618,93 @@ router.post('/:id/set-directorio', authenticate, requireRole('ADMIN'), async (re
   } catch (error) {
     console.error('Set directorio error:', error);
     res.status(500).json({ error: 'Error al actualizar directorio' });
+  }
+});
+
+// Migrar TODAS las organizaciones - construir provisionalDirectorio y electoralCommission desde members
+router.post('/migrate-all', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const organizations = await Organization.find({});
+    const results = [];
+
+    for (const org of organizations) {
+      let updated = false;
+      const changes = {};
+
+      // Migrar provisionalDirectorio si está vacío
+      if (!org.provisionalDirectorio?.president && !org.provisionalDirectorio?.secretary && !org.provisionalDirectorio?.treasurer) {
+        const president = org.members?.find(m => m.role === 'president');
+        const secretary = org.members?.find(m => m.role === 'secretary');
+        const treasurer = org.members?.find(m => m.role === 'treasurer');
+
+        if (president || secretary || treasurer) {
+          org.provisionalDirectorio = {
+            president: president ? { rut: president.rut, firstName: president.firstName, lastName: president.lastName } : null,
+            secretary: secretary ? { rut: secretary.rut, firstName: secretary.firstName, lastName: secretary.lastName } : null,
+            treasurer: treasurer ? { rut: treasurer.rut, firstName: treasurer.firstName, lastName: treasurer.lastName } : null,
+            designatedAt: new Date(),
+            type: 'PROVISIONAL'
+          };
+          updated = true;
+          changes.provisionalDirectorio = 'migrado';
+        }
+      }
+
+      // Migrar electoralCommission si está vacío
+      if (!org.electoralCommission || org.electoralCommission.length === 0) {
+        // Buscar miembros con rol electoral_commission
+        let commissionMembers = org.members?.filter(m => m.role === 'electoral_commission') || [];
+
+        // Si no hay, usar los miembros que no son directorio (director o member) como candidatos
+        if (commissionMembers.length === 0) {
+          const usedRuts = new Set();
+          if (org.provisionalDirectorio?.president?.rut) usedRuts.add(org.provisionalDirectorio.president.rut);
+          if (org.provisionalDirectorio?.secretary?.rut) usedRuts.add(org.provisionalDirectorio.secretary.rut);
+          if (org.provisionalDirectorio?.treasurer?.rut) usedRuts.add(org.provisionalDirectorio.treasurer.rut);
+
+          // Buscar en members por rol o excluir directorio
+          commissionMembers = org.members?.filter(m =>
+            !usedRuts.has(m.rut) &&
+            ['director', 'member', 'electoral_commission'].includes(m.role)
+          ).slice(0, 3) || [];
+        }
+
+        if (commissionMembers.length > 0) {
+          org.electoralCommission = commissionMembers.map(m => ({
+            rut: m.rut,
+            firstName: m.firstName,
+            lastName: m.lastName,
+            role: 'electoral_commission'
+          }));
+
+          // Actualizar roles de los miembros
+          commissionMembers.forEach(cm => {
+            const member = org.members.find(m => m.rut === cm.rut);
+            if (member) member.role = 'electoral_commission';
+          });
+
+          updated = true;
+          changes.electoralCommission = `migrado (${commissionMembers.length} miembros)`;
+        }
+      }
+
+      if (updated) {
+        await org.save();
+        results.push({
+          id: org._id,
+          name: org.organizationName,
+          changes
+        });
+      }
+    }
+
+    res.json({
+      message: `Migración completada. ${results.length} organizaciones actualizadas.`,
+      updated: results
+    });
+  } catch (error) {
+    console.error('Migrate all error:', error);
+    res.status(500).json({ error: 'Error en migración masiva' });
   }
 });
 

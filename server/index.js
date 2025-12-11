@@ -12,6 +12,9 @@ import notificationsRoutes from './routes/notifications.js';
 import usersRoutes from './routes/users.js';
 import unidadesVecinalesRoutes from './routes/unidadesVecinales.js';
 
+// Model for auto-migration
+import Organization from './models/Organization.js';
+
 dotenv.config();
 
 const app = express();
@@ -48,9 +51,79 @@ app.use(express.json({ limit: '10mb' }));
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
 
+// Auto-migration function for existing organizations
+async function autoMigrateOrganizations() {
+  try {
+    const organizations = await Organization.find({});
+    let migratedCount = 0;
+
+    for (const org of organizations) {
+      let updated = false;
+
+      // Migrar provisionalDirectorio si esta vacio
+      if (!org.provisionalDirectorio?.president && !org.provisionalDirectorio?.secretary && !org.provisionalDirectorio?.treasurer) {
+        const president = org.members?.find(m => m.role === 'president');
+        const secretary = org.members?.find(m => m.role === 'secretary');
+        const treasurer = org.members?.find(m => m.role === 'treasurer');
+
+        if (president || secretary || treasurer) {
+          org.provisionalDirectorio = {
+            president: president ? { rut: president.rut, firstName: president.firstName, lastName: president.lastName } : null,
+            secretary: secretary ? { rut: secretary.rut, firstName: secretary.firstName, lastName: secretary.lastName } : null,
+            treasurer: treasurer ? { rut: treasurer.rut, firstName: treasurer.firstName, lastName: treasurer.lastName } : null,
+            designatedAt: new Date(),
+            type: 'PROVISIONAL'
+          };
+          updated = true;
+        }
+      }
+
+      // Migrar electoralCommission si esta vacio
+      if (!org.electoralCommission || org.electoralCommission.length === 0) {
+        let commissionMembers = org.members?.filter(m => m.role === 'electoral_commission') || [];
+
+        if (commissionMembers.length === 0) {
+          const usedRuts = new Set();
+          if (org.provisionalDirectorio?.president?.rut) usedRuts.add(org.provisionalDirectorio.president.rut);
+          if (org.provisionalDirectorio?.secretary?.rut) usedRuts.add(org.provisionalDirectorio.secretary.rut);
+          if (org.provisionalDirectorio?.treasurer?.rut) usedRuts.add(org.provisionalDirectorio.treasurer.rut);
+
+          commissionMembers = org.members?.filter(m =>
+            !usedRuts.has(m.rut) &&
+            ['director', 'member', 'electoral_commission'].includes(m.role)
+          ).slice(0, 3) || [];
+        }
+
+        if (commissionMembers.length > 0) {
+          org.electoralCommission = commissionMembers.map(m => ({
+            rut: m.rut,
+            firstName: m.firstName,
+            lastName: m.lastName,
+            role: 'electoral_commission'
+          }));
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await org.save();
+        migratedCount++;
+      }
+    }
+
+    if (migratedCount > 0) {
+      console.log(`Auto-migration: ${migratedCount} organizations updated`);
+    }
+  } catch (error) {
+    console.error('Auto-migration error:', error);
+  }
+}
+
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB Atlas');
+    // Run auto-migration on startup
+    await autoMigrateOrganizations();
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
