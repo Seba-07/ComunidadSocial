@@ -55,6 +55,10 @@ router.get('/:id', authenticate, async (req, res) => {
 // Create organization (request ministro)
 router.post('/', authenticate, async (req, res) => {
   try {
+    // DEBUG: Log incoming data
+    console.log('📥 CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
+    console.log('📥 CREATE ORG - members count:', req.body.members?.length);
+
     const orgData = {
       ...req.body,
       userId: req.userId,
@@ -66,8 +70,23 @@ router.post('/', authenticate, async (req, res) => {
       }]
     };
 
+    // Asegurar que provisionalDirectorio se guarde explícitamente
+    if (req.body.provisionalDirectorio) {
+      orgData.provisionalDirectorio = {
+        president: req.body.provisionalDirectorio.president || null,
+        secretary: req.body.provisionalDirectorio.secretary || null,
+        treasurer: req.body.provisionalDirectorio.treasurer || null,
+        designatedAt: new Date(),
+        type: 'PROVISIONAL'
+      };
+      console.log('📤 CREATE ORG - provisionalDirectorio a guardar:', JSON.stringify(orgData.provisionalDirectorio, null, 2));
+    }
+
     const organization = new Organization(orgData);
     await organization.save();
+
+    // DEBUG: Verificar que se guardó
+    console.log('✅ CREATE ORG - provisionalDirectorio guardado:', JSON.stringify(organization.provisionalDirectorio, null, 2));
 
     res.status(201).json(organization);
   } catch (error) {
