@@ -730,7 +730,10 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
                 <select id="commission-${num}-select" class="commission-select" data-num="${num}" style="width: 100%; padding: 10px; border: 2px solid #d1fae5; border-radius: 8px; font-size: 13px; box-sizing: border-box; margin-bottom: 10px; cursor: pointer;">
                   <option value="">Seleccionar miembro...</option>
                   ${members.map(m => {
-                    const isSelected = saved?.id === m.id;
+                    // Comparar por RUT normalizado (quitar puntos y guiones) o por ID
+                    const savedRut = saved?.rut ? String(saved.rut).replace(/[.-]/g, '').toLowerCase() : '';
+                    const memberRut = m.rut ? String(m.rut).replace(/[.-]/g, '').toLowerCase() : '';
+                    const isSelected = (saved?.id === m.id) || (savedRut && memberRut && savedRut === memberRut);
                     const isAlreadySelected = selectedIds.has(m.id) && !isSelected;
                     const isMinorMember = m.isMinor;
                     const isDisabled = isAlreadySelected || isMinorMember;
