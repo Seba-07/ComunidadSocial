@@ -103,32 +103,40 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
   }
 
-  // FALLBACK 1: Si no hay provisionalDirectorio, buscar en los roles de los miembros
-  if (!preloadedDirectorio.president && !preloadedDirectorio.secretary && !preloadedDirectorio.treasurer) {
+  // FALLBACK: Buscar miembros faltantes por role o por índice (para cada rol individualmente)
+  const adultMembers = members.filter(m => !m.isMinor);
+
+  // Presidente
+  if (!preloadedDirectorio.president) {
     const presidentMember = members.find(m => m.role === 'president' && !m.isMinor);
-    const secretaryMember = members.find(m => m.role === 'secretary' && !m.isMinor);
-    const treasurerMember = members.find(m => m.role === 'treasurer' && !m.isMinor);
-
-    if (presidentMember) preloadedDirectorio.president = { ...presidentMember, name: presidentMember.name };
-    if (secretaryMember) preloadedDirectorio.secretary = { ...secretaryMember, name: secretaryMember.name };
-    if (treasurerMember) preloadedDirectorio.treasurer = { ...treasurerMember, name: treasurerMember.name };
-  }
-
-  // FALLBACK 2: Si aún no hay directorio, usar los primeros 3 miembros mayores de edad por índice
-  // (para organizaciones existentes donde el role se asignó por índice)
-  if (!preloadedDirectorio.president && !preloadedDirectorio.secretary && !preloadedDirectorio.treasurer) {
-    const adultMembers = members.filter(m => !m.isMinor);
-    if (adultMembers.length >= 1 && adultMembers[0]) {
+    if (presidentMember) {
+      preloadedDirectorio.president = { ...presidentMember, name: presidentMember.name };
+    } else if (adultMembers.length >= 1 && adultMembers[0]) {
       preloadedDirectorio.president = { ...adultMembers[0], name: adultMembers[0].name };
     }
-    if (adultMembers.length >= 2 && adultMembers[1]) {
+  }
+
+  // Secretario
+  if (!preloadedDirectorio.secretary) {
+    const secretaryMember = members.find(m => m.role === 'secretary' && !m.isMinor);
+    if (secretaryMember) {
+      preloadedDirectorio.secretary = { ...secretaryMember, name: secretaryMember.name };
+    } else if (adultMembers.length >= 2 && adultMembers[1]) {
       preloadedDirectorio.secretary = { ...adultMembers[1], name: adultMembers[1].name };
     }
-    if (adultMembers.length >= 3 && adultMembers[2]) {
+  }
+
+  // Tesorero
+  if (!preloadedDirectorio.treasurer) {
+    const treasurerMember = members.find(m => m.role === 'treasurer' && !m.isMinor);
+    if (treasurerMember) {
+      preloadedDirectorio.treasurer = { ...treasurerMember, name: treasurerMember.name };
+    } else if (adultMembers.length >= 3 && adultMembers[2]) {
       preloadedDirectorio.treasurer = { ...adultMembers[2], name: adultMembers[2].name };
     }
-    console.log('ValidationWizard - Usando FALLBACK por índice:', preloadedDirectorio);
   }
+
+  console.log('ValidationWizard - Directorio precargado:', preloadedDirectorio);
 
   // Precargar comisión electoral si existe
   let preloadedComision = provCom.map(cm => {
@@ -381,7 +389,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
               { num: 2, label: 'Adicionales' },
               { num: 3, label: 'Comisión' },
               { num: 4, label: 'Asistentes' },
-              { num: 5, label: 'Confirmar' }
+              { num: 5, label: 'Estatutos' },
+              { num: 6, label: 'Confirmar' }
             ].map(step => `
               <div style="display: flex; flex-direction: column; align-items: center; z-index: 1;">
                 <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; ${
