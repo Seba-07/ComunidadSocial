@@ -106,33 +106,59 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // FALLBACK: Buscar miembros faltantes por role o por índice (para cada rol individualmente)
   const adultMembers = members.filter(m => !m.isMinor);
 
+  // Set para rastrear IDs ya asignados y evitar duplicados
+  const assignedIds = new Set();
+  if (preloadedDirectorio.president?.id) assignedIds.add(preloadedDirectorio.president.id);
+  if (preloadedDirectorio.secretary?.id) assignedIds.add(preloadedDirectorio.secretary.id);
+  if (preloadedDirectorio.treasurer?.id) assignedIds.add(preloadedDirectorio.treasurer.id);
+
+  // Función helper para obtener siguiente miembro disponible
+  const getNextAvailableMember = () => {
+    return adultMembers.find(m => !assignedIds.has(m.id));
+  };
+
   // Presidente
   if (!preloadedDirectorio.president) {
-    const presidentMember = members.find(m => m.role === 'president' && !m.isMinor);
+    const presidentMember = members.find(m => m.role === 'president' && !m.isMinor && !assignedIds.has(m.id));
     if (presidentMember) {
       preloadedDirectorio.president = { ...presidentMember, name: presidentMember.name };
-    } else if (adultMembers.length >= 1 && adultMembers[0]) {
-      preloadedDirectorio.president = { ...adultMembers[0], name: adultMembers[0].name };
+      assignedIds.add(presidentMember.id);
+    } else {
+      const available = getNextAvailableMember();
+      if (available) {
+        preloadedDirectorio.president = { ...available, name: available.name };
+        assignedIds.add(available.id);
+      }
     }
   }
 
   // Secretario
   if (!preloadedDirectorio.secretary) {
-    const secretaryMember = members.find(m => m.role === 'secretary' && !m.isMinor);
+    const secretaryMember = members.find(m => m.role === 'secretary' && !m.isMinor && !assignedIds.has(m.id));
     if (secretaryMember) {
       preloadedDirectorio.secretary = { ...secretaryMember, name: secretaryMember.name };
-    } else if (adultMembers.length >= 2 && adultMembers[1]) {
-      preloadedDirectorio.secretary = { ...adultMembers[1], name: adultMembers[1].name };
+      assignedIds.add(secretaryMember.id);
+    } else {
+      const available = getNextAvailableMember();
+      if (available) {
+        preloadedDirectorio.secretary = { ...available, name: available.name };
+        assignedIds.add(available.id);
+      }
     }
   }
 
   // Tesorero
   if (!preloadedDirectorio.treasurer) {
-    const treasurerMember = members.find(m => m.role === 'treasurer' && !m.isMinor);
+    const treasurerMember = members.find(m => m.role === 'treasurer' && !m.isMinor && !assignedIds.has(m.id));
     if (treasurerMember) {
       preloadedDirectorio.treasurer = { ...treasurerMember, name: treasurerMember.name };
-    } else if (adultMembers.length >= 3 && adultMembers[2]) {
-      preloadedDirectorio.treasurer = { ...adultMembers[2], name: adultMembers[2].name };
+      assignedIds.add(treasurerMember.id);
+    } else {
+      const available = getNextAvailableMember();
+      if (available) {
+        preloadedDirectorio.treasurer = { ...available, name: available.name };
+        assignedIds.add(available.id);
+      }
     }
   }
 
