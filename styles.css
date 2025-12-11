@@ -9441,19 +9441,12 @@ a.header-logo:hover {
     font-size: 15px;
 }
 
-/* Admin Stats Row - Compact - Scrollable */
+/* Admin Stats Row - Compact - Wrap on mobile */
 .admin-stats-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     margin-top: 16px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-
-.admin-stats-row::-webkit-scrollbar {
-    display: none;
 }
 
 .admin-stat-card {
@@ -9466,8 +9459,8 @@ a.header-logo:hover {
     gap: 10px;
     border: 1px solid var(--border-color);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    flex-shrink: 0;
-    min-width: 140px;
+    flex: 1 1 140px;
+    min-width: 120px;
 }
 
 .admin-stat-card:hover {
@@ -15628,7 +15621,6 @@ a.header-logo:hover {
 @media (max-width: 1024px) {
     /* Dashboard stats - 2 columnas */
     .dashboard-stats,
-    .admin-stats-row,
     .quick-stats,
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
@@ -15768,11 +15760,21 @@ a.header-logo:hover {
 
     /* Dashboard stats - 1 columna */
     .dashboard-stats,
-    .admin-stats-row,
     .quick-stats,
     .stats-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
+    }
+
+    /* Admin stats row - ya usa flex-wrap */
+    .admin-stats-row {
+        gap: 8px !important;
+    }
+
+    .admin-stat-card {
+        flex: 1 1 calc(50% - 4px);
+        min-width: calc(50% - 4px);
+        padding: 10px;
     }
 
     /* Organization cards - 1 columna */

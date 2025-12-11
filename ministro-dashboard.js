@@ -252,40 +252,19 @@ async function renderAssignments() {
           </div>
         ` : assignment.signaturesValidated ? `
           <div style="background: #d1fae5; border-radius: 12px; padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
-                <div>
-                  <p style="margin: 0; color: #065f46; font-size: 15px; font-weight: 700;">Asamblea Completada</p>
-                  <p style="margin: 2px 0 0; color: #047857; font-size: 13px;">${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 36px; height: 36px; background: #10b981; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
               </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary" onclick="viewValidationSummary('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                  </svg>
-                  Ver Resumen
-                </button>
-                <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                  Editar
-                </button>
+              <div style="min-width: 0;">
+                <p style="margin: 0; color: #065f46; font-size: 14px; font-weight: 700;">Asamblea Completada</p>
+                <p style="margin: 2px 0 0; color: #047857; font-size: 12px;">${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               </div>
             </div>
 
             ${assignment.wizardData ? (() => {
-              // Buscar directorio en ambos lugares posibles
               const dir = assignment.wizardData.provisionalDirectorio || assignment.wizardData.directorio || {};
               const pName = dir.president?.name || '-';
               const sName = dir.secretary?.name || '-';
@@ -293,28 +272,39 @@ async function renderAssignments() {
               const com = assignment.wizardData.comisionElectoral || [];
               const att = assignment.wizardData.attendees || [];
               return `
-              <div style="background: white; border-radius: 8px; padding: 12px; margin-top: 12px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
-                  <div>
-                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Directorio Provisorio</p>
-                    <p style="margin: 0; color: #047857;">
-                      ${pName} (P), ${sName} (S), ${tName} (T)
-                    </p>
-                  </div>
-                  <div>
-                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Comision Electoral</p>
-                    <p style="margin: 0; color: #047857;">
-                      ${com.length > 0 ? com.map(m => m?.name || '-').join(', ') : 'No especificada'}
-                    </p>
-                  </div>
-                  <div>
-                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Asistentes</p>
-                    <p style="margin: 0; color: #047857;">${att.length || 0} personas</p>
-                  </div>
+              <div style="background: white; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 12px;">
+                <div style="margin-bottom: 8px;">
+                  <p style="margin: 0 0 2px; color: #065f46; font-weight: 700;">Directorio Provisorio</p>
+                  <p style="margin: 0; color: #047857; line-height: 1.4;">${pName} (P), ${sName} (S), ${tName} (T)</p>
+                </div>
+                <div style="margin-bottom: 8px;">
+                  <p style="margin: 0 0 2px; color: #065f46; font-weight: 700;">Comision Electoral</p>
+                  <p style="margin: 0; color: #047857; line-height: 1.4;">${com.length > 0 ? com.map(m => m?.name || '-').join(', ') : 'No especificada'}</p>
+                </div>
+                <div>
+                  <p style="margin: 0 0 2px; color: #065f46; font-weight: 700;">Asistentes</p>
+                  <p style="margin: 0; color: #047857;">${att.length || 0} personas</p>
                 </div>
               </div>
               `;
             })() : ''}
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-secondary" onclick="viewValidationSummary('${assignmentId}')" style="display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 8px 12px; flex: 1; justify-content: center; min-width: 100px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Ver Resumen
+              </button>
+              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 8px 12px; flex: 1; justify-content: center; min-width: 100px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar
+              </button>
+            </div>
           </div>
         ` : ''}
       </div>

@@ -91,25 +91,19 @@
         /* Unified Filter Bar - Stats + Tabs combined */
         .filter-bar {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 20px;
             padding: 12px;
             background: white;
             border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-
-        .filter-bar::-webkit-scrollbar {
-            display: none;
         }
 
         .filter-chip {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             padding: 10px 16px;
             border: 2px solid #e5e7eb;
             background: #f9fafb;
@@ -119,7 +113,6 @@
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
-            flex-shrink: 0;
         }
 
         .filter-chip:hover {
@@ -152,6 +145,14 @@
 
         .filter-chip.active .chip-count {
             background: rgba(255, 255, 255, 0.25);
+        }
+
+        .filter-chip .chip-text-short {
+            display: none;
+        }
+
+        .filter-chip .chip-text-full {
+            display: inline;
         }
 
         .filter-chip.pending {
@@ -188,10 +189,7 @@
         }
 
         .filter-divider {
-            width: 2px;
-            background: #e5e7eb;
-            margin: 4px 8px;
-            flex-shrink: 0;
+            display: none;
         }
 
         /* Tab Content */
@@ -319,24 +317,35 @@
             }
 
             .filter-bar {
-                padding: 8px;
+                padding: 10px;
                 margin-bottom: 16px;
                 gap: 6px;
             }
 
             .filter-chip {
-                padding: 8px 12px;
-                font-size: 13px;
+                padding: 8px 10px;
+                font-size: 12px;
+                border-radius: 10px;
+                gap: 4px;
             }
 
             .filter-chip .chip-icon {
-                font-size: 16px;
+                font-size: 14px;
             }
 
             .filter-chip .chip-count {
-                min-width: 20px;
-                height: 20px;
-                font-size: 11px;
+                min-width: 18px;
+                height: 18px;
+                font-size: 10px;
+                padding: 0 4px;
+            }
+
+            .filter-chip .chip-text-full {
+                display: none;
+            }
+
+            .filter-chip .chip-text-short {
+                display: inline;
             }
 
             .section-card {
@@ -412,31 +421,32 @@
                 <!-- Stats as filter chips -->
                 <button class="filter-chip pending active" data-tab="assignments" data-filter="all">
                     <span class="chip-icon">📋</span>
-                    <span>Todas</span>
+                    <span class="chip-text-full">Todas</span>
+                    <span class="chip-text-short">Todo</span>
                 </button>
                 <button class="filter-chip pending" data-tab="assignments" data-filter="pending">
                     <span class="chip-icon">📅</span>
-                    <span>Pendientes</span>
+                    <span class="chip-text-full">Pendientes</span>
+                    <span class="chip-text-short">Pend.</span>
                     <span class="chip-count" id="stat-pending">0</span>
                 </button>
                 <button class="filter-chip completed" data-tab="assignments" data-filter="completed">
                     <span class="chip-icon">✅</span>
-                    <span>Completadas</span>
+                    <span class="chip-text-full">Completadas</span>
+                    <span class="chip-text-short">Compl.</span>
                     <span class="chip-count" id="stat-completed">0</span>
                 </button>
                 <button class="filter-chip validated" data-tab="assignments" data-filter="validated">
                     <span class="chip-icon">📝</span>
-                    <span>Validadas</span>
+                    <span class="chip-text-full">Validadas</span>
+                    <span class="chip-text-short">Valid.</span>
                     <span class="chip-count" id="stat-validated">0</span>
                 </button>
-
-                <!-- Divider -->
-                <div class="filter-divider"></div>
-
                 <!-- Availability tab -->
                 <button class="filter-chip" data-tab="availability">
                     <span class="chip-icon">🗓️</span>
-                    <span>Disponibilidad</span>
+                    <span class="chip-text-full">Disponibilidad</span>
+                    <span class="chip-text-short">Disp.</span>
                 </button>
             </div>
 
