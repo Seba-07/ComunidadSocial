@@ -56,7 +56,7 @@
     </div>
 
     <div class="section">
-        <h2>5. Opcion B: Establecer manualmente por RUT</h2>
+        <h2>5. Opcion B: Establecer Directorio manualmente por RUT</h2>
         <p>Usa esto si los roles estan mal asignados. Ingresa los RUTs correctos:</p>
         <div id="membersList" class="member-list"></div>
         <label>RUT del Presidente:</label>
@@ -67,6 +67,19 @@
         <input type="text" id="treasurerRut" placeholder="12.345.678-9">
         <button class="success" onclick="setDirectorio()">Establecer Directorio</button>
         <pre id="setResult"></pre>
+    </div>
+
+    <div class="section">
+        <h2>6. Comision Electoral - Establecer por RUT</h2>
+        <p>Ingresa los RUTs de los 3 miembros de la Comision Electoral:</p>
+        <label>RUT Miembro 1:</label>
+        <input type="text" id="member1Rut" placeholder="12.345.678-9">
+        <label>RUT Miembro 2:</label>
+        <input type="text" id="member2Rut" placeholder="12.345.678-9">
+        <label>RUT Miembro 3:</label>
+        <input type="text" id="member3Rut" placeholder="12.345.678-9">
+        <button class="success" onclick="setComision()">Establecer Comision Electoral</button>
+        <pre id="setComisionResult"></pre>
     </div>
 
     <script>
@@ -193,6 +206,32 @@
                 document.getElementById('setResult').textContent = JSON.stringify(data, null, 2);
             } catch (e) {
                 document.getElementById('setResult').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        async function setComision() {
+            if (!selectedOrgId) {
+                alert('Selecciona una organizacion primero');
+                return;
+            }
+
+            const member1Rut = document.getElementById('member1Rut').value;
+            const member2Rut = document.getElementById('member2Rut').value;
+            const member3Rut = document.getElementById('member3Rut').value;
+
+            try {
+                const res = await fetch(`${API_URL}/organizations/${selectedOrgId}/set-comision`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ member1Rut, member2Rut, member3Rut })
+                });
+                const data = await res.json();
+                document.getElementById('setComisionResult').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('setComisionResult').textContent = 'Error: ' + e.message;
             }
         }
     </script>

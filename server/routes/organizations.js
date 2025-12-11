@@ -453,6 +453,99 @@ router.post('/:id/migrate-directorio', authenticate, requireRole('ADMIN'), async
   }
 });
 
+// Migrar electoralCommission desde members (Admin)
+router.post('/:id/migrate-comision', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Buscar miembros con rol electoral_commission
+    const commissionMembers = org.members?.filter(m => m.role === 'electoral_commission') || [];
+
+    if (commissionMembers.length === 0) {
+      return res.status(400).json({
+        error: 'No se encontraron miembros con rol electoral_commission',
+        members: org.members?.map(m => ({ name: `${m.firstName} ${m.lastName}`, role: m.role }))
+      });
+    }
+
+    // Construir electoralCommission desde members
+    org.electoralCommission = commissionMembers.map(m => ({
+      rut: m.rut,
+      firstName: m.firstName,
+      lastName: m.lastName,
+      role: 'electoral_commission'
+    }));
+
+    await org.save();
+
+    res.json({
+      message: 'Comisión Electoral migrada exitosamente',
+      electoralCommission: org.electoralCommission
+    });
+  } catch (error) {
+    console.error('Migrate comision error:', error);
+    res.status(500).json({ error: 'Error al migrar comisión' });
+  }
+});
+
+// Establecer electoralCommission manualmente por RUTs (Admin)
+router.post('/:id/set-comision', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    const { member1Rut, member2Rut, member3Rut } = req.body;
+    const ruts = [member1Rut, member2Rut, member3Rut].filter(Boolean);
+
+    // Buscar miembros por RUT
+    const findByRut = (rut) => {
+      if (!rut) return null;
+      const normalized = rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      return org.members?.find(m => {
+        const memberRut = m.rut?.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+        return memberRut === normalized;
+      });
+    };
+
+    const commissionMembers = ruts.map(rut => findByRut(rut)).filter(Boolean);
+
+    if (commissionMembers.length === 0) {
+      return res.status(400).json({
+        error: 'No se encontraron miembros con los RUTs proporcionados',
+        members: org.members?.map(m => ({ name: `${m.firstName} ${m.lastName}`, rut: m.rut }))
+      });
+    }
+
+    // Construir electoralCommission
+    org.electoralCommission = commissionMembers.map(m => ({
+      rut: m.rut,
+      firstName: m.firstName,
+      lastName: m.lastName,
+      role: 'electoral_commission'
+    }));
+
+    // Actualizar roles de los miembros
+    commissionMembers.forEach(m => {
+      m.role = 'electoral_commission';
+    });
+
+    await org.save();
+
+    res.json({
+      message: 'Comisión Electoral actualizada exitosamente',
+      electoralCommission: org.electoralCommission
+    });
+  } catch (error) {
+    console.error('Set comision error:', error);
+    res.status(500).json({ error: 'Error al actualizar comisión' });
+  }
+});
+
 // Actualizar provisionalDirectorio manualmente (Admin) - por si los roles están mal
 router.post('/:id/set-directorio', authenticate, requireRole('ADMIN'), async (req, res) => {
   try {
