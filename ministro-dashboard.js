@@ -841,20 +841,63 @@ function viewDetails(assignmentId) {
                 <div style="background: white; border-radius: 8px; padding: 12px;">
                   <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio Provisorio</p>
                   ${(() => {
+                    // Helper para extraer nombre de diferentes formatos
+                    const extractMemberName = (m) => {
+                      if (!m) return '';
+                      // Formato WizardController: primerNombre, apellidoPaterno
+                      if (m.primerNombre) {
+                        const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+                        const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+                        return (fn + ' ' + ln).trim();
+                      }
+                      // Formato estándar: firstName, lastName
+                      if (m.firstName) {
+                        return ((m.firstName || '') + ' ' + (m.lastName || '')).trim();
+                      }
+                      // Formato simple: name
+                      return m.name || m.nombre || '';
+                    };
+
                     const dir = org?.provisionalDirectorio;
                     if (dir && (dir.president || dir.secretary || dir.treasurer)) {
                       let html = '';
                       if (dir.president) {
-                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
+                        const name = extractMemberName(dir.president);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + name + '</p>';
                       }
                       if (dir.secretary) {
-                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
+                        const name = extractMemberName(dir.secretary);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + name + '</p>';
                       }
                       if (dir.treasurer) {
-                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
+                        const name = extractMemberName(dir.treasurer);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + name + '</p>';
                       }
                       return html || '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
                     }
+
+                    // FALLBACK: Buscar en members por rol
+                    const president = members.find(m => m.role === 'president');
+                    const secretary = members.find(m => m.role === 'secretary');
+                    const treasurer = members.find(m => m.role === 'treasurer');
+
+                    if (president || secretary || treasurer) {
+                      let html = '';
+                      if (president) {
+                        const name = extractMemberName(president);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + name + '</p>';
+                      }
+                      if (secretary) {
+                        const name = extractMemberName(secretary);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + name + '</p>';
+                      }
+                      if (treasurer) {
+                        const name = extractMemberName(treasurer);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + name + '</p>';
+                      }
+                      return html;
+                    }
+
                     return '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
                   })()}
                 </div>
