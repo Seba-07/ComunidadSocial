@@ -2131,6 +2131,15 @@ class AdminDashboard {
                                 org.provisionalDirectorio ||
                                 org.comisionElectoral;
 
+    // DEBUG: Ver estructura de datos para certificados
+    console.log('🔍 DEBUG Certificados:', {
+      'org.certificates': org.certificates,
+      'Object.keys(certificates)': Object.keys(certificates),
+      'comisionElectoral': comisionElectoral,
+      'commission.members': commission?.members,
+      'directorio': directorio
+    });
+
     if (!hasMinistroApproval && !directorio.president && !comisionElectoral.length && !commission?.members?.length) {
       return `
         <div class="no-data" style="text-align: center; padding: 32px;">
