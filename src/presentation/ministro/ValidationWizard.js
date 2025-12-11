@@ -257,52 +257,82 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   console.log('ValidationWizard - Directorio precargado:', preloadedDirectorio);
 
   // Precargar comisión electoral si existe
-  console.log('🔍 ValidationWizard - provCom (electoralCommission):', provCom);
-  console.log('🔍 ValidationWizard - members array (cantidad):', members.length);
-  console.log('🔍 ValidationWizard - members con sus RUTs:', members.map(m => ({ id: m.id, name: m.name, rut: m.rut })));
+  console.log('🔍🔍🔍 INICIO PRECARGA COMISION ELECTORAL 🔍🔍🔍');
+  console.log('🔍 provCom (electoralCommission):', provCom);
+  console.log('🔍 provCom.length:', provCom?.length);
+  console.log('🔍 members.length:', members.length);
 
-  let preloadedComision = provCom.map((cm, idx) => {
-    console.log(`🔍 Procesando EC member ${idx}:`, cm);
-    // Primero intentar buscar en members por RUT
-    const found = findMemberByRut(cm.rut);
-    console.log(`🔍 findMemberByRut(${cm.rut}) resultado:`, found);
-    if (found) {
-      const result = { ...found, name: found.name, signature: null };
-      console.log(`🔍 EC member ${idx} encontrado en members:`, result);
-      return result;
+  // Helper para extraer nombre de cualquier formato de EC member
+  const extractECMemberName = (cm) => {
+    if (!cm) return '';
+    // Formato 1: firstName + lastName
+    if (cm.firstName) {
+      return `${cm.firstName} ${cm.lastName || ''}`.trim();
     }
-    // Si no se encuentra en members, crear con el ID del member si existe en members por RUT normalizado
-    // o usar datos directamente
-    const name = cm.firstName
-      ? `${cm.firstName} ${cm.lastName || ''}`.trim()
-      : cm.name || '';
-    if (name) {
-      // Buscar en members el ID correcto por RUT normalizado
-      const normalizedCmRut = normalizeRut(cm.rut);
-      const memberWithMatchingRut = members.find(m => normalizeRut(m.rut) === normalizedCmRut);
+    // Formato 2: name directo
+    if (cm.name) return cm.name;
+    // Formato 3: primerNombre + apellidoPaterno (formato wizard)
+    if (cm.primerNombre) {
+      const fn = [cm.primerNombre, cm.segundoNombre].filter(Boolean).join(' ');
+      const ln = [cm.apellidoPaterno, cm.apellidoMaterno].filter(Boolean).join(' ');
+      return (fn + ' ' + ln).trim();
+    }
+    return '';
+  };
+
+  let preloadedComision = [];
+
+  if (provCom && provCom.length > 0) {
+    preloadedComision = provCom.map((cm, idx) => {
+      console.log(`🔍 Procesando EC member ${idx}:`, JSON.stringify(cm));
+
+      if (!cm) {
+        console.log(`🔍 EC member ${idx} es null/undefined`);
+        return null;
+      }
+
+      // Extraer nombre con múltiples formatos
+      const name = extractECMemberName(cm);
+      const rut = cm.rut || '';
+
+      console.log(`🔍 EC member ${idx} - name extraído: "${name}", rut: "${rut}"`);
+
+      if (!name && !rut) {
+        console.log(`🔍 EC member ${idx} sin nombre ni rut, saltando`);
+        return null;
+      }
+
+      // Buscar en members por RUT si existe
+      let memberId = `ec-${idx}`;
+      if (rut) {
+        const found = findMemberByRut(rut);
+        if (found) {
+          memberId = found.id;
+          console.log(`🔍 EC member ${idx} encontrado en members con id: ${memberId}`);
+        }
+      }
+
       const result = {
-        id: memberWithMatchingRut?.id || `ec-${cm.rut}`,
-        name: name,
-        rut: cm.rut,
+        id: memberId,
+        name: name || `Miembro Comisión ${idx + 1}`,
+        rut: rut,
         signature: null
       };
-      console.log(`🔍 EC member ${idx} NO encontrado en members, creando:`, result);
+      console.log(`🔍 EC member ${idx} creado:`, result);
       return result;
-    }
-    console.log(`🔍 EC member ${idx} sin nombre, retornando null`);
-    return null;
-  }).filter(Boolean);
+    }).filter(Boolean);
+  }
 
   // FALLBACK: Si no hay datos en electoralCommission, buscar en los roles de los miembros
   if (preloadedComision.length === 0) {
-    console.log('🔍 preloadedComision vacío, usando FALLBACK con roles');
+    console.log('🔍 preloadedComision vacío, usando FALLBACK con roles de members');
     const commissionMembers = members.filter(m => m.role === 'electoral_commission' && !m.isMinor);
+    console.log('🔍 Miembros con role electoral_commission:', commissionMembers.length);
     preloadedComision = commissionMembers.map(m => ({ ...m, name: m.name, signature: null }));
   }
 
-  console.log('🔍🔍🔍 ValidationWizard - preloadedComision FINAL:', preloadedComision);
-  console.log('🔍🔍🔍 preloadedComision IDs:', preloadedComision.map(p => p?.id));
-  console.log('🔍🔍🔍 preloadedComision RUTs:', preloadedComision.map(p => p?.rut));
+  console.log('🔍🔍🔍 preloadedComision FINAL:', preloadedComision);
+  console.log('🔍🔍🔍 preloadedComision.length:', preloadedComision.length);
 
   // Debug log para verificar precarga
   console.log('ValidationWizard - Precarga de datos:', {
