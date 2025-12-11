@@ -289,16 +289,18 @@ async function renderAssignments() {
               `;
             })() : ''}
 
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-secondary" onclick="viewValidationSummary('${assignmentId}')" style="display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 8px 12px; flex: 1; justify-content: center; min-width: 100px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+              <button onclick="viewValidationSummary('${assignmentId}')" style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 18px; background: white; border: 2px solid #10b981; color: #065f46; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; justify-content: center; min-width: 140px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
                 Ver Resumen
               </button>
-              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 8px 12px; flex: 1; justify-content: center; min-width: 100px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button onclick="editValidatedSignatures('${assignmentId}')" style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 18px; background: #f3f4f6; border: 2px solid #e5e7eb; color: #374151; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; justify-content: center; min-width: 140px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>

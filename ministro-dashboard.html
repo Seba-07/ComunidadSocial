@@ -155,39 +155,6 @@
             display: inline;
         }
 
-        .filter-chip.pending {
-            border-color: #dbeafe;
-            background: #eff6ff;
-            color: #1e40af;
-        }
-        .filter-chip.pending.active {
-            background: #1e40af;
-            border-color: #1e40af;
-            color: white;
-        }
-
-        .filter-chip.completed {
-            border-color: #d1fae5;
-            background: #ecfdf5;
-            color: #065f46;
-        }
-        .filter-chip.completed.active {
-            background: #059669;
-            border-color: #059669;
-            color: white;
-        }
-
-        .filter-chip.validated {
-            border-color: #fef3c7;
-            background: #fffbeb;
-            color: #92400e;
-        }
-        .filter-chip.validated.active {
-            background: #d97706;
-            border-color: #d97706;
-            color: white;
-        }
-
         .filter-divider {
             display: none;
         }
@@ -419,24 +386,24 @@
             <!-- Unified Filter Bar -->
             <div class="filter-bar">
                 <!-- Stats as filter chips -->
-                <button class="filter-chip pending active" data-tab="assignments" data-filter="all">
+                <button class="filter-chip active" data-tab="assignments" data-filter="all">
                     <span class="chip-icon">📋</span>
                     <span class="chip-text-full">Todas</span>
                     <span class="chip-text-short">Todo</span>
                 </button>
-                <button class="filter-chip pending" data-tab="assignments" data-filter="pending">
+                <button class="filter-chip" data-tab="assignments" data-filter="pending">
                     <span class="chip-icon">📅</span>
                     <span class="chip-text-full">Pendientes</span>
                     <span class="chip-text-short">Pend.</span>
                     <span class="chip-count" id="stat-pending">0</span>
                 </button>
-                <button class="filter-chip completed" data-tab="assignments" data-filter="completed">
+                <button class="filter-chip" data-tab="assignments" data-filter="completed">
                     <span class="chip-icon">✅</span>
                     <span class="chip-text-full">Completadas</span>
                     <span class="chip-text-short">Compl.</span>
                     <span class="chip-count" id="stat-completed">0</span>
                 </button>
-                <button class="filter-chip validated" data-tab="assignments" data-filter="validated">
+                <button class="filter-chip" data-tab="assignments" data-filter="validated">
                     <span class="chip-icon">📝</span>
                     <span class="chip-text-full">Validadas</span>
                     <span class="chip-text-short">Valid.</span>
