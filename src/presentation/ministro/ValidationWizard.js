@@ -1018,7 +1018,19 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // Generar estatutos por defecto si no hay
   const generateDefaultEstatutos = () => {
     const dir = wizardData.directorio;
+    const add = wizardData.additionalMembers || [];
     const com = wizardData.comisionElectoral;
+    const att = wizardData.attendees || [];
+
+    // Construir sección de miembros adicionales del directorio
+    const additionalMembersSection = add.length > 0
+      ? add.map(m => `- ${m.role || 'Director'}: ${m.name || '[Por designar]'}`).join('\n')
+      : '';
+
+    // Construir lista de asistentes a la asamblea
+    const attendeesSection = att.length > 0
+      ? att.map((a, i) => `${i + 1}. ${a.name || (a.firstName + ' ' + a.lastName) || '[Sin nombre]'}`).join('\n')
+      : 'Sin asistentes registrados';
 
     return `ESTATUTOS DE LA ORGANIZACIÓN
 
@@ -1045,10 +1057,10 @@ c) Presentar proyectos e iniciativas
 
 TÍTULO IV: DEL DIRECTORIO
 
-Artículo 6°: El Directorio estará compuesto por:
+Artículo 6°: El Directorio Provisorio estará compuesto por:
 - Presidente: ${dir.president?.name || '[Por designar]'}
 - Secretario: ${dir.secretary?.name || '[Por designar]'}
-- Tesorero: ${dir.treasurer?.name || '[Por designar]'}
+- Tesorero: ${dir.treasurer?.name || '[Por designar]'}${additionalMembersSection ? '\n' + additionalMembersSection : ''}
 
 TÍTULO V: DE LA COMISIÓN ELECTORAL
 
@@ -1058,6 +1070,11 @@ ${com.length > 0 ? com.map((m, i) => `${i + 1}. ${m?.name || '[Por designar]'}`)
 TÍTULO VI: DISPOSICIONES FINALES
 
 Artículo 8°: Estos estatutos podrán ser modificados en Asamblea Extraordinaria, con la aprobación de al menos 2/3 de los socios presentes.
+
+---
+ASISTENTES A LA ASAMBLEA CONSTITUTIVA (${att.length} personas):
+
+${attendeesSection}
 
 ---
 Estatutos aprobados en Asamblea Constitutiva
@@ -1198,8 +1215,8 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
           <div style="font-size: 13px; color: #1e40af;">
             <p style="margin: 0 0 6px;"><strong>Presidente:</strong> ${dir.president?.name || '-'}</p>
             <p style="margin: 0 0 6px;"><strong>Secretario:</strong> ${dir.secretary?.name || '-'}</p>
-            <p style="margin: 0;"><strong>Tesorero:</strong> ${dir.treasurer?.name || '-'}</p>
-            ${add.length > 0 ? `<p style="margin: 8px 0 0; font-size: 12px; color: #3b82f6;">+ ${add.length} miembro(s) adicional(es)</p>` : ''}
+            <p style="margin: 0 0 6px;"><strong>Tesorero:</strong> ${dir.treasurer?.name || '-'}</p>
+            ${add.length > 0 ? add.map((m, i) => `<p style="margin: 6px 0 0;"><strong>${m.role || 'Director'}:</strong> ${m.name || '-'}</p>`).join('') : ''}
           </div>
         </div>
 
@@ -1216,10 +1233,10 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
         <!-- Asistentes -->
         <div style="background: #f5f3ff; border: 2px solid #8b5cf6; border-radius: 12px; padding: 16px;">
           <h4 style="margin: 0 0 12px; color: #5b21b6; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-            <span>📋</span> Asistentes
+            <span>📋</span> Asistentes (${att.length})
           </h4>
-          <div style="font-size: 13px; color: #5b21b6;">
-            <p style="margin: 0;"><strong>${att.length}</strong> personas registradas</p>
+          <div style="font-size: 13px; color: #5b21b6; max-height: 200px; overflow-y: auto;">
+            ${att.length > 0 ? att.map((a, i) => `<p style="margin: ${i === 0 ? '0' : '4px'} 0 0;">${i + 1}. ${a.name || a.firstName + ' ' + a.lastName || '-'}</p>`).join('') : '<p style="margin: 0;">Sin asistentes registrados</p>'}
           </div>
         </div>
       </div>
