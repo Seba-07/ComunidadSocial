@@ -141,6 +141,12 @@ const organizationSchema = new mongoose.Schema({
   // Comision Electoral (from validation wizard - flexible schema)
   comisionElectoral: [mongoose.Schema.Types.Mixed],
 
+  // Estatutos de la organización
+  estatutos: {
+    type: String,
+    default: ''
+  },
+
   // Validated attendees from assembly
   validatedAttendees: [memberSchema],
 

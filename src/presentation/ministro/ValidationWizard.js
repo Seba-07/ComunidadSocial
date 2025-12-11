@@ -1015,9 +1015,62 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     `;
   };
 
+  // Generar estatutos por defecto si no hay
+  const generateDefaultEstatutos = () => {
+    const dir = wizardData.directorio;
+    const com = wizardData.comisionElectoral;
+
+    return `ESTATUTOS DE LA ORGANIZACIÓN
+
+${orgName.toUpperCase()}
+
+TÍTULO I: DENOMINACIÓN, DOMICILIO Y DURACIÓN
+
+Artículo 1°: Constitúyese la organización comunitaria denominada "${orgName}", con domicilio en la comuna de Renca, Región Metropolitana de Santiago.
+
+Artículo 2°: La organización tendrá duración indefinida.
+
+TÍTULO II: FINALIDADES Y OBJETIVOS
+
+Artículo 3°: La organización tiene como objetivo principal promover la integración, participación y desarrollo de la comunidad, así como la defensa de los intereses y derechos de sus asociados.
+
+TÍTULO III: DE LOS SOCIOS
+
+Artículo 4°: Podrán ser socios todas las personas naturales mayores de 14 años que residan en el territorio de la organización y que manifiesten su voluntad de pertenecer a ella.
+
+Artículo 5°: Son derechos de los socios:
+a) Participar con derecho a voz y voto en las asambleas
+b) Elegir y ser elegidos para cargos directivos
+c) Presentar proyectos e iniciativas
+
+TÍTULO IV: DEL DIRECTORIO
+
+Artículo 6°: El Directorio estará compuesto por:
+- Presidente: ${dir.president?.name || '[Por designar]'}
+- Secretario: ${dir.secretary?.name || '[Por designar]'}
+- Tesorero: ${dir.treasurer?.name || '[Por designar]'}
+
+TÍTULO V: DE LA COMISIÓN ELECTORAL
+
+Artículo 7°: La Comisión Electoral estará compuesta por tres miembros:
+${com.length > 0 ? com.map((m, i) => `${i + 1}. ${m?.name || '[Por designar]'}`).join('\n') : '1. [Por designar]\n2. [Por designar]\n3. [Por designar]'}
+
+TÍTULO VI: DISPOSICIONES FINALES
+
+Artículo 8°: Estos estatutos podrán ser modificados en Asamblea Extraordinaria, con la aprobación de al menos 2/3 de los socios presentes.
+
+---
+Estatutos aprobados en Asamblea Constitutiva
+Validados por Ministro de Fe de la Municipalidad de Renca`;
+  };
+
   // PASO 5: Revisión y Edición de Estatutos
   const renderStep5_Estatutos = () => {
-    const currentEstatutos = wizardData.estatutos || '';
+    // Si no hay estatutos guardados, generar unos por defecto
+    if (!wizardData.estatutos || wizardData.estatutos.trim() === '') {
+      wizardData.estatutos = generateDefaultEstatutos();
+    }
+    const currentEstatutos = wizardData.estatutos;
 
     return `
       <div style="margin-bottom: 20px;">
@@ -1521,55 +1574,6 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       if (e.target === estatutosModal) estatutosModal.remove();
     });
   };
-
-  // Generar estatutos por defecto si no hay
-  const generateDefaultEstatutos = () => {
-    const dir = wizardData.directorio;
-    const com = wizardData.comisionElectoral;
-
-    return `ESTATUTOS DE LA ORGANIZACIÓN
-
-${orgName.toUpperCase()}
-
-TÍTULO I: DENOMINACIÓN, DOMICILIO Y DURACIÓN
-
-Artículo 1°: Constitúyese la organización comunitaria denominada "${orgName}", con domicilio en la comuna de Renca, Región Metropolitana de Santiago.
-
-Artículo 2°: La organización tendrá duración indefinida.
-
-TÍTULO II: FINALIDADES Y OBJETIVOS
-
-Artículo 3°: La organización tiene como objetivo principal promover la integración, participación y desarrollo de la comunidad, así como la defensa de los intereses y derechos de sus asociados.
-
-TÍTULO III: DE LOS SOCIOS
-
-Artículo 4°: Podrán ser socios todas las personas naturales mayores de 14 años que residan en el territorio de la organización y que manifiesten su voluntad de pertenecer a ella.
-
-Artículo 5°: Son derechos de los socios:
-a) Participar con derecho a voz y voto en las asambleas
-b) Elegir y ser elegidos para cargos directivos
-c) Presentar proyectos e iniciativas
-
-TÍTULO IV: DEL DIRECTORIO
-
-Artículo 6°: El Directorio estará compuesto por:
-- Presidente: ${dir.president?.name || '[Por designar]'}
-- Secretario: ${dir.secretary?.name || '[Por designar]'}
-- Tesorero: ${dir.treasurer?.name || '[Por designar]'}
-
-TÍTULO V: DE LA COMISIÓN ELECTORAL
-
-Artículo 7°: La Comisión Electoral estará compuesta por tres miembros:
-${com.length > 0 ? com.map((m, i) => `${i + 1}. ${m?.name || '[Por designar]'}`).join('\n') : '1. [Por designar]\n2. [Por designar]\n3. [Por designar]'}
-
-TÍTULO VI: DISPOSICIONES FINALES
-
-Artículo 8°: Estos estatutos podrán ser modificados en Asamblea Extraordinaria, con la aprobación de al menos 2/3 de los socios presentes.
-
----
-Estatutos aprobados en Asamblea Constitutiva
-Validados por Ministro de Fe de la Municipalidad de Renca`;
-  }
 
   // Actualizar IDs seleccionados (incluye datos guardados y DOM actual)
   const updateSelectedIds = () => {

@@ -393,6 +393,8 @@ class OrganizationsService {
         provisionalDirectorio: provisionalDirectorio,
         // Comisión Electoral (paso 5)
         electoralCommission: comisionElectoral,
+        // Estatutos (paso 6)
+        estatutos: requestData.estatutos || '',
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
         assemblyAddress: requestData.assemblyAddress || null,

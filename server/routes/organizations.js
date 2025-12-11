@@ -94,6 +94,12 @@ router.post('/', authenticate, async (req, res) => {
       console.log('📤 CREATE ORG - electoralCommission a guardar:', JSON.stringify(orgData.electoralCommission, null, 2));
     }
 
+    // Asegurar que estatutos se guarde explícitamente
+    if (req.body.estatutos) {
+      orgData.estatutos = req.body.estatutos;
+      console.log('📤 CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
+    }
+
     const organization = new Organization(orgData);
     await organization.save();
 
