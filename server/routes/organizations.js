@@ -352,6 +352,150 @@ router.get('/status/:status', authenticate, requireRole('ADMIN'), async (req, re
   }
 });
 
+// Diagnóstico de organización (Admin) - ver todos los datos incluyendo provisionalDirectorio
+router.get('/:id/debug', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Devolver datos relevantes para diagnóstico
+    res.json({
+      _id: org._id,
+      organizationName: org.organizationName,
+      status: org.status,
+      provisionalDirectorio: org.provisionalDirectorio,
+      members: org.members?.map(m => ({
+        _id: m._id,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        rut: m.rut,
+        role: m.role
+      })),
+      electoralCommission: org.electoralCommission
+    });
+  } catch (error) {
+    console.error('Debug org error:', error);
+    res.status(500).json({ error: 'Error al obtener diagnóstico' });
+  }
+});
+
+// Migrar provisionalDirectorio desde members (Admin)
+router.post('/:id/migrate-directorio', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Buscar miembros por rol
+    const president = org.members?.find(m => m.role === 'president');
+    const secretary = org.members?.find(m => m.role === 'secretary');
+    const treasurer = org.members?.find(m => m.role === 'treasurer');
+
+    if (!president && !secretary && !treasurer) {
+      return res.status(400).json({
+        error: 'No se encontraron miembros con roles de directorio',
+        members: org.members?.map(m => ({ name: `${m.firstName} ${m.lastName}`, role: m.role }))
+      });
+    }
+
+    // Construir provisionalDirectorio desde members
+    org.provisionalDirectorio = {
+      president: president ? {
+        rut: president.rut,
+        firstName: president.firstName,
+        lastName: president.lastName
+      } : null,
+      secretary: secretary ? {
+        rut: secretary.rut,
+        firstName: secretary.firstName,
+        lastName: secretary.lastName
+      } : null,
+      treasurer: treasurer ? {
+        rut: treasurer.rut,
+        firstName: treasurer.firstName,
+        lastName: treasurer.lastName
+      } : null,
+      designatedAt: new Date(),
+      type: 'PROVISIONAL'
+    };
+
+    await org.save();
+
+    res.json({
+      message: 'Directorio migrado exitosamente',
+      provisionalDirectorio: org.provisionalDirectorio
+    });
+  } catch (error) {
+    console.error('Migrate directorio error:', error);
+    res.status(500).json({ error: 'Error al migrar directorio' });
+  }
+});
+
+// Actualizar provisionalDirectorio manualmente (Admin) - por si los roles están mal
+router.post('/:id/set-directorio', authenticate, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    const { presidentRut, secretaryRut, treasurerRut } = req.body;
+
+    // Buscar miembros por RUT
+    const findByRut = (rut) => {
+      if (!rut) return null;
+      const normalized = rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      return org.members?.find(m => {
+        const memberRut = m.rut?.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+        return memberRut === normalized;
+      });
+    };
+
+    const president = findByRut(presidentRut);
+    const secretary = findByRut(secretaryRut);
+    const treasurer = findByRut(treasurerRut);
+
+    // Construir provisionalDirectorio
+    org.provisionalDirectorio = {
+      president: president ? {
+        rut: president.rut,
+        firstName: president.firstName,
+        lastName: president.lastName
+      } : null,
+      secretary: secretary ? {
+        rut: secretary.rut,
+        firstName: secretary.firstName,
+        lastName: secretary.lastName
+      } : null,
+      treasurer: treasurer ? {
+        rut: treasurer.rut,
+        firstName: treasurer.firstName,
+        lastName: treasurer.lastName
+      } : null,
+      designatedAt: new Date(),
+      type: 'PROVISIONAL'
+    };
+
+    // También actualizar los roles de los miembros
+    if (president) president.role = 'president';
+    if (secretary) secretary.role = 'secretary';
+    if (treasurer) treasurer.role = 'treasurer';
+
+    await org.save();
+
+    res.json({
+      message: 'Directorio actualizado exitosamente',
+      provisionalDirectorio: org.provisionalDirectorio
+    });
+  } catch (error) {
+    console.error('Set directorio error:', error);
+    res.status(500).json({ error: 'Error al actualizar directorio' });
+  }
+});
+
 // Get statistics (Admin)
 router.get('/stats/counts', authenticate, requireRole('ADMIN'), async (req, res) => {
   try {

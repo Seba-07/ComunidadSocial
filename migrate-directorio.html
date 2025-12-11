@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrar Directorio Provisorio</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        h1 { color: #1976d2; }
+        .section { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        label { display: block; margin: 10px 0 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #1976d2; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #1565c0; }
+        button.secondary { background: #757575; }
+        button.success { background: #4caf50; }
+        pre { background: #263238; color: #aed581; padding: 15px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+        .error { color: #f44336; }
+        .success { color: #4caf50; }
+        .member-list { background: white; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .member-item { padding: 5px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>Migrar Directorio Provisorio</h1>
+
+    <div class="section">
+        <h2>1. Primero: Login como Admin</h2>
+        <label>Email:</label>
+        <input type="email" id="email" placeholder="admin@example.com">
+        <label>Password:</label>
+        <input type="password" id="password">
+        <button onclick="login()">Iniciar Sesion</button>
+        <p id="loginStatus"></p>
+    </div>
+
+    <div class="section">
+        <h2>2. Ver organizaciones</h2>
+        <button onclick="loadOrganizations()">Cargar Organizaciones</button>
+        <select id="orgSelect" onchange="selectOrg()">
+            <option value="">Selecciona una organizacion...</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <h2>3. Diagnostico de la organizacion</h2>
+        <button onclick="debugOrg()">Ver Datos Actuales</button>
+        <pre id="debugResult"></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Opcion A: Migrar desde roles existentes</h2>
+        <p>Esto usa los miembros que tienen role='president', 'secretary', 'treasurer'</p>
+        <button class="success" onclick="migrateFromRoles()">Migrar desde Roles</button>
+        <pre id="migrateResult"></pre>
+    </div>
+
+    <div class="section">
+        <h2>5. Opcion B: Establecer manualmente por RUT</h2>
+        <p>Usa esto si los roles estan mal asignados. Ingresa los RUTs correctos:</p>
+        <div id="membersList" class="member-list"></div>
+        <label>RUT del Presidente:</label>
+        <input type="text" id="presidentRut" placeholder="12.345.678-9">
+        <label>RUT del Secretario:</label>
+        <input type="text" id="secretaryRut" placeholder="12.345.678-9">
+        <label>RUT del Tesorero:</label>
+        <input type="text" id="treasurerRut" placeholder="12.345.678-9">
+        <button class="success" onclick="setDirectorio()">Establecer Directorio</button>
+        <pre id="setResult"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'https://comunidadsocial-production.up.railway.app/api';
+        let token = localStorage.getItem('auth_token');
+        let selectedOrgId = null;
+        let organizations = [];
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.token) {
+                    token = data.token;
+                    localStorage.setItem('auth_token', token);
+                    document.getElementById('loginStatus').innerHTML = '<span class="success">Login exitoso!</span>';
+                } else {
+                    document.getElementById('loginStatus').innerHTML = '<span class="error">Error: ' + data.error + '</span>';
+                }
+            } catch (e) {
+                document.getElementById('loginStatus').innerHTML = '<span class="error">Error: ' + e.message + '</span>';
+            }
+        }
+
+        async function loadOrganizations() {
+            try {
+                const res = await fetch(`${API_URL}/organizations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                organizations = await res.json();
+
+                const select = document.getElementById('orgSelect');
+                select.innerHTML = '<option value="">Selecciona una organizacion...</option>';
+                organizations.forEach(org => {
+                    select.innerHTML += `<option value="${org._id}">${org.organizationName} (${org.status})</option>`;
+                });
+            } catch (e) {
+                alert('Error cargando organizaciones: ' + e.message);
+            }
+        }
+
+        function selectOrg() {
+            selectedOrgId = document.getElementById('orgSelect').value;
+            document.getElementById('debugResult').textContent = '';
+            document.getElementById('migrateResult').textContent = '';
+            document.getElementById('setResult').textContent = '';
+        }
+
+        async function debugOrg() {
+            if (!selectedOrgId) {
+                alert('Selecciona una organizacion primero');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/organizations/${selectedOrgId}/debug`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                document.getElementById('debugResult').textContent = JSON.stringify(data, null, 2);
+
+                // Mostrar lista de miembros para facilitar seleccion
+                if (data.members) {
+                    const membersList = document.getElementById('membersList');
+                    membersList.innerHTML = '<strong>Miembros disponibles:</strong><br>';
+                    data.members.forEach(m => {
+                        membersList.innerHTML += `<div class="member-item">${m.firstName} ${m.lastName} - RUT: ${m.rut} - Rol actual: ${m.role}</div>`;
+                    });
+                }
+            } catch (e) {
+                document.getElementById('debugResult').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        async function migrateFromRoles() {
+            if (!selectedOrgId) {
+                alert('Selecciona una organizacion primero');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/organizations/${selectedOrgId}/migrate-directorio`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                document.getElementById('migrateResult').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('migrateResult').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        async function setDirectorio() {
+            if (!selectedOrgId) {
+                alert('Selecciona una organizacion primero');
+                return;
+            }
+
+            const presidentRut = document.getElementById('presidentRut').value;
+            const secretaryRut = document.getElementById('secretaryRut').value;
+            const treasurerRut = document.getElementById('treasurerRut').value;
+
+            try {
+                const res = await fetch(`${API_URL}/organizations/${selectedOrgId}/set-directorio`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ presidentRut, secretaryRut, treasurerRut })
+                });
+                const data = await res.json();
+                document.getElementById('setResult').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('setResult').textContent = 'Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
