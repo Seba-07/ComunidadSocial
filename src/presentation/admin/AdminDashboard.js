@@ -851,7 +851,7 @@ class AdminDashboard {
             </svg>
             Miembros
           </button>
-          <button class="review-tab" data-tab="directorio">
+          <button class="review-tab" data-tab="directorio-comision">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -859,15 +859,6 @@ class AdminDashboard {
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
             Directorio
-          </button>
-          <button class="review-tab" data-tab="commission">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
-            Comisión
           </button>
           <button class="review-tab" data-tab="documents">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -894,11 +885,8 @@ class AdminDashboard {
           <div class="review-tab-content" id="tab-members">
             ${this.renderMembersTab(org)}
           </div>
-          <div class="review-tab-content" id="tab-directorio">
-            ${this.renderDirectorioTab(org)}
-          </div>
-          <div class="review-tab-content" id="tab-commission">
-            ${this.renderCommissionTab(org)}
+          <div class="review-tab-content" id="tab-directorio-comision">
+            ${this.renderDirectorioComisionTab(org)}
           </div>
           <div class="review-tab-content" id="tab-documents">
             ${this.renderDocumentsTab(org)}
@@ -1952,59 +1940,64 @@ class AdminDashboard {
 
     return `
       <div class="review-section">
-        ${hasMinistroApproval ? `
-          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              <span style="color: #166534; font-weight: 600; font-size: 15px;">Organización Aprobada por Ministro de Fe</span>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-              ${assemblyDate ? `
-                <div style="background: white; padding: 10px 12px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                  <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">📅 Fecha Asamblea</div>
-                  <div style="font-size: 13px; font-weight: 600; color: #1f2937;">${assemblyDate}</div>
-                </div>
-              ` : ''}
-              <div style="background: white; padding: 10px 12px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">👥 Socios Fundadores</div>
-                <div style="font-size: 13px; font-weight: 600; color: #1f2937;">${members.length} personas</div>
-              </div>
-              ${attendees.length > 0 ? `
-                <div style="background: white; padding: 10px 12px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                  <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">🎫 Asistentes Asamblea</div>
-                  <div style="font-size: 13px; font-weight: 600; color: #1f2937;">${attendees.length} personas</div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        ` : ''}
-
-        <h4 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          Datos de la Organización
-        </h4>
-
-        <div class="review-field">
-          <div class="field-content">
-            <label>Tipo de Organización</label>
-            <span>${getOrgTypeName(o.type)}</span>
-          </div>
-        </div>
-        ${renderField('name', 'Nombre', o.name)}
-        ${renderField('address', 'Dirección', o.address)}
-        ${renderField('region', 'Región', o.region)}
-        ${renderField('commune', 'Comuna', o.commune)}
-        ${o.neighborhood ? renderField('neighborhood', 'Unidad Vecinal', o.neighborhood) : ''}
-        ${renderField('email', 'Email', o.email)}
-        ${renderField('phone', 'Teléfono', o.phone)}
-        ${renderField('description', 'Objetivos', o.description, true)}
+        <table class="members-table">
+          <tbody>
+            <tr>
+              <td style="width: 140px;"><strong>Tipo</strong></td>
+              <td>${getOrgTypeName(o.type) || '-'}</td>
+            </tr>
+            <tr>
+              <td><strong>Nombre</strong></td>
+              <td>${o.name || '-'}</td>
+            </tr>
+            <tr>
+              <td><strong>Dirección</strong></td>
+              <td>${o.address || '-'}</td>
+            </tr>
+            <tr>
+              <td><strong>Comuna</strong></td>
+              <td>${o.commune || '-'}${o.region ? `, ${o.region}` : ''}</td>
+            </tr>
+            ${o.neighborhood ? `
+            <tr>
+              <td><strong>Unidad Vecinal</strong></td>
+              <td>${o.neighborhood}</td>
+            </tr>
+            ` : ''}
+            <tr>
+              <td><strong>Email</strong></td>
+              <td>${o.email || '-'}</td>
+            </tr>
+            <tr>
+              <td><strong>Teléfono</strong></td>
+              <td>${o.phone || '-'}</td>
+            </tr>
+            ${members.length > 0 ? `
+            <tr>
+              <td><strong>Socios Fundadores</strong></td>
+              <td>${members.length} personas</td>
+            </tr>
+            ` : ''}
+            ${attendees.length > 0 ? `
+            <tr>
+              <td><strong>Asistentes Asamblea</strong></td>
+              <td>${attendees.length} personas</td>
+            </tr>
+            ` : ''}
+            ${assemblyDate ? `
+            <tr>
+              <td><strong>Fecha Asamblea</strong></td>
+              <td>${assemblyDate}</td>
+            </tr>
+            ` : ''}
+            ${o.description ? `
+            <tr>
+              <td><strong>Objetivos</strong></td>
+              <td style="white-space: pre-wrap;">${o.description}</td>
+            </tr>
+            ` : ''}
+          </tbody>
+        </table>
       </div>
     `;
   }
@@ -2065,15 +2058,17 @@ class AdminDashboard {
   }
 
   /**
-   * Renderiza el tab de directorio provisorio
+   * Renderiza el tab combinado de directorio y comisión en formato tabla compacto
    */
-  renderDirectorioTab(org) {
+  renderDirectorioComisionTab(org) {
     const directorio = org.provisionalDirectorio || org.directorio || {};
+    const comisionElectoral = org.comisionElectoral || [];
+    const commission = org.commission || {};
     const hasMinistroApproval = org.status === ORG_STATUS.MINISTRO_APPROVED ||
                                 org.provisionalDirectorio ||
                                 org.comisionElectoral;
 
-    if (!hasMinistroApproval && !directorio.president) {
+    if (!hasMinistroApproval && !directorio.president && !comisionElectoral.length && !commission?.members?.length) {
       return `
         <div class="no-data" style="text-align: center; padding: 32px;">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin: 0 auto 12px;">
@@ -2082,175 +2077,94 @@ class AdminDashboard {
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <p style="color: #6b7280; margin: 0;">El directorio provisorio será asignado cuando el Ministro de Fe apruebe la asamblea constitutiva.</p>
+          <p style="color: #6b7280; margin: 0;">El directorio y comisión serán asignados cuando el Ministro de Fe apruebe la asamblea constitutiva.</p>
         </div>
       `;
     }
 
-    const renderDirectorCard = (person, cargo, icon) => {
-      if (!person) return '';
-      return `
-        <div class="director-card" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
-              ${icon}
-            </div>
-            <div style="flex: 1;">
-              <div style="font-weight: 600; color: #1f2937; font-size: 15px;">${person.name || '-'}</div>
-              <div style="font-size: 13px; color: #6b7280;">${cargo}</div>
-              ${person.rut ? `<div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">${person.rut}</div>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    };
-
-    return `
-      <div class="review-directorio" style="padding: 8px 0;">
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span style="color: #1e40af; font-size: 13px;">Directorio provisorio designado en asamblea constitutiva y validado por el Ministro de Fe.</span>
-        </div>
-
-        <h4 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-          </svg>
-          Cargos Principales
-        </h4>
-
-        ${renderDirectorCard(directorio.president, 'Presidente(a)', '👤')}
-        ${renderDirectorCard(directorio.secretary, 'Secretario(a)', '📝')}
-        ${renderDirectorCard(directorio.treasurer, 'Tesorero(a)', '💰')}
-
-        ${directorio.additionalMembers && directorio.additionalMembers.length > 0 ? `
-          <h4 style="font-size: 14px; font-weight: 600; color: #374151; margin: 20px 0 12px; display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
-            Directores Adicionales
-          </h4>
-          ${directorio.additionalMembers.map((m, i) =>
-            renderDirectorCard(m, m.cargo || 'Director(a)', '👥')
-          ).join('')}
-        ` : ''}
-      </div>
-    `;
-  }
-
-  /**
-   * Renderiza el tab de comisión
-   */
-  renderCommissionTab(org, canReview = true) {
-    // Verificar ambas fuentes de datos de comisión
-    const commission = org.commission || {};
-    const comisionElectoral = org.comisionElectoral || [];
-    const isReviewable = canReview && org.status === ORG_STATUS.IN_REVIEW;
-
-    // Si hay comisionElectoral del ministro, usar esa
-    if (comisionElectoral.length > 0) {
-      return `
-        <div class="review-commission">
-          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span style="color: #166534; font-size: 13px;">Comisión Electoral validada por el Ministro de Fe.</span>
-          </div>
-
-          <h4 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px;">Miembros de la Comisión Electoral</h4>
-          <div class="commission-members-review">
-            ${comisionElectoral.map((m, i) => {
-              const roles = ['Presidente', 'Secretario', 'Vocal'];
-              return `
-                <div class="commission-member-card" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                  <div class="commission-member-info">
-                    <div class="member-role" style="font-size: 12px; color: #6b7280; font-weight: 500;">${roles[i] || 'Miembro'}</div>
-                    <div class="member-name" style="font-size: 14px; font-weight: 600; color: #1f2937;">${m.name || `${m.firstName || ''} ${m.lastName || ''}`}</div>
-                    ${m.rut ? `<div class="member-rut" style="font-size: 12px; color: #9ca3af;">${m.rut}</div>` : ''}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      `;
+    // Construir filas del directorio
+    const directorioRows = [];
+    if (directorio.president) {
+      directorioRows.push({ cargo: 'Presidente(a)', nombre: directorio.president.name || '-', rut: directorio.president.rut || '-' });
+    }
+    if (directorio.secretary) {
+      directorioRows.push({ cargo: 'Secretario(a)', nombre: directorio.secretary.name || '-', rut: directorio.secretary.rut || '-' });
+    }
+    if (directorio.treasurer) {
+      directorioRows.push({ cargo: 'Tesorero(a)', nombre: directorio.treasurer.name || '-', rut: directorio.treasurer.rut || '-' });
+    }
+    if (directorio.additionalMembers) {
+      directorio.additionalMembers.forEach(m => {
+        directorioRows.push({ cargo: m.cargo || 'Director(a)', nombre: m.name || '-', rut: m.rut || '-' });
+      });
     }
 
-    if (!commission?.members?.length) {
-      return '<p class="no-data">No hay comisión electoral registrada</p>';
-    }
-
+    // Construir filas de comisión
+    const comisionRows = [];
     const roles = ['Presidente', 'Secretario', 'Vocal'];
-    const signatures = org.signatures || {};
+    if (comisionElectoral.length > 0) {
+      comisionElectoral.forEach((m, i) => {
+        comisionRows.push({
+          cargo: roles[i] || 'Miembro',
+          nombre: m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim() || '-',
+          rut: m.rut || '-'
+        });
+      });
+    } else if (commission?.members?.length) {
+      commission.members.forEach((m, i) => {
+        comisionRows.push({
+          cargo: roles[i] || 'Miembro',
+          nombre: `${m.firstName || ''} ${m.lastName || ''}`.trim() || '-',
+          rut: m.rut || '-'
+        });
+      });
+    }
 
     return `
-      <div class="review-commission">
-        <div class="commission-field ${isReviewable ? 'reviewable' : ''}" data-field-key="electionDate">
-          <div class="commission-field-content">
-            <label>Fecha de Elección</label>
-            <span>${commission.electionDate ? (() => {
-              const [year, month, day] = commission.electionDate.split('-').map(Number);
-              const date = new Date(year, month - 1, day);
-              return date.toLocaleDateString('es-CL');
-            })() : '-'}</span>
-          </div>
-          ${isReviewable ? `
-            <button class="btn-mark-error" data-type="commission" data-key="electionDate" data-label="Fecha de Elección" title="Marcar para corrección">
-              <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-              </svg>
-              <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-            </button>
-          ` : ''}
-        </div>
+      <div class="review-directorio-comision">
+        ${directorioRows.length > 0 ? `
+          <div class="members-count" style="margin-bottom: 8px;">Directorio Provisorio (${directorioRows.length})</div>
+          <table class="members-table" style="margin-bottom: 20px;">
+            <thead>
+              <tr>
+                <th>Cargo</th>
+                <th>Nombre</th>
+                <th>RUT</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${directorioRows.map(r => `
+                <tr>
+                  <td><strong>${r.cargo}</strong></td>
+                  <td>${r.nombre}</td>
+                  <td>${r.rut}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
 
-        <h4 class="commission-subtitle">Miembros de la Comisión Electoral</h4>
-        <div class="commission-members-review">
-          ${commission.members.map((m, i) => {
-            const sig = signatures[m.id];
-            const memberId = m.id || `commission_member_${i}`;
-            const memberLabel = `${roles[i]} Comisión: ${m.firstName} ${m.lastName}`;
-            return `
-              <div class="commission-member-card ${isReviewable ? 'reviewable' : ''}" data-member-id="${memberId}">
-                <div class="commission-member-info">
-                  <div class="member-role">${roles[i]}</div>
-                  <div class="member-name">${m.firstName} ${m.lastName}</div>
-                  <div class="member-rut">${m.rut}</div>
-                  <div class="member-signature ${sig ? 'signed' : 'pending'}">
-                    ${sig
-                      ? `✓ Firmado (${sig.type === 'drawn' ? 'Digital' : sig.type === 'digital' ? 'Clave Única' : 'Manual'})`
-                      : '⚠️ Sin firma'}
-                  </div>
-                </div>
-                ${isReviewable ? `
-                  <button class="btn-mark-error btn-mark-commission" data-type="commission" data-key="${memberId}" data-label="${memberLabel}" title="Marcar para corrección">
-                    <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="15" y1="9" x2="9" y2="15"></line>
-                      <line x1="9" y1="9" x2="15" y2="15"></line>
-                    </svg>
-                    <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                  </button>
-                ` : ''}
-              </div>
-            `;
-          }).join('')}
-        </div>
+        ${comisionRows.length > 0 ? `
+          <div class="members-count" style="margin-bottom: 8px;">Comisión Electoral (${comisionRows.length})</div>
+          <table class="members-table">
+            <thead>
+              <tr>
+                <th>Cargo</th>
+                <th>Nombre</th>
+                <th>RUT</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${comisionRows.map(r => `
+                <tr>
+                  <td><strong>${r.cargo}</strong></td>
+                  <td>${r.nombre}</td>
+                  <td>${r.rut}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
       </div>
     `;
   }
