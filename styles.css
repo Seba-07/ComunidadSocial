@@ -9441,12 +9441,19 @@ a.header-logo:hover {
     font-size: 15px;
 }
 
-/* Admin Stats Row - Compact */
+/* Admin Stats Row - Compact - Scrollable */
 .admin-stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
     gap: 10px;
     margin-top: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.admin-stats-row::-webkit-scrollbar {
+    display: none;
 }
 
 .admin-stat-card {
@@ -9459,6 +9466,8 @@ a.header-logo:hover {
     gap: 10px;
     border: 1px solid var(--border-color);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-shrink: 0;
+    min-width: 140px;
 }
 
 .admin-stat-card:hover {
@@ -9557,6 +9566,8 @@ a.header-logo:hover {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -11576,10 +11587,6 @@ a.header-logo:hover {
         padding: 12px;
     }
 
-    .admin-stats-row {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .admin-stat-card .stat-label {
         font-size: 9px;
     }
@@ -11627,11 +11634,6 @@ a.header-logo:hover {
 }
 
 @media (max-width: 480px) {
-    .admin-stats-row {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
     .admin-stat-card {
         padding: 10px;
     }

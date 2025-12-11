@@ -194,7 +194,10 @@ async function renderAssignments() {
     }
 
     return `
-      <div class="assignment-card" style="
+      <div class="assignment-card"
+        data-status="${assignment.status || 'pending'}"
+        data-validated="${assignment.signaturesValidated ? 'true' : 'false'}"
+        style="
         border: 2px solid ${wasModified ? '#f59e0b' : '#e5e7eb'};
         border-radius: 12px;
         padding: 20px;
@@ -449,20 +452,79 @@ function renderAvailability() {
   }).join('');
 }
 
-// Tab switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
+// Current filter state
+let currentFilter = 'all';
+
+// Filter chip switching
+document.querySelectorAll('.filter-chip').forEach(btn => {
   btn.addEventListener('click', () => {
     const tabName = btn.dataset.tab;
+    const filterType = btn.dataset.filter;
 
     // Update buttons
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    // Update content
+    // Update content (switch tab)
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
+
+    // If it's an assignment filter, apply filtering
+    if (tabName === 'assignments' && filterType) {
+      currentFilter = filterType;
+      applyAssignmentFilter();
+    }
   });
 });
+
+// Apply filter to assignments
+function applyAssignmentFilter() {
+  const container = document.getElementById('assignments-list');
+  const cards = container.querySelectorAll('.assignment-card');
+
+  cards.forEach(card => {
+    const status = card.dataset.status || 'pending';
+    const isValidated = card.dataset.validated === 'true';
+
+    let show = false;
+
+    switch (currentFilter) {
+      case 'all':
+        show = true;
+        break;
+      case 'pending':
+        show = status === 'pending';
+        break;
+      case 'completed':
+        show = status === 'completed';
+        break;
+      case 'validated':
+        show = isValidated;
+        break;
+      default:
+        show = true;
+    }
+
+    card.style.display = show ? 'block' : 'none';
+  });
+
+  // Show empty message if no cards visible
+  const visibleCards = Array.from(cards).filter(c => c.style.display !== 'none');
+  let emptyMsg = container.querySelector('.filter-empty-message');
+
+  if (visibleCards.length === 0 && cards.length > 0) {
+    if (!emptyMsg) {
+      emptyMsg = document.createElement('div');
+      emptyMsg.className = 'filter-empty-message';
+      emptyMsg.style.cssText = 'text-align: center; padding: 40px 20px; color: #6b7280;';
+      emptyMsg.innerHTML = '<p style="margin: 0; font-size: 15px;">No hay asambleas con este filtro</p>';
+      container.appendChild(emptyMsg);
+    }
+    emptyMsg.style.display = 'block';
+  } else if (emptyMsg) {
+    emptyMsg.style.display = 'none';
+  }
+}
 
 // Change password button
 document.getElementById('btn-change-password').addEventListener('click', showChangePasswordModal);
