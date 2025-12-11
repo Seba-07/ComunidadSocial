@@ -2076,6 +2076,7 @@ class AdminDashboard {
     const directorio = org.provisionalDirectorio || org.directorio || {};
     const comisionElectoral = org.comisionElectoral || [];
     const commission = org.commission || {};
+    const certificates = org.certificates || {};
     const hasMinistroApproval = org.status === ORG_STATUS.MINISTRO_APPROVED ||
                                 org.provisionalDirectorio ||
                                 org.comisionElectoral;
@@ -2094,43 +2095,79 @@ class AdminDashboard {
       `;
     }
 
-    // Construir filas del directorio
+    // Helper para obtener certificado por RUT o ID
+    const getCertForMember = (member) => {
+      if (!member) return null;
+      // Buscar por ID directo
+      if (member.id && certificates[member.id]) return certificates[member.id];
+      if (member._id && certificates[member._id]) return certificates[member._id];
+      // Buscar por RUT en las claves
+      for (const [key, cert] of Object.entries(certificates)) {
+        if (cert.memberRut === member.rut || cert.rut === member.rut) return cert;
+      }
+      return null;
+    };
+
+    // Construir filas del directorio con certificados
     const directorioRows = [];
     if (directorio.president) {
-      directorioRows.push({ cargo: 'Presidente(a)', nombre: directorio.president.name || '-', rut: directorio.president.rut || '-' });
+      const cert = getCertForMember(directorio.president);
+      directorioRows.push({ cargo: 'Presidente(a)', nombre: directorio.president.name || '-', rut: directorio.president.rut || '-', cert, memberId: directorio.president.id || directorio.president._id });
     }
     if (directorio.secretary) {
-      directorioRows.push({ cargo: 'Secretario(a)', nombre: directorio.secretary.name || '-', rut: directorio.secretary.rut || '-' });
+      const cert = getCertForMember(directorio.secretary);
+      directorioRows.push({ cargo: 'Secretario(a)', nombre: directorio.secretary.name || '-', rut: directorio.secretary.rut || '-', cert, memberId: directorio.secretary.id || directorio.secretary._id });
     }
     if (directorio.treasurer) {
-      directorioRows.push({ cargo: 'Tesorero(a)', nombre: directorio.treasurer.name || '-', rut: directorio.treasurer.rut || '-' });
+      const cert = getCertForMember(directorio.treasurer);
+      directorioRows.push({ cargo: 'Tesorero(a)', nombre: directorio.treasurer.name || '-', rut: directorio.treasurer.rut || '-', cert, memberId: directorio.treasurer.id || directorio.treasurer._id });
     }
     if (directorio.additionalMembers) {
       directorio.additionalMembers.forEach(m => {
-        directorioRows.push({ cargo: m.cargo || 'Director(a)', nombre: m.name || '-', rut: m.rut || '-' });
+        const cert = getCertForMember(m);
+        directorioRows.push({ cargo: m.cargo || 'Director(a)', nombre: m.name || '-', rut: m.rut || '-', cert, memberId: m.id || m._id });
       });
     }
 
-    // Construir filas de comisión
+    // Construir filas de comisión con certificados
     const comisionRows = [];
     const roles = ['Presidente', 'Secretario', 'Vocal'];
     if (comisionElectoral.length > 0) {
       comisionElectoral.forEach((m, i) => {
+        const cert = getCertForMember(m);
         comisionRows.push({
           cargo: roles[i] || 'Miembro',
           nombre: m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim() || '-',
-          rut: m.rut || '-'
+          rut: m.rut || '-',
+          cert,
+          memberId: m.id || m._id
         });
       });
     } else if (commission?.members?.length) {
       commission.members.forEach((m, i) => {
+        const cert = certificates[m.id] || certificates[m._id] || null;
         comisionRows.push({
           cargo: roles[i] || 'Miembro',
           nombre: `${m.firstName || ''} ${m.lastName || ''}`.trim() || '-',
-          rut: m.rut || '-'
+          rut: m.rut || '-',
+          cert,
+          memberId: m.id || m._id
         });
       });
     }
+
+    const renderCertCell = (row) => {
+      if (row.cert) {
+        return `<button class="btn-view-cert-admin" data-member-id="${row.memberId}" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          Ver
+        </button>`;
+      }
+      return '<span style="color: #9ca3af; font-size: 12px;">No cargado</span>';
+    };
 
     return `
       <div class="review-directorio-comision">
@@ -2142,6 +2179,7 @@ class AdminDashboard {
                 <th>Cargo</th>
                 <th>Nombre</th>
                 <th>RUT</th>
+                <th>Certificado</th>
               </tr>
             </thead>
             <tbody>
@@ -2150,6 +2188,7 @@ class AdminDashboard {
                   <td><strong>${r.cargo}</strong></td>
                   <td>${r.nombre}</td>
                   <td>${r.rut}</td>
+                  <td>${renderCertCell(r)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -2164,6 +2203,7 @@ class AdminDashboard {
                 <th>Cargo</th>
                 <th>Nombre</th>
                 <th>RUT</th>
+                <th>Certificado</th>
               </tr>
             </thead>
             <tbody>
@@ -2172,6 +2212,7 @@ class AdminDashboard {
                   <td><strong>${r.cargo}</strong></td>
                   <td>${r.nombre}</td>
                   <td>${r.rut}</td>
+                  <td>${renderCertCell(r)}</td>
                 </tr>
               `).join('')}
             </tbody>

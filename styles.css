@@ -9930,9 +9930,8 @@ a.header-logo:hover {
     padding: 20px 24px;
     position: relative;
     z-index: 1;
-    min-height: 400px;
-    max-height: 400px;
-    height: 400px;
+    min-height: 300px;
+    max-height: calc(100vh - 220px);
 }
 
 .review-tab-content {
