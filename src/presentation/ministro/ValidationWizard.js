@@ -218,19 +218,36 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   console.log('ValidationWizard - Directorio precargado:', preloadedDirectorio);
 
   // Precargar comisión electoral si existe
+  console.log('🔍 ValidationWizard - provCom (electoralCommission):', provCom);
+
   let preloadedComision = provCom.map(cm => {
+    // Primero intentar buscar en members por RUT
     const found = findMemberByRut(cm.rut);
     if (found) {
       return { ...found, name: found.name, signature: null };
     }
+    // Si no se encuentra en members, usar los datos de electoralCommission directamente
+    const name = cm.firstName
+      ? `${cm.firstName} ${cm.lastName || ''}`.trim()
+      : cm.name || '';
+    if (name) {
+      return {
+        id: `ec-${cm.rut}`,
+        name: name,
+        rut: cm.rut,
+        signature: null
+      };
+    }
     return null;
   }).filter(Boolean);
 
-  // FALLBACK: Si no hay electoralCommission, buscar en los roles de los miembros
+  // FALLBACK: Si no hay datos en electoralCommission, buscar en los roles de los miembros
   if (preloadedComision.length === 0) {
     const commissionMembers = members.filter(m => m.role === 'electoral_commission' && !m.isMinor);
     preloadedComision = commissionMembers.map(m => ({ ...m, name: m.name, signature: null }));
   }
+
+  console.log('🔍 ValidationWizard - preloadedComision:', preloadedComision);
 
   // Debug log para verificar precarga
   console.log('ValidationWizard - Precarga de datos:', {
