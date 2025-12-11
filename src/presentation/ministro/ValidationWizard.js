@@ -83,25 +83,68 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     treasurer: null
   };
 
-  // Buscar miembros que coincidan con el directorio provisorio
+  // Helper para extraer nombre del provisionalDirectorio (que puede venir en diferentes formatos)
+  const extractProvDirName = (member) => {
+    if (!member) return '';
+    // Formato firstName/lastName
+    if (member.firstName) {
+      return `${member.firstName} ${member.lastName || ''}`.trim();
+    }
+    // Formato name
+    if (member.name) return member.name;
+    return '';
+  };
+
+  // Buscar miembros que coincidan con el directorio provisorio O usar datos directos
   if (provDir.president) {
     const found = findMemberByRut(provDir.president.rut);
     if (found) {
       preloadedDirectorio.president = { ...found, name: found.name };
+    } else {
+      // Si no se encuentra en members, usar los datos del provisionalDirectorio directamente
+      const name = extractProvDirName(provDir.president);
+      if (name) {
+        preloadedDirectorio.president = {
+          id: `provdir-president-${provDir.president.rut}`,
+          name: name,
+          rut: provDir.president.rut
+        };
+      }
     }
   }
   if (provDir.secretary) {
     const found = findMemberByRut(provDir.secretary.rut);
     if (found) {
       preloadedDirectorio.secretary = { ...found, name: found.name };
+    } else {
+      const name = extractProvDirName(provDir.secretary);
+      if (name) {
+        preloadedDirectorio.secretary = {
+          id: `provdir-secretary-${provDir.secretary.rut}`,
+          name: name,
+          rut: provDir.secretary.rut
+        };
+      }
     }
   }
   if (provDir.treasurer) {
     const found = findMemberByRut(provDir.treasurer.rut);
     if (found) {
       preloadedDirectorio.treasurer = { ...found, name: found.name };
+    } else {
+      const name = extractProvDirName(provDir.treasurer);
+      if (name) {
+        preloadedDirectorio.treasurer = {
+          id: `provdir-treasurer-${provDir.treasurer.rut}`,
+          name: name,
+          rut: provDir.treasurer.rut
+        };
+      }
     }
   }
+
+  console.log('ValidationWizard - provisionalDirectorio original:', provDir);
+  console.log('ValidationWizard - preloadedDirectorio después de procesar:', preloadedDirectorio);
 
   // FALLBACK: Buscar miembros faltantes por role o por índice (para cada rol individualmente)
   const adultMembers = members.filter(m => !m.isMinor);
