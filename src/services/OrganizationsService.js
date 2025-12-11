@@ -319,18 +319,31 @@ class OrganizationsService {
       // Función helper para extraer nombre de un miembro
       const extractName = (member) => {
         if (!member) return { firstName: '', lastName: '' };
-        // Intentar diferentes propiedades de nombre
+
+        // Formato WizardController: primerNombre, segundoNombre, apellidoPaterno, apellidoMaterno
+        if (member.primerNombre) {
+          const firstName = [member.primerNombre, member.segundoNombre].filter(Boolean).join(' ');
+          const lastName = [member.apellidoPaterno, member.apellidoMaterno].filter(Boolean).join(' ');
+          return { firstName, lastName };
+        }
+
+        // Formato estándar: firstName, lastName
         if (member.firstName) {
           return { firstName: member.firstName, lastName: member.lastName || '' };
         }
+
+        // Formato string completo: nombre
         if (member.nombre) {
           const parts = member.nombre.split(' ');
           return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
         }
+
+        // Formato alternativo: name
         if (member.name) {
           const parts = member.name.split(' ');
           return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
         }
+
         return { firstName: '', lastName: '' };
       };
 
