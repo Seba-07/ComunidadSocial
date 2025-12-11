@@ -248,14 +248,20 @@ function getStep1HTML() {
         <div class="form-row">
           <div class="form-group">
             <label>Forma de Contacto Preferida <span class="required">*</span></label>
-            <div style="display: flex; gap: 24px; margin-top: 8px;">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <div class="contact-preference-options">
+              <label class="contact-option">
                 <input type="radio" name="contactPreference" value="phone" checked required>
-                <span>📞 Teléfono</span>
+                <span class="contact-option-content">
+                  <span class="contact-icon">📞</span>
+                  <span class="contact-text">Teléfono</span>
+                </span>
               </label>
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <label class="contact-option">
                 <input type="radio" name="contactPreference" value="email" required>
-                <span>📧 Correo Electrónico</span>
+                <span class="contact-option-content">
+                  <span class="contact-icon">📧</span>
+                  <span class="contact-text">Correo Electrónico</span>
+                </span>
               </label>
             </div>
             <small class="form-help">Seleccione cómo prefiere ser contactado por la Municipalidad</small>
