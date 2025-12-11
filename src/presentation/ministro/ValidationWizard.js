@@ -57,6 +57,11 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Agregar miembros de electoralCommission que no estén ya en members
   const ecMembers = org?.electoralCommission || orgData?.electoralCommission || [];
+  console.log('🔍🔍🔍 ValidationWizard - electoralCommission DEBUG:');
+  console.log('  org?.electoralCommission:', org?.electoralCommission);
+  console.log('  orgData?.electoralCommission:', orgData?.electoralCommission);
+  console.log('  ecMembers final:', ecMembers);
+  console.log('  members antes de agregar EC:', members.length);
   ecMembers.forEach((ecm, index) => {
     if (!ecm || !ecm.rut) return;
     const normalizedEcRut = String(ecm.rut).replace(/[.-]/g, '').toLowerCase();
