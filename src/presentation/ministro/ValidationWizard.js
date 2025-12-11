@@ -55,6 +55,33 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     role: m.role || null  // Preservar el rol del miembro
   }));
 
+  // Agregar miembros de electoralCommission que no estén ya en members
+  const ecMembers = org?.electoralCommission || orgData?.electoralCommission || [];
+  ecMembers.forEach((ecm, index) => {
+    if (!ecm || !ecm.rut) return;
+    const normalizedEcRut = String(ecm.rut).replace(/[.-]/g, '').toLowerCase();
+    const alreadyExists = members.some(m => {
+      const normalizedMemberRut = String(m.rut).replace(/[.-]/g, '').toLowerCase();
+      return normalizedMemberRut === normalizedEcRut;
+    });
+    if (!alreadyExists) {
+      const ecName = ecm.firstName
+        ? `${ecm.firstName} ${ecm.lastName || ''}`.trim()
+        : ecm.name || '';
+      if (ecName) {
+        members.push({
+          id: `ec-member-${index}`,
+          name: ecName,
+          rut: ecm.rut,
+          birthDate: null,
+          isMinor: false,
+          signature: null,
+          role: 'electoral_commission'
+        });
+      }
+    }
+  });
+
   // Estado del wizard
   let currentStep = 1;
   const totalSteps = 6;
