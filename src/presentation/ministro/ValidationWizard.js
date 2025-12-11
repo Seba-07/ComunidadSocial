@@ -4,6 +4,13 @@
  */
 
 export function openValidationWizard(assignment, org, currentMinistro, callbacks) {
+  console.log('🚨🚨🚨 INICIO ValidationWizard - Datos recibidos:');
+  console.log('  assignment:', assignment);
+  console.log('  org:', org);
+  console.log('  org?.electoralCommission:', org?.electoralCommission);
+  console.log('  assignment?.organizationId:', assignment?.organizationId);
+  console.log('  assignment?.organizationId?.electoralCommission:', assignment?.organizationId?.electoralCommission);
+
   // Extraer datos de la organización (org puede venir populado del servidor)
   const orgData = org?.organization || org || {};
   const orgName = orgData.organizationName || orgData.name || org?.organizationName || assignment.organizationName || 'Organización';
