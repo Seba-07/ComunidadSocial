@@ -59,9 +59,19 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   let currentStep = 1;
   const totalSteps = 6;
 
-  // Datos recopilados - precargar si existen en la organización
-  const provDir = org?.provisionalDirectorio || {};
-  const provCom = org?.electoralCommission || [];
+  // Debug: ver qué datos llegan
+  console.log('🔍 ValidationWizard - org completo:', org);
+  console.log('🔍 ValidationWizard - assignment completo:', assignment);
+  console.log('🔍 ValidationWizard - org.provisionalDirectorio:', org?.provisionalDirectorio);
+  console.log('🔍 ValidationWizard - assignment.provisionalDirectorio:', assignment?.provisionalDirectorio);
+  console.log('🔍 ValidationWizard - orgData:', orgData);
+  console.log('🔍 ValidationWizard - orgData.provisionalDirectorio:', orgData?.provisionalDirectorio);
+
+  // Datos recopilados - precargar si existen en la organización (buscar en múltiples lugares)
+  const provDir = org?.provisionalDirectorio || orgData?.provisionalDirectorio || assignment?.provisionalDirectorio || assignment?.organizationId?.provisionalDirectorio || {};
+  const provCom = org?.electoralCommission || orgData?.electoralCommission || assignment?.electoralCommission || [];
+
+  console.log('🔍 ValidationWizard - provDir final:', provDir);
 
   // Función para normalizar RUT (quitar puntos y guión para comparar)
   const normalizeRut = (rut) => {
