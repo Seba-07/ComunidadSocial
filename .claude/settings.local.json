@@ -28,7 +28,9 @@
       "Bash(netlify deploy:*)",
       "Bash(npm run build:*)",
       "Bash(git add:*)",
-      "Bash(node scripts/clear-organizations.js:*)"
+      "Bash(node scripts/clear-organizations.js:*)",
+      "Bash(pkill:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

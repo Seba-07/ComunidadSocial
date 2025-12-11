@@ -2307,15 +2307,43 @@ export class WizardController {
     }
 
     const members = this.formData.members || [];
+    console.log('🔍 [saveStep5Data] members disponibles:', members.length);
 
     // Guardar directorio
-    const presidenteIdx = document.getElementById('dir-presidente')?.value;
-    const secretarioIdx = document.getElementById('dir-secretario')?.value;
-    const tesoreroIdx = document.getElementById('dir-tesorero')?.value;
+    const presidenteEl = document.getElementById('dir-presidente');
+    const secretarioEl = document.getElementById('dir-secretario');
+    const tesoreroEl = document.getElementById('dir-tesorero');
 
-    if (presidenteIdx) this.formData.directorioProvisorio.presidente = members[parseInt(presidenteIdx)];
-    if (secretarioIdx) this.formData.directorioProvisorio.secretario = members[parseInt(secretarioIdx)];
-    if (tesoreroIdx) this.formData.directorioProvisorio.tesorero = members[parseInt(tesoreroIdx)];
+    console.log('🔍 [saveStep5Data] Elementos DOM encontrados:', {
+      presidente: !!presidenteEl,
+      secretario: !!secretarioEl,
+      tesorero: !!tesoreroEl
+    });
+
+    const presidenteIdx = presidenteEl?.value;
+    const secretarioIdx = secretarioEl?.value;
+    const tesoreroIdx = tesoreroEl?.value;
+
+    console.log('🔍 [saveStep5Data] Índices seleccionados:', {
+      presidenteIdx,
+      secretarioIdx,
+      tesoreroIdx
+    });
+
+    if (presidenteIdx) {
+      this.formData.directorioProvisorio.presidente = members[parseInt(presidenteIdx)];
+      console.log('✅ [saveStep5Data] Presidente guardado:', this.formData.directorioProvisorio.presidente);
+    }
+    if (secretarioIdx) {
+      this.formData.directorioProvisorio.secretario = members[parseInt(secretarioIdx)];
+      console.log('✅ [saveStep5Data] Secretario guardado:', this.formData.directorioProvisorio.secretario);
+    }
+    if (tesoreroIdx) {
+      this.formData.directorioProvisorio.tesorero = members[parseInt(tesoreroIdx)];
+      console.log('✅ [saveStep5Data] Tesorero guardado:', this.formData.directorioProvisorio.tesorero);
+    }
+
+    console.log('📦 [saveStep5Data] directorioProvisorio final:', this.formData.directorioProvisorio);
 
     // Guardar comisión electoral
     const com1Idx = document.getElementById('com-miembro1')?.value;
@@ -2328,6 +2356,7 @@ export class WizardController {
     if (com3Idx) comisionMembers.push(members[parseInt(com3Idx)]);
 
     this.formData.commission.members = comisionMembers;
+    console.log('📦 [saveStep5Data] commission.members final:', this.formData.commission.members);
 
     // Guardar progreso
     this.saveProgress();
