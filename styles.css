@@ -16923,9 +16923,20 @@ a.header-logo:hover {
        ============================================ */
     .wizard-form .form-row-2,
     .wizard-step-content .form-row-2 {
-        display: flex !important;
         flex-direction: column !important;
         gap: 12px !important;
+    }
+
+    /* Solo aplicar display: flex si no está oculto */
+    .wizard-form .form-row-2:not([style*="display: none"]):not([style*="display:none"]),
+    .wizard-step-content .form-row-2:not([style*="display: none"]):not([style*="display:none"]) {
+        display: flex !important;
+    }
+
+    /* Preservar elementos ocultos (como neighborhood-row para orgs funcionales) */
+    #neighborhood-row[style*="none"],
+    #org-type-row[style*="none"] {
+        display: none !important;
     }
 
     .wizard-form .form-row-2 .form-group,
