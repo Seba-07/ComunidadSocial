@@ -43,7 +43,7 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO'), async (req, res
       ministroId: req.userId,
       status: 'pending'
     })
-      .populate('organizationId')
+      .populate('organizationId', 'organizationName organizationType address comuna region contactEmail contactPhone members electoralCommission provisionalDirectorio estatutos')
       .sort({ scheduledDate: 1 });
     res.json(assignments);
   } catch (error) {
@@ -56,7 +56,7 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO'), async (req, res
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
-      .populate('organizationId');
+      .populate('organizationId', 'organizationName organizationType address comuna region contactEmail contactPhone members electoralCommission provisionalDirectorio estatutos');
 
     if (!assignment) {
       return res.status(404).json({ error: 'Asignación no encontrada' });
