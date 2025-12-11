@@ -784,8 +784,17 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // PASO 3: Comisión Electoral
   const renderStep3_Comision = () => {
+    // RESTAURAR datos precargados si wizardData.comisionElectoral está vacío o tiene solo nulls
+    const hasValidData = wizardData.comisionElectoral.some(item => item !== null && item !== undefined);
+    if (!hasValidData && preloadedComision.length > 0) {
+      console.log('🔄 RESTAURANDO comisionElectoral desde preloadedComision');
+      wizardData.comisionElectoral = [...preloadedComision];
+    }
+
     console.log('🚨🚨🚨 RENDER PASO 3 - wizardData.comisionElectoral:', wizardData.comisionElectoral);
+    console.log('🚨🚨🚨 RENDER PASO 3 - preloadedComision:', preloadedComision);
     console.log('🚨🚨🚨 RENDER PASO 3 - members.length:', members.length);
+
     // Log de comparación para cada miembro de la comisión
     [1, 2, 3].forEach(num => {
       const saved = wizardData.comisionElectoral[num - 1];
@@ -1331,7 +1340,36 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
 
     if (currentStep === 3) {
-      // Selects de comisión
+      // Establecer programáticamente los valores de los selects de comisión
+      // (el atributo 'selected' en innerHTML no siempre funciona correctamente)
+      [1, 2, 3].forEach(num => {
+        const select = modal.querySelector(`#commission-${num}-select`);
+        const saved = wizardData.comisionElectoral[num - 1];
+        if (select && saved && saved.id) {
+          // Buscar la opción que coincida por ID o RUT
+          const options = Array.from(select.options);
+          let foundOption = options.find(opt => opt.value === saved.id);
+
+          // Si no encontramos por ID, buscar por RUT
+          if (!foundOption && saved.rut) {
+            const savedRutNorm = saved.rut.replace(/[.-]/g, '').toLowerCase();
+            foundOption = options.find(opt => {
+              const optRut = opt.dataset.rut;
+              if (!optRut) return false;
+              return optRut.replace(/[.-]/g, '').toLowerCase() === savedRutNorm;
+            });
+          }
+
+          if (foundOption) {
+            select.value = foundOption.value;
+            console.log(`🔧 Comisión ${num}: establecido select.value = ${foundOption.value}`);
+          } else {
+            console.log(`🔧 Comisión ${num}: no se encontró opción para id=${saved.id}, rut=${saved.rut}`);
+          }
+        }
+      });
+
+      // Selects de comisión - event listeners
       modal.querySelectorAll('.commission-select').forEach(select => {
         select.addEventListener('change', (e) => {
           const num = e.target.dataset.num;
