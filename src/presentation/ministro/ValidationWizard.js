@@ -258,35 +258,51 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Precargar comisión electoral si existe
   console.log('🔍 ValidationWizard - provCom (electoralCommission):', provCom);
+  console.log('🔍 ValidationWizard - members array (cantidad):', members.length);
+  console.log('🔍 ValidationWizard - members con sus RUTs:', members.map(m => ({ id: m.id, name: m.name, rut: m.rut })));
 
-  let preloadedComision = provCom.map(cm => {
+  let preloadedComision = provCom.map((cm, idx) => {
+    console.log(`🔍 Procesando EC member ${idx}:`, cm);
     // Primero intentar buscar en members por RUT
     const found = findMemberByRut(cm.rut);
+    console.log(`🔍 findMemberByRut(${cm.rut}) resultado:`, found);
     if (found) {
-      return { ...found, name: found.name, signature: null };
+      const result = { ...found, name: found.name, signature: null };
+      console.log(`🔍 EC member ${idx} encontrado en members:`, result);
+      return result;
     }
-    // Si no se encuentra en members, usar los datos de electoralCommission directamente
+    // Si no se encuentra en members, crear con el ID del member si existe en members por RUT normalizado
+    // o usar datos directamente
     const name = cm.firstName
       ? `${cm.firstName} ${cm.lastName || ''}`.trim()
       : cm.name || '';
     if (name) {
-      return {
-        id: `ec-${cm.rut}`,
+      // Buscar en members el ID correcto por RUT normalizado
+      const normalizedCmRut = normalizeRut(cm.rut);
+      const memberWithMatchingRut = members.find(m => normalizeRut(m.rut) === normalizedCmRut);
+      const result = {
+        id: memberWithMatchingRut?.id || `ec-${cm.rut}`,
         name: name,
         rut: cm.rut,
         signature: null
       };
+      console.log(`🔍 EC member ${idx} NO encontrado en members, creando:`, result);
+      return result;
     }
+    console.log(`🔍 EC member ${idx} sin nombre, retornando null`);
     return null;
   }).filter(Boolean);
 
   // FALLBACK: Si no hay datos en electoralCommission, buscar en los roles de los miembros
   if (preloadedComision.length === 0) {
+    console.log('🔍 preloadedComision vacío, usando FALLBACK con roles');
     const commissionMembers = members.filter(m => m.role === 'electoral_commission' && !m.isMinor);
     preloadedComision = commissionMembers.map(m => ({ ...m, name: m.name, signature: null }));
   }
 
-  console.log('🔍 ValidationWizard - preloadedComision:', preloadedComision);
+  console.log('🔍🔍🔍 ValidationWizard - preloadedComision FINAL:', preloadedComision);
+  console.log('🔍🔍🔍 preloadedComision IDs:', preloadedComision.map(p => p?.id));
+  console.log('🔍🔍🔍 preloadedComision RUTs:', preloadedComision.map(p => p?.rut));
 
   // Debug log para verificar precarga
   console.log('ValidationWizard - Precarga de datos:', {
@@ -738,6 +754,26 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // PASO 3: Comisión Electoral
   const renderStep3_Comision = () => {
+    console.log('🚨🚨🚨 RENDER PASO 3 - wizardData.comisionElectoral:', wizardData.comisionElectoral);
+    console.log('🚨🚨🚨 RENDER PASO 3 - members.length:', members.length);
+    // Log de comparación para cada miembro de la comisión
+    [1, 2, 3].forEach(num => {
+      const saved = wizardData.comisionElectoral[num - 1];
+      console.log(`🚨 Comisión ${num}:`, {
+        saved: saved,
+        savedId: saved?.id,
+        savedRut: saved?.rut,
+        savedName: saved?.name
+      });
+      if (saved) {
+        const savedRutNorm = saved.rut ? String(saved.rut).replace(/[.-]/g, '').toLowerCase() : '';
+        const matchingMember = members.find(m => {
+          const memberRutNorm = m.rut ? String(m.rut).replace(/[.-]/g, '').toLowerCase() : '';
+          return (saved.id === m.id) || (savedRutNorm && memberRutNorm && savedRutNorm === memberRutNorm);
+        });
+        console.log(`🚨 Comisión ${num} - matchingMember encontrado:`, matchingMember);
+      }
+    });
     return `
       <div style="margin-bottom: 20px;">
         <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 3: Comisión Electoral</h3>
