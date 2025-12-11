@@ -218,7 +218,8 @@ class AdminDashboard {
     this.currentView = 'schedule';
 
     // Ocultar elementos de la vista de solicitudes
-    document.querySelector('.admin-stats-row').style.display = 'none';
+    const filterBar = document.querySelector('.admin-unified-filter-bar');
+    if (filterBar) filterBar.style.display = 'none';
     document.querySelector('.admin-toolbar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
@@ -254,7 +255,8 @@ class AdminDashboard {
     this.currentView = 'ministro';
 
     // Ocultar elementos de la vista de solicitudes
-    document.querySelector('.admin-stats-row').style.display = 'none';
+    const filterBarM = document.querySelector('.admin-unified-filter-bar');
+    if (filterBarM) filterBarM.style.display = 'none';
     document.querySelector('.admin-toolbar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
@@ -297,7 +299,8 @@ class AdminDashboard {
     this.currentView = 'uv';
 
     // Ocultar elementos de la vista de solicitudes
-    document.querySelector('.admin-stats-row').style.display = 'none';
+    const filterBarUV = document.querySelector('.admin-unified-filter-bar');
+    if (filterBarUV) filterBarUV.style.display = 'none';
     document.querySelector('.admin-toolbar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
@@ -342,7 +345,8 @@ class AdminDashboard {
     await this.loadOrganizations();
 
     // Mostrar elementos de la vista de solicitudes
-    document.querySelector('.admin-stats-row').style.display = 'grid';
+    const filterBarApp = document.querySelector('.admin-unified-filter-bar');
+    if (filterBarApp) filterBarApp.style.display = 'flex';
     document.querySelector('.admin-toolbar').style.display = 'flex';
     document.getElementById('admin-applications-list').style.display = 'block';
 
@@ -402,12 +406,14 @@ class AdminDashboard {
    * Configura los event listeners
    */
   setupEventListeners() {
-    // Filtros
-    document.querySelectorAll('.filter-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        this.currentFilter = e.target.dataset.filter;
+    // Filtros (nueva barra unificada)
+    document.querySelectorAll('.admin-filter-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        const target = e.target.closest('.admin-filter-chip');
+        if (!target) return;
+        document.querySelectorAll('.admin-filter-chip').forEach(c => c.classList.remove('active'));
+        target.classList.add('active');
+        this.currentFilter = target.dataset.filter;
         this.renderApplicationsList();
       });
     });

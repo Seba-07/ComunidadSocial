@@ -16618,3 +16618,430 @@ a.header-logo:hover {
     .uv-limites-grid { grid-template-columns: 1fr; }
     .uv-modal-content { max-height: 95vh; }
 }
+
+/* ============================================
+   ADMIN UNIFIED FILTER BAR
+   ============================================ */
+.admin-unified-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 12px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.admin-filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    color: #374151;
+}
+
+.admin-filter-chip:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.admin-filter-chip.active {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+}
+
+.admin-filter-chip .chip-icon {
+    font-size: 16px;
+}
+
+.admin-filter-chip .chip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.admin-filter-chip.active .chip-count {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.admin-filter-chip .chip-text-short {
+    display: none;
+}
+
+.admin-filter-chip .chip-text-full {
+    display: inline;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .admin-unified-filter-bar {
+        padding: 10px;
+        gap: 6px;
+    }
+
+    .admin-filter-chip {
+        padding: 8px 10px;
+        font-size: 12px;
+        border-radius: 10px;
+        gap: 4px;
+    }
+
+    .admin-filter-chip .chip-icon {
+        font-size: 14px;
+    }
+
+    .admin-filter-chip .chip-count {
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
+        padding: 0 4px;
+    }
+
+    .admin-filter-chip .chip-text-full {
+        display: none;
+    }
+
+    .admin-filter-chip .chip-text-short {
+        display: inline;
+    }
+}
+
+/* ============================================
+   WIZARD MOBILE IMPROVEMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .wizard-overlay {
+        padding: 0 !important;
+    }
+
+    .wizard-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    .wizard-header {
+        padding: 12px 16px !important;
+    }
+
+    .wizard-header h2 {
+        font-size: 16px !important;
+    }
+
+    .wizard-header-actions {
+        gap: 8px;
+    }
+
+    .btn-save-progress {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .wizard-close {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 24px !important;
+    }
+
+    .wizard-progress {
+        padding: 8px 12px !important;
+    }
+
+    .wizard-steps {
+        gap: 2px !important;
+    }
+
+    .wizard-step .step-number {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 10px !important;
+    }
+
+    .wizard-step .step-label {
+        font-size: 8px !important;
+        max-width: 45px;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .wizard-content {
+        padding: 12px !important;
+    }
+
+    .wizard-step-content h3 {
+        font-size: 15px !important;
+        margin-bottom: 8px;
+    }
+
+    .wizard-step-content .step-description {
+        font-size: 12px !important;
+        margin-bottom: 12px;
+    }
+
+    .wizard-form .form-group {
+        margin-bottom: 12px;
+    }
+
+    .wizard-form label {
+        font-size: 13px;
+    }
+
+    .wizard-form input,
+    .wizard-form select,
+    .wizard-form textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .wizard-actions {
+        padding: 12px 16px !important;
+    }
+
+    .wizard-nav-buttons {
+        gap: 8px;
+    }
+
+    .wizard-nav-buttons .btn-primary,
+    .wizard-nav-buttons .btn-secondary {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+
+    /* Info boxes más compactas */
+    .wizard-step-content .info-box {
+        padding: 10px !important;
+        font-size: 11px !important;
+    }
+
+    .wizard-step-content .info-box div[style*="gap: 12px"] {
+        gap: 8px !important;
+    }
+
+    /* Directorio y comisión cards */
+    .directivo-card,
+    .comision-card {
+        padding: 12px !important;
+    }
+
+    .commission-section-header {
+        padding: 12px !important;
+    }
+
+    .commission-section-header h4 {
+        font-size: 14px !important;
+    }
+
+    /* Certificados */
+    .file-upload-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-upload-cert {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Estatutos editor */
+    .statutes-editor-container {
+        min-height: 200px;
+    }
+
+    .statutes-editor {
+        min-height: 200px;
+        font-size: 12px !important;
+    }
+
+    /* Documentos */
+    .document-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px !important;
+    }
+
+    .document-actions,
+    .document-actions-auto {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .document-actions button,
+    .document-actions-auto button {
+        flex: 1;
+        min-width: 70px;
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    /* Miembros */
+    .members-summary {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .members-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .members-actions button {
+        width: 100%;
+    }
+
+    .member-card {
+        padding: 10px !important;
+    }
+}
+
+/* ============================================
+   ORGANIZATION DASHBOARD MOBILE IMPROVEMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    /* Directorio cards */
+    .org-directorio-section .directorio-cards {
+        grid-template-columns: 1fr !important;
+    }
+
+    .directorio-card {
+        padding: 14px !important;
+    }
+
+    .directorio-role {
+        font-size: 12px;
+    }
+
+    .directorio-member {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .directorio-member .member-avatar.large {
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 18px !important;
+    }
+
+    .directorio-member .member-details {
+        text-align: center;
+    }
+
+    .directorio-description {
+        text-align: center;
+        font-size: 11px;
+    }
+
+    /* Org stat cards */
+    .org-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px;
+    }
+
+    .org-stat-card {
+        padding: 10px !important;
+    }
+
+    .org-stat-card .stat-icon {
+        font-size: 20px;
+    }
+
+    .org-stat-card .stat-value {
+        font-size: 18px !important;
+    }
+
+    .org-stat-card .stat-label {
+        font-size: 10px !important;
+    }
+
+    /* Quick actions */
+    .quick-actions-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Org navigation */
+    .org-nav {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        gap: 6px;
+    }
+
+    .org-nav-btn {
+        padding: 8px 10px !important;
+        font-size: 11px !important;
+        white-space: nowrap;
+    }
+
+    .org-nav-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Section headers */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .section-header h3 {
+        font-size: 15px;
+    }
+
+    /* Assembly types */
+    .assembly-type-card {
+        padding: 10px;
+    }
+
+    .assembly-type-card h4 {
+        font-size: 13px;
+    }
+
+    .assembly-type-card p {
+        font-size: 11px;
+    }
+
+    /* Finance summary */
+    .finanzas-summary {
+        grid-template-columns: 1fr !important;
+    }
+
+    .finanzas-card {
+        padding: 10px;
+    }
+
+    /* Welcome card */
+    .welcome-card {
+        padding: 12px !important;
+    }
+
+    .welcome-card h3 {
+        font-size: 14px;
+    }
+
+    .welcome-card p {
+        font-size: 12px;
+    }
+}

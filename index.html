@@ -747,43 +747,51 @@
                                 Unidades Vecinales
                             </button>
                         </div>
-                        <div class="admin-stats-row">
-                            <div class="admin-stat-card">
-                                <div class="stat-icon pending">📋</div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="admin-pending-count">0</span>
-                                    <span class="stat-label">Pendientes</span>
-                                </div>
-                            </div>
-                            <div class="admin-stat-card" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%); cursor: pointer;" onclick="document.querySelector('[data-filter=\'waiting_ministro\']')?.click()">
-                                <div class="stat-icon" style="background: #ff9800; color: white;">📝</div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="admin-ministro-count">0</span>
-                                    <span class="stat-label">Solicitudes Ministro Fe</span>
-                                </div>
-                            </div>
-                            <div class="admin-stat-card">
-                                <div class="stat-icon review">🔍</div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="admin-review-count">0</span>
-                                    <span class="stat-label">En Revisión</span>
-                                </div>
-                            </div>
-                            <div class="admin-stat-card">
-                                <div class="stat-icon registry">📤</div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="admin-registry-count">0</span>
-                                    <span class="stat-label">Registro Civil</span>
-                                </div>
-                            </div>
-                            <div class="admin-stat-card">
-                                <div class="stat-icon approved">✅</div>
-                                <div class="stat-info">
-                                    <span class="stat-number" id="admin-approved-count">0</span>
-                                    <span class="stat-label">Aprobadas</span>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+
+                    <!-- Unified Filter Bar -->
+                    <div class="admin-unified-filter-bar">
+                        <button class="admin-filter-chip active" data-filter="all">
+                            <span class="chip-icon">📋</span>
+                            <span class="chip-text-full">Todas</span>
+                            <span class="chip-text-short">Todo</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="pending_review">
+                            <span class="chip-icon">📅</span>
+                            <span class="chip-text-full">Pendientes</span>
+                            <span class="chip-text-short">Pend.</span>
+                            <span class="chip-count" id="admin-pending-count">0</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="waiting_ministro">
+                            <span class="chip-icon">📝</span>
+                            <span class="chip-text-full">Ministro Fe</span>
+                            <span class="chip-text-short">M.Fe</span>
+                            <span class="chip-count" id="admin-ministro-count">0</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="in_review">
+                            <span class="chip-icon">🔍</span>
+                            <span class="chip-text-full">En Revisión</span>
+                            <span class="chip-text-short">Rev.</span>
+                            <span class="chip-count" id="admin-review-count">0</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="sent_registry">
+                            <span class="chip-icon">📤</span>
+                            <span class="chip-text-full">Registro Civil</span>
+                            <span class="chip-text-short">R.C.</span>
+                            <span class="chip-count" id="admin-registry-count">0</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="approved">
+                            <span class="chip-icon">✅</span>
+                            <span class="chip-text-full">Aprobadas</span>
+                            <span class="chip-text-short">Aprob.</span>
+                            <span class="chip-count" id="admin-approved-count">0</span>
+                        </button>
+                        <button class="admin-filter-chip" data-filter="rejected">
+                            <span class="chip-icon">❌</span>
+                            <span class="chip-text-full">Rechazadas</span>
+                            <span class="chip-text-short">Rech.</span>
+                            <span class="chip-count" id="admin-rejected-count">0</span>
+                        </button>
                     </div>
 
                     <div class="admin-toolbar">
@@ -793,15 +801,6 @@
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
                             <input type="text" id="admin-search" placeholder="Buscar organización...">
-                        </div>
-                        <div class="admin-filter-tabs">
-                            <button class="filter-tab active" data-filter="all">Todas</button>
-                            <button class="filter-tab" data-filter="waiting_ministro" style="background: #fff4e6; color: #ff9800;">🔔 Ministro Fe</button>
-                            <button class="filter-tab" data-filter="pending_review">Pendientes</button>
-                            <button class="filter-tab" data-filter="in_review">En Revisión</button>
-                            <button class="filter-tab" data-filter="sent_registry">Registro Civil</button>
-                            <button class="filter-tab" data-filter="approved">Aprobadas</button>
-                            <button class="filter-tab" data-filter="rejected">Rechazadas</button>
                         </div>
                     </div>
 
