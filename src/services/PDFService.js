@@ -52,33 +52,42 @@ class PDFService {
    * @param {Object} member - El miembro del que obtener el nombre
    * @param {Array} membersList - Lista de miembros original para buscar por ID si es necesario
    */
-  getMemberName(member, membersList = []) {
+  getMemberName(member, membersList = [], additionalList = []) {
     if (!member) return '______________________';
-    // Primero verificar si tiene nombre directo
+    // Primero verificar si tiene nombre directo (varios formatos posibles)
     if (member.name) return member.name;
+    if (member.fullName) return member.fullName;
+    if (member.nombreCompleto) return member.nombreCompleto;
     // Formato firstName + lastName
     if (member.firstName) {
       return `${member.firstName} ${member.lastName || ''}`.trim();
     }
+    if (member.nombre) {
+      return `${member.nombre} ${member.apellido || ''}`.trim();
+    }
 
     // Si tiene _id o id, buscar en la lista de miembros
     const memberId = member._id || member.id;
-    if (memberId && membersList.length > 0) {
-      const found = membersList.find(m =>
+    const allLists = [...membersList, ...additionalList];
+
+    if (memberId && allLists.length > 0) {
+      const found = allLists.find(m =>
         (m._id === memberId || m.id === memberId) ||
         (m._id?.toString() === memberId?.toString())
       );
       if (found) {
         if (found.name) return found.name;
+        if (found.fullName) return found.fullName;
         if (found.firstName) return `${found.firstName} ${found.lastName || ''}`.trim();
       }
     }
 
     // Buscar por RUT como fallback (el RUT es único por persona)
-    if (member.rut && membersList.length > 0) {
-      const foundByRut = membersList.find(m => m.rut === member.rut);
+    if (member.rut && allLists.length > 0) {
+      const foundByRut = allLists.find(m => m.rut === member.rut);
       if (foundByRut) {
         if (foundByRut.name) return foundByRut.name;
+        if (foundByRut.fullName) return foundByRut.fullName;
         if (foundByRut.firstName) return `${foundByRut.firstName} ${foundByRut.lastName || ''}`.trim();
       }
     }
@@ -228,11 +237,11 @@ class PDFService {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.text);
 
-    // Tipo de organización
+    // Tipo de organización - buscar en múltiples campos
     doc.setFont('helvetica', 'bold');
     doc.text('TIPO DE ORGANIZACIÓN', MARGIN_LEFT, this.currentY);
     doc.setFont('helvetica', 'normal');
-    const orgType = getOrgTypeName(org.organizationType || org.type);
+    const orgType = getOrgTypeName(org.organizationType || org.type || organization.type || organization.organizationType);
     doc.text(orgType, MARGIN_LEFT + 55, this.currentY);
     this.currentY += 8;
 
@@ -311,7 +320,17 @@ class PDFService {
 
     doc.text(`TESORERO (A): ${this.getMemberName(treasurer, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(treasurer.rut || '________________', PAGE_WIDTH - 50, this.currentY);
-    this.currentY += 15;
+    this.currentY += 7;
+
+    // Directores adicionales
+    if (directorio.additionalMembers && directorio.additionalMembers.length > 0) {
+      directorio.additionalMembers.forEach((member) => {
+        doc.text(`${(member.cargo || 'DIRECTOR').toUpperCase()}: ${this.getMemberName(member, members)}`, MARGIN_LEFT, this.currentY);
+        doc.text(member.rut || '________________', PAGE_WIDTH - 50, this.currentY);
+        this.currentY += 7;
+      });
+    }
+    this.currentY += 8;
 
     // Comisión Electoral
     doc.setFont('helvetica', 'bold');
@@ -434,8 +453,8 @@ class PDFService {
         this.currentY = 55;
       }
 
-      // Nombre
-      doc.text(`Nombre: ${this.getMemberName(attendee, members)}`, MARGIN_LEFT, this.currentY);
+      // Nombre - buscar en miembros y también en la lista de asistentes
+      doc.text(`Nombre: ${this.getMemberName(attendee, members, attendees)}`, MARGIN_LEFT, this.currentY);
       // RUT
       doc.text(`Rut: ${attendee.rut || '____________'}`, MARGIN_LEFT + 80, this.currentY);
       // Firma
@@ -600,7 +619,8 @@ class PDFService {
 
     const orgName = org.organizationName || org.name || '_______________________________________________';
     const dateFormatted = this.formatDate(new Date());
-    const text1 = `En Renca, a ${dateFormatted}, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización Denominada ${orgName} de la Unidad Vecinal Nº ${org.unidadVecinal || '______'} depositó en esta Secretaría Municipal, copia autorizada del Acta de Asamblea Constitutiva.`;
+    const unidadVecinal = org.unidadVecinal || org.neighborhood || organization.unidadVecinal || organization.neighborhood || '______';
+    const text1 = `En Renca, a ${dateFormatted}, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización Denominada ${orgName} de la Unidad Vecinal Nº ${unidadVecinal} depositó en esta Secretaría Municipal, copia autorizada del Acta de Asamblea Constitutiva.`;
 
     this.currentY = this.addWrappedText(doc, text1, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
     this.currentY += 8;
@@ -643,7 +663,17 @@ class PDFService {
 
     doc.text(`TESORERO: ${this.getMemberName(treasurer, members)}`, MARGIN_LEFT, this.currentY);
     doc.text(`C.I. Nº ${treasurer.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
-    this.currentY += 10;
+    this.currentY += 6;
+
+    // Directores adicionales
+    if (directorio.additionalMembers && directorio.additionalMembers.length > 0) {
+      directorio.additionalMembers.forEach((member) => {
+        doc.text(`${(member.cargo || 'DIRECTOR').toUpperCase()}: ${this.getMemberName(member, members)}`, MARGIN_LEFT, this.currentY);
+        doc.text(`C.I. Nº ${member.rut || '________________'}`, PAGE_WIDTH - 60, this.currentY);
+        this.currentY += 6;
+      });
+    }
+    this.currentY += 4;
 
     // Comisión Electoral
     doc.setFont('helvetica', 'bold');
@@ -820,7 +850,8 @@ class PDFService {
     doc.text(`NOMBRE DE LA ORGANIZACIÓN: ${org.organizationName || org.name || '_____________________________________'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
-    doc.text(`UNIDAD VECINAL: ${org.unidadVecinal || '___________'}/`, MARGIN_LEFT, this.currentY);
+    const unidadVecinalDep = org.unidadVecinal || org.neighborhood || organization.unidadVecinal || organization.neighborhood || '___________';
+    doc.text(`UNIDAD VECINAL: ${unidadVecinalDep}/`, MARGIN_LEFT, this.currentY);
     this.currentY += 15;
 
     const dateFormatted = this.formatDate(new Date());

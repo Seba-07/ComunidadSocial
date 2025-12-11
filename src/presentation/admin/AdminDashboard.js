@@ -1875,7 +1875,19 @@ class AdminDashboard {
    * Renderiza el tab de información con opción de marcar campos para corrección
    */
   renderInfoTab(org, canReview = true) {
-    const o = org.organization || {};
+    // Buscar datos de organización en múltiples ubicaciones
+    const orgData = org.organization || {};
+    const o = {
+      type: orgData.type || orgData.organizationType || org.type || org.organizationType,
+      name: orgData.name || orgData.organizationName || org.name || org.organizationName,
+      address: orgData.address || org.address,
+      region: orgData.region || org.region,
+      commune: orgData.commune || org.commune,
+      neighborhood: orgData.neighborhood || orgData.unidadVecinal || org.neighborhood || org.unidadVecinal,
+      email: orgData.email || org.email,
+      phone: orgData.phone || org.phone,
+      description: orgData.description || orgData.objectives || org.description || org.objectives
+    };
     const isReviewable = canReview && org.status === ORG_STATUS.IN_REVIEW;
     const hasMinistroApproval = org.status === ORG_STATUS.MINISTRO_APPROVED ||
                                 org.provisionalDirectorio ||
