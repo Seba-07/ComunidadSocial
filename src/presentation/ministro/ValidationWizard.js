@@ -27,12 +27,30 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Extraer miembros y normalizar
   const rawMembers = org?.members || [];
+
+  // Helper para extraer nombre de diferentes formatos
+  const extractMemberName = (m) => {
+    if (!m) return 'Sin nombre';
+    // Formato WizardController: primerNombre, apellidoPaterno
+    if (m.primerNombre) {
+      const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+      const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+      return (fn + ' ' + ln).trim() || 'Sin nombre';
+    }
+    // Formato estándar: firstName, lastName
+    if (m.firstName) {
+      return `${m.firstName} ${m.lastName || ''}`.trim();
+    }
+    // Formato simple: name
+    return m.name || m.nombre || 'Sin nombre';
+  };
+
   const members = rawMembers.map((m, index) => ({
     id: m.id || m._id || `member-${index}`,
-    name: m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.name || 'Sin nombre',
+    name: extractMemberName(m),
     rut: m.rut || 'Sin RUT',
-    birthDate: m.birthDate || null,
-    isMinor: isUnderage(m.birthDate),
+    birthDate: m.birthDate || m.fechaNacimiento || null,
+    isMinor: isUnderage(m.birthDate || m.fechaNacimiento),
     signature: m.signature || null,
     role: m.role || null  // Preservar el rol del miembro
   }));
