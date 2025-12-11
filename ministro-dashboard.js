@@ -281,32 +281,37 @@ async function renderAssignments() {
               </div>
             </div>
 
-            ${assignment.wizardData ? `
+            ${assignment.wizardData ? (() => {
+              // Buscar directorio en ambos lugares posibles
+              const dir = assignment.wizardData.provisionalDirectorio || assignment.wizardData.directorio || {};
+              const pName = dir.president?.name || '-';
+              const sName = dir.secretary?.name || '-';
+              const tName = dir.treasurer?.name || '-';
+              const com = assignment.wizardData.comisionElectoral || [];
+              const att = assignment.wizardData.attendees || [];
+              return `
               <div style="background: white; border-radius: 8px; padding: 12px; margin-top: 12px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
                   <div>
                     <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Directorio Provisorio</p>
                     <p style="margin: 0; color: #047857;">
-                      ${assignment.wizardData.provisionalDirectorio?.president?.name || '-'} (P),
-                      ${assignment.wizardData.provisionalDirectorio?.secretary?.name || '-'} (S),
-                      ${assignment.wizardData.provisionalDirectorio?.treasurer?.name || '-'} (T)
+                      ${pName} (P), ${sName} (S), ${tName} (T)
                     </p>
                   </div>
                   <div>
                     <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Comision Electoral</p>
                     <p style="margin: 0; color: #047857;">
-                      ${assignment.wizardData.comisionElectoral?.length > 0
-                        ? assignment.wizardData.comisionElectoral.map(m => m?.name || '-').join(', ')
-                        : 'No especificada'}
+                      ${com.length > 0 ? com.map(m => m?.name || '-').join(', ') : 'No especificada'}
                     </p>
                   </div>
                   <div>
                     <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Asistentes</p>
-                    <p style="margin: 0; color: #047857;">${assignment.wizardData.attendees?.length || 0} personas</p>
+                    <p style="margin: 0; color: #047857;">${att.length || 0} personas</p>
                   </div>
                 </div>
               </div>
-            ` : ''}
+              `;
+            })() : ''}
           </div>
         ` : ''}
       </div>
@@ -711,8 +716,9 @@ function viewValidationSummary(assignmentId) {
   const org = assignment.organizationId;
   const orgName = org?.organizationName || assignment.organizationName || 'Organización';
 
-  const dir = wizardData.provisionalDirectorio || {};
-  const additionalMembers = dir.additionalMembers || [];
+  // Buscar directorio en ambos lugares posibles
+  const dir = wizardData.provisionalDirectorio || wizardData.directorio || {};
+  const additionalMembers = dir.additionalMembers || wizardData.additionalMembers || [];
   const comision = wizardData.comisionElectoral || [];
   const attendees = wizardData.attendees || [];
 

@@ -158,8 +158,13 @@ class MinistroAssignmentService {
       // El backend espera { signatures, wizardData }
       // validatedData contiene: signatures, provisionalDirectorio, comisionElectoral, attendees, etc.
       const signatures = validatedData.signatures || validatedData;
+
+      // Guardar tanto provisionalDirectorio como directorio para compatibilidad
+      const dirData = validatedData.provisionalDirectorio || {};
       const wizardData = {
-        provisionalDirectorio: validatedData.provisionalDirectorio,
+        provisionalDirectorio: dirData,
+        directorio: dirData, // También guardar como directorio para compatibilidad
+        additionalMembers: dirData.additionalMembers || [],
         comisionElectoral: validatedData.comisionElectoral,
         attendees: validatedData.attendees,
         ministroSignature: validatedData.ministroSignature,
