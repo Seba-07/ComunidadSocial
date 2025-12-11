@@ -16917,6 +16917,520 @@ a.header-logo:hover {
     .member-card {
         padding: 10px !important;
     }
+
+    /* ============================================
+       FORM ROWS - Convertir a columna en móvil
+       ============================================ */
+    .wizard-form .form-row-2,
+    .wizard-step-content .form-row-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .wizard-form .form-row-2 .form-group,
+    .wizard-step-content .form-row-2 .form-group {
+        width: 100% !important;
+    }
+
+    /* ============================================
+       INFO BOXES - Compactar en móvil
+       ============================================ */
+    .wizard-step-content .info-box-primary,
+    .wizard-step-content .info-box-warning,
+    .wizard-step-content .info-box-danger,
+    .wizard-step-content .info-box-success {
+        padding: 12px !important;
+    }
+
+    /* Contenedores flex dentro de info boxes */
+    .wizard-step-content .info-box > div[style*="display: flex"],
+    .wizard-step-content .info-box div[style*="display: flex"][style*="gap"] {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    /* Íconos de info boxes más pequeños */
+    .wizard-step-content .info-box span[style*="font-size: 24px"],
+    .wizard-step-content .info-box span[style*="font-size: 28px"] {
+        font-size: 20px !important;
+        text-align: center;
+    }
+
+    /* Texto en info boxes */
+    .wizard-step-content .info-box p {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+    }
+
+    .wizard-step-content .info-box strong {
+        font-size: 13px !important;
+    }
+
+    /* ============================================
+       COMMISSION SECTIONS - Headers compactos
+       ============================================ */
+    .commission-section-header > div[style*="display: flex"] {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 8px !important;
+    }
+
+    .commission-section-header span[style*="font-size: 28px"] {
+        font-size: 24px !important;
+    }
+
+    .commission-section-header h4 {
+        font-size: 14px !important;
+    }
+
+    .commission-section-header p {
+        font-size: 11px !important;
+    }
+
+    /* Sección de contenido de comisión */
+    .commission-section > div[style*="border: 1px solid"] {
+        padding: 12px !important;
+    }
+
+    /* ============================================
+       DIRECTIVO Y COMISION CARDS
+       ============================================ */
+    .directivo-card,
+    .comision-card {
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .directivo-card > div[style*="display: flex"],
+    .comision-card > div[style*="display: flex"] {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .directivo-card .form-row-2,
+    .comision-card .form-row-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .directivo-card .form-group,
+    .comision-card .form-group {
+        width: 100% !important;
+    }
+
+    /* Badges de cargos */
+    .directivo-card span[style*="padding: 4px 12px"],
+    .comision-card span[style*="padding: 4px 12px"] {
+        font-size: 10px !important;
+        padding: 3px 10px !important;
+    }
+
+    /* ============================================
+       CERTIFICADOS BADGES - Wrap en móvil
+       ============================================ */
+    #cert-progress,
+    .certificates-summary div[style*="display: flex"][style*="flex-wrap"] {
+        justify-content: center !important;
+        gap: 6px !important;
+    }
+
+    .cert-badge {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
+
+    /* Certificados summary */
+    .certificates-summary {
+        padding: 12px !important;
+    }
+
+    .certificates-summary > div[style*="display: flex"] {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 10px !important;
+    }
+
+    .certificates-summary span[style*="font-size: 24px"] {
+        font-size: 20px !important;
+    }
+
+    .certificates-summary strong {
+        font-size: 13px !important;
+    }
+
+    .certificates-summary p {
+        font-size: 12px !important;
+    }
+
+    /* ============================================
+       RADIO BUTTONS - Columna en móvil
+       ============================================ */
+    .wizard-form div[style*="display: flex"][style*="gap: 24px"] {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* ============================================
+       CONFIG SECTIONS (Paso 3)
+       ============================================ */
+    .config-section {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .config-section-title {
+        font-size: 14px !important;
+        gap: 8px !important;
+    }
+
+    .config-section-title svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    .config-section-desc {
+        font-size: 11px !important;
+    }
+
+    .config-subsection-label {
+        font-size: 12px !important;
+    }
+
+    /* ============================================
+       ESTATUTOS (Paso 4)
+       ============================================ */
+    .statutes-options-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .radio-option {
+        padding: 10px !important;
+    }
+
+    .radio-label {
+        font-size: 13px !important;
+    }
+
+    .radio-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+    }
+
+    .statutes-editor-header {
+        flex-direction: column !important;
+        gap: 8px !important;
+        align-items: flex-start !important;
+    }
+
+    .statutes-editor-header h4 {
+        font-size: 14px !important;
+    }
+
+    .statutes-editor-actions {
+        width: 100%;
+    }
+
+    .btn-statutes-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .statutes-editor-footer {
+        flex-direction: column !important;
+        gap: 6px !important;
+        text-align: center;
+    }
+
+    /* ============================================
+       FIRMAS (Paso 6)
+       ============================================ */
+    .signatures-display-section {
+        padding: 12px !important;
+    }
+
+    .signatures-header-display {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 10px !important;
+    }
+
+    .signatures-header-info h4 {
+        font-size: 14px !important;
+    }
+
+    .signatures-status-badge {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* ============================================
+       DOCUMENTOS (Paso 7)
+       ============================================ */
+    .documents-list {
+        gap: 10px !important;
+    }
+
+    .document-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .document-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+    }
+
+    .document-name {
+        font-size: 13px !important;
+    }
+
+    .document-description {
+        font-size: 11px !important;
+    }
+
+    .document-actions,
+    .document-actions-auto {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
+
+    .document-actions button,
+    .document-actions-auto button {
+        flex: 1 1 auto !important;
+        min-width: 60px !important;
+        font-size: 11px !important;
+        padding: 6px 8px !important;
+    }
+
+    .documents-manual-section {
+        margin-top: 16px !important;
+    }
+
+    .documents-manual-section h4 {
+        font-size: 14px !important;
+    }
+
+    /* ID Photos */
+    .id-photos-list {
+        gap: 12px !important;
+    }
+
+    /* ============================================
+       REVISION (Paso 8)
+       ============================================ */
+    .review-section {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .review-section h4 {
+        font-size: 14px !important;
+    }
+
+    .review-content {
+        font-size: 12px !important;
+    }
+
+    .alert-info {
+        padding: 12px !important;
+        font-size: 12px !important;
+    }
+
+    .alert-info ol {
+        padding-left: 16px !important;
+    }
+
+    .alert-info li {
+        font-size: 11px !important;
+    }
+
+    /* Checkbox de términos */
+    .checkbox-label {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* ============================================
+       WIZARD HEADER ACTIONS - Compactar
+       ============================================ */
+    .wizard-header-actions {
+        flex-wrap: wrap;
+        gap: 6px !important;
+    }
+
+    .btn-save-progress {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+        white-space: nowrap;
+    }
+
+    .btn-save-progress svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* ============================================
+       WIZARD STEPS - Scroll horizontal con indicador
+       ============================================ */
+    .wizard-progress {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 8px 12px !important;
+    }
+
+    .wizard-steps {
+        min-width: max-content;
+        justify-content: flex-start !important;
+    }
+
+    /* ============================================
+       PREVENIR OVERFLOW GENERAL
+       ============================================ */
+    .wizard-content {
+        overflow-x: hidden !important;
+    }
+
+    .wizard-step-content {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .wizard-step-content > * {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Prevenir que cualquier elemento cause overflow */
+    .wizard-form,
+    .wizard-form * {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Inputs y selects no deben exceder contenedor */
+    .wizard-form input,
+    .wizard-form select,
+    .wizard-form textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Links largos */
+    .wizard-step-content a {
+        word-break: break-word !important;
+    }
+}
+
+/* ============================================
+   WIZARD EXTRA SMALL SCREENS (< 480px)
+   ============================================ */
+@media (max-width: 480px) {
+    .wizard-header h2 {
+        font-size: 14px !important;
+    }
+
+    .wizard-step .step-number {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 9px !important;
+    }
+
+    .wizard-step .step-label {
+        font-size: 7px !important;
+        max-width: 36px;
+    }
+
+    .wizard-step-content h3 {
+        font-size: 14px !important;
+    }
+
+    .wizard-step-content .step-description {
+        font-size: 11px !important;
+    }
+
+    .wizard-form label {
+        font-size: 12px !important;
+    }
+
+    .wizard-form input,
+    .wizard-form select,
+    .wizard-form textarea {
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+    }
+
+    .form-help {
+        font-size: 10px !important;
+    }
+
+    /* Info boxes aún más compactas */
+    .wizard-step-content .info-box {
+        padding: 8px !important;
+        margin: 10px 0 !important;
+    }
+
+    .wizard-step-content .info-box p {
+        font-size: 11px !important;
+    }
+
+    .wizard-step-content .info-box strong {
+        font-size: 12px !important;
+    }
+
+    .wizard-step-content .info-box span[style*="font-size"] {
+        font-size: 16px !important;
+    }
+
+    /* Botones de navegación */
+    .wizard-nav-buttons .btn-primary,
+    .wizard-nav-buttons .btn-secondary {
+        padding: 10px 14px !important;
+        font-size: 13px !important;
+    }
+
+    /* Header actions */
+    .btn-save-progress {
+        padding: 5px 8px !important;
+        font-size: 10px !important;
+    }
+
+    .wizard-close {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 20px !important;
+    }
+
+    /* Members actions */
+    .members-actions button {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .members-actions button svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* Certificados */
+    .cert-badge {
+        font-size: 9px !important;
+        padding: 3px 6px !important;
+    }
+
+    /* Document actions */
+    .document-actions button,
+    .document-actions-auto button {
+        font-size: 10px !important;
+        padding: 5px 6px !important;
+        min-width: 50px !important;
+    }
 }
 
 /* ============================================
