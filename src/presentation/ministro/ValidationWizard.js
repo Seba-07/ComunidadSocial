@@ -1521,7 +1521,13 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
   // Mostrar modal con estatutos definitivos
   const showEstatutosModal = () => {
     const dir = wizardData.directorio;
+    const add = wizardData.additionalMembers || [];
     const com = wizardData.comisionElectoral;
+
+    // Construir lista de miembros adicionales para el header
+    const additionalMembersHtml = add.length > 0
+      ? add.map(m => `${m.role || 'Director'}: ${m.name || '-'}`).join('<br>')
+      : '';
 
     // Usar estatutos editados del wizard, o generar por defecto
     const estatutosContent = wizardData.estatutos || generateDefaultEstatutos();
@@ -1551,7 +1557,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
               <p style="margin: 4px 0 0; font-size: 13px; color: #78350f;">
                 Presidente: ${dir.president?.name || 'Pendiente'}<br>
                 Secretario: ${dir.secretary?.name || 'Pendiente'}<br>
-                Tesorero: ${dir.treasurer?.name || 'Pendiente'}
+                Tesorero: ${dir.treasurer?.name || 'Pendiente'}${additionalMembersHtml ? '<br>' + additionalMembersHtml : ''}
               </p>
             </div>
             <div>
