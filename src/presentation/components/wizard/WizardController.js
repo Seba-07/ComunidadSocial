@@ -6083,6 +6083,10 @@ Vocal`;
     // Importar servicio de horarios
     const { scheduleService } = await import('../../../services/ScheduleService.js');
 
+    // Sincronizar reservas del backend antes de mostrar el calendario
+    // Esto asegura que todos los usuarios vean los mismos horarios ocupados
+    await scheduleService.syncBackendBookings();
+
     let currentDate = new Date();
     let selectedDateKey = null;
     let selectedTime = null;

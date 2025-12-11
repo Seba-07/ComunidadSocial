@@ -1,12 +1,18 @@
+import { apiService } from './ApiService.js';
+
 /**
  * Servicio de Gestión de Horarios para Ministro de Fe
  * Maneja disponibilidad de días y horas, y reservas de citas
+ * IMPORTANTE: Sincroniza reservas con el backend para que todos los usuarios vean los mismos horarios ocupados
  */
 
 class ScheduleService {
   constructor() {
     this.storageKey = 'ministro_schedule';
     this.bookingsKey = 'ministro_bookings';
+    this.backendBookingsCache = [];
+    this.lastBackendSync = 0;
+    this.CACHE_TTL = 30000; // 30 segundos de caché
     this.init();
   }
 
@@ -292,9 +298,79 @@ class ScheduleService {
   // ============ GESTIÓN DE RESERVAS ============
 
   /**
-   * Obtiene todas las reservas
+   * Sincroniza las reservas con el backend (desde organizaciones con electionDate/electionTime)
+   * Esto permite que todos los usuarios vean los mismos horarios ocupados
+   */
+  async syncBackendBookings() {
+    try {
+      const now = Date.now();
+      // Usar caché si no ha expirado
+      if (now - this.lastBackendSync < this.CACHE_TTL && this.backendBookingsCache.length > 0) {
+        console.log('📆 [ScheduleService] Usando caché de reservas backend');
+        return this.backendBookingsCache;
+      }
+
+      console.log('📆 [ScheduleService] Sincronizando reservas desde backend...');
+
+      // Obtener todas las organizaciones del backend
+      const organizations = await apiService.getOrganizations();
+
+      // Filtrar organizaciones que tienen fecha de asamblea agendada
+      // y convertirlas al formato de booking
+      const backendBookings = organizations
+        .filter(org => org.electionDate && org.electionTime)
+        .filter(org => !['REJECTED', 'CANCELLED'].includes(org.status))
+        .map(org => ({
+          id: `backend-${org.id}`,
+          date: org.electionDate,
+          time: org.electionTime,
+          organizationId: org.id,
+          organizationName: org.organizationName || org.name,
+          organizationType: org.organizationType,
+          status: org.status === 'COMPLETED' ? 'completed' : 'confirmed',
+          source: 'backend'
+        }));
+
+      console.log('📆 [ScheduleService] Reservas del backend:', backendBookings.length);
+      console.log('📆 [ScheduleService] Detalle:', backendBookings.map(b => `${b.date} ${b.time} - ${b.organizationName}`));
+
+      this.backendBookingsCache = backendBookings;
+      this.lastBackendSync = now;
+
+      return backendBookings;
+    } catch (error) {
+      console.error('❌ [ScheduleService] Error sincronizando backend:', error);
+      return this.backendBookingsCache; // Devolver caché anterior en caso de error
+    }
+  }
+
+  /**
+   * Obtiene todas las reservas (locales + backend)
    */
   getAllBookings() {
+    const stored = localStorage.getItem(this.bookingsKey);
+    const localBookings = stored ? JSON.parse(stored) : [];
+
+    // Combinar reservas locales con las del backend (caché)
+    // Eliminar duplicados basándose en fecha y hora
+    const combined = [...localBookings];
+
+    for (const backendBooking of this.backendBookingsCache) {
+      const exists = combined.some(
+        b => b.date === backendBooking.date && b.time === backendBooking.time
+      );
+      if (!exists) {
+        combined.push(backendBooking);
+      }
+    }
+
+    return combined;
+  }
+
+  /**
+   * Obtiene solo las reservas locales (sin backend)
+   */
+  getLocalBookings() {
     const stored = localStorage.getItem(this.bookingsKey);
     return stored ? JSON.parse(stored) : [];
   }
