@@ -1596,14 +1596,64 @@ class AdminDashboard {
    * Ver certificado de antecedentes
    */
   viewCertificate(org, memberId) {
-    const cert = org.certificates?.[memberId];
+    const certificates = org.certificates || {};
+
+    // Helper para normalizar RUT
+    const normalizeRut = (rut) => {
+      if (!rut) return '';
+      return String(rut).replace(/\./g, '').replace(/-/g, '').toLowerCase().trim();
+    };
+
+    // Buscar certificado por múltiples métodos
+    let cert = certificates[memberId];
+
+    // Si no se encuentra por ID, buscar por RUT en la comisión
+    if (!cert) {
+      const commissionMembers = org.commission?.members || [];
+      const comisionElectoral = org.comisionElectoral || [];
+      const directorio = org.provisionalDirectorio || org.directorio || {};
+      const allMembers = [
+        ...commissionMembers,
+        ...comisionElectoral,
+        directorio.president,
+        directorio.secretary,
+        directorio.treasurer,
+        ...(directorio.additionalMembers || [])
+      ].filter(Boolean);
+
+      // Buscar el miembro que tenga este ID
+      const memberWithId = allMembers.find(m => m.id === memberId || m._id === memberId);
+
+      if (memberWithId?.rut) {
+        const memberRutNorm = normalizeRut(memberWithId.rut);
+        // Buscar certificado por RUT
+        for (const [key, c] of Object.entries(certificates)) {
+          const certRutNorm = normalizeRut(c.memberRut || c.rut);
+          if (certRutNorm === memberRutNorm) {
+            cert = c;
+            break;
+          }
+        }
+        // También buscar en org.commission.members para encontrar el ID original
+        if (!cert) {
+          for (const cm of commissionMembers) {
+            if (normalizeRut(cm.rut) === memberRutNorm) {
+              cert = certificates[cm.id] || certificates[cm._id];
+              if (cert) break;
+            }
+          }
+        }
+      }
+    }
+
     if (!cert) {
       showToast('Certificado no disponible', 'error');
       return;
     }
 
-    const member = org.commission?.members?.find(m => m.id === memberId);
-    const memberName = member ? `${member.firstName} ${member.lastName}` : 'Miembro';
+    const member = org.commission?.members?.find(m => m.id === memberId) ||
+                   org.comisionElectoral?.find(m => m.id === memberId);
+    const memberName = member ? (member.name || `${member.firstName} ${member.lastName}`) : 'Miembro';
 
     // Determinar si es PDF o imagen
     const isPDF = cert.data && cert.data.startsWith('data:application/pdf');
@@ -2095,16 +2145,43 @@ class AdminDashboard {
       `;
     }
 
+    // Helper para normalizar RUT para comparación
+    const normalizeRut = (rut) => {
+      if (!rut) return '';
+      return String(rut).replace(/\./g, '').replace(/-/g, '').toLowerCase().trim();
+    };
+
     // Helper para obtener certificado por RUT o ID
     const getCertForMember = (member) => {
       if (!member) return null;
+
       // Buscar por ID directo
       if (member.id && certificates[member.id]) return certificates[member.id];
       if (member._id && certificates[member._id]) return certificates[member._id];
-      // Buscar por RUT en las claves
-      for (const [key, cert] of Object.entries(certificates)) {
-        if (cert.memberRut === member.rut || cert.rut === member.rut) return cert;
+
+      // Buscar en org.commission.members para encontrar el ID original
+      const commissionMembers = org.commission?.members || [];
+      const memberRutNorm = normalizeRut(member.rut);
+
+      for (const cm of commissionMembers) {
+        const cmRutNorm = normalizeRut(cm.rut);
+        if (cmRutNorm && cmRutNorm === memberRutNorm) {
+          // Encontramos el miembro en la comisión, buscar su certificado por ID
+          if (cm.id && certificates[cm.id]) return certificates[cm.id];
+          if (cm._id && certificates[cm._id]) return certificates[cm._id];
+        }
       }
+
+      // Buscar por RUT normalizado en todas las claves y valores del objeto certificates
+      for (const [key, cert] of Object.entries(certificates)) {
+        // Comparar RUT del certificado con RUT del miembro
+        const certRutNorm = normalizeRut(cert.memberRut || cert.rut);
+        if (certRutNorm && certRutNorm === memberRutNorm) return cert;
+
+        // También buscar si la clave contiene el RUT
+        if (key.includes(memberRutNorm) || normalizeRut(key) === memberRutNorm) return cert;
+      }
+
       return null;
     };
 
@@ -2145,7 +2222,7 @@ class AdminDashboard {
       });
     } else if (commission?.members?.length) {
       commission.members.forEach((m, i) => {
-        const cert = certificates[m.id] || certificates[m._id] || null;
+        const cert = getCertForMember(m);
         comisionRows.push({
           cargo: roles[i] || 'Miembro',
           nombre: `${m.firstName || ''} ${m.lastName || ''}`.trim() || '-',
