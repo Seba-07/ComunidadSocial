@@ -1429,6 +1429,120 @@ class AdminDashboard {
         this.viewCertificate(org, memberId);
       });
     });
+
+    // Event listeners para subir certificados
+    modal.querySelectorAll('.btn-upload-cert-admin').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const memberId = btn.dataset.memberId;
+        const fileInput = modal.querySelector(`.cert-file-input[data-member-id="${memberId}"]`);
+        if (fileInput) fileInput.click();
+      });
+    });
+
+    modal.querySelectorAll('.cert-file-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        if (e.target.files.length > 0) {
+          const file = e.target.files[0];
+          const memberId = e.target.dataset.memberId;
+          const memberRut = e.target.dataset.memberRut;
+          const memberName = e.target.dataset.memberName;
+          await this.uploadCertificate(org, memberId, memberRut, memberName, file, modal);
+        }
+      });
+    });
+  }
+
+  /**
+   * Sube un certificado de antecedentes para un miembro
+   */
+  async uploadCertificate(org, memberId, memberRut, memberName, file, modal) {
+    // Validar que sea PDF
+    if (file.type !== 'application/pdf') {
+      showToast('Solo se permiten archivos PDF', 'error');
+      return;
+    }
+
+    // Validar tamaño (máx 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast('El archivo no debe superar 5MB', 'error');
+      return;
+    }
+
+    try {
+      // Mostrar loading en el botón
+      const uploadBtn = modal.querySelector(`.btn-upload-cert-admin[data-member-id="${memberId}"]`);
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+          </svg>
+          Subiendo...
+        `;
+      }
+
+      // Leer archivo como base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Preparar estructura de certificados
+      const certificates = org.certificates || {};
+      certificates[memberId] = {
+        file: base64,
+        fileName: file.name,
+        uploadedAt: new Date().toISOString(),
+        memberName: memberName,
+        memberRut: memberRut
+      };
+
+      // Actualizar organización en la base de datos
+      await organizationsService.updateOrganization(org.id, { certificates });
+
+      // Actualizar el objeto org local
+      org.certificates = certificates;
+
+      showToast(`Certificado de ${memberName} subido correctamente`, 'success');
+
+      // Refrescar la tabla del modal
+      this.refreshDirectorioTable(org, modal);
+
+    } catch (error) {
+      console.error('Error al subir certificado:', error);
+      showToast('Error al subir el certificado', 'error');
+
+      // Restaurar botón
+      const uploadBtn = modal.querySelector(`.btn-upload-cert-admin[data-member-id="${memberId}"]`);
+      if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Subir
+        `;
+      }
+    }
+  }
+
+  /**
+   * Refresca la tabla del Directorio después de subir un certificado
+   */
+  refreshDirectorioTable(org, modal) {
+    const directorioContent = modal.querySelector('#tab-directorio-comision');
+    if (directorioContent) {
+      // Regenerar contenido del tab Directorio
+      directorioContent.innerHTML = this.renderDirectorioComisionTab(org);
+
+      // Volver a añadir event listeners
+      this.addDirectorioEventListeners(org, modal);
+    }
   }
 
   /**
@@ -2131,15 +2245,6 @@ class AdminDashboard {
                                 org.provisionalDirectorio ||
                                 org.comisionElectoral;
 
-    // DEBUG: Ver estructura de datos para certificados
-    console.log('🔍 DEBUG Certificados:', {
-      'org.certificates': org.certificates,
-      'Object.keys(certificates)': Object.keys(certificates),
-      'comisionElectoral': comisionElectoral,
-      'commission.members': commission?.members,
-      'directorio': directorio
-    });
-
     if (!hasMinistroApproval && !directorio.president && !comisionElectoral.length && !commission?.members?.length) {
       return `
         <div class="no-data" style="text-align: center; padding: 32px;">
@@ -2252,7 +2357,16 @@ class AdminDashboard {
           Ver
         </button>`;
       }
-      return '<span style="color: #9ca3af; font-size: 12px;">No cargado</span>';
+      return `
+        <input type="file" class="cert-file-input" data-member-id="${row.memberId}" data-member-rut="${row.rut}" data-member-name="${row.nombre}" accept=".pdf" style="display: none;">
+        <button class="btn-upload-cert-admin" data-member-id="${row.memberId}" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Subir
+        </button>`;
     };
 
     return `

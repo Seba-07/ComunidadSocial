@@ -1512,6 +1512,10 @@ body {
     }
 }
 
+.spin {
+    animation: spin 1s linear infinite;
+}
+
 /* Stats Section */
 .stats-section {
     display: grid;
