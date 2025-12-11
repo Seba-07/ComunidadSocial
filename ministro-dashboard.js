@@ -249,7 +249,7 @@ async function renderAssignments() {
           </div>
         ` : assignment.signaturesValidated ? `
           <div style="background: #d1fae5; border-radius: 12px; padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
@@ -257,18 +257,56 @@ async function renderAssignments() {
                   </svg>
                 </div>
                 <div>
-                  <p style="margin: 0; color: #065f46; font-size: 15px; font-weight: 700;">Firmas Validadas</p>
+                  <p style="margin: 0; color: #065f46; font-size: 15px; font-weight: 700;">Asamblea Completada</p>
                   <p style="margin: 2px 0 0; color: #047857; font-size: 13px;">${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
-              <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                Editar
-              </button>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="viewValidationSummary('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  Ver Resumen
+                </button>
+                <button class="btn btn-secondary" onclick="editValidatedSignatures('${assignmentId}')" style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 14px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Editar
+                </button>
+              </div>
             </div>
+
+            ${assignment.wizardData ? `
+              <div style="background: white; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+                  <div>
+                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Directorio Provisorio</p>
+                    <p style="margin: 0; color: #047857;">
+                      ${assignment.wizardData.provisionalDirectorio?.president?.name || '-'} (P),
+                      ${assignment.wizardData.provisionalDirectorio?.secretary?.name || '-'} (S),
+                      ${assignment.wizardData.provisionalDirectorio?.treasurer?.name || '-'} (T)
+                    </p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Comision Electoral</p>
+                    <p style="margin: 0; color: #047857;">
+                      ${assignment.wizardData.comisionElectoral?.length > 0
+                        ? assignment.wizardData.comisionElectoral.map(m => m?.name || '-').join(', ')
+                        : 'No especificada'}
+                    </p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 4px; color: #065f46; font-weight: 700;">Asistentes</p>
+                    <p style="margin: 0; color: #047857;">${assignment.wizardData.attendees?.length || 0} personas</p>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
           </div>
         ` : ''}
       </div>
@@ -459,6 +497,7 @@ window.validateSignatures = validateSignatures;
 window.viewDetails = viewDetails;
 window.deleteBlock = deleteBlock;
 window.editValidatedSignatures = editValidatedSignatures;
+window.viewValidationSummary = viewValidationSummary;
 
 function validateSignatures(assignmentId) {
   // Buscar en las asignaciones cargadas (usando _id de MongoDB)
@@ -653,6 +692,153 @@ function editValidatedSignatures(assignmentId) {
     ministroAssignmentService.resetValidation(assignmentId);
     validateSignatures(assignmentId);
   });
+}
+
+// Función para ver el resumen de la validación completada
+function viewValidationSummary(assignmentId) {
+  const assignment = loadedAssignments.find(a => (a._id === assignmentId || a.id === assignmentId));
+  if (!assignment) {
+    showToast('Asignación no encontrada', 'error');
+    return;
+  }
+
+  const wizardData = assignment.wizardData;
+  if (!wizardData) {
+    showToast('No hay datos de validación disponibles', 'error');
+    return;
+  }
+
+  const org = assignment.organizationId;
+  const orgName = org?.organizationName || assignment.organizationName || 'Organización';
+
+  const dir = wizardData.provisionalDirectorio || {};
+  const additionalMembers = dir.additionalMembers || [];
+  const comision = wizardData.comisionElectoral || [];
+  const attendees = wizardData.attendees || [];
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 400000; padding: 20px;';
+  modal.innerHTML = `
+    <div style="background: white; border-radius: 20px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px; border-radius: 20px 20px 0 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; color: white; font-size: 22px; display: flex; align-items: center; gap: 12px;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Resumen de Validacion
+            </h2>
+            <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">${orgName}</p>
+          </div>
+          <button onclick="this.closest('.modal-overlay').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div style="padding: 24px;">
+        <!-- Info de validación -->
+        <div style="background: #d1fae5; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div>
+              <p style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700;">Validacion Completada</p>
+              <p style="margin: 4px 0 0; color: #047857; font-size: 14px;">
+                ${new Date(assignment.validatedAt).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Directorio Provisorio -->
+        <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #374151; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🏛️</span> Directorio Provisorio
+          </h3>
+          <div style="display: grid; gap: 12px;">
+            <div style="background: white; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600;">Presidente</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${dir.president?.name || 'No especificado'}</p>
+              ${dir.president?.rut ? `<p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">RUT: ${dir.president.rut}</p>` : ''}
+            </div>
+            <div style="background: white; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600;">Secretario</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${dir.secretary?.name || 'No especificado'}</p>
+              ${dir.secretary?.rut ? `<p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">RUT: ${dir.secretary.rut}</p>` : ''}
+            </div>
+            <div style="background: white; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600;">Tesorero</p>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${dir.treasurer?.name || 'No especificado'}</p>
+              ${dir.treasurer?.rut ? `<p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">RUT: ${dir.treasurer.rut}</p>` : ''}
+            </div>
+            ${additionalMembers.length > 0 ? additionalMembers.map(m => `
+              <div style="background: white; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+                <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600;">${m.role || m.cargo || 'Director'}</p>
+                <p style="margin: 4px 0 0; font-size: 15px; color: #1f2937; font-weight: 600;">${m.name || 'No especificado'}</p>
+                ${m.rut ? `<p style="margin: 2px 0 0; font-size: 13px; color: #6b7280;">RUT: ${m.rut}</p>` : ''}
+              </div>
+            `).join('') : ''}
+          </div>
+        </div>
+
+        <!-- Comisión Electoral -->
+        <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #92400e; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🗳️</span> Comision Electoral (${comision.length} miembros)
+          </h3>
+          ${comision.length > 0 ? `
+            <div style="display: grid; gap: 8px;">
+              ${comision.map((m, i) => `
+                <div style="background: white; padding: 10px 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 14px; color: #1f2937; font-weight: 600;">${i + 1}. ${m?.name || '-'}</span>
+                  ${m?.rut ? `<span style="font-size: 13px; color: #6b7280;">${m.rut}</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : `<p style="margin: 0; color: #92400e;">No especificada</p>`}
+        </div>
+
+        <!-- Asistentes -->
+        <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 16px; padding: 20px;">
+          <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">👥</span> Asistentes a la Asamblea (${attendees.length} personas)
+          </h3>
+          ${attendees.length > 0 ? `
+            <div style="max-height: 300px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;">
+              ${attendees.map((a, i) => `
+                <div style="background: white; padding: 8px 12px; border-radius: 6px; font-size: 13px;">
+                  <span style="color: #1f2937;">${i + 1}. ${a.name || (a.firstName + ' ' + (a.lastName || '')) || '-'}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : `<p style="margin: 0; color: #1e40af;">Sin asistentes registrados</p>`}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 20px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+        <button onclick="this.closest('.modal-overlay').remove()" class="btn btn-secondary" style="padding: 12px 24px;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
 }
 
 function viewDetails(assignmentId) {

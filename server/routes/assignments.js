@@ -156,6 +156,7 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
     assignment.validatedBy = 'MINISTRO';
     assignment.signatures = signatures;
     assignment.wizardData = wizardData;
+    assignment.status = 'completed'; // Cambiar estado a completado
 
     await assignment.save();
 
