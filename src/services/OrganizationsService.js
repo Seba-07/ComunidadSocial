@@ -314,31 +314,55 @@ class OrganizationsService {
 
       // Mapear directorio provisorio
       const dirProv = requestData.directorioProvisorio || {};
+      console.log('🔍 directorioProvisorio recibido:', dirProv);
+
+      // Función helper para extraer nombre de un miembro
+      const extractName = (member) => {
+        if (!member) return { firstName: '', lastName: '' };
+        // Intentar diferentes propiedades de nombre
+        if (member.firstName) {
+          return { firstName: member.firstName, lastName: member.lastName || '' };
+        }
+        if (member.nombre) {
+          const parts = member.nombre.split(' ');
+          return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
+        }
+        if (member.name) {
+          const parts = member.name.split(' ');
+          return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
+        }
+        return { firstName: '', lastName: '' };
+      };
+
       const provisionalDirectorio = {
         president: dirProv.presidente ? {
           rut: dirProv.presidente.rut,
-          firstName: dirProv.presidente.firstName || dirProv.presidente.nombre?.split(' ')[0] || '',
-          lastName: dirProv.presidente.lastName || dirProv.presidente.apellido || dirProv.presidente.nombre?.split(' ').slice(1).join(' ') || ''
+          ...extractName(dirProv.presidente)
         } : null,
         secretary: dirProv.secretario ? {
           rut: dirProv.secretario.rut,
-          firstName: dirProv.secretario.firstName || dirProv.secretario.nombre?.split(' ')[0] || '',
-          lastName: dirProv.secretario.lastName || dirProv.secretario.apellido || dirProv.secretario.nombre?.split(' ').slice(1).join(' ') || ''
+          ...extractName(dirProv.secretario)
         } : null,
         treasurer: dirProv.tesorero ? {
           rut: dirProv.tesorero.rut,
-          firstName: dirProv.tesorero.firstName || dirProv.tesorero.nombre?.split(' ')[0] || '',
-          lastName: dirProv.tesorero.lastName || dirProv.tesorero.apellido || dirProv.tesorero.nombre?.split(' ').slice(1).join(' ') || ''
+          ...extractName(dirProv.tesorero)
         } : null
       };
 
+      console.log('📤 provisionalDirectorio mapeado:', provisionalDirectorio);
+
       // Mapear comisión electoral
-      const comisionElectoral = (requestData.comisionElectoral || []).map(m => ({
-        rut: m.rut,
-        firstName: m.firstName || m.nombre?.split(' ')[0] || '',
-        lastName: m.lastName || m.apellido || m.nombre?.split(' ').slice(1).join(' ') || '',
-        role: 'electoral_commission'
-      }));
+      console.log('🔍 comisionElectoral recibida:', requestData.comisionElectoral);
+      const comisionElectoral = (requestData.comisionElectoral || []).map(m => {
+        const names = extractName(m);
+        return {
+          rut: m.rut,
+          firstName: names.firstName,
+          lastName: names.lastName,
+          role: 'electoral_commission'
+        };
+      });
+      console.log('📤 comisionElectoral mapeada:', comisionElectoral);
 
       const orgData = {
         organizationName: orgInfo.nombre || orgInfo.organizationName || orgInfo.name || 'Sin nombre',
