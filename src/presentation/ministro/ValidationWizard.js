@@ -33,7 +33,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     rut: m.rut || 'Sin RUT',
     birthDate: m.birthDate || null,
     isMinor: isUnderage(m.birthDate),
-    signature: m.signature || null
+    signature: m.signature || null,
+    role: m.role || null  // Preservar el rol del miembro
   }));
 
   // Estado del wizard
@@ -84,8 +85,19 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
   }
 
+  // FALLBACK: Si no hay provisionalDirectorio, buscar en los roles de los miembros
+  if (!preloadedDirectorio.president && !preloadedDirectorio.secretary && !preloadedDirectorio.treasurer) {
+    const presidentMember = members.find(m => m.role === 'president' && !m.isMinor);
+    const secretaryMember = members.find(m => m.role === 'secretary' && !m.isMinor);
+    const treasurerMember = members.find(m => m.role === 'treasurer' && !m.isMinor);
+
+    if (presidentMember) preloadedDirectorio.president = { ...presidentMember, name: presidentMember.name };
+    if (secretaryMember) preloadedDirectorio.secretary = { ...secretaryMember, name: secretaryMember.name };
+    if (treasurerMember) preloadedDirectorio.treasurer = { ...treasurerMember, name: treasurerMember.name };
+  }
+
   // Precargar comisión electoral si existe
-  const preloadedComision = provCom.map(cm => {
+  let preloadedComision = provCom.map(cm => {
     const found = findMemberByRut(cm.rut);
     if (found) {
       return { ...found, name: found.name, signature: null };
@@ -93,13 +105,20 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     return null;
   }).filter(Boolean);
 
+  // FALLBACK: Si no hay electoralCommission, buscar en los roles de los miembros
+  if (preloadedComision.length === 0) {
+    const commissionMembers = members.filter(m => m.role === 'electoral_commission' && !m.isMinor);
+    preloadedComision = commissionMembers.map(m => ({ ...m, name: m.name, signature: null }));
+  }
+
   // Debug log para verificar precarga
   console.log('ValidationWizard - Precarga de datos:', {
     provisionalDirectorio: provDir,
     electoralCommission: provCom,
     preloadedDirectorio,
     preloadedComision,
-    membersCount: members.length
+    membersCount: members.length,
+    membersWithRoles: members.filter(m => m.role).map(m => ({ name: m.name, role: m.role, rut: m.rut }))
   });
 
   // Obtener estatutos de la organización
