@@ -312,6 +312,34 @@ class OrganizationsService {
         role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
       }));
 
+      // Mapear directorio provisorio
+      const dirProv = requestData.directorioProvisorio || {};
+      const provisionalDirectorio = {
+        president: dirProv.presidente ? {
+          rut: dirProv.presidente.rut,
+          firstName: dirProv.presidente.firstName || dirProv.presidente.nombre?.split(' ')[0] || '',
+          lastName: dirProv.presidente.lastName || dirProv.presidente.apellido || dirProv.presidente.nombre?.split(' ').slice(1).join(' ') || ''
+        } : null,
+        secretary: dirProv.secretario ? {
+          rut: dirProv.secretario.rut,
+          firstName: dirProv.secretario.firstName || dirProv.secretario.nombre?.split(' ')[0] || '',
+          lastName: dirProv.secretario.lastName || dirProv.secretario.apellido || dirProv.secretario.nombre?.split(' ').slice(1).join(' ') || ''
+        } : null,
+        treasurer: dirProv.tesorero ? {
+          rut: dirProv.tesorero.rut,
+          firstName: dirProv.tesorero.firstName || dirProv.tesorero.nombre?.split(' ')[0] || '',
+          lastName: dirProv.tesorero.lastName || dirProv.tesorero.apellido || dirProv.tesorero.nombre?.split(' ').slice(1).join(' ') || ''
+        } : null
+      };
+
+      // Mapear comisión electoral
+      const comisionElectoral = (requestData.comisionElectoral || []).map(m => ({
+        rut: m.rut,
+        firstName: m.firstName || m.nombre?.split(' ')[0] || '',
+        lastName: m.lastName || m.apellido || m.nombre?.split(' ').slice(1).join(' ') || '',
+        role: 'electoral_commission'
+      }));
+
       const orgData = {
         organizationName: orgInfo.nombre || orgInfo.organizationName || orgInfo.name || 'Sin nombre',
         organizationType: this.mapOrganizationType(orgInfo.tipo || orgInfo.organizationType || orgInfo.type),
@@ -324,6 +352,10 @@ class OrganizationsService {
         contactEmail: orgInfo.contactEmail || orgInfo.email || '',
         contactPhone: orgInfo.contactPhone || orgInfo.phone || '',
         members: mappedMembers,
+        // Directorio Provisorio (paso 5)
+        provisionalDirectorio: provisionalDirectorio,
+        // Comisión Electoral (paso 5)
+        electoralCommission: comisionElectoral,
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
         assemblyAddress: requestData.assemblyAddress || null,

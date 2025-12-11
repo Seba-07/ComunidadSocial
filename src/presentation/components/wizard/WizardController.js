@@ -6268,12 +6268,20 @@ Vocal`;
         assemblyAddress: assemblyAddress
       });
 
-      // Crear la solicitud con los datos de pasos 1 y 2
+      // Crear la solicitud con los datos de pasos 1-5
       const requestData = {
         organizationData: {
           organization: this.formData.organization,
           members: this.formData.members
         },
+        // Datos del paso 5: Directorio Provisorio
+        directorioProvisorio: {
+          presidente: this.formData.directorioProvisorio?.presidente || null,
+          secretario: this.formData.directorioProvisorio?.secretario || null,
+          tesorero: this.formData.directorioProvisorio?.tesorero || null
+        },
+        // Datos del paso 5: Comisión Electoral
+        comisionElectoral: this.formData.commission?.members || [],
         electionDate: electionDate,
         electionTime: electionTime,
         assemblyAddress: assemblyAddress,

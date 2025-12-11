@@ -38,14 +38,79 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Estado del wizard
   let currentStep = 1;
-  const totalSteps = 5;
+  const totalSteps = 6;
 
-  // Datos recopilados
+  // Datos recopilados - precargar si existen en la organización
+  const provDir = org?.provisionalDirectorio || {};
+  const provCom = org?.electoralCommission || [];
+
+  // Función para normalizar RUT (quitar puntos y guión para comparar)
+  const normalizeRut = (rut) => {
+    if (!rut) return '';
+    return String(rut).replace(/\./g, '').replace(/-/g, '').toLowerCase().trim();
+  };
+
+  // Función para buscar miembro por RUT (normalizado)
+  const findMemberByRut = (rut) => {
+    if (!rut) return null;
+    const normalizedSearch = normalizeRut(rut);
+    return members.find(m => normalizeRut(m.rut) === normalizedSearch);
+  };
+
+  // Precargar directorio si existe
+  const preloadedDirectorio = {
+    president: null,
+    secretary: null,
+    treasurer: null
+  };
+
+  // Buscar miembros que coincidan con el directorio provisorio
+  if (provDir.president) {
+    const found = findMemberByRut(provDir.president.rut);
+    if (found) {
+      preloadedDirectorio.president = { ...found, name: found.name };
+    }
+  }
+  if (provDir.secretary) {
+    const found = findMemberByRut(provDir.secretary.rut);
+    if (found) {
+      preloadedDirectorio.secretary = { ...found, name: found.name };
+    }
+  }
+  if (provDir.treasurer) {
+    const found = findMemberByRut(provDir.treasurer.rut);
+    if (found) {
+      preloadedDirectorio.treasurer = { ...found, name: found.name };
+    }
+  }
+
+  // Precargar comisión electoral si existe
+  const preloadedComision = provCom.map(cm => {
+    const found = findMemberByRut(cm.rut);
+    if (found) {
+      return { ...found, name: found.name, signature: null };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Debug log para verificar precarga
+  console.log('ValidationWizard - Precarga de datos:', {
+    provisionalDirectorio: provDir,
+    electoralCommission: provCom,
+    preloadedDirectorio,
+    preloadedComision,
+    membersCount: members.length
+  });
+
+  // Obtener estatutos de la organización
+  const estatutosOrg = org?.estatutos || orgData.estatutos || '';
+
   const wizardData = {
-    directorio: { president: null, secretary: null, treasurer: null },
+    directorio: preloadedDirectorio,
     additionalMembers: [],
-    comisionElectoral: [],
+    comisionElectoral: preloadedComision,
     attendees: [],
+    estatutos: estatutosOrg,
     ministroSignature: null,
     notes: ''
   };
@@ -55,6 +120,14 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // IDs seleccionados (para bloquear en otros selects)
   const selectedIds = new Set();
+
+  // Agregar IDs precargados al set
+  if (preloadedDirectorio.president?.id) selectedIds.add(preloadedDirectorio.president.id);
+  if (preloadedDirectorio.secretary?.id) selectedIds.add(preloadedDirectorio.secretary.id);
+  if (preloadedDirectorio.treasurer?.id) selectedIds.add(preloadedDirectorio.treasurer.id);
+  preloadedComision.forEach(cm => {
+    if (cm?.id) selectedIds.add(cm.id);
+  });
 
   // Función para abrir modal de firma grande
   const openSignatureModal = (signatureKey, title, onSave) => {
@@ -313,7 +386,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
       case 2: return renderStep2_Adicionales();
       case 3: return renderStep3_Comision();
       case 4: return renderStep4_Asistentes();
-      case 5: return renderStep5_Confirmar();
+      case 5: return renderStep5_Estatutos();
+      case 6: return renderStep6_Confirmar();
       default: return '';
     }
   };
@@ -666,11 +740,83 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     `;
   };
 
-  // Extraer estatutos de la organización
-  const estatutosOrg = org?.estatutos || orgData.estatutos || null;
+  // PASO 5: Revisión y Edición de Estatutos
+  const renderStep5_Estatutos = () => {
+    const currentEstatutos = wizardData.estatutos || '';
 
-  // PASO 5: Confirmación
-  const renderStep5_Confirmar = () => {
+    return `
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 5: Revisión y Edición de Estatutos</h3>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">Revisa y edita los estatutos de la organización si es necesario.</p>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4 style="margin: 0; color: #92400e; font-size: 16px; display: flex; align-items: center; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Estatutos de la Organización
+          </h4>
+        </div>
+
+        <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <p style="margin: 0 0 12px; font-size: 14px; color: #78350f;">
+            <strong>Importante:</strong> Los estatutos definen las normas y reglas de funcionamiento de la organización.
+            Puedes editar el contenido si es necesario realizar correcciones.
+          </p>
+          <textarea
+            id="estatutos-textarea"
+            style="width: 100%; min-height: 400px; padding: 16px; border: 2px solid #d97706; border-radius: 8px; font-family: 'Georgia', serif; font-size: 14px; line-height: 1.8; resize: vertical; background: #fffbeb; box-sizing: border-box;"
+            placeholder="Los estatutos de la organización aparecerán aquí..."
+          >${currentEstatutos}</textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="button" id="btn-reset-estatutos" style="padding: 10px 16px; background: white; color: #d97706; border: 2px solid #d97706; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            Restaurar Original
+          </button>
+          <button type="button" id="btn-preview-estatutos" style="padding: 10px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Vista Previa
+          </button>
+        </div>
+      </div>
+
+      <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 16px;">
+        <h4 style="margin: 0 0 12px; color: #065f46; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+          <span>✅</span> Verificación de Estatutos
+        </h4>
+        <div style="font-size: 13px; color: #065f46;">
+          <p style="margin: 0 0 8px;">Antes de continuar, verifica que los estatutos incluyan:</p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>Nombre y tipo de organización</li>
+            <li>Domicilio y territorio</li>
+            <li>Objetivos y fines</li>
+            <li>Derechos y deberes de los socios</li>
+            <li>Órganos de administración</li>
+            <li>Mecanismos de elección</li>
+            <li>Patrimonio y financiamiento</li>
+            <li>Procedimiento de reforma de estatutos</li>
+            <li>Causales de disolución</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  };
+
+  // PASO 6: Confirmación
+  const renderStep6_Confirmar = () => {
     const dir = wizardData.directorio;
     const add = wizardData.additionalMembers;
     const com = wizardData.comisionElectoral;
@@ -678,7 +824,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
     return `
       <div style="margin-bottom: 20px;">
-        <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 5: Confirmación y Firma del Ministro de Fe</h3>
+        <h3 style="margin: 0 0 8px; color: #1f2937; font-size: 18px;">Paso 6: Confirmación y Firma del Ministro de Fe</h3>
         <p style="margin: 0; color: #6b7280; font-size: 14px;">Revisa el resumen, los estatutos definitivos y firma para completar la validación.</p>
       </div>
 
@@ -965,6 +1111,32 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     }
 
     if (currentStep === 5) {
+      // Botón para restaurar estatutos originales
+      modal.querySelector('#btn-reset-estatutos')?.addEventListener('click', () => {
+        const textarea = modal.querySelector('#estatutos-textarea');
+        if (textarea && confirm('¿Estás seguro de que deseas restaurar los estatutos originales? Se perderán los cambios realizados.')) {
+          textarea.value = estatutosOrg || '';
+          wizardData.estatutos = estatutosOrg || '';
+        }
+      });
+
+      // Botón para vista previa de estatutos
+      modal.querySelector('#btn-preview-estatutos')?.addEventListener('click', () => {
+        // Guardar el valor actual del textarea
+        const textarea = modal.querySelector('#estatutos-textarea');
+        if (textarea) {
+          wizardData.estatutos = textarea.value;
+        }
+        showEstatutosModal();
+      });
+
+      // Guardar cambios en tiempo real del textarea
+      modal.querySelector('#estatutos-textarea')?.addEventListener('input', (e) => {
+        wizardData.estatutos = e.target.value;
+      });
+    }
+
+    if (currentStep === 6) {
       // Botón para ver estatutos definitivos
       modal.querySelector('#btn-view-estatutos')?.addEventListener('click', () => {
         showEstatutosModal();
@@ -977,8 +1149,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     const dir = wizardData.directorio;
     const com = wizardData.comisionElectoral;
 
-    // Generar contenido de estatutos con datos definitivos
-    const estatutosContent = estatutosOrg?.contenido || generateDefaultEstatutos();
+    // Usar estatutos editados del wizard, o generar por defecto
+    const estatutosContent = wizardData.estatutos || generateDefaultEstatutos();
 
     const estatutosModal = document.createElement('div');
     estatutosModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200000; padding: 20px; box-sizing: border-box;';
@@ -1227,6 +1399,14 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     }
 
     if (currentStep === 5) {
+      // Guardar estatutos editados
+      const textarea = modal.querySelector('#estatutos-textarea');
+      if (textarea) {
+        wizardData.estatutos = textarea.value;
+      }
+    }
+
+    if (currentStep === 6) {
       wizardData.notes = modal.querySelector('#validation-notes')?.value.trim() || '';
       wizardData.ministroSignature = signatureData['ministro-signature'];
     }
@@ -1306,6 +1486,15 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     }
 
     if (currentStep === 5) {
+      // Validación de estatutos - debe tener contenido
+      const textarea = modal.querySelector('#estatutos-textarea');
+      if (!textarea?.value?.trim()) {
+        showToast('Los estatutos no pueden estar vacíos', 'error');
+        return false;
+      }
+    }
+
+    if (currentStep === 6) {
       if (!signatureData['ministro-signature']) {
         showToast('Debes firmar como Ministro de Fe para validar', 'error');
         return false;

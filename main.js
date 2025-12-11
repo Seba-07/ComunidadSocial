@@ -1897,6 +1897,22 @@ function viewOrganization(orgId) {
             <div style="background: white; border-radius: 8px; padding: 12px;">
               <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio Provisorio</p>
               ${(() => {
+                // Primero intentar desde provisionalDirectorio (nuevo formato)
+                const dir = org.provisionalDirectorio;
+                if (dir && (dir.president || dir.secretary || dir.treasurer)) {
+                  let html = '';
+                  if (dir.president) {
+                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
+                  }
+                  if (dir.secretary) {
+                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
+                  }
+                  if (dir.treasurer) {
+                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
+                  }
+                  return html || '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros del directorio definidos en tu solicitud</p>';
+                }
+                // Fallback: buscar en members con roles
                 const directors = org.members?.filter(m => ['president', 'secretary', 'treasurer'].includes(m.role)) || [];
                 if (directors.length === 0) {
                   return '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros del directorio definidos en tu solicitud</p>';

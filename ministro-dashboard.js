@@ -714,19 +714,25 @@ function viewDetails(assignmentId) {
   // Extraer miembros
   const members = org?.members || [];
 
-  // Formatear fecha - maneja tanto strings como objetos Date
+  // Formatear fecha - maneja tanto strings como objetos Date (evita desfase de zona horaria)
   const formatDate = (dateValue) => {
     if (!dateValue) return 'No especificada';
     try {
       let date;
       if (typeof dateValue === 'string') {
-        // Si es un string ISO o YYYY-MM-DD
-        date = new Date(dateValue);
+        // Extraer solo la parte de la fecha (YYYY-MM-DD) para evitar problemas de zona horaria
+        const datePart = dateValue.split('T')[0];
+        const [year, month, day] = datePart.split('-').map(Number);
+        if (year && month && day) {
+          // Crear fecha a mediodía para evitar problemas de zona horaria
+          date = new Date(year, month - 1, day, 12, 0, 0);
+        } else {
+          return 'No especificada';
+        }
       } else if (dateValue instanceof Date) {
         date = dateValue;
       } else {
-        // Intentar crear Date de cualquier valor
-        date = new Date(dateValue);
+        return 'No especificada';
       }
 
       if (isNaN(date.getTime())) {
@@ -826,6 +832,47 @@ function viewDetails(assignmentId) {
               </div>
             ` : ''}
           </div>
+
+          <!-- Directorio Provisorio y Comisión Electoral -->
+          ${org?.provisionalDirectorio || org?.electoralCommission?.length > 0 ? `
+            <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+              <h4 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #92400e;">👥 Quiénes deben asistir (OBLIGATORIO)</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div style="background: white; border-radius: 8px; padding: 12px;">
+                  <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio Provisorio</p>
+                  ${(() => {
+                    const dir = org?.provisionalDirectorio;
+                    if (dir && (dir.president || dir.secretary || dir.treasurer)) {
+                      let html = '';
+                      if (dir.president) {
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
+                      }
+                      if (dir.secretary) {
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
+                      }
+                      if (dir.treasurer) {
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
+                      }
+                      return html || '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
+                    }
+                    return '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
+                  })()}
+                </div>
+                <div style="background: white; border-radius: 8px; padding: 12px;">
+                  <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Comisión Electoral</p>
+                  ${(() => {
+                    const commission = org?.electoralCommission || [];
+                    if (commission.length === 0) {
+                      return '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificada</p>';
+                    }
+                    return commission.map(m => {
+                      return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '') + '</p>';
+                    }).join('');
+                  })()}
+                </div>
+              </div>
+            </div>
+          ` : ''}
 
           <!-- Miembros Registrados -->
           ${members.length > 0 ? `
