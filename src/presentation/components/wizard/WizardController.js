@@ -6269,6 +6269,9 @@ Vocal`;
       });
 
       // Crear la solicitud con los datos de pasos 1-5
+      console.log('🔍 [WizardController] formData.directorioProvisorio:', this.formData.directorioProvisorio);
+      console.log('🔍 [WizardController] formData.commission:', this.formData.commission);
+
       const requestData = {
         organizationData: {
           organization: this.formData.organization,
@@ -6288,6 +6291,8 @@ Vocal`;
         bookingId: booking.id,
         comments: comments
       };
+
+      console.log('📤 [WizardController] requestData a enviar:', requestData);
 
       // Guardar en el servicio de organizaciones con estado WAITING_MINISTRO_REQUEST
       try {

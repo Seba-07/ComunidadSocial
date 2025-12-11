@@ -219,6 +219,12 @@ class ScheduleService {
       unavailable: []
     };
 
+    console.log('📆 [ScheduleService] getMonthAvailability para:', year, month);
+    console.log('📆 [ScheduleService] Total reservas:', bookings.length);
+    if (bookings.length > 0) {
+      console.log('📆 [ScheduleService] Reservas existentes:', bookings.map(b => `${b.date} ${b.time} (${b.status})`));
+    }
+
     // Iterar todos los días del mes
     const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -246,6 +252,8 @@ class ScheduleService {
       }
     }
 
+    console.log('📆 [ScheduleService] Días parcialmente ocupados:', availability.partial);
+
     return availability;
   }
 
@@ -255,18 +263,30 @@ class ScheduleService {
   getAvailableSlots(date) {
     const daySchedule = this.getDaySchedule(date);
     if (!daySchedule || !daySchedule.enabled) {
+      console.log('📅 [ScheduleService] getAvailableSlots: día no habilitado o sin horario', date);
       return [];
     }
 
     const dateKey = this.getDateKey(date);
     const bookings = this.getAllBookings();
+
+    console.log('📅 [ScheduleService] getAvailableSlots para fecha:', dateKey);
+    console.log('📅 [ScheduleService] Total reservas en sistema:', bookings.length);
+    console.log('📅 [ScheduleService] Reservas:', bookings.map(b => ({ date: b.date, time: b.time, status: b.status })));
+
     const bookedTimes = bookings
       .filter(b => b.date === dateKey && b.status !== 'cancelled')
       .map(b => b.time);
 
-    return daySchedule.slots
+    console.log('📅 [ScheduleService] Horarios ya reservados para esta fecha:', bookedTimes);
+
+    const availableSlots = daySchedule.slots
       .filter(slot => slot.available && !bookedTimes.includes(slot.time))
       .map(slot => slot.time);
+
+    console.log('📅 [ScheduleService] Horarios disponibles (después de filtrar):', availableSlots);
+
+    return availableSlots;
   }
 
   // ============ GESTIÓN DE RESERVAS ============
@@ -292,6 +312,9 @@ class ScheduleService {
   createBooking(bookingData) {
     const bookings = this.getAllBookings();
 
+    console.log('🔖 [ScheduleService] createBooking - Reservas actuales:', bookings.length);
+    console.log('🔖 [ScheduleService] createBooking - Datos recibidos:', bookingData.date, bookingData.time);
+
     // Verificar si el slot está disponible
     const dateKey = this.getDateKey(bookingData.date);
     const existingBooking = bookings.find(
@@ -301,6 +324,7 @@ class ScheduleService {
     );
 
     if (existingBooking) {
+      console.log('⚠️ [ScheduleService] createBooking - Horario ya reservado:', existingBooking);
       throw new Error('Este horario ya está reservado');
     }
 
@@ -320,6 +344,8 @@ class ScheduleService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
+    console.log('✅ [ScheduleService] createBooking - Nueva reserva creada:', newBooking.id, dateKey, bookingData.time);
 
     bookings.push(newBooking);
     this.saveBookings(bookings);
