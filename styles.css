@@ -13656,85 +13656,146 @@ a.header-logo:hover {
         padding: 8px 10px;
     }
 
+    /* Calendar section - Date preference info box (inline styles override) */
+    .ministro-form-section > div[style*="background: #dbeafe"] {
+        padding: 10px !important;
+        margin-bottom: 12px !important;
+        font-size: 11px !important;
+        border-radius: 0 8px 8px 0 !important;
+    }
+
+    .ministro-form-section > div[style*="background: #dbeafe"] p {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* Calendar legend override */
+    .ministro-form-section small[style*="color: #6b7280"] {
+        font-size: 10px !important;
+        margin-top: 8px !important;
+    }
+
+    .ministro-form-section small[style*="color: #6b7280"] strong {
+        margin-left: 8px !important;
+    }
+
     /* Calendar mobile */
     .schedule-calendar-container {
-        padding: 10px !important;
+        padding: 8px !important;
         width: 100% !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
+        margin-top: 0 !important;
     }
 
     .calendar-header {
-        margin-bottom: 12px;
-        padding-bottom: 10px;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
         width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .calendar-month-title {
-        font-size: 14px;
+        font-size: 13px !important;
+        margin: 0 !important;
     }
 
     .calendar-nav-btn {
-        width: 28px;
-        height: 28px;
+        width: 26px !important;
+        height: 26px !important;
         flex-shrink: 0;
+        padding: 4px !important;
+    }
+
+    .calendar-nav-btn svg {
+        width: 16px !important;
+        height: 16px !important;
     }
 
     .calendar-weekdays {
         gap: 1px;
         width: 100%;
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        display: grid !important;
+        grid-template-columns: repeat(7, 1fr) !important;
     }
 
     .calendar-weekday {
-        font-size: 9px;
-        padding: 4px 1px;
+        font-size: 9px !important;
+        padding: 4px 1px !important;
         text-align: center;
     }
 
     .calendar-days {
-        gap: 1px;
+        gap: 1px !important;
         width: 100%;
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        display: grid !important;
+        grid-template-columns: repeat(7, 1fr) !important;
     }
 
     .calendar-day {
-        min-height: 32px;
-        font-size: 11px;
-        padding: 4px 2px;
+        min-height: 30px !important;
+        font-size: 10px !important;
+        padding: 2px !important;
     }
 
     .time-slots-container {
         width: 100% !important;
         max-width: 100% !important;
+        padding: 10px 0 !important;
+    }
+
+    .time-slots-title {
+        font-size: 13px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .time-slots-date {
+        font-size: 11px !important;
+        margin-bottom: 8px !important;
     }
 
     .time-slots-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 4px !important;
         width: 100% !important;
     }
 
     .time-slot {
-        padding: 8px 4px;
-        font-size: 11px;
+        padding: 6px 4px !important;
+        font-size: 10px !important;
+        border-radius: 6px !important;
     }
 
     .selected-appointment {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 12px !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 10px !important;
+        border-radius: 8px !important;
+    }
+
+    .appointment-icon {
+        display: none !important;
+    }
+
+    .appointment-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .appointment-label {
+        font-size: 11px !important;
+        margin-bottom: 2px !important;
     }
 
     .appointment-datetime {
-        font-size: 13px;
+        font-size: 12px !important;
     }
 
     .change-appointment-btn {
-        font-size: 12px;
-        padding: 6px 12px;
+        font-size: 11px !important;
+        padding: 6px 10px !important;
     }
 
     /* Books checklist */

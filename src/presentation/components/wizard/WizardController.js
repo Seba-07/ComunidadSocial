@@ -3,7 +3,7 @@
  * Controla la lógica del wizard de creación de organizaciones
  */
 
-import { getWizardHTML, getStep4HTML_Estatutos, getStep5HTML_Comision } from './WizardHTML.js';
+import { getWizardHTML, getStep4HTML_Estatutos, getStep5HTML_Comision, getStep6HTML_Documentos } from './WizardHTML.js';
 import { indexedDBService } from '../../../infrastructure/database/IndexedDBService.js';
 import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
@@ -59,7 +59,7 @@ function getOrgTypeName(type) {
 export class WizardController {
   constructor() {
     this.currentStep = 1;
-    this.totalSteps = 8;
+    this.totalSteps = 6;
     this.storageKey = 'wizardProgress';
     this.formData = {
       organization: {
@@ -706,9 +706,9 @@ export class WizardController {
     // Guardar datos del paso actual
     await this.saveCurrentStep();
 
-    // FASE 2: Interceptar después del paso 5 (Directorio Provisorio + Comisión Electoral)
-    // El usuario debe completar el directorio, comisión y certificados antes de solicitar Ministro de Fe
-    if (this.currentStep === 5 && !this.formData.ministroApproved) {
+    // FASE 2: Interceptar después del paso 6 (Documentos)
+    // El usuario debe completar todos los pasos y documentos antes de solicitar Ministro de Fe
+    if (this.currentStep === 6 && !this.formData.ministroApproved) {
       try {
         console.log('🔄 Mostrando pantalla de solicitud de Ministro de Fe...');
         await this.showMinistroRequestScreen();
@@ -838,11 +838,7 @@ export class WizardController {
       case 5:
         return this.validateStep5_Comision(); // Comisión es paso 5
       case 6:
-        return this.validateStep6_Firmas(); // Firmas es paso 6
-      case 7:
-        return this.validateStep7_Documentos(); // Documentos es paso 7
-      case 8:
-        return this.validateStep8_Revision(); // Revisión es paso 8
+        return this.validateStep6_Documentos(); // Documentos es paso 6
       default:
         return true;
     }
@@ -1028,9 +1024,9 @@ export class WizardController {
   }
 
   /**
-   * Valida paso 7: Documentos
+   * Valida paso 6: Documentos
    */
-  validateStep7_Documentos() {
+  validateStep6_Documentos() {
     const errors = [];
 
     // Validar documentos auto-generados
@@ -1156,13 +1152,7 @@ export class WizardController {
         this.saveStep5_Comision();
         break;
       case 6:
-        // Firmas - se guardan en tiempo real
-        break;
-      case 7:
         // Documentos - se guardan en tiempo real
-        break;
-      case 8:
-        // Revisión - nada que guardar
         break;
     }
   }
@@ -1276,13 +1266,7 @@ export class WizardController {
         this.initializeStep5_Comision(); // Comisión es paso 5
         break;
       case 6:
-        this.initializeStep6_Firmas(); // Firmas es paso 6
-        break;
-      case 7:
-        this.initializeStep7_Documentos(); // Documentos es paso 7
-        break;
-      case 8:
-        this.initializeStep8_Revision(); // Revisión es paso 8
+        this.initializeStep6_Documentos(); // Documentos es paso 6
         break;
     }
   }
@@ -5386,9 +5370,9 @@ Vocal`;
   }
 
   /**
-   * Inicializa paso 7: Documentos
+   * Inicializa paso 6: Documentos
    */
-  initializeStep7_Documentos() {
+  initializeStep6_Documentos() {
     // Generar documentos automáticamente con las firmas ya incluidas
     this.generateAllDocuments();
 
@@ -5814,10 +5798,10 @@ Vocal`;
    * FASE 2: Muestra pantalla de solicitud de Ministro de Fe
    */
   async showMinistroRequestScreen() {
-    const stepContent = document.querySelector('#step-5');
+    const stepContent = document.querySelector('#step-6');
     if (!stepContent) return;
 
-    // Reemplazar el contenido del paso 5 con el formulario de solicitud de Ministro
+    // Reemplazar el contenido del paso 6 con el formulario de solicitud de Ministro
     const orgTypeName = getOrgTypeName(this.formData.organization.type);
 
     stepContent.innerHTML = `
@@ -5830,8 +5814,8 @@ Vocal`;
               <path d="M22 36 L32 46 L50 28" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <h2>Pasos 1 a 5 Completados</h2>
-          <p>Has completado exitosamente la información básica, miembros fundadores, configuración, estatutos, y el Directorio Provisorio con la Comisión Electoral.</p>
+          <h2>Pasos 1 a 6 Completados</h2>
+          <p>Has completado exitosamente la información básica, miembros fundadores, configuración, estatutos, comisión electoral y documentos oficiales.</p>
         </div>
 
         <!-- Info box -->
@@ -5844,7 +5828,7 @@ Vocal`;
             </svg>
             Siguiente Paso: Solicitar Ministro de Fe
           </h3>
-          <p>Antes de continuar con el paso 5, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.</p>
+          <p>Para continuar, debes <strong>solicitar un Ministro de Fe</strong> de la municipalidad.</p>
           <p>El Ministro de Fe presidirá la asamblea de constitución, designará el <strong>Directorio Provisorio</strong> (Presidente, Secretario y Tesorero) y validará el proceso.</p>
         </div>
 
@@ -6086,9 +6070,9 @@ Vocal`;
 
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        // Restaurar el HTML original del paso 5 (Directorio Provisorio + Comisión Electoral)
-        this.restoreStep5HTML();
-        // Volver a mostrar el paso 5 normal
+        // Restaurar el HTML original del paso 6 (Documentos)
+        this.restoreStep6HTML();
+        // Volver a mostrar el paso 6 normal
         this.updateUI();
         this.initializeCurrentStep();
       });
@@ -6673,17 +6657,17 @@ Vocal`;
   }
 
   /**
-   * Restaura el HTML original del paso 5 (Directorio Provisorio + Comisión Electoral) después de mostrar la pantalla de Ministro de Fe
+   * Restaura el HTML original del paso 6 (Documentos) después de mostrar la pantalla de Ministro de Fe
    */
-  restoreStep5HTML() {
-    const stepContent = document.querySelector('#step-5');
+  restoreStep6HTML() {
+    const stepContent = document.querySelector('#step-6');
     if (!stepContent) return;
 
-    // Usar el HTML del paso 5 desde WizardHTML
-    const step5HTML = getStep5HTML_Comision();
+    // Usar el HTML del paso 6 desde WizardHTML
+    const step6HTML = getStep6HTML_Documentos();
     // Extraer solo el contenido interno (sin el div contenedor)
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = step5HTML;
+    tempDiv.innerHTML = step6HTML;
     stepContent.innerHTML = tempDiv.firstElementChild.innerHTML;
   }
 }

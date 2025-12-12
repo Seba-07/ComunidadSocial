@@ -49,15 +49,7 @@ export function getWizardHTML() {
             </div>
             <div class="wizard-step" data-step="6">
               <div class="step-number">6</div>
-              <div class="step-label">Firmas</div>
-            </div>
-            <div class="wizard-step" data-step="7">
-              <div class="step-number">7</div>
               <div class="step-label">Documentos</div>
-            </div>
-            <div class="wizard-step" data-step="8">
-              <div class="step-number">8</div>
-              <div class="step-label">Revisión</div>
             </div>
           </div>
         </div>
@@ -69,9 +61,7 @@ export function getWizardHTML() {
           ${getStep3HTML_ConfigEstatutos()}
           ${getStep4HTML_Estatutos()}
           ${getStep5HTML_Comision()}
-          ${getStep6HTML_Firmas()}
-          ${getStep7HTML_Documentos()}
-          ${getStep8HTML_Revision()}
+          ${getStep6HTML_Documentos()}
         </div>
 
         <!-- Wizard Actions -->
@@ -1051,11 +1041,11 @@ function getDocumentItemHTML(type, name, description, required) {
   `;
 }
 
-function getStep7HTML_Documentos() {
+export function getStep6HTML_Documentos() {
   return `
-    <div class="wizard-step-content" id="step-7">
-      <h3>Paso 7: Documentos Oficiales</h3>
-      <p class="step-description">Los documentos han sido generados con las firmas del Directorio Provisorio. Revise, edite si es necesario y adjunte los documentos adicionales.</p>
+    <div class="wizard-step-content" id="step-6">
+      <h3>Paso 6: Documentos Oficiales</h3>
+      <p class="step-description">Revise los documentos generados, edite si es necesario y adjunte los certificados y fotos requeridas.</p>
 
       <!-- Info Box explicativo -->
       <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #10b981; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
