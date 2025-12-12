@@ -595,15 +595,18 @@ export function getStep5HTML_Comision() {
         </div>
       </div>
 
-      <!-- SECCIÓN 1: DIRECTORIO PROVISORIO -->
+      <!-- SECCIÓN 1: DIRECTORIO PROVISORIO (Dinámico según tipo de organización) -->
       <div class="commission-section mb-4">
         <div class="commission-section-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 1px solid #3b82f6; border-radius: 12px 12px 0 0; padding: 16px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 28px;">👔</span>
             <div>
               <h4 style="margin: 0; color: #1e40af; font-size: 16px;">Directorio Provisorio</h4>
-              <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;">
+              <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;" id="directorio-info-text">
                 Estos cargos son solo para constituir la organización. El directorio definitivo se elegirá después.
+              </p>
+              <p style="margin: 4px 0 0; color: #1e40af; font-size: 12px; font-weight: 600;" id="directorio-required-count">
+                <!-- Se actualiza dinámicamente con la cantidad de miembros requeridos -->
               </p>
             </div>
           </div>
@@ -611,79 +614,9 @@ export function getStep5HTML_Comision() {
 
         <div style="border: 1px solid #3b82f6; border-top: none; border-radius: 0 0 12px 12px; padding: 20px; background: #fff;">
           <form id="form-directorio-provisorio">
-            <!-- Presidente -->
-            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">PRESIDENTE/A</span>
-              </div>
-              <div class="form-row form-row-2">
-                <div class="form-group">
-                  <label for="dir-presidente">Seleccionar Miembro <span class="required">*</span></label>
-                  <select id="dir-presidente" name="presidente" required class="member-select">
-                    <option value="">Seleccione un miembro fundador...</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="cert-presidente">Certificado de Antecedentes <span class="required">*</span></label>
-                  <div class="file-upload-wrapper">
-                    <input type="file" id="cert-presidente" name="certPresidente" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
-                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-presidente').click()">
-                      📎 Subir Certificado
-                    </button>
-                    <span class="file-name-display" id="cert-presidente-name"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Secretario -->
-            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">SECRETARIO/A</span>
-              </div>
-              <div class="form-row form-row-2">
-                <div class="form-group">
-                  <label for="dir-secretario">Seleccionar Miembro <span class="required">*</span></label>
-                  <select id="dir-secretario" name="secretario" required class="member-select">
-                    <option value="">Seleccione un miembro fundador...</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="cert-secretario">Certificado de Antecedentes <span class="required">*</span></label>
-                  <div class="file-upload-wrapper">
-                    <input type="file" id="cert-secretario" name="certSecretario" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
-                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-secretario').click()">
-                      📎 Subir Certificado
-                    </button>
-                    <span class="file-name-display" id="cert-secretario-name"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tesorero -->
-            <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">TESORERO/A</span>
-              </div>
-              <div class="form-row form-row-2">
-                <div class="form-group">
-                  <label for="dir-tesorero">Seleccionar Miembro <span class="required">*</span></label>
-                  <select id="dir-tesorero" name="tesorero" required class="member-select">
-                    <option value="">Seleccione un miembro fundador...</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="cert-tesorero">Certificado de Antecedentes <span class="required">*</span></label>
-                  <div class="file-upload-wrapper">
-                    <input type="file" id="cert-tesorero" name="certTesorero" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden">
-                    <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-tesorero').click()">
-                      📎 Subir Certificado
-                    </button>
-                    <span class="file-name-display" id="cert-tesorero-name"></span>
-                  </div>
-                </div>
-              </div>
+            <!-- Los cargos del directorio se generan dinámicamente según el tipo de organización -->
+            <div id="directorio-cargos-container">
+              <!-- Se renderiza dinámicamente en initializeStep5_Comision() -->
             </div>
           </form>
         </div>
@@ -790,23 +723,18 @@ export function getStep5HTML_Comision() {
         </div>
       </div>
 
-      <!-- Resumen de certificados -->
+      <!-- Resumen de certificados (dinámico) -->
       <div class="certificates-summary" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #ef4444; border-radius: 12px; padding: 16px;">
         <div style="display: flex; align-items: center; gap: 12px;">
           <span style="font-size: 24px;">📄</span>
           <div>
             <strong style="color: #991b1b; font-size: 14px;">Certificados de Antecedentes Requeridos</strong>
-            <p style="margin: 6px 0 0; color: #991b1b; font-size: 13px; line-height: 1.5;">
+            <p style="margin: 6px 0 0; color: #991b1b; font-size: 13px; line-height: 1.5;" id="cert-required-text">
               Debe subir el <strong>certificado de antecedentes</strong> de cada miembro del Directorio Provisorio
-              y la Comisión Electoral (6 certificados en total). Puede obtenerlos en <a href="https://www.registrocivil.cl" target="_blank" style="color: #dc2626;">www.registrocivil.cl</a>
+              y la Comisión Electoral. Puede obtenerlos en <a href="https://www.registrocivil.cl" target="_blank" style="color: #dc2626;">www.registrocivil.cl</a>
             </p>
             <div id="cert-progress" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-              <span class="cert-badge pending" id="cert-badge-presidente">❌ Presidente</span>
-              <span class="cert-badge pending" id="cert-badge-secretario">❌ Secretario</span>
-              <span class="cert-badge pending" id="cert-badge-tesorero">❌ Tesorero</span>
-              <span class="cert-badge pending" id="cert-badge-com1">❌ Com. 1</span>
-              <span class="cert-badge pending" id="cert-badge-com2">❌ Com. 2</span>
-              <span class="cert-badge pending" id="cert-badge-com3">❌ Com. 3</span>
+              <!-- Los badges se generan dinámicamente según el tipo de organización -->
             </div>
           </div>
         </div>

@@ -34,6 +34,133 @@ const FUNCIONAL_TYPES = {
   'OTRA_FUNCIONAL': 'Otra'
 };
 
+// Configuración de Directorio por tipo de organización
+// Define los cargos requeridos según los estatutos de cada tipo
+const DIRECTORIO_CONFIG = {
+  // Organizaciones Territoriales - 5 miembros
+  'JUNTA_VECINOS': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true }
+    ],
+    totalRequerido: 5
+  },
+  'COMITE_VECINOS': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true }
+    ],
+    totalRequerido: 5
+  },
+  // Comité de Vivienda - 5 miembros
+  'COMITE_VIVIENDA': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'director1', nombre: 'Director/a 1', color: '#6366f1', required: true },
+      { id: 'director2', nombre: 'Director/a 2', color: '#ec4899', required: true }
+    ],
+    totalRequerido: 5
+  },
+  // Centro de Padres - 4 miembros (mínimo según estatutos)
+  'CENTRO_PADRES': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'secretario', nombre: 'Secretario General', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true }
+    ],
+    totalRequerido: 4
+  },
+  // CVPCC - 6 miembros
+  'COMITE_CONVIVENCIA': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'directorPrevencion', nombre: 'Director/a de Prevención', color: '#ef4444', required: true },
+      { id: 'directorConvivencia', nombre: 'Director/a de Convivencia', color: '#06b6d4', required: true }
+    ],
+    totalRequerido: 6
+  },
+  // Organizaciones Funcionales genéricas - 5 miembros
+  'DEFAULT': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true }
+    ],
+    totalRequerido: 5
+  }
+};
+
+// Función para obtener la configuración del directorio según el tipo de organización
+function getDirectorioConfig(orgType) {
+  return DIRECTORIO_CONFIG[orgType] || DIRECTORIO_CONFIG['DEFAULT'];
+}
+
+/**
+ * Genera el HTML para un cargo del directorio
+ * @param {Object} cargo - Configuración del cargo
+ * @param {boolean} isLast - Si es el último cargo (sin margin-bottom)
+ */
+function generateCargoHTML(cargo, isLast = false) {
+  const marginStyle = isLast ? '' : 'margin-bottom: 16px;';
+  return `
+    <div class="directivo-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; ${marginStyle}">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="background: ${cargo.color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${cargo.nombre.toUpperCase()}</span>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label for="dir-${cargo.id}">Seleccionar Miembro <span class="required">*</span></label>
+          <select id="dir-${cargo.id}" name="${cargo.id}" required class="member-select directorio-select">
+            <option value="">Seleccione un miembro fundador...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cert-${cargo.id}">Certificado de Antecedentes <span class="required">*</span></label>
+          <div class="file-upload-wrapper">
+            <input type="file" id="cert-${cargo.id}" name="cert${cargo.id}" accept=".pdf,.jpg,.jpeg,.png" class="file-input-hidden cert-directorio">
+            <button type="button" class="btn-upload-cert" onclick="document.getElementById('cert-${cargo.id}').click()">
+              📎 Subir Certificado
+            </button>
+            <span class="file-name-display" id="cert-${cargo.id}-name"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Genera el HTML para los badges de certificados
+ * @param {Object} config - Configuración del directorio
+ */
+function generateCertBadgesHTML(config) {
+  let html = '';
+  // Badges para directorio
+  config.cargos.forEach(cargo => {
+    const shortName = cargo.nombre.length > 10 ? cargo.nombre.substring(0, 10) + '.' : cargo.nombre;
+    html += `<span class="cert-badge pending" id="cert-badge-${cargo.id}">❌ ${shortName}</span>\n`;
+  });
+  // Badges para comisión electoral (siempre 3)
+  html += `<span class="cert-badge pending" id="cert-badge-com1">❌ Com. 1</span>\n`;
+  html += `<span class="cert-badge pending" id="cert-badge-com2">❌ Com. 2</span>\n`;
+  html += `<span class="cert-badge pending" id="cert-badge-com3">❌ Com. 3</span>\n`;
+  return html;
+}
+
 // Helper: Obtener nombre legible del tipo de organización
 function getOrgTypeName(type) {
   const allTypes = {
@@ -885,13 +1012,19 @@ export class WizardController {
    * Valida paso 5: Directorio Provisorio y Comisión Electoral
    */
   validateStep5_Comision() {
-    // Validar que se seleccionaron todos los miembros del directorio
-    const presidente = document.getElementById('dir-presidente')?.value;
-    const secretario = document.getElementById('dir-secretario')?.value;
-    const tesorero = document.getElementById('dir-tesorero')?.value;
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
 
-    if (!presidente || !secretario || !tesorero) {
-      showToast('Debe seleccionar todos los miembros del Directorio Provisorio (Presidente, Secretario y Tesorero)', 'error');
+    // Validar que se seleccionaron todos los miembros del directorio (dinámico)
+    const missingDirectorio = [];
+    config.cargos.forEach(cargo => {
+      const value = document.getElementById(`dir-${cargo.id}`)?.value;
+      if (!value) {
+        missingDirectorio.push(cargo.nombre);
+      }
+    });
+
+    if (missingDirectorio.length > 0) {
+      showToast(`Debe seleccionar todos los miembros del Directorio Provisorio. Faltan: ${missingDirectorio.join(', ')}`, 'error');
       return false;
     }
 
@@ -911,23 +1044,13 @@ export class WizardController {
       return false;
     }
 
-    // Validar que se subieron todos los certificados
-    // IMPORTANTE: Deben tener base64 (archivo real), no solo metadatos
+    // Validar que se subieron todos los certificados (dinámico)
     const certs = this.formData.certificatesStep5 || {};
-    const requiredCerts = ['presidente', 'secretario', 'tesorero', 'comision1', 'comision2', 'comision3'];
-    // Verificar que cada certificado tenga el archivo real (base64)
-    const missingCerts = requiredCerts.filter(key => !certs[key] || !certs[key].base64);
+    const certConfig = this.getCertificateConfig();
+    const missingCerts = certConfig.filter(c => !certs[c.key] || !certs[c.key].base64);
 
     if (missingCerts.length > 0) {
-      const missingNames = {
-        'presidente': 'Presidente',
-        'secretario': 'Secretario',
-        'tesorero': 'Tesorero',
-        'comision1': 'Miembro 1 Comisión',
-        'comision2': 'Miembro 2 Comisión',
-        'comision3': 'Miembro 3 Comisión'
-      };
-      const names = missingCerts.map(k => missingNames[k]).join(', ');
+      const names = missingCerts.map(c => c.label).join(', ');
       showToast('Faltan certificados de antecedentes: ' + names, 'error');
       return false;
     }
@@ -1997,6 +2120,22 @@ export class WizardController {
    * Inicializa paso 5: Directorio Provisorio y Comisión Electoral
    */
   initializeStep5_Comision() {
+    // Obtener el tipo de organización seleccionada
+    const orgType = this.formData.organization?.type || 'DEFAULT';
+    const directorioConfig = getDirectorioConfig(orgType);
+
+    // Guardar la configuración actual para uso en otras funciones
+    this.currentDirectorioConfig = directorioConfig;
+
+    // Renderizar los cargos del directorio dinámicamente
+    this.renderDirectorioCargos(directorioConfig);
+
+    // Renderizar los badges de certificados
+    this.renderCertificateBadges(directorioConfig);
+
+    // Actualizar el texto de información
+    this.updateDirectorioInfoText(directorioConfig, orgType);
+
     // Poblar los selects con los miembros fundadores
     this.populateMemberSelects();
 
@@ -2020,12 +2159,63 @@ export class WizardController {
   }
 
   /**
+   * Renderiza los cargos del directorio dinámicamente según el tipo de organización
+   */
+  renderDirectorioCargos(config) {
+    const container = document.getElementById('directorio-cargos-container');
+    if (!container) return;
+
+    let html = '';
+    config.cargos.forEach((cargo, index) => {
+      const isLast = index === config.cargos.length - 1;
+      html += generateCargoHTML(cargo, isLast);
+    });
+
+    container.innerHTML = html;
+  }
+
+  /**
+   * Renderiza los badges de certificados dinámicamente
+   */
+  renderCertificateBadges(config) {
+    const container = document.getElementById('cert-progress');
+    if (!container) return;
+
+    container.innerHTML = generateCertBadgesHTML(config);
+
+    // Actualizar el texto de certificados requeridos
+    const totalCerts = config.cargos.length + 3; // Directorio + 3 comisión electoral
+    const textEl = document.getElementById('cert-required-text');
+    if (textEl) {
+      textEl.innerHTML = `
+        Debe subir el <strong>certificado de antecedentes</strong> de cada miembro del Directorio Provisorio
+        y la Comisión Electoral (<strong>${totalCerts} certificados</strong> en total). Puede obtenerlos en <a href="https://www.registrocivil.cl" target="_blank" style="color: #dc2626;">www.registrocivil.cl</a>
+      `;
+    }
+  }
+
+  /**
+   * Actualiza el texto informativo del directorio
+   */
+  updateDirectorioInfoText(config, orgType) {
+    const countEl = document.getElementById('directorio-required-count');
+    if (countEl) {
+      const orgName = getOrgTypeName(orgType);
+      countEl.innerHTML = `📋 Según los estatutos de ${orgName}: <strong>${config.totalRequerido} miembros</strong> requeridos para el Directorio`;
+    }
+  }
+
+  /**
    * Pobla los selects de miembros con los miembros fundadores MAYORES DE 18 AÑOS
    * Según la ley, solo mayores de edad pueden ser parte del Directorio y Comisión Electoral
    */
   populateMemberSelects() {
     const members = this.formData.members || [];
     const selects = document.querySelectorAll('.member-select');
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
+
+    // Calcular el total de miembros requeridos (directorio + 3 comisión electoral)
+    const totalRequired = config.totalRequerido + 3;
 
     // Filtrar solo miembros mayores de 18 años
     const adultMembers = members.filter((member, index) => {
@@ -2034,7 +2224,7 @@ export class WizardController {
     });
 
     // Mostrar advertencia si no hay suficientes mayores de edad
-    if (adultMembers.length < 6) {
+    if (adultMembers.length < totalRequired) {
       const warningEl = document.querySelector('.certificates-summary');
       if (warningEl) {
         const existingWarning = document.getElementById('no-adults-warning');
@@ -2042,7 +2232,7 @@ export class WizardController {
           const warning = document.createElement('div');
           warning.id = 'no-adults-warning';
           warning.style.cssText = 'background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 12px; margin-bottom: 16px;';
-          warning.innerHTML = '<strong style="color: #991b1b;">⚠️ Atención:</strong> <span style="color: #991b1b;">Solo hay ' + adultMembers.length + ' miembros mayores de 18 años. Se requieren al menos 6 para completar el Directorio Provisorio (3) y la Comisión Electoral (3).</span>';
+          warning.innerHTML = '<strong style="color: #991b1b;">⚠️ Atención:</strong> <span style="color: #991b1b;">Solo hay ' + adultMembers.length + ' miembros mayores de 18 años. Se requieren al menos ' + totalRequired + ' para completar el Directorio Provisorio (' + config.totalRequerido + ') y la Comisión Electoral (3).</span>';
           warningEl.parentNode.insertBefore(warning, warningEl);
         }
       }
@@ -2069,13 +2259,20 @@ export class WizardController {
   }
 
   /**
+   * Obtiene los IDs de todos los selects (directorio + comisión electoral)
+   */
+  getAllSelectIds() {
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
+    const directorioIds = config.cargos.map(cargo => `dir-${cargo.id}`);
+    const comisionIds = ['com-miembro1', 'com-miembro2', 'com-miembro3'];
+    return [...directorioIds, ...comisionIds];
+  }
+
+  /**
    * Configura eventos para los selects del directorio y comisión
    */
   setupDirectorioSelects() {
-    const allSelects = [
-      'dir-presidente', 'dir-secretario', 'dir-tesorero',
-      'com-miembro1', 'com-miembro2', 'com-miembro3'
-    ];
+    const allSelects = this.getAllSelectIds();
 
     allSelects.forEach(selectId => {
       const select = document.getElementById(selectId);
@@ -2093,10 +2290,7 @@ export class WizardController {
    * Los miembros ya seleccionados en un cargo quedan deshabilitados en los demás
    */
   updateDisabledOptions() {
-    const allSelectIds = [
-      'dir-presidente', 'dir-secretario', 'dir-tesorero',
-      'com-miembro1', 'com-miembro2', 'com-miembro3'
-    ];
+    const allSelectIds = this.getAllSelectIds();
 
     // Obtener todos los valores seleccionados actualmente
     const selectedValues = {};
@@ -2146,10 +2340,7 @@ export class WizardController {
    * Valida que no se repitan miembros entre directorio y comisión
    */
   validateUniqueSelections() {
-    const allSelects = [
-      'dir-presidente', 'dir-secretario', 'dir-tesorero',
-      'com-miembro1', 'com-miembro2', 'com-miembro3'
-    ];
+    const allSelects = this.getAllSelectIds();
 
     const selectedValues = [];
     let hasDuplicates = false;
@@ -2169,17 +2360,35 @@ export class WizardController {
   }
 
   /**
+   * Obtiene la configuración de certificados dinámicamente basado en el tipo de organización
+   */
+  getCertificateConfig() {
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
+
+    // Certificados del directorio (dinámico)
+    const directorioConfig = config.cargos.map(cargo => ({
+      id: `cert-${cargo.id}`,
+      badge: `cert-badge-${cargo.id}`,
+      name: `cert-${cargo.id}-name`,
+      key: cargo.id,
+      label: cargo.nombre
+    }));
+
+    // Certificados de la comisión electoral (siempre 3)
+    const comisionConfig = [
+      { id: 'cert-com1', badge: 'cert-badge-com1', name: 'cert-com1-name', key: 'comision1', label: 'Com. 1' },
+      { id: 'cert-com2', badge: 'cert-badge-com2', name: 'cert-com2-name', key: 'comision2', label: 'Com. 2' },
+      { id: 'cert-com3', badge: 'cert-badge-com3', name: 'cert-com3-name', key: 'comision3', label: 'Com. 3' }
+    ];
+
+    return [...directorioConfig, ...comisionConfig];
+  }
+
+  /**
    * Configura eventos para los inputs de certificados
    */
   setupCertificateInputs() {
-    const certInputs = [
-      { id: 'cert-presidente', badge: 'cert-badge-presidente', name: 'cert-presidente-name', key: 'presidente' },
-      { id: 'cert-secretario', badge: 'cert-badge-secretario', name: 'cert-secretario-name', key: 'secretario' },
-      { id: 'cert-tesorero', badge: 'cert-badge-tesorero', name: 'cert-tesorero-name', key: 'tesorero' },
-      { id: 'cert-com1', badge: 'cert-badge-com1', name: 'cert-com1-name', key: 'comision1' },
-      { id: 'cert-com2', badge: 'cert-badge-com2', name: 'cert-com2-name', key: 'comision2' },
-      { id: 'cert-com3', badge: 'cert-badge-com3', name: 'cert-com3-name', key: 'comision3' }
-    ];
+    const certInputs = this.getCertificateConfig();
 
     certInputs.forEach(certInfo => {
       const input = document.getElementById(certInfo.id);
@@ -2247,25 +2456,13 @@ export class WizardController {
    */
   restoreCertificateButtonsUI() {
     const certs = this.formData.certificatesStep5 || {};
+    const certConfig = this.getCertificateConfig();
 
-    // Mapeo de claves de certificados a IDs de inputs
-    const certMapping = [
-      { key: 'presidente', inputId: 'cert-presidente' },
-      { key: 'secretario', inputId: 'cert-secretario' },
-      { key: 'tesorero', inputId: 'cert-tesorero' },
-      { key: 'comision1', inputId: 'cert-com1' },
-      { key: 'comision2', inputId: 'cert-com2' },
-      { key: 'comision3', inputId: 'cert-com3' }
-    ];
-
-    certMapping.forEach(mapping => {
-      const cert = certs[mapping.key];
+    certConfig.forEach(certInfo => {
+      const cert = certs[certInfo.key];
       if (cert && cert.base64) {
-        // El certificado está cargado, buscar el input y luego el botón hermano
-        const input = document.getElementById(mapping.inputId);
+        const input = document.getElementById(certInfo.id);
         if (input) {
-          // El botón está justo después del input (nextElementSibling)
-          // o dentro del mismo wrapper (.file-upload-wrapper)
           const wrapper = input.closest('.file-upload-wrapper');
           const button = wrapper ? wrapper.querySelector('.btn-upload-cert') : null;
 
@@ -2288,37 +2485,21 @@ export class WizardController {
    */
   updateCertificateBadges() {
     const certs = this.formData.certificatesStep5 || {};
+    const certConfig = this.getCertificateConfig();
 
-    const badgeMap = {
-      'presidente': 'cert-badge-presidente',
-      'secretario': 'cert-badge-secretario',
-      'tesorero': 'cert-badge-tesorero',
-      'comision1': 'cert-badge-com1',
-      'comision2': 'cert-badge-com2',
-      'comision3': 'cert-badge-com3'
-    };
-
-    const labelMap = {
-      'presidente': 'Presidente',
-      'secretario': 'Secretario',
-      'tesorero': 'Tesorero',
-      'comision1': 'Com. 1',
-      'comision2': 'Com. 2',
-      'comision3': 'Com. 3'
-    };
-
-    Object.keys(badgeMap).forEach(key => {
-      const badge = document.getElementById(badgeMap[key]);
+    certConfig.forEach(certInfo => {
+      const badge = document.getElementById(certInfo.badge);
       if (badge) {
-        // Verificar que el certificado tenga el archivo real (base64)
-        const hasCert = certs[key] && certs[key].base64;
+        const hasCert = certs[certInfo.key] && certs[certInfo.key].base64;
+        const shortLabel = certInfo.label.length > 10 ? certInfo.label.substring(0, 10) + '.' : certInfo.label;
+
         if (hasCert) {
-          badge.textContent = '✅ ' + labelMap[key];
+          badge.textContent = '✅ ' + shortLabel;
           badge.style.background = '#dcfce7';
           badge.style.color = '#166534';
           badge.style.border = '1px solid #22c55e';
         } else {
-          badge.textContent = '❌ ' + labelMap[key];
+          badge.textContent = '❌ ' + shortLabel;
           badge.style.background = '#fef2f2';
           badge.style.color = '#991b1b';
           badge.style.border = '1px solid #fecaca';
@@ -2343,41 +2524,21 @@ export class WizardController {
     }
 
     const members = this.formData.members || [];
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
+
     console.log('🔍 [saveStep5Data] members disponibles:', members.length);
+    console.log('🔍 [saveStep5Data] cargos del directorio:', config.cargos.map(c => c.id));
 
-    // Guardar directorio
-    const presidenteEl = document.getElementById('dir-presidente');
-    const secretarioEl = document.getElementById('dir-secretario');
-    const tesoreroEl = document.getElementById('dir-tesorero');
+    // Guardar directorio dinámicamente según los cargos configurados
+    config.cargos.forEach(cargo => {
+      const selectEl = document.getElementById(`dir-${cargo.id}`);
+      const idx = selectEl?.value;
 
-    console.log('🔍 [saveStep5Data] Elementos DOM encontrados:', {
-      presidente: !!presidenteEl,
-      secretario: !!secretarioEl,
-      tesorero: !!tesoreroEl
+      if (idx) {
+        this.formData.directorioProvisorio[cargo.id] = members[parseInt(idx)];
+        console.log(`✅ [saveStep5Data] ${cargo.nombre} guardado:`, this.formData.directorioProvisorio[cargo.id]);
+      }
     });
-
-    const presidenteIdx = presidenteEl?.value;
-    const secretarioIdx = secretarioEl?.value;
-    const tesoreroIdx = tesoreroEl?.value;
-
-    console.log('🔍 [saveStep5Data] Índices seleccionados:', {
-      presidenteIdx,
-      secretarioIdx,
-      tesoreroIdx
-    });
-
-    if (presidenteIdx) {
-      this.formData.directorioProvisorio.presidente = members[parseInt(presidenteIdx)];
-      console.log('✅ [saveStep5Data] Presidente guardado:', this.formData.directorioProvisorio.presidente);
-    }
-    if (secretarioIdx) {
-      this.formData.directorioProvisorio.secretario = members[parseInt(secretarioIdx)];
-      console.log('✅ [saveStep5Data] Secretario guardado:', this.formData.directorioProvisorio.secretario);
-    }
-    if (tesoreroIdx) {
-      this.formData.directorioProvisorio.tesorero = members[parseInt(tesoreroIdx)];
-      console.log('✅ [saveStep5Data] Tesorero guardado:', this.formData.directorioProvisorio.tesorero);
-    }
 
     console.log('📦 [saveStep5Data] directorioProvisorio final:', this.formData.directorioProvisorio);
 
@@ -2405,20 +2566,18 @@ export class WizardController {
     const members = this.formData.members || [];
     const dir = this.formData.directorioProvisorio || {};
     const com = this.formData.commission?.members || [];
+    const config = this.currentDirectorioConfig || getDirectorioConfig('DEFAULT');
 
-    // Restaurar selects del directorio
-    if (dir.presidente) {
-      const idx = members.findIndex(m => m.rut === dir.presidente.rut);
-      if (idx >= 0) document.getElementById('dir-presidente').value = idx.toString();
-    }
-    if (dir.secretario) {
-      const idx = members.findIndex(m => m.rut === dir.secretario.rut);
-      if (idx >= 0) document.getElementById('dir-secretario').value = idx.toString();
-    }
-    if (dir.tesorero) {
-      const idx = members.findIndex(m => m.rut === dir.tesorero.rut);
-      if (idx >= 0) document.getElementById('dir-tesorero').value = idx.toString();
-    }
+    // Restaurar selects del directorio dinámicamente
+    config.cargos.forEach(cargo => {
+      if (dir[cargo.id]) {
+        const idx = members.findIndex(m => m.rut === dir[cargo.id].rut);
+        if (idx >= 0) {
+          const select = document.getElementById(`dir-${cargo.id}`);
+          if (select) select.value = idx.toString();
+        }
+      }
+    });
 
     // Restaurar selects de la comisión
     com.forEach((member, i) => {
@@ -2430,46 +2589,34 @@ export class WizardController {
       }
     });
 
-    // Restaurar nombres de archivos de certificados
-    // Nota: Los certificados base64 NO se guardan en localStorage, solo metadatos
-    // Si el certificado tiene base64 (sesión actual), mostrar como subido
-    // Si solo tiene metadatos (restaurado), indicar que debe re-subirse
+    // Restaurar nombres de archivos de certificados usando configuración dinámica
     const certs = this.formData.certificatesStep5 || {};
-    const certConfig = [
-      { key: 'presidente', inputId: 'cert-presidente', nameId: 'cert-presidente-name' },
-      { key: 'secretario', inputId: 'cert-secretario', nameId: 'cert-secretario-name' },
-      { key: 'tesorero', inputId: 'cert-tesorero', nameId: 'cert-tesorero-name' },
-      { key: 'comision1', inputId: 'cert-com1', nameId: 'cert-com1-name' },
-      { key: 'comision2', inputId: 'cert-com2', nameId: 'cert-com2-name' },
-      { key: 'comision3', inputId: 'cert-com3', nameId: 'cert-com3-name' }
-    ];
+    const certConfigList = this.getCertificateConfig();
 
-    certConfig.forEach(({ key, inputId, nameId }) => {
-      if (certs[key] && certs[key].name) {
-        const hasBase64 = certs[key].base64; // ¿Tiene el archivo real?
-        const nameEl = document.getElementById(nameId);
-        const input = document.getElementById(inputId);
+    certConfigList.forEach(certInfo => {
+      if (certs[certInfo.key] && certs[certInfo.key].name) {
+        const hasBase64 = certs[certInfo.key].base64;
+        const nameEl = document.getElementById(certInfo.name);
+        const input = document.getElementById(certInfo.id);
         const button = input?.parentElement?.querySelector('.btn-upload-cert');
 
         if (hasBase64) {
-          // Certificado completo (sesión actual)
           if (nameEl) {
-            nameEl.textContent = certs[key].name;
+            nameEl.textContent = certs[certInfo.key].name;
             nameEl.style.color = '#22c55e';
           }
           if (button) {
-            const shortName = certs[key].name.length > 15
-              ? certs[key].name.substring(0, 15) + '...'
-              : certs[key].name;
+            const shortName = certs[certInfo.key].name.length > 15
+              ? certs[certInfo.key].name.substring(0, 15) + '...'
+              : certs[certInfo.key].name;
             button.textContent = '✅ ' + shortName;
             button.style.background = '#dcfce7';
             button.style.borderColor = '#22c55e';
             button.style.color = '#166534';
           }
         } else {
-          // Solo metadatos (debe re-subirse)
           if (nameEl) {
-            nameEl.textContent = '⚠️ Re-subir: ' + certs[key].name;
+            nameEl.textContent = '⚠️ Re-subir: ' + certs[certInfo.key].name;
             nameEl.style.color = '#f59e0b';
           }
           if (button) {
@@ -2478,8 +2625,7 @@ export class WizardController {
             button.style.borderColor = '#f59e0b';
             button.style.color = '#92400e';
           }
-          // Limpiar el certificado incompleto para que la validación lo detecte
-          delete certs[key];
+          delete certs[certInfo.key];
         }
       }
     });
