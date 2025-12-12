@@ -8243,20 +8243,34 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+    /* CRITICAL: Prevent horizontal overflow in wizard */
+    .wizard-overlay {
+        padding: 8px !important;
+        overflow-x: hidden !important;
+    }
+
     .wizard-container {
         max-height: 95vh;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
     }
 
     .wizard-header {
-        padding: 16px 20px;
+        padding: 16px 12px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .wizard-header h2 {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .wizard-progress {
-        padding: 20px;
+        padding: 16px 12px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .wizard-steps {
@@ -8274,7 +8288,20 @@ body {
     }
 
     .wizard-content {
-        padding: 20px;
+        padding: 12px;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .wizard-content * {
+        box-sizing: border-box !important;
+    }
+
+    .wizard-step-content {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .form-row-2 {
@@ -8292,7 +8319,9 @@ body {
     }
 
     .wizard-actions {
-        padding: 16px 20px;
+        padding: 12px;
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 
@@ -13477,13 +13506,49 @@ a.header-logo:hover {
 }
 
 @media (max-width: 768px) {
+    /* CRITICAL: Prevent horizontal overflow globally */
     .ministro-request-screen {
         padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .ministro-request-screen * {
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+    }
+
+    .ministro-request-form {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .ministro-form-grid {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .ministro-form-column {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .ministro-form-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
     }
 
     .ministro-request-header {
         margin-bottom: 20px;
         padding-bottom: 16px;
+        width: 100% !important;
     }
 
     .ministro-request-header .success-checkmark svg {
@@ -13501,42 +13566,48 @@ a.header-logo:hover {
     }
 
     .ministro-info-box {
-        padding: 14px 16px;
-        margin-bottom: 20px;
+        padding: 12px;
+        margin-bottom: 16px;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 10px;
     }
 
     .ministro-info-box h3 {
-        font-size: 14px;
+        font-size: 13px;
         flex-wrap: wrap;
+        gap: 6px;
     }
 
     .ministro-info-box h3 svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
     }
 
     .ministro-info-box p {
-        font-size: 12px;
+        font-size: 11px;
+        line-height: 1.5;
     }
 
     .ministro-request-form {
-        gap: 16px;
+        gap: 12px;
     }
 
     .ministro-form-grid {
-        gap: 16px;
+        gap: 12px;
     }
 
     .ministro-form-section {
-        padding: 14px;
+        padding: 12px;
         border-radius: 10px;
     }
 
     .ministro-form-section h4 {
-        font-size: 14px;
-        gap: 8px;
-        padding-bottom: 10px;
-        margin-bottom: 12px;
+        font-size: 13px;
+        gap: 6px;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     .ministro-form-section h4 svg {
@@ -13587,141 +13658,303 @@ a.header-logo:hover {
 
     /* Calendar mobile */
     .schedule-calendar-container {
-        padding: 12px !important;
+        padding: 10px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
     }
 
     .calendar-header {
-        margin-bottom: 16px;
-        padding-bottom: 12px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        width: 100%;
     }
 
     .calendar-month-title {
-        font-size: 16px;
+        font-size: 14px;
     }
 
     .calendar-nav-btn {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
     }
 
     .calendar-weekdays {
-        gap: 2px;
-    }
-
-    .calendar-weekday {
-        font-size: 10px;
-        padding: 4px 2px;
-    }
-
-    .calendar-days {
-        gap: 2px;
-    }
-
-    .calendar-day {
-        min-height: 36px;
-        font-size: 12px;
-    }
-
-    .time-slots-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-    }
-
-    .time-slot {
-        padding: 8px;
-        font-size: 12px;
-    }
-
-    /* Books checklist */
-    .books-checklist-container {
-        padding: 14px;
-    }
-
-    .books-checklist-container h4 {
-        font-size: 14px;
-        gap: 8px;
-    }
-
-    .books-checklist-container h4 svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .books-checklist-container > p {
-        font-size: 12px;
-        line-height: 1.5;
-    }
-
-    .books-list {
-        gap: 8px;
-    }
-
-    .book-item {
-        padding: 12px;
-    }
-
-    .book-info strong {
-        font-size: 13px;
-    }
-
-    .book-info span {
-        font-size: 11px;
-    }
-
-    .books-checklist-note {
-        font-size: 11px;
-        padding: 10px 12px;
-    }
-
-    /* Comments section */
-    .comments-section label {
-        font-size: 13px;
-    }
-
-    .comments-section textarea {
-        font-size: 13px;
-        padding: 10px;
-    }
-
-    /* Actions */
-    .ministro-form-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .ministro-form-actions .btn-secondary,
-    .ministro-form-actions .btn-primary {
-        flex: none;
+        gap: 1px;
         width: 100%;
-        padding: 14px 16px;
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    .ministro-request-header h2 {
-        font-size: 16px;
-    }
-
-    .ministro-request-header p {
-        font-size: 12px;
-    }
-
-    .ministro-info-box h3 {
-        font-size: 13px;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
     }
 
     .calendar-weekday {
         font-size: 9px;
+        padding: 4px 1px;
+        text-align: center;
+    }
+
+    .calendar-days {
+        gap: 1px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
     }
 
     .calendar-day {
         min-height: 32px;
         font-size: 11px;
+        padding: 4px 2px;
+    }
+
+    .time-slots-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        width: 100% !important;
+    }
+
+    .time-slot {
+        padding: 8px 4px;
+        font-size: 11px;
+    }
+
+    .selected-appointment {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px !important;
+    }
+
+    .appointment-datetime {
+        font-size: 13px;
+    }
+
+    .change-appointment-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    /* Books checklist */
+    .books-checklist-container {
+        padding: 12px;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .books-checklist-container h4 {
+        font-size: 13px;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .books-checklist-container h4 svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    .books-checklist-container > p {
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .books-list {
+        width: 100% !important;
+    }
+
+    .book-item {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .book-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    .book-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .book-info strong {
+        font-size: 12px;
+        word-break: break-word;
+    }
+
+    .book-info span {
+        font-size: 10px;
+    }
+
+    .books-checklist-note {
+        font-size: 10px;
+        padding: 8px 10px;
+        width: 100% !important;
+    }
+
+    /* Comments section */
+    .comments-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 12px;
+    }
+
+    .comments-section label {
+        font-size: 12px;
+    }
+
+    .comments-section textarea {
+        font-size: 12px;
+        padding: 10px;
+        width: 100% !important;
+    }
+
+    /* Actions */
+    .ministro-form-actions {
+        flex-direction: column;
+        gap: 8px;
+        width: 100% !important;
+        padding: 12px 0 !important;
+    }
+
+    .ministro-form-actions .btn-secondary,
+    .ministro-form-actions .btn-primary {
+        flex: none;
+        width: 100% !important;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    /* Address options */
+    .address-options-list {
+        width: 100% !important;
+    }
+
+    .address-option-card {
+        width: 100% !important;
+        padding: 10px;
+    }
+
+    .address-option-card input[type="radio"] {
+        flex-shrink: 0;
+    }
+
+    .address-option-card .option-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .address-option-card .option-content strong {
+        font-size: 12px;
+        word-break: break-word;
+    }
+
+    .address-option-card .option-content span {
+        font-size: 11px;
+        word-break: break-word;
+    }
+
+    .address-option-card .option-content input[type="text"] {
+        width: 100% !important;
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    /* Org summary card */
+    .org-summary-card {
+        width: 100% !important;
+    }
+
+    .summary-item {
+        width: 100% !important;
+    }
+
+    .summary-label,
+    .summary-value {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Even smaller sizes for very small screens */
+    .ministro-request-screen {
+        padding: 0 !important;
+    }
+
+    .ministro-request-header h2 {
+        font-size: 15px;
+    }
+
+    .ministro-request-header p {
+        font-size: 11px;
+    }
+
+    .ministro-request-header .success-checkmark svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .ministro-info-box {
+        padding: 10px;
+    }
+
+    .ministro-info-box h3 {
+        font-size: 12px;
+    }
+
+    .ministro-info-box p {
+        font-size: 10px;
+    }
+
+    .ministro-form-section {
+        padding: 10px;
+    }
+
+    .ministro-form-section h4 {
+        font-size: 12px;
+    }
+
+    .calendar-weekday {
+        font-size: 8px;
+    }
+
+    .calendar-day {
+        min-height: 28px;
+        font-size: 10px;
     }
 
     .time-slots-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+
+    .time-slot {
+        padding: 6px 4px;
+        font-size: 10px;
+    }
+
+    .book-item {
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .book-info strong {
+        font-size: 11px;
+    }
+
+    .book-info span {
+        font-size: 9px;
+    }
+
+    .ministro-form-actions .btn-secondary,
+    .ministro-form-actions .btn-primary {
+        padding: 10px 12px;
+        font-size: 12px;
     }
 }
 
