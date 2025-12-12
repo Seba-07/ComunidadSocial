@@ -791,18 +791,25 @@ export class WizardController {
     const prevBtn = document.getElementById('wizard-prev');
     const nextBtn = document.getElementById('wizard-next');
 
-    if (this.currentStep === 1) {
-      prevBtn.style.display = 'none';
-    } else {
-      prevBtn.style.display = 'block';
+    // Restaurar visibilidad de botones (pueden estar ocultos por showMinistroRequestScreen)
+    if (prevBtn) {
+      if (this.currentStep === 1) {
+        prevBtn.style.display = 'none';
+      } else {
+        prevBtn.style.display = 'block';
+      }
     }
 
-    if (this.currentStep === this.totalSteps) {
-      nextBtn.textContent = '✓ Enviar Solicitud';
-      nextBtn.classList.add('btn-success');
-    } else {
-      nextBtn.textContent = 'Siguiente →';
-      nextBtn.classList.remove('btn-success');
+    // Siempre mostrar el botón siguiente y actualizar su texto
+    if (nextBtn) {
+      nextBtn.style.display = 'block';
+      if (this.currentStep === this.totalSteps) {
+        nextBtn.textContent = '✓ Enviar Solicitud';
+        nextBtn.classList.add('btn-success');
+      } else {
+        nextBtn.textContent = 'Siguiente →';
+        nextBtn.classList.remove('btn-success');
+      }
     }
   }
 
@@ -2021,6 +2028,9 @@ export class WizardController {
     // Actualizar opciones deshabilitadas según selecciones previas
     this.updateDisabledOptions();
 
+    // Restaurar la UI de los botones de certificados ya cargados
+    this.restoreCertificateButtonsUI();
+
     // Actualizar el estado de los badges de certificados
     this.updateCertificateBadges();
   }
@@ -2244,6 +2254,48 @@ export class WizardController {
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result);
       reader.onerror = error => reject(error);
+    });
+  }
+
+  /**
+   * Restaura la UI de los botones de certificados ya cargados
+   * Se llama después de restaurar el HTML del paso 5
+   */
+  restoreCertificateButtonsUI() {
+    const certs = this.formData.certificatesStep5 || {};
+
+    // Mapeo de claves de certificados a IDs de inputs
+    const certMapping = [
+      { key: 'presidente', inputId: 'cert-presidente' },
+      { key: 'secretario', inputId: 'cert-secretario' },
+      { key: 'tesorero', inputId: 'cert-tesorero' },
+      { key: 'comision1', inputId: 'cert-com1' },
+      { key: 'comision2', inputId: 'cert-com2' },
+      { key: 'comision3', inputId: 'cert-com3' }
+    ];
+
+    certMapping.forEach(mapping => {
+      const cert = certs[mapping.key];
+      if (cert && cert.base64) {
+        // El certificado está cargado, buscar el input y luego el botón hermano
+        const input = document.getElementById(mapping.inputId);
+        if (input) {
+          // El botón está justo después del input (nextElementSibling)
+          // o dentro del mismo wrapper (.file-upload-wrapper)
+          const wrapper = input.closest('.file-upload-wrapper');
+          const button = wrapper ? wrapper.querySelector('.btn-upload-cert') : null;
+
+          if (button) {
+            const displayName = cert.name.length > 15
+              ? cert.name.substring(0, 15) + '...'
+              : cert.name;
+            button.textContent = '✅ ' + displayName;
+            button.style.background = '#dcfce7';
+            button.style.borderColor = '#22c55e';
+            button.style.color = '#166534';
+          }
+        }
+      }
     });
   }
 

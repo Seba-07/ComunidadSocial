@@ -13476,15 +13476,252 @@ a.header-logo:hover {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .ministro-request-screen {
+        padding: 0 !important;
+    }
+
+    .ministro-request-header {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+    }
+
+    .ministro-request-header .success-checkmark svg {
+        width: 56px;
+        height: 56px;
+    }
+
+    .ministro-request-header h2 {
+        font-size: 18px;
+    }
+
+    .ministro-request-header p {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .ministro-info-box {
+        padding: 14px 16px;
+        margin-bottom: 20px;
+    }
+
+    .ministro-info-box h3 {
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    .ministro-info-box h3 svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .ministro-info-box p {
+        font-size: 12px;
+    }
+
+    .ministro-request-form {
+        gap: 16px;
+    }
+
+    .ministro-form-grid {
+        gap: 16px;
+    }
+
+    .ministro-form-section {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .ministro-form-section h4 {
+        font-size: 14px;
+        gap: 8px;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+
+    .ministro-form-section h4 svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    .org-summary-card {
+        padding: 12px;
+    }
+
+    .org-summary-card .summary-item {
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 0;
+    }
+
+    .org-summary-card .summary-label {
+        font-size: 12px;
+    }
+
+    .org-summary-card .summary-value {
+        font-size: 13px;
+    }
+
+    /* Address options */
+    .address-options-list {
+        gap: 8px;
+    }
+
+    .address-option-card {
+        padding: 12px;
+    }
+
+    .address-option-card .option-content strong {
+        font-size: 13px;
+    }
+
+    .address-option-card .option-content span {
+        font-size: 12px;
+    }
+
+    .address-option-card .option-content input[type="text"] {
+        font-size: 13px;
+        padding: 8px 10px;
+    }
+
+    /* Calendar mobile */
+    .schedule-calendar-container {
+        padding: 12px !important;
+    }
+
+    .calendar-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .calendar-month-title {
+        font-size: 16px;
+    }
+
+    .calendar-nav-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .calendar-weekdays {
+        gap: 2px;
+    }
+
+    .calendar-weekday {
+        font-size: 10px;
+        padding: 4px 2px;
+    }
+
+    .calendar-days {
+        gap: 2px;
+    }
+
+    .calendar-day {
+        min-height: 36px;
+        font-size: 12px;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .time-slot {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    /* Books checklist */
+    .books-checklist-container {
+        padding: 14px;
+    }
+
+    .books-checklist-container h4 {
+        font-size: 14px;
+        gap: 8px;
+    }
+
+    .books-checklist-container h4 svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .books-checklist-container > p {
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .books-list {
+        gap: 8px;
+    }
+
+    .book-item {
+        padding: 12px;
+    }
+
+    .book-info strong {
+        font-size: 13px;
+    }
+
+    .book-info span {
+        font-size: 11px;
+    }
+
+    .books-checklist-note {
+        font-size: 11px;
+        padding: 10px 12px;
+    }
+
+    /* Comments section */
+    .comments-section label {
+        font-size: 13px;
+    }
+
+    .comments-section textarea {
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    /* Actions */
     .ministro-form-actions {
         flex-direction: column;
+        gap: 10px;
     }
 
     .ministro-form-actions .btn-secondary,
     .ministro-form-actions .btn-primary {
         flex: none;
         width: 100%;
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ministro-request-header h2 {
+        font-size: 16px;
+    }
+
+    .ministro-request-header p {
+        font-size: 12px;
+    }
+
+    .ministro-info-box h3 {
+        font-size: 13px;
+    }
+
+    .calendar-weekday {
+        font-size: 9px;
+    }
+
+    .calendar-day {
+        min-height: 32px;
+        font-size: 11px;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
