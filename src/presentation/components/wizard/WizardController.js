@@ -4859,64 +4859,81 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
-   * Genera el Acta Constitutiva (BORRADOR)
+   * Genera el Acta Constitutiva - Formato Oficial Municipalidad de Renca
    */
   generateActaConstitutiva(org, members, commission, today) {
-    const presidenteComision = commission.members[0];
-    return `════════════════════════════════════════════════════════════════════
-                    BORRADOR - PROYECTO DE DOCUMENTO
-    Este documento será oficializado el día de la Asamblea Constitutiva
-════════════════════════════════════════════════════════════════════
+    // Obtener datos del directorio provisional
+    const directorio = this.wizardData.directorio || {};
+    const presidente = directorio.presidente || {};
+    const secretario = directorio.secretario || {};
+    const tesorero = directorio.tesorero || {};
 
-ACTA DE ASAMBLEA CONSTITUTIVA
+    // Determinar mínimo de socios según tipo de organización
+    const minSocios = org.type === 'JUNTA_VECINOS' ? '50' : '15';
 
-${org.name.toUpperCase()}
+    // Formatear tipo de organización
+    const tipoOrg = this.getOrganizationTypeLabel(org.type);
 
-En ${org.commune}, Región ${org.region}, a [FECHA DE LA ASAMBLEA], siendo las [HORA] horas, se reúnen en [LUGAR DE LA ASAMBLEA], las personas que se individualizan al final del presente documento, con el objeto de constituir una ${org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Comunitaria Funcional'}, de conformidad con la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
-
-PRIMERO: Preside la asamblea don(a) ${presidenteComision?.firstName || '[Nombre]'} ${presidenteComision?.lastName || '[Apellidos]'}, RUT ${presidenteComision?.rut || '[RUT]'}, en su calidad de Presidente de la Comisión Electoral, actuando como Secretario don(a) ${commission.members[1]?.firstName || '[Nombre]'} ${commission.members[1]?.lastName || '[Apellidos]'}, RUT ${commission.members[1]?.rut || '[RUT]'}.
-
-SEGUNDO: El Presidente declara abierta la sesión y expone los objetivos de la misma, señalando que se procederá a:
-a) Constituir legalmente la organización;
-b) Aprobar los estatutos que regirán a la organización;
-c) Elegir al Directorio provisional.
-
-TERCERO: Los asistentes, por unanimidad, acuerdan constituir la organización que se denominará "${org.name}", con domicilio en ${org.address}, comuna de ${org.commune}, Región ${org.region}.
-
-CUARTO: Se aprueban por unanimidad los estatutos de la organización, cuyo texto se adjunta como documento anexo.
-
-QUINTO: Los objetivos de la organización son:
-${org.description}
-
-SEXTO: La organización se constituye con ${members.length} miembros fundadores, cuyos datos se encuentran en el Registro de Socios adjunto.
-
-SÉPTIMO: Se deja constancia que la Comisión Electoral está compuesta por:
-- Presidente: ${commission.members[0]?.firstName || ''} ${commission.members[0]?.lastName || ''} - RUT: ${commission.members[0]?.rut || ''}
-- Secretario: ${commission.members[1]?.firstName || ''} ${commission.members[1]?.lastName || ''} - RUT: ${commission.members[1]?.rut || ''}
-- Vocal: ${commission.members[2]?.firstName || ''} ${commission.members[2]?.lastName || ''} - RUT: ${commission.members[2]?.rut || ''}
-
-OCTAVO: La fecha programada para la elección del directorio definitivo será definida por la Comisión Electoral.
-
-No habiendo otros puntos que tratar, se levanta la sesión siendo las [HORA] horas del mismo día.
+    return `                           REPUBLICA DE CHILE
+                    ILUSTRE MUNICIPALIDAD DE RENCA
+                         SECRETARÍA MUNICIPAL
+               "Departamento de Registro y Certificación"
 
 
-[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
-________________________
-Presidente Comisión Electoral
-${presidenteComision?.firstName || ''} ${presidenteComision?.lastName || ''}
-RUT: ${presidenteComision?.rut || ''}
+            ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO
+                  Y ELECCION DE DIRECTIVA PROVISIONAL
 
 
-[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
-________________________
-Secretario Comisión Electoral
-${commission.members[1]?.firstName || ''} ${commission.members[1]?.lastName || ''}
-RUT: ${commission.members[1]?.rut || ''}
+TIPO DE ORGANIZACIÓN: ${tipoOrg}
 
-════════════════════════════════════════════════════════════════════
-NOTA: Los datos entre corchetes serán completados el día de la
-Asamblea Constitutiva con presencia del Ministro de Fe.
-════════════════════════════════════════════════════════════════════`;
+NOMBRE INSTITUCIÓN: ${org.name}
+____________________________________________________________________________
+
+
+                            ACTA DE ASAMBLEA
+
+En Renca, a ________ de _______________________ del 20______, siendo las ________ horas, en el local ubicado en ___________________________________________________, ante la presencia del funcionario municipal Sr. (a) ______________________________________________________
+como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
+
+Antes de iniciar la sesión, se verificó que existen a lo menos ${minSocios} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a) Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñaran los cargos de Secretario y Tesorero.
+
+También, se procedió a elegir a las tres (3) personas que integraran la Comisión Electoral.
+
+Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes socios:
+
+
+DIRECTIVA PROVISIONAL                                    CED. IDENTIDAD
+
+PRESIDENTE (A): ${presidente.firstName || '_________________'} ${presidente.lastName || '_________________'}     ${presidente.rut || '_______________'}
+
+SECRETARIO (A): ${secretario.firstName || '_________________'} ${secretario.lastName || '_________________'}     ${secretario.rut || '_______________'}
+
+TESORERO (A): ${tesorero.firstName || '_________________'} ${tesorero.lastName || '_________________'}       ${tesorero.rut || '_______________'}
+
+
+COMISION ELECTORAL                                       CED. IDENTIDAD
+
+DON (ÑA): ${commission.members[0]?.firstName || '_________________'} ${commission.members[0]?.lastName || '_________________'}           ${commission.members[0]?.rut || '_______________'}
+
+DON (ÑA): ${commission.members[1]?.firstName || '_________________'} ${commission.members[1]?.lastName || '_________________'}           ${commission.members[1]?.rut || '_______________'}
+
+DON (ÑA): ${commission.members[2]?.firstName || '_________________'} ${commission.members[2]?.lastName || '_________________'}           ${commission.members[2]?.rut || '_______________'}
+
+
+La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Articulo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) ${presidente.firstName || '_________________'} ${presidente.lastName || '_________________'}
+Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: ${org.address || '_______________________________________________'}
+
+
+Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
+
+
+Firmas:
+
+PRESIDENTE (A): __________________              TESORERO (A): __________________
+
+
+
+SECRETARIO (A): __________________              MINISTRO DE FE: ________________`;
   }
 
   /**
