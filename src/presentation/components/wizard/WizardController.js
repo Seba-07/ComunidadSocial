@@ -5156,20 +5156,10 @@ Vocal`;
   }
 
   /**
-   * Actualiza los previews de documentos
+   * Actualiza los previews de documentos (deshabilitado - ya no se muestran previews)
    */
   updateDocumentPreviews() {
-    Object.keys(this.formData.documents).forEach(docType => {
-      const doc = this.formData.documents[docType];
-      if (doc && doc.isGenerated) {
-        const previewEl = document.getElementById(`preview-${docType}`);
-        if (previewEl) {
-          // Mostrar las primeras líneas del documento
-          const lines = doc.content.split('\n').slice(0, 3).join('\n');
-          previewEl.textContent = lines + '...';
-        }
-      }
-    });
+    // No hacer nada - los previews fueron eliminados del diseño
   }
 
   /**
@@ -5525,15 +5515,6 @@ Vocal`;
     // Aplicar firmas a los documentos
     this.updateDocumentsWithSignatures();
 
-    // Actualizar previews de documentos
-    this.updateDocumentPreviews();
-
-    // Generar lista de certificados de antecedentes
-    this.renderCertificatesList();
-
-    // Generar lista de fotos de carnet
-    this.renderIdPhotosList();
-
     // Generar lista inicial de otros documentos
     this.renderOtherDocumentsList();
 
@@ -5546,27 +5527,29 @@ Vocal`;
         });
       }
 
-      // Botones de ver documento
-      document.querySelectorAll('.btn-preview').forEach(btn => {
-        btn.addEventListener('click', () => {
-          this.showDocumentPreview(btn.dataset.docType);
-        });
-      });
+      // Botones de ver documento - usar delegation en el contenedor
+      const docsList = document.getElementById('documents-list');
+      if (docsList) {
+        docsList.addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (!btn) return;
 
-      // Botones de editar documento
-      document.querySelectorAll('.btn-edit-doc').forEach(btn => {
-        btn.addEventListener('click', () => {
-          this.showEditDocumentModal(btn.dataset.docType);
-        });
-      });
+          const docType = btn.dataset.docType;
+          if (!docType) return;
 
-      // Botones de descargar documento
-      document.querySelectorAll('.btn-download').forEach(btn => {
-        btn.addEventListener('click', () => {
-          this.downloadDocument(btn.dataset.docType);
+          if (btn.classList.contains('btn-preview')) {
+            e.preventDefault();
+            this.showDocumentPreview(docType);
+          } else if (btn.classList.contains('btn-edit-doc')) {
+            e.preventDefault();
+            this.showEditDocumentModal(docType);
+          } else if (btn.classList.contains('btn-download')) {
+            e.preventDefault();
+            this.downloadDocument(docType);
+          }
         });
-      });
-    }, 100);
+      }
+    }, 50);
   }
 
   /**

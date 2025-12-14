@@ -897,138 +897,86 @@ function getStep6HTML_Firmas() {
 }
 
 function getAutoDocumentItemHTML(type, name, description, required) {
-  const icons = {
-    'ACTA_CONSTITUTIVA': '📜',
-    'ESTATUTOS': '📋',
-    'REGISTRO_SOCIOS': '👥',
-    'DECLARACION_JURADA_PRESIDENTE': '✍️',
-    'ACTA_COMISION_ELECTORAL': '🗳️'
-  };
-  const icon = icons[type] || '📄';
-
   return `
-    <div class="document-card" data-doc-type="${type}" style="
-      background: white;
-      border: 2px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    <div class="document-row" data-doc-type="${type}" style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
     ">
-      <div style="display: flex; align-items: flex-start; gap: 16px;">
-        <!-- Icono del documento -->
-        <div style="
-          width: 56px;
-          height: 56px;
-          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 28px;
-          flex-shrink: 0;
-        ">${icon}</div>
-
-        <!-- Info del documento -->
-        <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
-            <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #1f2937;">${name}</h4>
-            <span style="
-              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-              color: white;
-              padding: 4px 10px;
-              border-radius: 20px;
-              font-size: 11px;
-              font-weight: 600;
-              display: inline-flex;
-              align-items: center;
-              gap: 4px;
-            ">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              Generado
-            </span>
-          </div>
-          <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.4;">${description}</p>
-          <div class="document-preview-text" id="preview-${type}" style="margin-top: 8px; font-size: 12px; color: #9ca3af;"></div>
-        </div>
+      <!-- Nombre del documento con badge -->
+      <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;">
+        <span style="font-size: 15px; font-weight: 600; color: #1f2937;">${name}</span>
+        <span style="
+          background: #10b981;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: 600;
+        ">Listo</span>
       </div>
 
-      <!-- Botones de acción -->
-      <div style="
-        display: flex;
-        gap: 10px;
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid #f3f4f6;
-        flex-wrap: wrap;
-      ">
+      <!-- Botones de acción compactos -->
+      <div style="display: flex; gap: 8px; flex-shrink: 0;">
         <button class="btn-preview" data-doc-type="${type}" style="
-          flex: 1;
-          min-width: 100px;
-          padding: 12px 16px;
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          padding: 8px 14px;
+          background: #3b82f6;
           color: white;
           border: none;
-          border-radius: 10px;
-          font-size: 14px;
+          border-radius: 6px;
+          font-size: 13px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s;
+          gap: 5px;
         ">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
           </svg>
           Ver
         </button>
         <button class="btn-edit-doc" data-doc-type="${type}" style="
-          flex: 1;
-          min-width: 100px;
-          padding: 12px 16px;
-          background: #f3f4f6;
+          padding: 8px 14px;
+          background: white;
           color: #374151;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 13px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s;
+          gap: 5px;
         ">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
           Editar
         </button>
         <button class="btn-download" data-doc-type="${type}" style="
-          flex: 1;
-          min-width: 100px;
-          padding: 12px 16px;
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          padding: 8px 14px;
+          background: #10b981;
           color: white;
           border: none;
-          border-radius: 10px;
-          font-size: 14px;
+          border-radius: 6px;
+          font-size: 13px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s;
+          gap: 5px;
         ">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
