@@ -1021,52 +1021,134 @@ function getDocumentItemHTML(type, name, description, required) {
 export function getStep6HTML_Documentos() {
   return `
     <div class="wizard-step-content" id="step-6">
-      <h3>Paso 6: Documentos Oficiales</h3>
-      <p class="step-description">Revise los documentos generados, edite si es necesario y adjunte los certificados y fotos requeridas.</p>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="
+          width: 64px;
+          height: 64px;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        ">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h3 style="margin: 0 0 8px; font-size: 22px; font-weight: 700; color: #1f2937;">Borradores de Documentos</h3>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">Revise los documentos que se oficializarán el día de la Asamblea</p>
+      </div>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #10b981; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">📄</span>
+      <!-- Info Box importante -->
+      <div style="
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+      ">
+        <div style="display: flex; gap: 14px; align-items: flex-start;">
+          <div style="
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+          ">
+            <span style="font-size: 24px;">📋</span>
+          </div>
           <div>
-            <strong style="color: #065f46; font-size: 14px;">¿Qué documentos se generan?</strong>
-            <p style="margin: 6px 0 0; color: #065f46; font-size: 13px; line-height: 1.5;">
-              El sistema genera automáticamente todos los documentos requeridos por ley: Acta Constitutiva, Estatutos,
-              Registro de Socios, Declaración Jurada y Acta de la Comisión Electoral.
-            </p>
-            <p style="margin: 8px 0 0; color: #047857; font-size: 12px;">
-              📝 <strong>Importante:</strong> Puede revisar y editar cada documento antes de enviarlo usando los botones de acción disponibles.
+            <h4 style="margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #92400e;">Estos son borradores para su revisión</h4>
+            <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.6;">
+              Los documentos mostrados son <strong>proyectos preliminares</strong> que serán oficializados el día de la Asamblea Constitutiva.
+              Las fechas, firmas y otros datos pendientes se completarán en presencia del Ministro de Fe.
             </p>
           </div>
         </div>
       </div>
 
-      <div class="info-box info-box-success mb-4">
-        <strong>✅ Documentos Generados con Firmas</strong>
-        <p>Todos los documentos incluyen las firmas digitales de los miembros del Directorio Provisorio y la Comisión Electoral.</p>
+      <!-- Título de sección -->
+      <div style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e5e7eb;
+      ">
+        <span style="font-size: 20px;">📄</span>
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #374151;">Documentos Generados</h4>
+        <span style="
+          background: #3b82f6;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+        ">5 documentos</span>
       </div>
 
-      <div class="documents-list" id="documents-list">
-        ${getAutoDocumentItemHTML('ACTA_CONSTITUTIVA', 'Acta Constitutiva', 'Acta de la asamblea constitutiva con firmas', true)}
-        ${getAutoDocumentItemHTML('ESTATUTOS', 'Estatutos', 'Estatutos de la organización', true)}
-        ${getAutoDocumentItemHTML('REGISTRO_SOCIOS', 'Registro de Socios', 'Listado completo de socios fundadores', true)}
-        ${getAutoDocumentItemHTML('DECLARACION_JURADA_PRESIDENTE', 'Declaración Jurada', 'Declaración jurada del presidente de la comisión', true)}
-        ${getAutoDocumentItemHTML('ACTA_COMISION_ELECTORAL', 'Acta Comisión Electoral', 'Acta de establecimiento de la comisión con firmas', true)}
+      <!-- Lista de documentos -->
+      <div class="documents-list" id="documents-list" style="
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      ">
+        ${getAutoDocumentItemHTML('ACTA_CONSTITUTIVA', 'Acta Constitutiva', 'Proyecto del acta de la asamblea constitutiva', true)}
+        ${getAutoDocumentItemHTML('ESTATUTOS', 'Estatutos', 'Proyecto de estatutos para votación', true)}
+        ${getAutoDocumentItemHTML('REGISTRO_SOCIOS', 'Registro de Socios', 'Listado preliminar de socios fundadores', true)}
+        ${getAutoDocumentItemHTML('DECLARACION_JURADA_PRESIDENTE', 'Declaración Jurada', 'Modelo de declaración del presidente', true)}
+        ${getAutoDocumentItemHTML('ACTA_COMISION_ELECTORAL', 'Acta Comisión Electoral', 'Proyecto del acta de la comisión', true)}
       </div>
 
       <!-- Otros Documentos -->
-      <div class="documents-manual-section mt-4">
-        <h4>Otros Documentos (Opcionales)</h4>
-        <p class="text-muted mb-3">Puede adjuntar documentos adicionales si lo requiere.</p>
-        <div id="other-documents-list" class="other-documents-list">
+      <div style="
+        background: #f9fafb;
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 20px;
+      ">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <span style="font-size: 18px;">📎</span>
+          <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #374151;">Otros Documentos (Opcionales)</h4>
+        </div>
+        <p style="margin: 0 0 16px; color: #6b7280; font-size: 13px;">
+          Si tiene documentos adicionales que desea incluir, puede adjuntarlos aquí.
+        </p>
+        <div id="other-documents-list" class="other-documents-list" style="margin-bottom: 12px;">
           <!-- Se genera dinámicamente -->
         </div>
-        <button class="btn-add-document" id="btn-add-other-document">
+        <button class="btn-add-document" id="btn-add-other-document" style="
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          background: white;
+          border: 2px solid #d1d5db;
+          border-radius: 8px;
+          color: #374151;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Agregar otro documento
+          Agregar documento
         </button>
       </div>
     </div>

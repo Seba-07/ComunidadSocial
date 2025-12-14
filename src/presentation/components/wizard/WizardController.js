@@ -4859,15 +4859,20 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
-   * Genera el Acta Constitutiva
+   * Genera el Acta Constitutiva (BORRADOR)
    */
   generateActaConstitutiva(org, members, commission, today) {
     const presidenteComision = commission.members[0];
-    return `ACTA DE ASAMBLEA CONSTITUTIVA
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - PROYECTO DE DOCUMENTO
+    Este documento será oficializado el día de la Asamblea Constitutiva
+════════════════════════════════════════════════════════════════════
+
+ACTA DE ASAMBLEA CONSTITUTIVA
 
 ${org.name.toUpperCase()}
 
-En ${org.commune}, Región ${org.region}, a ${today}, siendo las 10:00 horas, se reúnen en ${org.address}, las personas que se individualizan al final del presente documento, con el objeto de constituir una ${org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Comunitaria Funcional'}, de conformidad con la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
+En ${org.commune}, Región ${org.region}, a [FECHA DE LA ASAMBLEA], siendo las [HORA] horas, se reúnen en [LUGAR DE LA ASAMBLEA], las personas que se individualizan al final del presente documento, con el objeto de constituir una ${org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Organización Comunitaria Funcional'}, de conformidad con la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
 
 PRIMERO: Preside la asamblea don(a) ${presidenteComision?.firstName || '[Nombre]'} ${presidenteComision?.lastName || '[Apellidos]'}, RUT ${presidenteComision?.rut || '[RUT]'}, en su calidad de Presidente de la Comisión Electoral, actuando como Secretario don(a) ${commission.members[1]?.firstName || '[Nombre]'} ${commission.members[1]?.lastName || '[Apellidos]'}, RUT ${commission.members[1]?.rut || '[RUT]'}.
 
@@ -4890,30 +4895,40 @@ SÉPTIMO: Se deja constancia que la Comisión Electoral está compuesta por:
 - Secretario: ${commission.members[1]?.firstName || ''} ${commission.members[1]?.lastName || ''} - RUT: ${commission.members[1]?.rut || ''}
 - Vocal: ${commission.members[2]?.firstName || ''} ${commission.members[2]?.lastName || ''} - RUT: ${commission.members[2]?.rut || ''}
 
-OCTAVO: La fecha programada para la elección del directorio definitivo es el ${commission.electionDate ? new Date(commission.electionDate).toLocaleDateString('es-CL') : '[Fecha por definir]'}.
+OCTAVO: La fecha programada para la elección del directorio definitivo será definida por la Comisión Electoral.
 
-No habiendo otros puntos que tratar, se levanta la sesión siendo las 12:00 horas del mismo día.
+No habiendo otros puntos que tratar, se levanta la sesión siendo las [HORA] horas del mismo día.
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 Presidente Comisión Electoral
 ${presidenteComision?.firstName || ''} ${presidenteComision?.lastName || ''}
 RUT: ${presidenteComision?.rut || ''}
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 Secretario Comisión Electoral
 ${commission.members[1]?.firstName || ''} ${commission.members[1]?.lastName || ''}
-RUT: ${commission.members[1]?.rut || ''}`;
+RUT: ${commission.members[1]?.rut || ''}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Los datos entre corchetes serán completados el día de la
+Asamblea Constitutiva con presencia del Ministro de Fe.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
-   * Genera los Estatutos
+   * Genera los Estatutos (BORRADOR)
    */
   generateEstatutos(org, today) {
-    return `ESTATUTOS
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - PROYECTO DE ESTATUTOS
+      Serán sometidos a votación en la Asamblea Constitutiva
+════════════════════════════════════════════════════════════════════
+
+ESTATUTOS
 ${org.name.toUpperCase()}
 
 TÍTULO I
@@ -5004,18 +5019,28 @@ Artículo 15°: La Organización podrá disolverse por acuerdo de los dos tercio
 Artículo 16°: En caso de disolución, los bienes de la Organización pasarán a la entidad de beneficencia que determine la Asamblea.
 
 
-Aprobados en Asamblea Constitutiva de fecha ${today}.`;
+[Pendiente de aprobación en Asamblea Constitutiva]
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este proyecto de estatutos será sometido a votación y
+aprobación por los miembros fundadores el día de la Asamblea.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
-   * Genera el Registro de Socios
+   * Genera el Registro de Socios (BORRADOR)
    */
   generateRegistroSocios(org, members, today) {
-    let registro = `REGISTRO DE SOCIOS FUNDADORES
+    let registro = `════════════════════════════════════════════════════════════════════
+                    BORRADOR - LISTADO PRELIMINAR DE SOCIOS
+       Los asistentes firmarán el registro el día de la Asamblea
+════════════════════════════════════════════════════════════════════
+
+REGISTRO DE SOCIOS FUNDADORES
 ${org.name.toUpperCase()}
 
-Fecha: ${today}
-Total de Socios Fundadores: ${members.length}
+Fecha de elaboración: Borrador previo a la Asamblea
+Total de Socios Fundadores Registrados: ${members.length}
 
 ${'='.repeat(100)}
 N°   | RUT              | NOMBRE COMPLETO                    | DOMICILIO                    | TELÉFONO
@@ -5034,61 +5059,84 @@ ${'='.repeat(100)}
 
     registro += `${'='.repeat(100)}
 
-Certifico que las ${members.length} personas antes individualizadas son socios fundadores de ${org.name}, habiendo participado en la Asamblea Constitutiva de fecha ${today}.
+[CERTIFICACIÓN PENDIENTE - SE COMPLETARÁ EN LA ASAMBLEA]
+
+El día de la Asamblea Constitutiva, el Secretario de la Comisión Electoral
+certificará la participación de los ${members.length} socios fundadores.
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
-Secretario Comisión Electoral`;
+Secretario Comisión Electoral
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este listado será verificado y firmado el día de la Asamblea
+Constitutiva. Los asistentes deberán acreditar su identidad.
+════════════════════════════════════════════════════════════════════`;
 
     return registro;
   }
 
   /**
-   * Genera la Declaración Jurada
+   * Genera la Declaración Jurada (BORRADOR)
    */
   generateDeclaracionJurada(org, commission, today) {
     const presidente = commission.members[0];
-    return `DECLARACIÓN JURADA SIMPLE
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - MODELO DE DECLARACIÓN JURADA
+         El Presidente firmará este documento el día de la Asamblea
+════════════════════════════════════════════════════════════════════
 
-Yo, ${presidente?.firstName || '[Nombre]'} ${presidente?.lastName || '[Apellidos]'}, RUT ${presidente?.rut || '[RUT]'}, domiciliado/a en ${presidente?.address || '[Dirección]'}, en mi calidad de Presidente de la Comisión Electoral de ${org.name}, declaro bajo juramento lo siguiente:
+DECLARACIÓN JURADA SIMPLE
 
-1. Que la Asamblea Constitutiva de ${org.name} se realizó el día ${today}, con la asistencia de ${this.formData.members.length} personas que cumplen con los requisitos legales para ser miembros de la organización.
+Yo, ${presidente?.firstName || '[Nombre]'} ${presidente?.lastName || '[Apellidos]'}, RUT ${presidente?.rut || '[RUT]'}, domiciliado/a en ${presidente?.address || '[Dirección]'}, en mi calidad de Presidente de la Comisión Electoral de ${org.name}, DECLARARÉ bajo juramento lo siguiente el día de la Asamblea Constitutiva:
 
-2. Que los estatutos fueron aprobados por unanimidad de los asistentes.
+1. Que la Asamblea Constitutiva de ${org.name} se realizará con la asistencia de los ${this.formData.members.length} miembros fundadores registrados, quienes cumplen con los requisitos legales para ser miembros de la organización.
 
-3. Que la Comisión Electoral fue elegida para supervisar el proceso eleccionario del primer Directorio definitivo.
+2. Que los estatutos serán sometidos a votación y aprobación de los asistentes.
 
-4. Que la fecha programada para la elección del Directorio es el ${commission.electionDate ? new Date(commission.electionDate).toLocaleDateString('es-CL') : '[Fecha por definir]'}.
+3. Que la Comisión Electoral fue designada para supervisar el proceso eleccionario del primer Directorio definitivo.
 
-5. Que toda la información proporcionada en la solicitud de constitución es verídica y corresponde a los hechos ocurridos.
+4. Que la fecha para la elección del Directorio será programada por la Comisión Electoral.
+
+5. Que toda la información proporcionada en la solicitud de constitución es verídica.
 
 6. Que conozco y acepto las responsabilidades que me corresponden según la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
 
-Asumo la responsabilidad legal por la veracidad de esta declaración, en conformidad con el artículo 212 del Código Penal.
+Asumiré la responsabilidad legal por la veracidad de esta declaración, en conformidad con el artículo 212 del Código Penal.
 
-${org.commune}, ${today}
+${org.commune}, [FECHA DE LA ASAMBLEA]
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 ${presidente?.firstName || ''} ${presidente?.lastName || ''}
 RUT: ${presidente?.rut || ''}
 Presidente Comisión Electoral
-${org.name}`;
+${org.name}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Esta declaración será firmada por el Presidente de la Comisión
+Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
-   * Genera el Acta de la Comisión Electoral
+   * Genera el Acta de la Comisión Electoral (BORRADOR)
    */
   generateActaComisionElectoral(org, commission, today) {
-    return `ACTA DE ESTABLECIMIENTO DE COMISIÓN ELECTORAL
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - PROYECTO DE ACTA
+       La Comisión Electoral firmará el día de la Asamblea
+════════════════════════════════════════════════════════════════════
+
+ACTA DE ESTABLECIMIENTO DE COMISIÓN ELECTORAL
 
 ${org.name.toUpperCase()}
 
-En ${org.commune}, Región ${org.region}, a ${today}, en el marco de la Asamblea Constitutiva de ${org.name}, se procede a establecer la Comisión Electoral que supervisará el proceso de elección del primer Directorio de la organización.
+En ${org.commune}, Región ${org.region}, a [FECHA DE LA ASAMBLEA], en el marco de la Asamblea Constitutiva de ${org.name}, se procederá a establecer la Comisión Electoral que supervisará el proceso de elección del primer Directorio de la organización.
 
-De acuerdo con lo establecido en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias, la Comisión Electoral queda integrada por los siguientes miembros:
+De acuerdo con lo establecido en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias, la Comisión Electoral quedará integrada por los siguientes miembros propuestos:
 
 
 1. PRESIDENTE DE LA COMISIÓN ELECTORAL
@@ -5124,35 +5172,40 @@ FUNCIONES DE LA COMISIÓN ELECTORAL:
 7. Resolver las reclamaciones que se presenten.
 
 
-FECHA DE ELECCIÓN PROGRAMADA: ${commission.electionDate ? new Date(commission.electionDate).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '[Por definir]'}
+FECHA DE ELECCIÓN PROGRAMADA: [A DEFINIR POR LA COMISIÓN ELECTORAL]
 
-LUGAR DE VOTACIÓN: ${org.address}, ${org.commune}
-
-
-Los integrantes de la Comisión Electoral aceptan el cargo y se comprometen a cumplir fielmente sus funciones de acuerdo con la ley y los estatutos de la organización.
-
-Para constancia, firman:
+LUGAR DE VOTACIÓN: [A DEFINIR]
 
 
+Los integrantes de la Comisión Electoral aceptarán el cargo y se comprometerán a cumplir fielmente sus funciones de acuerdo con la ley y los estatutos de la organización.
 
+Para constancia, firmarán el día de la Asamblea:
+
+
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 ${commission.members[0]?.firstName || ''} ${commission.members[0]?.lastName || ''}
 RUT: ${commission.members[0]?.rut || ''}
 Presidente
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 ${commission.members[1]?.firstName || ''} ${commission.members[1]?.lastName || ''}
 RUT: ${commission.members[1]?.rut || ''}
 Secretario
 
 
-
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
 ${commission.members[2]?.firstName || ''} ${commission.members[2]?.lastName || ''}
 RUT: ${commission.members[2]?.rut || ''}
-Vocal`;
+Vocal
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este documento será firmado por los integrantes de la Comisión
+Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
