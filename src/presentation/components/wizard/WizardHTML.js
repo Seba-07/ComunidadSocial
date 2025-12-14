@@ -925,7 +925,7 @@ function getAutoDocumentItemHTML(type, name, description, required) {
 
       <!-- Botones de acción compactos -->
       <div style="display: flex; gap: 8px; flex-shrink: 0;">
-        <button class="btn-preview" data-doc-type="${type}" style="
+        <button type="button" class="btn-preview" data-doc-type="${type}" onclick="window.wizardController && window.wizardController.showDocumentPreview('${type}')" style="
           padding: 8px 14px;
           background: #3b82f6;
           color: white;
@@ -944,7 +944,7 @@ function getAutoDocumentItemHTML(type, name, description, required) {
           </svg>
           Ver
         </button>
-        <button class="btn-edit-doc" data-doc-type="${type}" style="
+        <button type="button" class="btn-edit-doc" data-doc-type="${type}" onclick="window.wizardController && window.wizardController.showEditDocumentModal('${type}')" style="
           padding: 8px 14px;
           background: white;
           color: #374151;
@@ -963,7 +963,7 @@ function getAutoDocumentItemHTML(type, name, description, required) {
           </svg>
           Editar
         </button>
-        <button class="btn-download" data-doc-type="${type}" style="
+        <button type="button" class="btn-download" data-doc-type="${type}" onclick="window.wizardController && window.wizardController.downloadDocument('${type}')" style="
           padding: 8px 14px;
           background: #10b981;
           color: white;

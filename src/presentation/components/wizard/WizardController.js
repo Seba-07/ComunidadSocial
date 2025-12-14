@@ -185,6 +185,9 @@ function getOrgTypeName(type) {
 
 export class WizardController {
   constructor() {
+    // Exponer instancia para onclick handlers en HTML
+    window.wizardController = this;
+
     this.currentStep = 1;
     this.totalSteps = 6;
     this.storageKey = 'wizardProgress';
