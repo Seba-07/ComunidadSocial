@@ -4862,81 +4862,83 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   }
 
   /**
-   * Genera el Acta Constitutiva - Formato Oficial Municipalidad de Renca
+   * Genera el Acta Constitutiva - Documento Oficial Municipalidad de Renca
+   * TEXTO EXACTO del documento legal - NO MODIFICAR
    */
   generateActaConstitutiva(org, members, commission, today) {
-    // Obtener datos del directorio provisional
-    const directorio = this.wizardData.directorio || {};
-    const presidente = directorio.presidente || {};
-    const secretario = directorio.secretario || {};
-    const tesorero = directorio.tesorero || {};
-
-    // Determinar mínimo de socios según tipo de organización
-    const minSocios = org.type === 'JUNTA_VECINOS' ? '50' : '15';
-
     // Formatear tipo de organización
     const tipoOrg = this.getOrganizationTypeLabel(org.type);
 
-    return `                           REPUBLICA DE CHILE
-                    ILUSTRE MUNICIPALIDAD DE RENCA
-                         SECRETARÍA MUNICIPAL
-               "Departamento de Registro y Certificación"
+    return `REPUBLICA DE CHILE
+ILUSTRE MUNICIPALIDAD DE RENCA
+SECRETARÍA MUNICIPAL
+"Departamento de Registro y Certificación"
 
+ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO
+Y ELECCION DE DIRECTIVA PROVISIONAL
 
-            ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO
-                  Y ELECCION DE DIRECTIVA PROVISIONAL
+TIPO DE ORGANIZACIÓN ${tipoOrg}
 
-
-TIPO DE ORGANIZACIÓN: ${tipoOrg}
-
-NOMBRE INSTITUCIÓN: ${org.name}
+NOMBRE INSTITUCIÓN ${org.name}
 ____________________________________________________________________________
 
+ACTA DE ASAMBLEA
 
-                            ACTA DE ASAMBLEA
+En Renca, a ________ de _______________________ del 20______, siendo las ________ horas, en
+el local ubicado en ___________________________________________________, ante la presencia
+del funcionario municipal Sr. (a) ______________________________________________________
+como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado
+adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto
+por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que
+establece la Ley Nº 19.418 del 09 de octubre de 1995.
 
-En Renca, a ________ de _______________________ del 20______, siendo las ________ horas, en el local ubicado en ___________________________________________________, ante la presencia del funcionario municipal Sr. (a) ______________________________________________________
-como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
-
-Antes de iniciar la sesión, se verificó que existen a lo menos ${minSocios} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a) Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñaran los cargos de Secretario y Tesorero.
+Antes de iniciar la sesión, se verifico que existen a lo menos __________ socios, los cuales cumplen
+con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma
+parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio
+lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la
+consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al
+final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación,
+se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a)
+Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos
+(2) siguientes más altas mayorías de votos, quienes desempeñaran los cargos de Secretario y
+Tesorero
 
 También, se procedió a elegir a las tres (3) personas que integraran la Comisión Electoral.
 
-Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes socios:
+Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes
+socios:
 
+DIRECTIVA PROVISIONAL                                              CED. IDENTIDAD
 
-DIRECTIVA PROVISIONAL                                    CED. IDENTIDAD
+PRESIDENTE (A) ________________________________________________________________
 
-PRESIDENTE (A): ${presidente.firstName || '_________________'} ${presidente.lastName || '_________________'}     ${presidente.rut || '_______________'}
+SECRETARIO (A) ________________________________________________________________
 
-SECRETARIO (A): ${secretario.firstName || '_________________'} ${secretario.lastName || '_________________'}     ${secretario.rut || '_______________'}
+TESORERO (A) __________________________________________________________________
 
-TESORERO (A): ${tesorero.firstName || '_________________'} ${tesorero.lastName || '_________________'}       ${tesorero.rut || '_______________'}
+COMISION ELECTORAL                                                 CED. IDENTIDAD
 
+DON (ÑA) _______________________________________________________________________
 
-COMISION ELECTORAL                                       CED. IDENTIDAD
+DON (ÑA) _______________________________________________________________________
 
-DON (ÑA): ${commission.members[0]?.firstName || '_________________'} ${commission.members[0]?.lastName || '_________________'}           ${commission.members[0]?.rut || '_______________'}
+DON (ÑA) _______________________________________________________________________
 
-DON (ÑA): ${commission.members[1]?.firstName || '_________________'} ${commission.members[1]?.lastName || '_________________'}           ${commission.members[1]?.rut || '_______________'}
+La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y
+acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda
+hacer a tales Estatutos, de acuerdo con el Articulo 7º, inciso final, de la Ley Nº 19.418, a Don
+(ña)__________________________________________________________________________
+Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la
+Organización señala el siguiente domicilio_______________________________________________
 
-DON (ÑA): ${commission.members[2]?.firstName || '_________________'} ${commission.members[2]?.lastName || '_________________'}           ${commission.members[2]?.rut || '_______________'}
-
-
-La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Articulo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) ${presidente.firstName || '_________________'} ${presidente.lastName || '_________________'}
-Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: ${org.address || '_______________________________________________'}
-
-
-Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
-
+Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional
+electa y el Ministro de fe que asistió a la asamblea.
 
 Firmas:
 
-PRESIDENTE (A): __________________              TESORERO (A): __________________
+PRESIDENTE (A): __________________                    TESORERO (A): __________________
 
-
-
-SECRETARIO (A): __________________              MINISTRO DE FE: ________________`;
+SECRETARIO (A): __________________                    MINISTRO DE FE: ________________`;
   }
 
   /**
