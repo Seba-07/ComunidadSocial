@@ -5588,38 +5588,42 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
     // Generar lista inicial de otros documentos
     this.renderOtherDocumentsList();
 
-    // Botones de documentos - usar setTimeout para asegurar que el DOM esté listo
+    // Usar setTimeout más largo para asegurar que el DOM esté listo
     setTimeout(() => {
+      // Botón agregar otro documento
       const btnAddDoc = document.getElementById('btn-add-other-document');
       if (btnAddDoc) {
-        btnAddDoc.addEventListener('click', () => {
-          this.addOtherDocumentSlot();
-        });
+        btnAddDoc.onclick = () => this.addOtherDocumentSlot();
       }
 
-      // Botones de ver documento - usar delegation en el contenedor
-      const docsList = document.getElementById('documents-list');
-      if (docsList) {
-        docsList.addEventListener('click', (e) => {
-          const btn = e.target.closest('button');
-          if (!btn) return;
-
+      // Asignar onclick directamente a cada botón de documento
+      document.querySelectorAll('.btn-preview').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const docType = btn.dataset.docType;
-          if (!docType) return;
+          if (docType) this.showDocumentPreview(docType);
+        };
+      });
 
-          if (btn.classList.contains('btn-preview')) {
-            e.preventDefault();
-            this.showDocumentPreview(docType);
-          } else if (btn.classList.contains('btn-edit-doc')) {
-            e.preventDefault();
-            this.showEditDocumentModal(docType);
-          } else if (btn.classList.contains('btn-download')) {
-            e.preventDefault();
-            this.downloadDocument(docType);
-          }
-        });
-      }
-    }, 50);
+      document.querySelectorAll('.btn-edit-doc').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const docType = btn.dataset.docType;
+          if (docType) this.showEditDocumentModal(docType);
+        };
+      });
+
+      document.querySelectorAll('.btn-download').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const docType = btn.dataset.docType;
+          if (docType) this.downloadDocument(docType);
+        };
+      });
+    }, 100);
   }
 
   /**
