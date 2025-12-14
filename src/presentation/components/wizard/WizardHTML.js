@@ -897,42 +897,143 @@ function getStep6HTML_Firmas() {
 }
 
 function getAutoDocumentItemHTML(type, name, description, required) {
+  const icons = {
+    'ACTA_CONSTITUTIVA': '📜',
+    'ESTATUTOS': '📋',
+    'REGISTRO_SOCIOS': '👥',
+    'DECLARACION_JURADA_PRESIDENTE': '✍️',
+    'ACTA_COMISION_ELECTORAL': '🗳️'
+  };
+  const icon = icons[type] || '📄';
+
   return `
-    <div class="document-item document-auto" data-doc-type="${type}">
-      <div class="document-status-indicator">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      </div>
-      <div class="document-info">
-        <div class="document-header">
-          <span class="document-name">${name}</span>
-          <span class="badge-auto">Auto-generado</span>
+    <div class="document-card" data-doc-type="${type}" style="
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    ">
+      <div style="display: flex; align-items: flex-start; gap: 16px;">
+        <!-- Icono del documento -->
+        <div style="
+          width: 56px;
+          height: 56px;
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          flex-shrink: 0;
+        ">${icon}</div>
+
+        <!-- Info del documento -->
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+            <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #1f2937;">${name}</h4>
+            <span style="
+              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+              color: white;
+              padding: 4px 10px;
+              border-radius: 20px;
+              font-size: 11px;
+              font-weight: 600;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+            ">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Generado
+            </span>
+          </div>
+          <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.4;">${description}</p>
+          <div class="document-preview-text" id="preview-${type}" style="margin-top: 8px; font-size: 12px; color: #9ca3af;"></div>
         </div>
-        <p class="document-description">${description}</p>
-        <div class="document-preview-text" id="preview-${type}"></div>
       </div>
-      <div class="document-actions-auto">
-        <button class="btn-preview" data-doc-type="${type}" title="Ver documento">
+
+      <!-- Botones de acción -->
+      <div style="
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f3f4f6;
+        flex-wrap: wrap;
+      ">
+        <button class="btn-preview" data-doc-type="${type}" style="
+          flex: 1;
+          min-width: 100px;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s;
+        ">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
           </svg>
           Ver
         </button>
-        <button class="btn-edit-doc" data-doc-type="${type}" title="Editar documento">
+        <button class="btn-edit-doc" data-doc-type="${type}" style="
+          flex: 1;
+          min-width: 100px;
+          padding: 12px 16px;
+          background: #f3f4f6;
+          color: #374151;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s;
+        ">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
           Editar
         </button>
-        <button class="btn-download" data-doc-type="${type}" title="Descargar documento">
+        <button class="btn-download" data-doc-type="${type}" style="
+          flex: 1;
+          min-width: 100px;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s;
+        ">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
+          Descargar
         </button>
       </div>
     </div>
@@ -986,7 +1087,7 @@ export function getStep6HTML_Documentos() {
               Registro de Socios, Declaración Jurada y Acta de la Comisión Electoral.
             </p>
             <p style="margin: 8px 0 0; color: #047857; font-size: 12px;">
-              📝 <strong>Importante:</strong> Puede revisar y editar cada documento antes de enviarlo. También debe subir las fotos de carnet de identidad para validación.
+              📝 <strong>Importante:</strong> Puede revisar y editar cada documento antes de enviarlo usando los botones de acción disponibles.
             </p>
           </div>
         </div>
@@ -1003,33 +1104,6 @@ export function getStep6HTML_Documentos() {
         ${getAutoDocumentItemHTML('REGISTRO_SOCIOS', 'Registro de Socios', 'Listado completo de socios fundadores', true)}
         ${getAutoDocumentItemHTML('DECLARACION_JURADA_PRESIDENTE', 'Declaración Jurada', 'Declaración jurada del presidente de la comisión', true)}
         ${getAutoDocumentItemHTML('ACTA_COMISION_ELECTORAL', 'Acta Comisión Electoral', 'Acta de establecimiento de la comisión con firmas', true)}
-      </div>
-
-      <!-- Certificados de Antecedentes por Director -->
-      <div class="documents-manual-section mt-4">
-        <h4>Certificados de Antecedentes</h4>
-        <p class="text-muted mb-3">Suba el certificado de antecedentes de cada miembro de la Comisión Electoral.</p>
-        <div id="certificates-list" class="certificates-list">
-          <!-- Se genera dinámicamente -->
-        </div>
-      </div>
-
-      <!-- Fotos de Carnet de Identidad -->
-      <div class="documents-manual-section mt-4">
-        <h4>📸 Fotos de Carnet de Identidad</h4>
-        <p class="text-muted mb-3">Suba las fotos frontales y traseras del carnet de identidad de cada miembro de la Comisión Electoral para validación de firmas.</p>
-
-        <div class="info-box info-box-info mb-3" style="background: #e3f2fd; border-color: #2196f3;">
-          <strong style="color: #1565c0;">ℹ️ Información</strong>
-          <p style="margin: 8px 0 0; color: #1565c0; font-size: 13px;">
-            Las fotos del carnet serán utilizadas por el Ministro de Fe o el administrador para validar las firmas de los directivos.
-            Las imágenes deben ser claras y legibles.
-          </p>
-        </div>
-
-        <div id="id-photos-list" class="id-photos-list">
-          <!-- Se genera dinámicamente -->
-        </div>
       </div>
 
       <!-- Otros Documentos -->
