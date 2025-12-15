@@ -1172,22 +1172,15 @@ export class WizardController {
       errors.push('Algunos documentos no fueron generados correctamente');
     }
 
-    // Validar certificados de antecedentes de cada miembro de la comisión
-    const commission = this.formData.commission.members || [];
-    const certificates = this.formData.certificates || {};
-    const roles = ['Presidente', 'Secretario', 'Vocal'];
+    // Validar certificados de antecedentes (usando certificatesStep5 del paso 5)
+    const certs = this.formData.certificatesStep5 || {};
+    const certConfig = this.getCertificateConfig();
+    const missingCerts = certConfig.filter(c => !certs[c.key] || !certs[c.key].base64);
 
-    const missingCertificates = commission.filter(member => !certificates[member.id]);
-
-    if (missingCertificates.length > 0) {
-      const details = missingCertificates.map(m => {
-        const memberIndex = commission.findIndex(c => c.id === m.id);
-        const role = roles[memberIndex] || 'Miembro';
-        return `${role}: ${m.firstName} ${m.lastName}`;
-      });
+    if (missingCerts.length > 0) {
       errors.push({
         title: 'Certificados de Antecedentes pendientes',
-        items: details
+        items: missingCerts.map(c => c.label)
       });
     }
 
