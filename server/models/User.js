@@ -57,6 +57,16 @@ const userSchema = new mongoose.Schema({
   mustChangePassword: {
     type: Boolean,
     default: false
+  },
+  // Campos específicos para Ministros de Fe
+  specialty: {
+    type: String,
+    trim: true,
+    default: 'General'
+  },
+  availableHours: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

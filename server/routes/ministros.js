@@ -19,7 +19,7 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
 router.get('/active', authenticate, async (req, res) => {
   try {
     const ministros = await User.find({ role: 'MINISTRO', active: true })
-      .select('firstName lastName rut email phone specialty');
+      .select('firstName lastName rut email phone specialty availableHours');
     res.json(ministros);
   } catch (error) {
     console.error('Get active ministros error:', error);
@@ -44,12 +44,19 @@ router.get('/:id', authenticate, async (req, res) => {
 // Create ministro (Admin only)
 router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
   try {
-    const { rut, firstName, lastName, email, phone, address, specialty, password } = req.body;
+    const { rut, firstName, lastName, email, phone, address, specialty, password, availableHours } = req.body;
 
     // Validar contraseña
     if (!password || password.length < 6) {
       return res.status(400).json({
         error: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    // Validar horarios disponibles
+    if (!availableHours || !Array.isArray(availableHours) || availableHours.length === 0) {
+      return res.status(400).json({
+        error: 'Debe seleccionar al menos un horario disponible'
       });
     }
 
@@ -72,6 +79,7 @@ router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
       phone,
       address,
       specialty,
+      availableHours,
       role: 'MINISTRO',
       mustChangePassword: true // El ministro deberá cambiar la contraseña
     });
