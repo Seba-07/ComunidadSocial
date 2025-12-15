@@ -8,6 +8,7 @@ import { indexedDBService } from '../../../infrastructure/database/IndexedDBServ
 import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
 import { ESTATUTOS_TIPO, generarEstatutos, mapearTipoOrganizacion } from '../../../data/estatutosTipo.js';
+import unidadesVecinalesService from '../../../services/UnidadesVecinalesService.js';
 
 // Tipos de organizaciones territoriales
 const TERRITORIAL_TYPES = {
@@ -4810,7 +4811,7 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   /**
    * Genera todos los documentos automáticamente
    */
-  generateAllDocuments() {
+  async generateAllDocuments() {
     const org = this.formData.organization;
     const members = this.formData.members;
     const commission = this.formData.commission;
@@ -4821,6 +4822,20 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       month: 'long',
       year: 'numeric'
     });
+
+    // Buscar unidad vecinal automáticamente si no está definida
+    if (!org.neighborhood && org.address) {
+      try {
+        const uvResult = await unidadesVecinalesService.buscarPorDireccion(org.address);
+        if (uvResult.encontrada && uvResult.unidadVecinal) {
+          org.neighborhood = uvResult.unidadVecinal.numero;
+          this.formData.organization.neighborhood = uvResult.unidadVecinal.numero;
+          console.log('Unidad Vecinal detectada automáticamente:', uvResult.unidadVecinal.numero);
+        }
+      } catch (error) {
+        console.warn('No se pudo determinar la unidad vecinal:', error);
+      }
+    }
 
     // 1. Acta Constitutiva
     this.formData.documents['ACTA_CONSTITUTIVA'] = {
@@ -5395,34 +5410,58 @@ FIRMA`;
     const domicilioPresidente = presidente?.address || org.address || '______________________________________________________________';
     const telefonoPresidente = presidente?.phone || '__________________________';
 
-    return `C E R T I F I C A D O
+    return `════════════════════════════════════════════════════════════════════
+                              BORRADOR
+        Este documento será completado el día de la Asamblea
+════════════════════════════════════════════════════════════════════
+
+
+                        C E R T I F I C A D O
+
+
 __________________________________________________________, funcionario (a)
-municipal
-que suscribe en calidad de Ministro de Fe, certifica que asistió a la Asamblea Constitutiva
-de la
-Organización Comunitaria denominada:
+municipal que suscribe en calidad de Ministro de Fe, certifica que asistió a la
+Asamblea Constitutiva de la Organización Comunitaria denominada:
+
 ${org.name || '_________________________________________________________________________'}
 _________________________________________________________________________
+
 que precede, la que se celebró en el lugar, día y hora indicados en ella.
+
 • Que, asistieron a la Asamblea los socios que se señalan en el Acta que se adjunta.
+
 • Que, todas las proposiciones de acuerdo que se contienen en el Acta precedente, fueron
-leídas, puestas en discusión y aprobadas en la forma expresa en el Acta.
+  leídas, puestas en discusión y aprobadas en la forma expresa en el Acta.
+
 • Que, para todos los efectos legales, el (la) Presidente (a) de la institución es Don (ña)
-${nombrePresidente} y
-su
-domicilio es ${domicilioPresidente}
-teléfono${telefonoPresidente}
+  ${nombrePresidente}
+  y su domicilio es ${domicilioPresidente}
+  teléfono ${telefonoPresidente}
+
+
 Se adjunta el presente:
-• Depósito de Antecedentes.
-• Certificación.
-• Acta de Asamblea General Constitutiva.
-• Certificado.
-• Declaración Jurada Simple de los Directores Provisionales.
-• Estatutos
-• Listado de Socios asistentes.
-___________________________________
-FIRMA
-Renca,`;
+
+    • Depósito de Antecedentes.
+    • Certificación.
+    • Acta de Asamblea General Constitutiva.
+    • Certificado.
+    • Declaración Jurada Simple de los Directores Provisionales.
+    • Estatutos
+    • Listado de Socios asistentes.
+
+
+
+                    ___________________________________
+                                 FIRMA
+
+
+Renca, ______________________
+
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este certificado será completado y firmado por el Ministro de Fe
+designado por la Municipalidad el día de la Asamblea Constitutiva.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
@@ -5443,21 +5482,21 @@ Renca,`;
     };
 
     // Generar líneas dinámicas del directorio - según cantidad de cargos
-    let directivaLines = 'DIRECTIVA PROVISORIA\n';
+    let directivaLines = '';
     dirConfig.cargos.forEach(cargo => {
       const miembro = directorio[cargo.id];
-      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '');
-      const nombre = formatNombre(miembro);
+      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '').padEnd(15);
+      const nombre = formatNombre(miembro).padEnd(40, '_');
       const rut = formatRut(miembro);
-      directivaLines += `${cargoLabel}${nombre} C.I. Nº ${rut}\n`;
+      directivaLines += `${cargoLabel} ${nombre} C.I. Nº ${rut}\n`;
     });
 
     // Generar líneas de comisión electoral (siempre 3)
     const comisionMembers = commission?.members || [];
-    let comisionLines = 'COMISION ELECTORAL\n';
+    let comisionLines = '';
     for (let i = 0; i < 3; i++) {
       const member = comisionMembers[i];
-      const nombre = member ? `${member.firstName} ${member.lastName}` : '____________________________________________';
+      const nombre = member ? `${member.firstName} ${member.lastName}`.padEnd(40, '_') : '____________________________________________';
       const rut = member?.rut || '____________________';
       comisionLines += `DON (ÑA) ${nombre} C.I. Nº ${rut}\n`;
     }
@@ -5466,27 +5505,67 @@ Renca,`;
     const presidente = directorio.presidente;
     const nombrePresidente = formatNombre(presidente);
 
-    return `CERTIFICACION N.º ________________/
-En Renca, a ________________________, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº
-19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización
-Denominada${org.name || '_____________________________________________________________________________'}
-__________________ de la Unidad Vecinal Nº ${unidadVecinal}depósito en esta Secretaría Municipal, copia
+    return `════════════════════════════════════════════════════════════════════
+                              BORRADOR
+        Este documento será completado el día de la Asamblea
+════════════════════════════════════════════════════════════════════
+
+
+                    CERTIFICACION N.º ________________/
+
+
+En Renca, a ________________________, en cumplimiento a lo que establece el
+Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe
+certifica que, la Organización Denominada:
+
+${org.name || '_____________________________________________________________________________'}
+
+de la Unidad Vecinal Nº ${unidadVecinal} depósito en esta Secretaría Municipal, copia
 autorizada del de Asamblea Constitutiva.
-La citada Asamblea Constitutiva se efectuó el día ________ de ___________ del año ___________________
-ante el Ministro de Fe Don (ña)_______________________________________________________________
-Funcionario (a) municipal, en el local ubicado en _________________________________________________
-En dicha sesión, se aprobaron los Estatutos de la Organización y fueron elegidos como integrantes de la
-Directiva Provisoria y Comisión Electoral, los siguientes socios.
+
+La citada Asamblea Constitutiva se efectuó el día ________ de ___________ del
+año ___________________ ante el Ministro de Fe Don (ña):
+
+_______________________________________________________________
+
+Funcionario (a) municipal, en el local ubicado en:
+
+_________________________________________________
+
+En dicha sesión, se aprobaron los Estatutos de la Organización y fueron elegidos
+como integrantes de la Directiva Provisoria y Comisión Electoral, los siguientes socios.
+
+
+DIRECTIVA PROVISORIA
+─────────────────────────────────────────────────────────────────────
 ${directivaLines}
+
+COMISION ELECTORAL
+─────────────────────────────────────────────────────────────────────
 ${comisionLines}
-Dicha Organización gozara de Personalidad Jurídica conforme a la Ley Nº 19.418 de 1995, a contar de la
-fecha del depósito del Acta de Asamblea Constitutiva, la cual fue depositada en la Secretaria Municipal por
-Don (ña) ${nombrePresidente}presidenta (e)de la organización y Don (ña)___________________
+
+Dicha Organización gozara de Personalidad Jurídica conforme a la Ley Nº 19.418
+de 1995, a contar de la fecha del depósito del Acta de Asamblea Constitutiva,
+la cual fue depositada en la Secretaria Municipal por:
+
+Don (ña) ${nombrePresidente}
+presidenta (e) de la organización y Don (ña) ___________________
 en su calidad de Ministro de Fe, con domicilio en Blanco Encalada Nº 1335.
-Se entrega este certificado al (a la) Presidente (a) de la Organización para todos los efectos legales derivados
-de la Ley Nº 19.418. En ausencia del Titular, en el acto de retiro, envíese la presente certificación, por
-cedula al domicilio fijado por el (la) Presidente (a), en la Asamblea Constitutiva.
-Secretaria Municipal`;
+
+Se entrega este certificado al (a la) Presidente (a) de la Organización para todos
+los efectos legales derivados de la Ley Nº 19.418. En ausencia del Titular, en el
+acto de retiro, envíese la presente certificación, por cedula al domicilio fijado
+por el (la) Presidente (a), en la Asamblea Constitutiva.
+
+
+
+                                        Secretaria Municipal
+
+
+════════════════════════════════════════════════════════════════════
+NOTA: Esta certificación será emitida por la Secretaría Municipal
+una vez completado el proceso de constitución el día de la Asamblea.
+════════════════════════════════════════════════════════════════════`;
   }
 
   /**
@@ -6016,9 +6095,9 @@ Secretaria Municipal`;
   /**
    * Inicializa paso 6: Documentos
    */
-  initializeStep6_Documentos() {
+  async initializeStep6_Documentos() {
     // Generar documentos automáticamente con las firmas ya incluidas
-    this.generateAllDocuments();
+    await this.generateAllDocuments();
 
     // Aplicar firmas a los documentos
     this.updateDocumentsWithSignatures();
