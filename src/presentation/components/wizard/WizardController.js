@@ -1157,13 +1157,11 @@ export class WizardController {
   validateStep6_Documentos() {
     const errors = [];
 
-    // Validar documentos auto-generados
+    // Validar documentos auto-generados (solo los principales)
     const requiredDocs = [
       'ACTA_CONSTITUTIVA',
       'ESTATUTOS',
-      'REGISTRO_SOCIOS',
-      'DECLARACION_JURADA_PRESIDENTE',
-      'ACTA_COMISION_ELECTORAL'
+      'REGISTRO_SOCIOS'
     ];
 
     const missingDocs = requiredDocs.filter(doc => !this.formData.documents[doc]);
