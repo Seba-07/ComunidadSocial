@@ -9,6 +9,7 @@ import { showToast } from '../../../app.js';
 import { CHILE_REGIONS } from '../../../data/chile-regions.js';
 import { ESTATUTOS_TIPO, generarEstatutos, mapearTipoOrganizacion } from '../../../data/estatutosTipo.js';
 import unidadesVecinalesService from '../../../services/UnidadesVecinalesService.js';
+import { jsPDF } from 'jspdf';
 
 // Tipos de organizaciones territoriales
 const TERRITORIAL_TYPES = {
@@ -5485,10 +5486,12 @@ designado por la Municipalidad el día de la Asamblea Constitutiva.
     let directivaLines = '';
     dirConfig.cargos.forEach(cargo => {
       const miembro = directorio[cargo.id];
-      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '').padEnd(15);
-      const nombre = formatNombre(miembro).padEnd(40, '_');
+      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '');
+      const nombre = formatNombre(miembro);
       const rut = formatRut(miembro);
-      directivaLines += `${cargoLabel} ${nombre} C.I. Nº ${rut}\n`;
+      // Formato alineado: CARGO + nombre con guiones hasta 40 chars + RUT
+      const nombreConGuiones = nombre.length < 40 ? nombre + '_'.repeat(40 - nombre.length) : nombre;
+      directivaLines += `${cargoLabel.padEnd(12)} ${nombreConGuiones} C.I. Nº ${rut}\n`;
     });
 
     // Generar líneas de comisión electoral (siempre 3)
@@ -5846,7 +5849,7 @@ Secretaria Municipal`;
   }
 
   /**
-   * Descarga un documento
+   * Descarga un documento en formato PDF
    */
   downloadDocument(docType) {
     const doc = this.formData.documents[docType];
@@ -5860,23 +5863,109 @@ Secretaria Municipal`;
       'ESTATUTOS': 'Estatutos',
       'REGISTRO_SOCIOS': 'Registro_Socios',
       'DECLARACION_JURADA_PRESIDENTE': 'Declaracion_Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta_Comision_Electoral'
+      'ACTA_COMISION_ELECTORAL': 'Acta_Comision_Electoral',
+      'CERTIFICACION_MUNICIPAL': 'Certificacion_Municipal',
+      'CERTIFICADO_MINISTRO_FE': 'Certificado_Ministro_Fe',
+      'DEPOSITO_ANTECEDENTES': 'Deposito_Antecedentes'
     };
 
     const orgName = this.formData.organization.name?.replace(/\s+/g, '_') || 'Organizacion';
-    const fileName = `${docNames[docType] || docType}_${orgName}.txt`;
+    const fileName = `${docNames[docType] || docType}_${orgName}.pdf`;
 
-    const blob = new Blob([doc.content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      // Crear PDF con jsPDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter'
+      });
 
-    showToast('Documento descargado', 'success');
+      // Configurar fuente
+      pdf.setFont('helvetica', 'normal');
+
+      // Procesar el contenido del documento
+      const content = doc.content || '';
+      const lines = content.split('\n');
+
+      let y = 20; // Posición inicial Y
+      const marginLeft = 15;
+      const marginRight = 15;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const maxWidth = pageWidth - marginLeft - marginRight;
+      const lineHeight = 5;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const marginBottom = 20;
+
+      lines.forEach(line => {
+        // Detectar líneas especiales (títulos, separadores)
+        const isSeparator = /^[═─━═─]+$/.test(line.trim()) || /^[-=]+$/.test(line.trim());
+        const isTitle = line.trim().toUpperCase() === line.trim() && line.trim().length > 3 && !isSeparator;
+        const isBorrador = line.includes('BORRADOR') || line.includes('*** BORRADOR ***');
+
+        if (isSeparator) {
+          // Dibujar línea separadora
+          pdf.setDrawColor(150, 150, 150);
+          pdf.setLineWidth(0.3);
+          pdf.line(marginLeft, y, pageWidth - marginRight, y);
+          y += lineHeight;
+        } else if (isBorrador) {
+          // Texto BORRADOR en rojo
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(220, 50, 50);
+          const splitText = pdf.splitTextToSize(line, maxWidth);
+          splitText.forEach(textLine => {
+            if (y > pageHeight - marginBottom) {
+              pdf.addPage();
+              y = 20;
+            }
+            pdf.text(textLine, marginLeft, y);
+            y += lineHeight;
+          });
+          pdf.setTextColor(0, 0, 0);
+        } else if (isTitle && line.trim().length > 0) {
+          // Títulos en negrita
+          pdf.setFontSize(11);
+          pdf.setFont('helvetica', 'bold');
+          const splitText = pdf.splitTextToSize(line, maxWidth);
+          splitText.forEach(textLine => {
+            if (y > pageHeight - marginBottom) {
+              pdf.addPage();
+              y = 20;
+            }
+            pdf.text(textLine, marginLeft, y);
+            y += lineHeight;
+          });
+          pdf.setFont('helvetica', 'normal');
+        } else {
+          // Texto normal
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+
+          if (line.trim() === '') {
+            y += lineHeight * 0.5; // Espaciado menor para líneas vacías
+          } else {
+            const splitText = pdf.splitTextToSize(line, maxWidth);
+            splitText.forEach(textLine => {
+              if (y > pageHeight - marginBottom) {
+                pdf.addPage();
+                y = 20;
+              }
+              pdf.text(textLine, marginLeft, y);
+              y += lineHeight;
+            });
+          }
+        }
+      });
+
+      // Descargar el PDF
+      pdf.save(fileName);
+      showToast('Documento PDF descargado', 'success');
+
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      showToast('Error al generar PDF', 'error');
+    }
   }
 
   /**
