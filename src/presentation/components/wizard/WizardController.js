@@ -4863,11 +4863,77 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
 
   /**
    * Genera el Acta Constitutiva - Documento Oficial Municipalidad de Renca
-   * TEXTO EXACTO del documento legal - NO MODIFICAR
+   * Formato base del documento legal con campos dinámicos
    */
   generateActaConstitutiva(org, members, commission, today) {
     // Formatear tipo de organización
     const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
+
+    // Obtener datos del directorio provisorio
+    const directorio = this.formData.directorioProvisorio || {};
+    const comisionMembers = commission?.members || [];
+    const totalSocios = members?.length || 0;
+
+    // Obtener configuración del directorio según tipo de organización
+    const dirConfig = getDirectorioConfig(org.type);
+
+    // Función para formatear nombre completo de un miembro
+    const formatNombre = (member) => {
+      if (!member) return '[Se completará en la Asamblea]';
+      const nombre = member.primerNombre + (member.segundoNombre ? ' ' + member.segundoNombre : '');
+      return `${nombre} ${member.apellidoPaterno} ${member.apellidoMaterno}`;
+    };
+
+    // Función para formatear RUT
+    const formatRut = (member) => {
+      if (!member) return '____________';
+      return member.rut || '____________';
+    };
+
+    // Generar líneas dinámicas para la directiva provisional
+    let directivaLines = 'DIRECTIVA PROVISIONAL                                              CED. IDENTIDAD\n';
+    dirConfig.cargos.forEach(cargo => {
+      const member = directorio[cargo.id];
+      const cargoNombre = cargo.nombre.toUpperCase().replace('/A', ' (A)');
+      const nombreCompleto = formatNombre(member);
+      const rut = formatRut(member);
+      // Formatear línea con espaciado
+      directivaLines += `\n${cargoNombre} ${nombreCompleto.padEnd(45, '_')} ${rut}`;
+    });
+
+    // Generar líneas dinámicas para la comisión electoral
+    let comisionLines = 'COMISION ELECTORAL                                                 CED. IDENTIDAD\n';
+    for (let i = 0; i < 3; i++) {
+      const member = comisionMembers[i];
+      const nombreCompleto = formatNombre(member);
+      const rut = formatRut(member);
+      comisionLines += `\nDON (ÑA) ${nombreCompleto.padEnd(50, '_')} ${rut}`;
+    }
+
+    // Datos del presidente para la delegación
+    const presidente = directorio.presidente;
+    const nombrePresidente = formatNombre(presidente);
+    const domicilioOrg = org.address || '[Se completará en la Asamblea]';
+
+    // Generar líneas de firmas dinámicas basadas en los cargos
+    let firmasLines = 'Firmas:\n';
+    const cargosParaFirma = dirConfig.cargos.filter(c =>
+      ['presidente', 'secretario', 'tesorero', 'vicepresidente'].includes(c.id)
+    );
+
+    // Organizar firmas en pares
+    for (let i = 0; i < cargosParaFirma.length; i += 2) {
+      const cargo1 = cargosParaFirma[i];
+      const cargo2 = cargosParaFirma[i + 1];
+      const label1 = cargo1.nombre.toUpperCase().replace('/A', ' (A)');
+      if (cargo2) {
+        const label2 = cargo2.nombre.toUpperCase().replace('/A', ' (A)');
+        firmasLines += `\n${label1}: __________________                    ${label2}: __________________`;
+      } else {
+        firmasLines += `\n${label1}: __________________`;
+      }
+    }
+    firmasLines += '\n\nMINISTRO DE FE: ____________________';
 
     return `REPUBLICA DE CHILE
 ILUSTRE MUNICIPALIDAD DE RENCA
@@ -4892,53 +4958,36 @@ adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a ap
 por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que
 establece la Ley Nº 19.418 del 09 de octubre de 1995.
 
-Antes de iniciar la sesión, se verifico que existen a lo menos __________ socios, los cuales cumplen
+Antes de iniciar la sesión, se verifico que existen a lo menos ${totalSocios > 0 ? totalSocios : '__________'} socios, los cuales cumplen
 con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma
 parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio
 lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la
 consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al
 final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación,
 se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a)
-Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos
-(2) siguientes más altas mayorías de votos, quienes desempeñaran los cargos de Secretario y
-Tesorero
+Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las
+siguientes más altas mayorías de votos.
 
 También, se procedió a elegir a las tres (3) personas que integraran la Comisión Electoral.
 
 Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes
 socios:
 
-DIRECTIVA PROVISIONAL                                              CED. IDENTIDAD
+${directivaLines}
 
-PRESIDENTE (A) ________________________________________________________________
-
-SECRETARIO (A) ________________________________________________________________
-
-TESORERO (A) __________________________________________________________________
-
-COMISION ELECTORAL                                                 CED. IDENTIDAD
-
-DON (ÑA) _______________________________________________________________________
-
-DON (ÑA) _______________________________________________________________________
-
-DON (ÑA) _______________________________________________________________________
+${comisionLines}
 
 La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y
 acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda
 hacer a tales Estatutos, de acuerdo con el Articulo 7º, inciso final, de la Ley Nº 19.418, a Don
-(ña)__________________________________________________________________________
+(ña) ${nombrePresidente.padEnd(60, '_')}
 Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la
-Organización señala el siguiente domicilio_______________________________________________
+Organización señala el siguiente domicilio: ${domicilioOrg}
 
 Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional
 electa y el Ministro de fe que asistió a la asamblea.
 
-Firmas:
-
-PRESIDENTE (A): __________________                    TESORERO (A): __________________
-
-SECRETARIO (A): __________________                    MINISTRO DE FE: ________________`;
+${firmasLines}`;
   }
 
   /**
