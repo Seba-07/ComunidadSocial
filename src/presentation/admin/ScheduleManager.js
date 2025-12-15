@@ -528,7 +528,12 @@ export class ScheduleManager {
 // Instancia global para acceder desde los event listeners inline
 export let scheduleManager;
 
-export function initScheduleManager(container) {
+export async function initScheduleManager(container) {
+  // Cargar ministros activos desde la API antes de renderizar
+  // Esto asegura que la disponibilidad se calcule correctamente
+  console.log('📆 [ScheduleManager] Inicializando y cargando ministros...');
+  await scheduleService.loadActiveMinistros();
+
   scheduleManager = new ScheduleManager(container);
   scheduleManager.render();
   return scheduleManager;

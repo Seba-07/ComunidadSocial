@@ -214,7 +214,7 @@ class AdminDashboard {
   /**
    * Muestra la vista de gestión de horarios
    */
-  showScheduleManager() {
+  async showScheduleManager() {
     this.currentView = 'schedule';
 
     // Ocultar elementos de la vista de solicitudes
@@ -244,7 +244,7 @@ class AdminDashboard {
 
     // Inicializar schedule manager si no existe
     if (!this.scheduleManager) {
-      this.scheduleManager = initScheduleManager(scheduleView);
+      this.scheduleManager = await initScheduleManager(scheduleView);
     }
   }
 

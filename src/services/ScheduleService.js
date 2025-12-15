@@ -12,8 +12,9 @@ class ScheduleService {
     this.bookingsKey = 'ministro_bookings';
     this.backendBookingsCache = [];
     this.lastBackendSync = 0;
+    this.lastMinistrosSync = 0;
     this.CACHE_TTL = 30000; // 30 segundos de caché
-    this.activeMinistrosCount = 1; // Se actualizará desde la API
+    this.activeMinistrosCount = 0; // Se actualizará desde la API (0 = no hay ministros disponibles)
     this.init();
   }
 
@@ -326,11 +327,35 @@ class ScheduleService {
   }
 
   /**
-   * Obtiene el número de ministros activos (cargado desde la API en syncBackendBookings)
+   * Obtiene el número de ministros activos (cargado desde la API)
    */
   getActiveMinistrosCount() {
-    // Usar el valor cargado desde la API en syncBackendBookings
-    return this.activeMinistrosCount > 0 ? this.activeMinistrosCount : 1;
+    // Usar el valor cargado desde la API
+    // Si hay 0 ministros activos, devolver 0 (no hay disponibilidad)
+    return this.activeMinistrosCount;
+  }
+
+  /**
+   * Carga el número de ministros activos desde la API
+   * Se usa para inicializar el servicio y mantener el dato actualizado
+   */
+  async loadActiveMinistros() {
+    const now = Date.now();
+    // Usar caché si no ha expirado
+    if (now - this.lastMinistrosSync < this.CACHE_TTL && this.activeMinistrosCount >= 0) {
+      return this.activeMinistrosCount;
+    }
+
+    try {
+      const ministros = await apiService.getActiveMinistros();
+      this.activeMinistrosCount = Array.isArray(ministros) ? ministros.length : 0;
+      this.lastMinistrosSync = now;
+      console.log('👥 [ScheduleService] Ministros activos cargados:', this.activeMinistrosCount);
+      return this.activeMinistrosCount;
+    } catch (e) {
+      console.warn('⚠️ [ScheduleService] Error cargando ministros:', e.message);
+      return this.activeMinistrosCount;
+    }
   }
 
   // ============ GESTIÓN DE RESERVAS ============
@@ -353,11 +378,12 @@ class ScheduleService {
       // Cargar ministros activos desde la API
       try {
         const ministros = await apiService.getActiveMinistros();
-        this.activeMinistrosCount = Array.isArray(ministros) ? ministros.length : 1;
+        this.activeMinistrosCount = Array.isArray(ministros) ? ministros.length : 0;
+        this.lastMinistrosSync = now;
         console.log('👥 [ScheduleService] Ministros activos desde API:', this.activeMinistrosCount);
       } catch (e) {
-        console.warn('⚠️ [ScheduleService] No se pudieron cargar ministros, usando default:', e.message);
-        this.activeMinistrosCount = 1;
+        console.warn('⚠️ [ScheduleService] No se pudieron cargar ministros:', e.message);
+        // En caso de error, mantener el valor anterior (no cambiar a 1)
       }
 
       // Obtener todas las organizaciones del backend
