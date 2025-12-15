@@ -18182,3 +18182,164 @@ a.header-logo:hover {
         font-size: 12px;
     }
 }
+
+/* ============================================
+   MINISTROS AVAILABILITY SECTION
+   ============================================ */
+
+.ministros-availability-section {
+    margin-top: 32px;
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ministros-availability-section .section-header {
+    margin-bottom: 20px;
+}
+
+.ministros-availability-section .section-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
+}
+
+.ministros-availability-section .section-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.ministros-availability-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ministro-availability-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.ministro-availability-card.modified {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.ministro-availability-card.ministro-inactive {
+    opacity: 0.6;
+    background: #f3f4f6;
+}
+
+.ministro-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.ministro-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.ministro-info-small {
+    flex: 1;
+}
+
+.ministro-info-small strong {
+    display: block;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.ministro-info-small span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.ministro-hours-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.hour-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.hour-checkbox-label:hover {
+    border-color: var(--primary-color);
+}
+
+.hour-checkbox-label.checked {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.hour-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.ministro-hours-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-xs {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+@media (max-width: 640px) {
+    .ministro-availability-card {
+        padding: 12px;
+    }
+
+    .ministro-hours-grid {
+        gap: 6px;
+    }
+
+    .hour-checkbox-label {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+
+    .ministro-hours-actions {
+        flex-wrap: wrap;
+    }
+}

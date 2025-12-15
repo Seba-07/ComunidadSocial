@@ -53,13 +53,6 @@ router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
       });
     }
 
-    // Validar horarios disponibles
-    if (!availableHours || !Array.isArray(availableHours) || availableHours.length === 0) {
-      return res.status(400).json({
-        error: 'Debe seleccionar al menos un horario disponible'
-      });
-    }
-
     // Check if exists
     const existing = await User.findOne({ $or: [{ email }, { rut }] });
     if (existing) {

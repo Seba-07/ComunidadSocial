@@ -5,12 +5,15 @@
 
 import { scheduleService } from '../../services/ScheduleService.js';
 import { showToast } from '../../app.js';
+import { apiService } from '../../services/ApiService.js';
 
 export class ScheduleManager {
   constructor(container) {
     this.container = container;
     this.currentDate = new Date();
     this.selectedDate = null;
+    this.ministros = []; // Lista de ministros cargados
+    this.availableHoursList = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
   }
 
   /**
@@ -149,6 +152,25 @@ export class ScheduleManager {
           </div>
         </div>
 
+        <!-- Sección de Disponibilidad de Ministros -->
+        <div class="ministros-availability-section">
+          <div class="section-header">
+            <h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Disponibilidad de Ministros de Fe
+            </h3>
+            <p class="section-subtitle">Configure en qué horarios puede atender cada ministro</p>
+          </div>
+          <div id="ministros-availability-list" class="ministros-availability-list">
+            <p class="loading-message">Cargando ministros...</p>
+          </div>
+        </div>
+
         <!-- Acciones Globales -->
         <div class="schedule-global-actions">
           <button type="button" id="reset-schedule-btn" class="btn btn-danger-outline">
@@ -166,6 +188,7 @@ export class ScheduleManager {
     this.renderCalendar();
     this.renderStats();
     this.renderUpcomingBookings();
+    this.loadAndRenderMinistros();
   }
 
   renderCalendar() {
@@ -522,6 +545,145 @@ export class ScheduleManager {
     this.renderCalendar();
     this.renderStats();
     this.renderUpcomingBookings();
+  }
+
+  // ============ MÉTODOS DE DISPONIBILIDAD DE MINISTROS ============
+
+  async loadAndRenderMinistros() {
+    const container = document.getElementById('ministros-availability-list');
+
+    try {
+      // Cargar ministros activos desde la API
+      const ministros = await apiService.getMinistros();
+      this.ministros = ministros || [];
+
+      this.renderMinistrosAvailability();
+    } catch (error) {
+      console.error('Error cargando ministros:', error);
+      container.innerHTML = `
+        <div class="error-message">
+          <p>Error al cargar ministros. <button type="button" class="btn btn-sm btn-primary" onclick="scheduleManager.loadAndRenderMinistros()">Reintentar</button></p>
+        </div>
+      `;
+    }
+  }
+
+  renderMinistrosAvailability() {
+    const container = document.getElementById('ministros-availability-list');
+
+    if (this.ministros.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="text-align: center; padding: 30px; color: #6b7280;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 16px;">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+          </svg>
+          <p>No hay ministros registrados</p>
+          <p style="font-size: 13px;">Primero agregue ministros desde la sección "Ministros de Fe"</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = this.ministros.map(ministro => {
+      const ministroId = ministro._id || ministro.id;
+      const currentHours = ministro.availableHours || [];
+      const isActive = ministro.active !== false;
+
+      return `
+        <div class="ministro-availability-card ${!isActive ? 'ministro-inactive' : ''}" data-ministro-id="${ministroId}">
+          <div class="ministro-card-header">
+            <div class="ministro-avatar-small">
+              ${(ministro.firstName?.charAt(0) || '')}${(ministro.lastName?.charAt(0) || '')}
+            </div>
+            <div class="ministro-info-small">
+              <strong>${ministro.firstName} ${ministro.lastName}</strong>
+              <span>${ministro.specialty || 'General'} ${!isActive ? '(Inactivo)' : ''}</span>
+            </div>
+          </div>
+          <div class="ministro-hours-grid">
+            ${this.availableHoursList.map(hour => `
+              <label class="hour-checkbox-label ${currentHours.includes(hour) ? 'checked' : ''}">
+                <input type="checkbox"
+                       name="hours-${ministroId}"
+                       value="${hour}"
+                       ${currentHours.includes(hour) ? 'checked' : ''}
+                       ${!isActive ? 'disabled' : ''}
+                       onchange="scheduleManager.onHourChange('${ministroId}')">
+                <span>${hour}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="ministro-hours-actions">
+            <button type="button" class="btn btn-xs btn-secondary" onclick="scheduleManager.selectAllHours('${ministroId}')" ${!isActive ? 'disabled' : ''}>
+              Todos
+            </button>
+            <button type="button" class="btn btn-xs btn-secondary" onclick="scheduleManager.clearAllHours('${ministroId}')" ${!isActive ? 'disabled' : ''}>
+              Ninguno
+            </button>
+            <button type="button" class="btn btn-xs btn-primary" onclick="scheduleManager.saveMinistroHours('${ministroId}')" ${!isActive ? 'disabled' : ''}>
+              Guardar
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  onHourChange(ministroId) {
+    // Marcar la tarjeta como modificada visualmente
+    const card = document.querySelector(`[data-ministro-id="${ministroId}"]`);
+    if (card) {
+      card.classList.add('modified');
+    }
+  }
+
+  selectAllHours(ministroId) {
+    const checkboxes = document.querySelectorAll(`input[name="hours-${ministroId}"]`);
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      cb.parentElement.classList.add('checked');
+    });
+    this.onHourChange(ministroId);
+  }
+
+  clearAllHours(ministroId) {
+    const checkboxes = document.querySelectorAll(`input[name="hours-${ministroId}"]`);
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      cb.parentElement.classList.remove('checked');
+    });
+    this.onHourChange(ministroId);
+  }
+
+  async saveMinistroHours(ministroId) {
+    const checkboxes = document.querySelectorAll(`input[name="hours-${ministroId}"]:checked`);
+    const selectedHours = Array.from(checkboxes).map(cb => cb.value);
+
+    try {
+      // Actualizar ministro en la API
+      await apiService.updateMinistro(ministroId, { availableHours: selectedHours });
+
+      // Actualizar en la lista local
+      const ministro = this.ministros.find(m => (m._id || m.id) === ministroId);
+      if (ministro) {
+        ministro.availableHours = selectedHours;
+      }
+
+      // Recargar ministros en el servicio de schedule
+      await scheduleService.loadActiveMinistros();
+
+      // Quitar marca de modificado
+      const card = document.querySelector(`[data-ministro-id="${ministroId}"]`);
+      if (card) {
+        card.classList.remove('modified');
+      }
+
+      showToast('Horarios guardados correctamente', 'success');
+    } catch (error) {
+      console.error('Error guardando horarios:', error);
+      showToast('Error al guardar horarios', 'error');
+    }
   }
 }
 

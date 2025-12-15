@@ -129,25 +129,6 @@ export class MinistroManager {
               <input type="text" id="ministro-address" class="input-styled" placeholder="Calle Ejemplo 123, Renca">
             </div>
 
-            <div class="form-group">
-              <label>Horarios Disponibles *</label>
-              <p style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Seleccione las horas en las que el ministro puede atender</p>
-              <div id="available-hours-container" class="available-hours-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="09:00"> 09:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="10:00"> 10:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="11:00"> 11:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="12:00"> 12:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="14:00"> 14:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="15:00"> 15:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="16:00"> 16:00</label>
-                <label class="hour-checkbox"><input type="checkbox" name="availableHours" value="17:00"> 17:00</label>
-              </div>
-              <div style="margin-top: 8px;">
-                <button type="button" id="select-all-hours" class="btn btn-sm btn-secondary" style="margin-right: 8px; padding: 4px 8px; font-size: 12px;">Seleccionar Todos</button>
-                <button type="button" id="clear-all-hours" class="btn btn-sm btn-secondary" style="padding: 4px 8px; font-size: 12px;">Limpiar</button>
-              </div>
-            </div>
-
             <div class="form-group" id="password-group">
               <label for="ministro-password">Contraseña Temporal *</label>
               <div style="position: relative;">
@@ -326,15 +307,6 @@ export class MinistroManager {
       e.target.value = this.formatRut(e.target.value);
     });
 
-    // Botones de horarios disponibles
-    document.getElementById('select-all-hours').addEventListener('click', () => {
-      this.selectAllAvailableHours();
-    });
-
-    document.getElementById('clear-all-hours').addEventListener('click', () => {
-      this.clearAvailableHours();
-    });
-
     // Toggle mostrar/ocultar contraseña
     document.getElementById('toggle-password-btn').addEventListener('click', () => {
       const passwordInput = document.getElementById('ministro-password');
@@ -377,15 +349,6 @@ export class MinistroManager {
       document.getElementById('ministro-specialty').value = ministro.specialty || 'General';
       document.getElementById('ministro-active').checked = ministro.active;
 
-      // Cargar horarios disponibles
-      this.clearAvailableHours();
-      if (ministro.availableHours && Array.isArray(ministro.availableHours)) {
-        ministro.availableHours.forEach(hour => {
-          const checkbox = document.querySelector(`input[name="availableHours"][value="${hour}"]`);
-          if (checkbox) checkbox.checked = true;
-        });
-      }
-
       // Ocultar campo de contraseña al editar
       passwordGroup.style.display = 'none';
       passwordInput.removeAttribute('required');
@@ -393,7 +356,6 @@ export class MinistroManager {
       title.textContent = 'Agregar Ministro de Fe';
       form.reset();
       document.getElementById('ministro-active').checked = true;
-      this.clearAvailableHours();
 
       // Mostrar campo de contraseña al crear
       passwordGroup.style.display = 'block';
@@ -410,30 +372,9 @@ export class MinistroManager {
     this.currentMinistro = null;
   }
 
-  clearAvailableHours() {
-    document.querySelectorAll('input[name="availableHours"]').forEach(cb => {
-      cb.checked = false;
-    });
-  }
-
-  selectAllAvailableHours() {
-    document.querySelectorAll('input[name="availableHours"]').forEach(cb => {
-      cb.checked = true;
-    });
-  }
-
   async saveMinistro() {
     const email = document.getElementById('ministro-email').value.trim();
     const password = document.getElementById('ministro-password').value;
-
-    // Obtener horarios seleccionados
-    const selectedHours = Array.from(document.querySelectorAll('input[name="availableHours"]:checked'))
-      .map(cb => cb.value);
-
-    if (selectedHours.length === 0) {
-      showToast('Debe seleccionar al menos un horario disponible', 'error');
-      return;
-    }
 
     const data = {
       rut: document.getElementById('ministro-rut').value.trim(),
@@ -443,8 +384,7 @@ export class MinistroManager {
       phone: document.getElementById('ministro-phone').value.trim(),
       address: document.getElementById('ministro-address').value.trim(),
       specialty: document.getElementById('ministro-specialty').value,
-      active: document.getElementById('ministro-active').checked,
-      availableHours: selectedHours
+      active: document.getElementById('ministro-active').checked
     };
 
     // Solo incluir contraseña al crear (no al editar)
