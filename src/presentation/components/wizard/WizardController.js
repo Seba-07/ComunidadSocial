@@ -4890,15 +4890,17 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       return member.rut || '____________';
     };
 
-    // Generar líneas dinámicas para la directiva provisional
+    // Generar líneas dinámicas para la directiva provisional (formato alineado)
     let directivaLines = 'DIRECTIVA PROVISIONAL                                              CED. IDENTIDAD\n';
     dirConfig.cargos.forEach(cargo => {
       const member = directorio[cargo.id];
       const cargoNombre = cargo.nombre.toUpperCase().replace('/A', ' (A)');
       const nombreCompleto = formatNombre(member);
       const rut = formatRut(member);
-      // Formatear línea con espaciado
-      directivaLines += `\n${cargoNombre} ${nombreCompleto.padEnd(45, '_')} ${rut}`;
+      // Formatear con cargo fijo de 20 caracteres, nombre con guiones hasta 45, luego RUT
+      const cargoFixed = cargoNombre.padEnd(20, ' ');
+      const nombreFixed = nombreCompleto.padEnd(45, '_');
+      directivaLines += `\n${cargoFixed}${nombreFixed} ${rut}`;
     });
 
     // Generar líneas dinámicas para la comisión electoral
@@ -4907,7 +4909,7 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       const member = comisionMembers[i];
       const nombreCompleto = formatNombre(member);
       const rut = formatRut(member);
-      comisionLines += `\nDON (ÑA) ${nombreCompleto.padEnd(50, '_')} ${rut}`;
+      comisionLines += `\nDON (ÑA)            ${nombreCompleto.padEnd(45, '_')} ${rut}`;
     }
 
     // Datos del presidente para la delegación
@@ -4915,25 +4917,20 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const nombrePresidente = formatNombre(presidente);
     const domicilioOrg = org.address || '[Se completará en la Asamblea]';
 
-    // Generar líneas de firmas dinámicas basadas en los cargos
+    // Generar líneas de firmas dinámicas con nombres del directorio
     let firmasLines = 'Firmas:\n';
     const cargosParaFirma = dirConfig.cargos.filter(c =>
       ['presidente', 'secretario', 'tesorero', 'vicepresidente'].includes(c.id)
     );
 
-    // Organizar firmas en pares
-    for (let i = 0; i < cargosParaFirma.length; i += 2) {
-      const cargo1 = cargosParaFirma[i];
-      const cargo2 = cargosParaFirma[i + 1];
-      const label1 = cargo1.nombre.toUpperCase().replace('/A', ' (A)');
-      if (cargo2) {
-        const label2 = cargo2.nombre.toUpperCase().replace('/A', ' (A)');
-        firmasLines += `\n${label1}: __________________                    ${label2}: __________________`;
-      } else {
-        firmasLines += `\n${label1}: __________________`;
-      }
-    }
-    firmasLines += '\n\nMINISTRO DE FE: ____________________';
+    // Generar firmas con nombre y cargo
+    cargosParaFirma.forEach(cargo => {
+      const member = directorio[cargo.id];
+      const nombreMiembro = formatNombre(member);
+      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', ' (A)');
+      firmasLines += `\n\n________________________\n${nombreMiembro}\n${cargoLabel}`;
+    });
+    firmasLines += '\n\n________________________\n[Se asignará el día de la Asamblea]\nMINISTRO DE FE';
 
     return `REPUBLICA DE CHILE
 ILUSTRE MUNICIPALIDAD DE RENCA
@@ -4980,7 +4977,7 @@ ${comisionLines}
 La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y
 acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda
 hacer a tales Estatutos, de acuerdo con el Articulo 7º, inciso final, de la Ley Nº 19.418, a Don
-(ña) ${nombrePresidente.padEnd(60, '_')}
+(ña) ${nombrePresidente},
 Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la
 Organización señala el siguiente domicilio: ${domicilioOrg}
 
@@ -5128,17 +5125,25 @@ ${'='.repeat(100)}
       registro += `${num}  | ${rut} | ${nombre} | ${direccion} | ${telefono}\n`;
     });
 
+    // Obtener secretario del directorio
+    const directorio = this.formData.directorioProvisorio || {};
+    const secretario = directorio.secretario;
+    const nombreSecretario = secretario
+      ? `${secretario.primerNombre}${secretario.segundoNombre ? ' ' + secretario.segundoNombre : ''} ${secretario.apellidoPaterno} ${secretario.apellidoMaterno}`
+      : '[Se asignará en la Asamblea]';
+
     registro += `${'='.repeat(100)}
 
 [CERTIFICACIÓN PENDIENTE - SE COMPLETARÁ EN LA ASAMBLEA]
 
-El día de la Asamblea Constitutiva, el Secretario de la Comisión Electoral
+El día de la Asamblea Constitutiva, el Secretario del Directorio Provisorio
 certificará la participación de los ${members.length} socios fundadores.
 
 
 [ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
-Secretario Comisión Electoral
+${nombreSecretario}
+Secretario/a del Directorio Provisorio
 
 ════════════════════════════════════════════════════════════════════
 NOTA: Este listado será verificado y firmado el día de la Asamblea
@@ -5150,9 +5155,20 @@ Constitutiva. Los asistentes deberán acreditar su identidad.
 
   /**
    * Genera la Declaración Jurada (BORRADOR)
+   * La Declaración Jurada la firma el PRESIDENTE DEL DIRECTORIO, no la Comisión Electoral
    */
   generateDeclaracionJurada(org, commission, today) {
-    const presidente = commission.members[0];
+    // Obtener presidente del directorio (NO de la comisión electoral)
+    const directorio = this.formData.directorioProvisorio || {};
+    const presidente = directorio.presidente;
+
+    // Formatear nombre del presidente
+    const nombrePresidente = presidente
+      ? `${presidente.primerNombre}${presidente.segundoNombre ? ' ' + presidente.segundoNombre : ''} ${presidente.apellidoPaterno} ${presidente.apellidoMaterno}`
+      : '[Nombre del Presidente]';
+    const rutPresidente = presidente?.rut || '[RUT]';
+    const direccionPresidente = presidente?.address || org.address || '[Dirección]';
+
     return `════════════════════════════════════════════════════════════════════
                     BORRADOR - MODELO DE DECLARACIÓN JURADA
          El Presidente firmará este documento el día de la Asamblea
@@ -5160,7 +5176,7 @@ Constitutiva. Los asistentes deberán acreditar su identidad.
 
 DECLARACIÓN JURADA SIMPLE
 
-Yo, ${presidente?.firstName || '[Nombre]'} ${presidente?.lastName || '[Apellidos]'}, RUT ${presidente?.rut || '[RUT]'}, domiciliado/a en ${presidente?.address || '[Dirección]'}, en mi calidad de Presidente de la Comisión Electoral de ${org.name}, DECLARARÉ bajo juramento lo siguiente el día de la Asamblea Constitutiva:
+Yo, ${nombrePresidente}, RUT ${rutPresidente}, domiciliado/a en ${direccionPresidente}, en mi calidad de Presidente del Directorio Provisorio de ${org.name}, DECLARARÉ bajo juramento lo siguiente el día de la Asamblea Constitutiva:
 
 1. Que la Asamblea Constitutiva de ${org.name} se realizará con la asistencia de los ${this.formData.members.length} miembros fundadores registrados, quienes cumplen con los requisitos legales para ser miembros de la organización.
 
@@ -5181,14 +5197,14 @@ ${org.commune}, [FECHA DE LA ASAMBLEA]
 
 [ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
 ________________________
-${presidente?.firstName || ''} ${presidente?.lastName || ''}
-RUT: ${presidente?.rut || ''}
-Presidente Comisión Electoral
+${nombrePresidente}
+RUT: ${rutPresidente}
+Presidente/a del Directorio Provisorio
 ${org.name}
 
 ════════════════════════════════════════════════════════════════════
-NOTA: Esta declaración será firmada por el Presidente de la Comisión
-Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
+NOTA: Esta declaración será firmada por el Presidente del Directorio
+Provisorio el día de la Asamblea Constitutiva, ante el Ministro de Fe.
 ════════════════════════════════════════════════════════════════════`;
   }
 
@@ -5376,8 +5392,7 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
   generateSignaturesHTML(signerIndices = [0, 1, 2]) {
     const signatures = this.formData.signatures || {};
     const commission = this.formData.commission.members || [];
-    const roles = ['Presidente', 'Secretario', 'Vocal'];
-
+    // La Comisión Electoral NO tiene cargos - solo 3 miembros
     if (commission.length === 0) return '';
 
     // Filtrar solo los miembros que deben firmar este documento
@@ -5399,7 +5414,6 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
 
     signers.forEach(({ member, index }) => {
       const signature = signatures[member.id];
-      const role = roles[index] || 'Miembro';
 
       html += `
         <div class="signature-block">
@@ -5441,7 +5455,7 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
           </div>
           <div class="signature-line"></div>
           <div class="signature-info">
-            <strong>${role} de la Comisión Electoral</strong>
+            <strong>Miembro de la Comisión Electoral</strong>
             <span>${member.firstName} ${member.lastName}</span>
             <span>RUT: ${member.rut}</span>
           </div>
@@ -6018,16 +6032,15 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
 
   /**
    * Genera el bloque de firmas para los documentos
+   * La Comisión Electoral NO tiene cargos - solo 3 miembros
    */
   generateSignaturesBlock(signatures, commission) {
-    const roles = ['Presidente', 'Secretario', 'Vocal'];
     let block = '\n\n========== FIRMAS ==========\n\n';
 
     commission.forEach((member, index) => {
       const signature = signatures[member.id];
-      const role = roles[index] || 'Miembro';
 
-      block += `${role} de la Comisión Electoral:\n`;
+      block += `Miembro ${index + 1} de la Comisión Electoral:\n`;
       block += `${member.firstName} ${member.lastName}\n`;
       block += `RUT: ${member.rut}\n`;
 
