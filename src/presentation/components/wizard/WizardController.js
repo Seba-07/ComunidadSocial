@@ -5607,7 +5607,7 @@ Secretaria Municipal`;
   }
 
   /**
-   * Muestra preview de un documento
+   * Muestra preview de un documento con diseño institucional
    */
   showDocumentPreview(docType) {
     const doc = this.formData.documents[docType];
@@ -5632,36 +5632,51 @@ Secretaria Municipal`;
     };
 
     // Configuración de qué firmas adicionales requiere cada documento
-    // Todos los documentos ya tienen sus firmas incluidas en el contenido
-    const docSignatureConfig = {
-      // Ningún documento requiere firmas adicionales
-    };
-
+    const docSignatureConfig = {};
     const requiredSigners = docSignatureConfig[docType] || [];
-
-    // Generar HTML de firmas según los firmantes requeridos
     const signaturesHTML = requiredSigners.length > 0 ? this.generateSignaturesHTML(requiredSigners) : '';
+
+    // Formatear contenido del documento para mejor visualización
+    const formattedContent = this.formatDocumentForPreview(doc.content.split('========== FIRMAS ==========')[0]);
 
     const modalHTML = `
       <div class="modal-overlay" id="preview-document-modal">
-        <div class="modal-content modal-document-preview">
-          <div class="modal-document-header">
-            <h3>${docNames[docType] || docType}</h3>
-            <button class="modal-close-btn" id="close-preview-modal">&times;</button>
+        <div class="modal-content modal-document-preview" style="max-width: 900px; width: 95%; max-height: 95vh; display: flex; flex-direction: column;">
+          <div class="modal-document-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0;">
+            <h3 style="margin: 0; font-size: 18px;">${docNames[docType] || docType}</h3>
+            <button class="modal-close-btn" id="close-preview-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
           </div>
-          <div class="modal-document-body">
-            <pre class="document-content-preview">${this.escapeHtml(doc.content.split('========== FIRMAS ==========')[0])}</pre>
-            ${signaturesHTML}
+
+          <div class="modal-document-body" style="flex: 1; overflow-y: auto; padding: 0; background: #f8fafc;">
+            <!-- Documento con diseño de página -->
+            <div class="document-page" style="max-width: 816px; margin: 20px auto; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden;">
+              <!-- Header institucional -->
+              <div class="doc-header" style="width: 100%; height: auto;">
+                <img src="/doc-header.png" alt="Municipalidad de Renca" style="width: 100%; height: auto; display: block;">
+              </div>
+
+              <!-- Contenido del documento -->
+              <div class="doc-content" style="padding: 30px 40px; min-height: 600px; font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; color: #1a1a1a;">
+                ${formattedContent}
+                ${signaturesHTML}
+              </div>
+
+              <!-- Footer institucional -->
+              <div class="doc-footer" style="width: 100%; height: auto; margin-top: auto;">
+                <img src="/doc-footer.png" alt="Contacto Municipalidad" style="width: 100%; height: auto; display: block;">
+              </div>
+            </div>
           </div>
-          <div class="modal-document-actions">
-            <button type="button" class="btn-secondary" id="close-preview">Cerrar</button>
-            <button type="button" class="btn-primary" id="download-from-preview" data-doc-type="${docType}">
+
+          <div class="modal-document-actions" style="padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: white; border-radius: 0 0 16px 16px;">
+            <button type="button" class="btn-secondary" id="close-preview" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; border-radius: 8px; font-weight: 600; cursor: pointer;">Cerrar</button>
+            <button type="button" class="btn-primary" id="download-from-preview" data-doc-type="${docType}" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              Descargar
+              Descargar PDF
             </button>
           </div>
         </div>
@@ -5681,6 +5696,58 @@ Secretaria Municipal`;
     document.getElementById('download-from-preview').addEventListener('click', () => {
       this.downloadDocument(docType);
     });
+  }
+
+  /**
+   * Formatea el contenido del documento para la vista previa HTML
+   */
+  formatDocumentForPreview(content) {
+    if (!content) return '';
+
+    // Escapar HTML primero
+    let html = this.escapeHtml(content);
+
+    // Convertir líneas a párrafos con estilos apropiados
+    const lines = html.split('\n');
+    let formattedLines = [];
+
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+
+      // Detectar separadores
+      if (/^[═─━═─\-=]+$/.test(trimmedLine) && trimmedLine.length > 3) {
+        formattedLines.push('<hr style="border: none; border-top: 1px solid #cbd5e1; margin: 15px 0;">');
+        return;
+      }
+
+      // Detectar BORRADOR
+      if (trimmedLine.includes('BORRADOR') || trimmedLine.includes('*** BORRADOR ***')) {
+        formattedLines.push(`<p style="text-align: center; color: #dc2626; font-weight: bold; font-size: 14pt; margin: 10px 0; padding: 8px; background: #fef2f2; border: 1px dashed #dc2626; border-radius: 4px;">${trimmedLine}</p>`);
+        return;
+      }
+
+      // Detectar títulos principales (todo mayúsculas y más de 3 chars)
+      if (trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 3 && /[A-ZÁÉÍÓÚÑ]/.test(trimmedLine)) {
+        // Es un título si tiene letras mayúsculas y no es una línea de datos
+        if (!trimmedLine.includes(':') || trimmedLine.split(':')[0].length > 30) {
+          formattedLines.push(`<p style="font-weight: bold; font-size: 13pt; text-align: center; margin: 20px 0 10px 0; text-transform: uppercase;">${trimmedLine}</p>`);
+          return;
+        }
+      }
+
+      // Líneas vacías
+      if (trimmedLine === '') {
+        formattedLines.push('<br>');
+        return;
+      }
+
+      // Líneas normales - preservar espacios al inicio para indentación
+      const leadingSpaces = line.match(/^\s*/)[0].length;
+      const indent = leadingSpaces > 0 ? `padding-left: ${leadingSpaces * 8}px;` : '';
+      formattedLines.push(`<p style="margin: 4px 0; ${indent}">${trimmedLine}</p>`);
+    });
+
+    return formattedLines.join('');
   }
 
   /**
@@ -5779,7 +5846,7 @@ Secretaria Municipal`;
   }
 
   /**
-   * Muestra modal para editar documento
+   * Muestra modal para editar documento con diseño institucional
    */
   showEditDocumentModal(docType) {
     const doc = this.formData.documents[docType];
@@ -5805,17 +5872,49 @@ Secretaria Municipal`;
 
     const modalHTML = `
       <div class="modal-overlay" id="edit-document-modal">
-        <div class="modal-content modal-document-edit">
-          <div class="modal-document-header">
-            <h3>Editar: ${docNames[docType] || docType}</h3>
-            <button class="modal-close-btn" id="close-edit-doc-modal">&times;</button>
+        <div class="modal-content modal-document-edit" style="max-width: 900px; width: 95%; max-height: 95vh; display: flex; flex-direction: column;">
+          <div class="modal-document-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <h3 style="margin: 0; font-size: 18px;">Editar: ${docNames[docType] || docType}</h3>
+            </div>
+            <button class="modal-close-btn" id="close-edit-doc-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
           </div>
-          <div class="modal-document-body">
-            <textarea class="document-content-edit" id="edit-doc-content">${doc.content}</textarea>
+
+          <div class="modal-document-body" style="flex: 1; overflow-y: auto; padding: 0; background: #f8fafc;">
+            <!-- Documento con diseño de página -->
+            <div class="document-page" style="max-width: 816px; margin: 20px auto; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden;">
+              <!-- Header institucional -->
+              <div class="doc-header" style="width: 100%; height: auto;">
+                <img src="/doc-header.png" alt="Municipalidad de Renca" style="width: 100%; height: auto; display: block;">
+              </div>
+
+              <!-- Área de edición del documento -->
+              <div class="doc-content" style="padding: 20px;">
+                <div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span style="color: #92400e; font-size: 13px;">Edite el contenido del documento. Los cambios se reflejarán en la vista previa y en el PDF descargado.</span>
+                </div>
+                <textarea class="document-content-edit" id="edit-doc-content" style="width: 100%; min-height: 500px; padding: 20px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; resize: vertical; box-sizing: border-box;">${doc.content}</textarea>
+              </div>
+
+              <!-- Footer institucional -->
+              <div class="doc-footer" style="width: 100%; height: auto;">
+                <img src="/doc-footer.png" alt="Contacto Municipalidad" style="width: 100%; height: auto; display: block;">
+              </div>
+            </div>
           </div>
-          <div class="modal-document-actions">
-            <button type="button" class="btn-secondary" id="cancel-edit-doc">Cancelar</button>
-            <button type="button" class="btn-primary" id="save-edit-doc" data-doc-type="${docType}">
+
+          <div class="modal-document-actions" style="padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: white; border-radius: 0 0 16px 16px;">
+            <button type="button" class="btn-secondary" id="cancel-edit-doc" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+            <button type="button" class="btn-primary" id="save-edit-doc" data-doc-type="${docType}" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -5849,9 +5948,9 @@ Secretaria Municipal`;
   }
 
   /**
-   * Descarga un documento en formato PDF
+   * Descarga un documento en formato PDF con diseño institucional
    */
-  downloadDocument(docType) {
+  async downloadDocument(docType) {
     const doc = this.formData.documents[docType];
     if (!doc) {
       showToast('Documento no encontrado', 'error');
@@ -5873,12 +5972,48 @@ Secretaria Municipal`;
     const fileName = `${docNames[docType] || docType}_${orgName}.pdf`;
 
     try {
+      showToast('Generando PDF...', 'info');
+
+      // Cargar imágenes de header y footer
+      const [headerImg, footerImg] = await Promise.all([
+        this.loadImageAsBase64('/doc-header.png'),
+        this.loadImageAsBase64('/doc-footer.png')
+      ]);
+
       // Crear PDF con jsPDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'letter'
       });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Dimensiones del header y footer
+      const headerHeight = 15; // mm aproximado
+      const footerHeight = 18; // mm aproximado
+      const marginLeft = 20;
+      const marginRight = 20;
+      const maxWidth = pageWidth - marginLeft - marginRight;
+      const lineHeight = 5;
+      const contentStartY = headerHeight + 10;
+      const contentEndY = pageHeight - footerHeight - 10;
+
+      // Función para agregar header y footer a una página
+      const addHeaderFooter = () => {
+        // Header
+        if (headerImg) {
+          pdf.addImage(headerImg, 'PNG', 0, 0, pageWidth, headerHeight);
+        }
+        // Footer
+        if (footerImg) {
+          pdf.addImage(footerImg, 'PNG', 0, pageHeight - footerHeight, pageWidth, footerHeight);
+        }
+      };
+
+      // Agregar header y footer a la primera página
+      addHeaderFooter();
 
       // Configurar fuente
       pdf.setFont('helvetica', 'normal');
@@ -5887,76 +6022,93 @@ Secretaria Municipal`;
       const content = doc.content || '';
       const lines = content.split('\n');
 
-      let y = 20; // Posición inicial Y
-      const marginLeft = 15;
-      const marginRight = 15;
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const maxWidth = pageWidth - marginLeft - marginRight;
-      const lineHeight = 5;
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const marginBottom = 20;
+      let y = contentStartY;
+      let currentPage = 1;
+
+      // Función para verificar si necesitamos nueva página
+      const checkNewPage = (neededSpace = lineHeight) => {
+        if (y + neededSpace > contentEndY) {
+          pdf.addPage();
+          currentPage++;
+          addHeaderFooter();
+          y = contentStartY;
+        }
+      };
 
       lines.forEach(line => {
-        // Detectar líneas especiales (títulos, separadores)
-        const isSeparator = /^[═─━═─]+$/.test(line.trim()) || /^[-=]+$/.test(line.trim());
-        const isTitle = line.trim().toUpperCase() === line.trim() && line.trim().length > 3 && !isSeparator;
-        const isBorrador = line.includes('BORRADOR') || line.includes('*** BORRADOR ***');
+        const trimmedLine = line.trim();
+
+        // Detectar líneas especiales
+        const isSeparator = /^[═─━═─\-=]+$/.test(trimmedLine) && trimmedLine.length > 3;
+        const isBorrador = trimmedLine.includes('BORRADOR') || trimmedLine.includes('*** BORRADOR ***');
+        const isTitle = trimmedLine === trimmedLine.toUpperCase() &&
+                       trimmedLine.length > 3 &&
+                       /[A-ZÁÉÍÓÚÑ]/.test(trimmedLine) &&
+                       !isSeparator &&
+                       (!trimmedLine.includes(':') || trimmedLine.split(':')[0].length > 30);
 
         if (isSeparator) {
-          // Dibujar línea separadora
-          pdf.setDrawColor(150, 150, 150);
+          checkNewPage();
+          pdf.setDrawColor(180, 180, 180);
           pdf.setLineWidth(0.3);
           pdf.line(marginLeft, y, pageWidth - marginRight, y);
           y += lineHeight;
         } else if (isBorrador) {
-          // Texto BORRADOR en rojo
+          checkNewPage(lineHeight * 2);
+          // Fondo rojo claro para BORRADOR
+          pdf.setFillColor(254, 242, 242);
+          pdf.rect(marginLeft - 2, y - 4, maxWidth + 4, 8, 'F');
+          pdf.setDrawColor(220, 50, 50);
+          pdf.setLineWidth(0.5);
+          pdf.rect(marginLeft - 2, y - 4, maxWidth + 4, 8, 'S');
+
           pdf.setFontSize(10);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(220, 50, 50);
-          const splitText = pdf.splitTextToSize(line, maxWidth);
-          splitText.forEach(textLine => {
-            if (y > pageHeight - marginBottom) {
-              pdf.addPage();
-              y = 20;
-            }
-            pdf.text(textLine, marginLeft, y);
-            y += lineHeight;
-          });
+          pdf.text(trimmedLine, pageWidth / 2, y, { align: 'center' });
           pdf.setTextColor(0, 0, 0);
-        } else if (isTitle && line.trim().length > 0) {
-          // Títulos en negrita
+          y += lineHeight + 3;
+        } else if (isTitle) {
+          checkNewPage(lineHeight * 1.5);
+          y += 3; // Espacio antes del título
           pdf.setFontSize(11);
           pdf.setFont('helvetica', 'bold');
-          const splitText = pdf.splitTextToSize(line, maxWidth);
+          const splitText = pdf.splitTextToSize(trimmedLine, maxWidth);
           splitText.forEach(textLine => {
-            if (y > pageHeight - marginBottom) {
-              pdf.addPage();
-              y = 20;
-            }
-            pdf.text(textLine, marginLeft, y);
+            checkNewPage();
+            pdf.text(textLine, pageWidth / 2, y, { align: 'center' });
             y += lineHeight;
           });
           pdf.setFont('helvetica', 'normal');
+          y += 2; // Espacio después del título
+        } else if (trimmedLine === '') {
+          y += lineHeight * 0.4;
         } else {
           // Texto normal
           pdf.setFontSize(10);
           pdf.setFont('helvetica', 'normal');
 
-          if (line.trim() === '') {
-            y += lineHeight * 0.5; // Espaciado menor para líneas vacías
-          } else {
-            const splitText = pdf.splitTextToSize(line, maxWidth);
-            splitText.forEach(textLine => {
-              if (y > pageHeight - marginBottom) {
-                pdf.addPage();
-                y = 20;
-              }
-              pdf.text(textLine, marginLeft, y);
-              y += lineHeight;
-            });
-          }
+          // Preservar indentación
+          const leadingSpaces = line.match(/^\s*/)[0].length;
+          const indent = Math.min(leadingSpaces * 2, 30);
+
+          const splitText = pdf.splitTextToSize(trimmedLine, maxWidth - indent);
+          splitText.forEach(textLine => {
+            checkNewPage();
+            pdf.text(textLine, marginLeft + indent, y);
+            y += lineHeight;
+          });
         }
       });
+
+      // Agregar número de página en cada página
+      const totalPages = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(128, 128, 128);
+        pdf.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - footerHeight - 3, { align: 'center' });
+      }
 
       // Descargar el PDF
       pdf.save(fileName);
@@ -5964,6 +6116,86 @@ Secretaria Municipal`;
 
     } catch (error) {
       console.error('Error al generar PDF:', error);
+      showToast('Error al generar PDF. Intentando sin imágenes...', 'warning');
+      // Fallback sin imágenes
+      this.downloadDocumentSimple(docType, fileName, doc);
+    }
+  }
+
+  /**
+   * Carga una imagen y la convierte a base64
+   */
+  async loadImageAsBase64(url) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.warn('No se pudo cargar imagen:', url, error);
+      return null;
+    }
+  }
+
+  /**
+   * Descarga PDF simple sin imágenes (fallback)
+   */
+  downloadDocumentSimple(docType, fileName, doc) {
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter'
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const marginLeft = 20;
+      const marginRight = 20;
+      const maxWidth = pageWidth - marginLeft - marginRight;
+      const lineHeight = 5;
+      let y = 25;
+
+      // Header simple con texto
+      pdf.setFillColor(30, 64, 175);
+      pdf.rect(0, 0, pageWidth, 18, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('MUNICIPALIDAD DE RENCA', pageWidth / 2, 12, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+
+      const content = doc.content || '';
+      const lines = content.split('\n');
+
+      lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine === '') {
+          y += lineHeight * 0.4;
+          return;
+        }
+
+        pdf.setFontSize(10);
+        const splitText = pdf.splitTextToSize(trimmedLine, maxWidth);
+        splitText.forEach(textLine => {
+          if (y > pageHeight - 30) {
+            pdf.addPage();
+            y = 20;
+          }
+          pdf.text(textLine, marginLeft, y);
+          y += lineHeight;
+        });
+      });
+
+      pdf.save(fileName);
+      showToast('PDF descargado (versión simple)', 'success');
+    } catch (error) {
+      console.error('Error en fallback PDF:', error);
       showToast('Error al generar PDF', 'error');
     }
   }
