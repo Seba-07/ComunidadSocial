@@ -5358,7 +5358,7 @@ ${direccion}
 
 • Estar afiliado a la Organización Comunitaria.
 
-• No tener menos de _______ años.
+• No tener menos de 18 años.
 
 • Ser Chileno.
 
@@ -5387,161 +5387,106 @@ FIRMA`;
    * Genera el Certificado del Ministro de Fe
    */
   generateCertificadoMinistroFe(org, directorio, today) {
-    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
-    const totalSocios = this.formData.members?.length || 0;
-
     // Formatear nombre del presidente
     const presidente = directorio.presidente;
     const nombrePresidente = presidente
       ? `${presidente.primerNombre}${presidente.segundoNombre ? ' ' + presidente.segundoNombre : ''} ${presidente.apellidoPaterno} ${presidente.apellidoMaterno}`
-      : '[Nombre del Presidente]';
+      : '________________________________________________________________________';
+    const domicilioPresidente = presidente?.address || org.address || '______________________________________________________________';
+    const telefonoPresidente = presidente?.phone || '__________________________';
 
-    return `════════════════════════════════════════════════════════════════════
-                    BORRADOR - CERTIFICADO DEL MINISTRO DE FE
-           Este documento será completado por el funcionario municipal
-════════════════════════════════════════════════════════════════════
-
-
-                           C E R T I F I C A D O
-
-
+    return `C E R T I F I C A D O
 __________________________________________________________, funcionario (a)
-municipal designado (a) Ministro de Fe por la Ilustre Municipalidad de
-${org.commune}, Región ${org.region}, certifica que:
-
-
-Con fecha [FECHA DE LA ASAMBLEA], en dependencias ubicadas en
-${org.address || '[Dirección de la Asamblea]'}, se llevó a cabo la
-ASAMBLEA CONSTITUTIVA de la organización denominada:
-
-"${org.name.toUpperCase()}"
-
-Tipo de Organización: ${tipoOrg}
-Domicilio Legal: ${org.address || '[Dirección]'}
-Comuna: ${org.commune}
-
-
-La asamblea se desarrolló con la asistencia de ${totalSocios} personas,
-quienes cumplieron con los requisitos legales establecidos en la
-Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
-
-
-En dicha asamblea:
-
-1. Se aprobaron los estatutos de la organización por unanimidad/mayoría de
-   los asistentes.
-
-2. Se eligió al Directorio Provisorio, encabezado por don(ña)
-   ${nombrePresidente} como Presidente/a.
-
-3. Se designó a la Comisión Electoral para la futura elección del
-   Directorio Definitivo.
-
-4. Los documentos de constitución fueron firmados por los miembros
-   correspondientes.
-
-
-Se extiende el presente certificado a petición del interesado/a, para los
-fines que estime conveniente.
-
-
-${org.commune}, [FECHA DE LA ASAMBLEA]
-
-
-
-________________________
-[Nombre del Funcionario]
-Ministro de Fe
-I. Municipalidad de ${org.commune}
-
-════════════════════════════════════════════════════════════════════
-NOTA: Este certificado será completado y firmado por el Ministro de Fe
-designado por la Municipalidad el día de la Asamblea Constitutiva.
-════════════════════════════════════════════════════════════════════`;
+municipal
+que suscribe en calidad de Ministro de Fe, certifica que asistió a la Asamblea Constitutiva
+de la
+Organización Comunitaria denominada:
+${org.name || '_________________________________________________________________________'}
+_________________________________________________________________________
+que precede, la que se celebró en el lugar, día y hora indicados en ella.
+• Que, asistieron a la Asamblea los socios que se señalan en el Acta que se adjunta.
+• Que, todas las proposiciones de acuerdo que se contienen en el Acta precedente, fueron
+leídas, puestas en discusión y aprobadas en la forma expresa en el Acta.
+• Que, para todos los efectos legales, el (la) Presidente (a) de la institución es Don (ña)
+${nombrePresidente} y
+su
+domicilio es ${domicilioPresidente}
+teléfono${telefonoPresidente}
+Se adjunta el presente:
+• Depósito de Antecedentes.
+• Certificación.
+• Acta de Asamblea General Constitutiva.
+• Certificado.
+• Declaración Jurada Simple de los Directores Provisionales.
+• Estatutos
+• Listado de Socios asistentes.
+___________________________________
+FIRMA
+Renca,`;
   }
 
   /**
    * Genera la Certificación de Secretaría Municipal
    */
   generateCertificacionMunicipal(org, directorio, commission, today) {
-    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
-    const totalSocios = this.formData.members?.length || 0;
     const dirConfig = getDirectorioConfig(org.type);
+    const unidadVecinal = org.neighborhood || '___________';
 
-    // Formatear miembros del directorio
-    const formatMiembro = (member) => {
-      if (!member) return '[Por designar]';
+    // Formatear miembro para nombre y RUT
+    const formatNombre = (member) => {
+      if (!member) return '_________________________________________';
       return `${member.primerNombre}${member.segundoNombre ? ' ' + member.segundoNombre : ''} ${member.apellidoPaterno} ${member.apellidoMaterno}`;
     };
+    const formatRut = (member) => {
+      if (!member) return '____________________';
+      return member.rut || '____________________';
+    };
 
-    // Generar lista del directorio
-    let directorioList = '';
+    // Generar líneas dinámicas del directorio - según cantidad de cargos
+    let directivaLines = 'DIRECTIVA PROVISORIA\n';
     dirConfig.cargos.forEach(cargo => {
       const miembro = directorio[cargo.id];
-      directorioList += `   - ${cargo.nombre}: ${formatMiembro(miembro)}\n`;
+      const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '');
+      const nombre = formatNombre(miembro);
+      const rut = formatRut(miembro);
+      directivaLines += `${cargoLabel}${nombre} C.I. Nº ${rut}\n`;
     });
 
-    // Generar lista de comisión electoral
+    // Generar líneas de comisión electoral (siempre 3)
     const comisionMembers = commission?.members || [];
-    let comisionList = '';
+    let comisionLines = 'COMISION ELECTORAL\n';
     for (let i = 0; i < 3; i++) {
       const member = comisionMembers[i];
-      const nombre = member ? `${member.firstName} ${member.lastName}` : '[Por designar]';
-      comisionList += `   - Miembro ${i + 1}: ${nombre}\n`;
+      const nombre = member ? `${member.firstName} ${member.lastName}` : '____________________________________________';
+      const rut = member?.rut || '____________________';
+      comisionLines += `DON (ÑA) ${nombre} C.I. Nº ${rut}\n`;
     }
 
-    return `════════════════════════════════════════════════════════════════════
-                    BORRADOR - CERTIFICACIÓN DE SECRETARÍA MUNICIPAL
-           Este documento será completado por la Secretaría Municipal
-════════════════════════════════════════════════════════════════════
+    // Datos del presidente
+    const presidente = directorio.presidente;
+    const nombrePresidente = formatNombre(presidente);
 
-
-              CERTIFICACION N.º ________________/${new Date().getFullYear()}
-
-
-En ${org.commune}, a ________________________, el Secretario Municipal de la
-Ilustre Municipalidad de ${org.commune}, certifica:
-
-Que con fecha [FECHA DE LA ASAMBLEA], ante el Ministro de Fe designado por
-esta Municipalidad, se constituyó legalmente la siguiente organización
-comunitaria:
-
-
-NOMBRE: "${org.name.toUpperCase()}"
-TIPO: ${tipoOrg}
-DOMICILIO: ${org.address || '[Dirección]'}
-COMUNA: ${org.commune}
-REGIÓN: ${org.region}
-
-
-DIRECTORIO PROVISORIO:
-${directorioList}
-
-COMISIÓN ELECTORAL:
-${comisionList}
-
-NÚMERO DE SOCIOS FUNDADORES: ${totalSocios}
-
-
-Se certifica que la organización ha cumplido con los requisitos establecidos
-en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones
-Comunitarias, y sus documentos constitutivos han sido depositados en la
-Secretaría Municipal.
-
-
-Se extiende la presente certificación para los fines legales correspondientes.
-
-
-
-________________________
-[Nombre del Secretario Municipal]
-Secretario Municipal
-I. Municipalidad de ${org.commune}
-
-════════════════════════════════════════════════════════════════════
-NOTA: Esta certificación será emitida por la Secretaría Municipal
-una vez completado el proceso de constitución.
-════════════════════════════════════════════════════════════════════`;
+    return `CERTIFICACION N.º ________________/
+En Renca, a ________________________, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº
+19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización
+Denominada${org.name || '_____________________________________________________________________________'}
+__________________ de la Unidad Vecinal Nº ${unidadVecinal}depósito en esta Secretaría Municipal, copia
+autorizada del de Asamblea Constitutiva.
+La citada Asamblea Constitutiva se efectuó el día ________ de ___________ del año ___________________
+ante el Ministro de Fe Don (ña)_______________________________________________________________
+Funcionario (a) municipal, en el local ubicado en _________________________________________________
+En dicha sesión, se aprobaron los Estatutos de la Organización y fueron elegidos como integrantes de la
+Directiva Provisoria y Comisión Electoral, los siguientes socios.
+${directivaLines}
+${comisionLines}
+Dicha Organización gozara de Personalidad Jurídica conforme a la Ley Nº 19.418 de 1995, a contar de la
+fecha del depósito del Acta de Asamblea Constitutiva, la cual fue depositada en la Secretaria Municipal por
+Don (ña) ${nombrePresidente}presidenta (e)de la organización y Don (ña)___________________
+en su calidad de Ministro de Fe, con domicilio en Blanco Encalada Nº 1335.
+Se entrega este certificado al (a la) Presidente (a) de la Organización para todos los efectos legales derivados
+de la Ley Nº 19.418. En ausencia del Titular, en el acto de retiro, envíese la presente certificación, por
+cedula al domicilio fijado por el (la) Presidente (a), en la Asamblea Constitutiva.
+Secretaria Municipal`;
   }
 
   /**
