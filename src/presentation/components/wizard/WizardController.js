@@ -447,23 +447,32 @@ export class WizardController {
         signatures: savedProgress.formData.signatures || {},
         // Campos del Paso 5: Directorio Provisorio y Certificados
         directorioProvisorio: savedProgress.formData.directorioProvisorio || {},
-        certificatesStep5: savedProgress.formData.certificatesStep5 || {}
+        certificatesStep5: savedProgress.formData.certificatesStep5 || {},
+        // Estado de pantalla de Ministro (para restaurar correctamente)
+        showingMinistroScreen: savedProgress.formData.showingMinistroScreen || false
       };
 
       // Cargar certificados desde IndexedDB (tienen el base64 completo)
       try {
+        // Primero asegurar que IndexedDB esté inicializada
+        await indexedDBService.init();
+        console.log('🔄 Buscando certificados en IndexedDB...');
         const idbCerts = await indexedDBService.getAllWizardCertificates();
-        if (Object.keys(idbCerts).length > 0) {
+        console.log('📦 Certificados encontrados en IndexedDB:', idbCerts);
+        if (idbCerts && Object.keys(idbCerts).length > 0) {
           console.log('✅ Certificados restaurados desde IndexedDB:', Object.keys(idbCerts));
           // Merge con los metadatos de localStorage
           Object.keys(idbCerts).forEach(key => {
-            if (idbCerts[key].base64) {
+            if (idbCerts[key] && idbCerts[key].base64) {
               this.formData.certificatesStep5[key] = idbCerts[key];
+              console.log('✅ Certificado restaurado:', key);
             }
           });
+        } else {
+          console.warn('⚠️ No hay certificados en IndexedDB');
         }
       } catch (e) {
-        console.warn('No se pudieron cargar certificados de IndexedDB:', e);
+        console.error('❌ Error cargando certificados de IndexedDB:', e);
       }
 
       this.currentStep = savedProgress.currentStep;
@@ -2435,10 +2444,11 @@ export class WizardController {
 
             // Guardar también en IndexedDB para persistencia (localStorage tiene límite de ~5MB)
             try {
+              await indexedDBService.init(); // Asegurar que esté inicializada
               await indexedDBService.saveWizardCertificate(certInfo.key, certData);
-              console.log('✅ Certificado guardado en IndexedDB:', certInfo.key);
+              console.log('✅ Certificado guardado en IndexedDB:', certInfo.key, certData.name);
             } catch (e) {
-              console.warn('No se pudo guardar certificado en IndexedDB:', e);
+              console.error('❌ Error guardando certificado en IndexedDB:', e);
             }
 
             // Actualizar UI

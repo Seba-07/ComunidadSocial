@@ -13,6 +13,7 @@ class ScheduleService {
     this.backendBookingsCache = [];
     this.lastBackendSync = 0;
     this.CACHE_TTL = 30000; // 30 segundos de caché
+    this.activeMinistrosCount = 1; // Se actualizará desde la API
     this.init();
   }
 
@@ -325,20 +326,11 @@ class ScheduleService {
   }
 
   /**
-   * Obtiene el número de ministros activos desde localStorage
+   * Obtiene el número de ministros activos (cargado desde la API en syncBackendBookings)
    */
   getActiveMinistrosCount() {
-    try {
-      const ministrosData = localStorage.getItem('ministros_fe');
-      if (ministrosData) {
-        const ministros = JSON.parse(ministrosData);
-        const activeCount = ministros.filter(m => m.active).length;
-        return activeCount > 0 ? activeCount : 1; // Mínimo 1 para evitar división por cero
-      }
-    } catch (e) {
-      console.warn('Error obteniendo ministros:', e);
-    }
-    return 1; // Default: 1 ministro si no hay datos
+    // Usar el valor cargado desde la API en syncBackendBookings
+    return this.activeMinistrosCount > 0 ? this.activeMinistrosCount : 1;
   }
 
   // ============ GESTIÓN DE RESERVAS ============
@@ -357,6 +349,16 @@ class ScheduleService {
       }
 
       console.log('📆 [ScheduleService] Sincronizando reservas desde backend...');
+
+      // Cargar ministros activos desde la API
+      try {
+        const ministros = await apiService.getActiveMinistros();
+        this.activeMinistrosCount = Array.isArray(ministros) ? ministros.length : 1;
+        console.log('👥 [ScheduleService] Ministros activos desde API:', this.activeMinistrosCount);
+      } catch (e) {
+        console.warn('⚠️ [ScheduleService] No se pudieron cargar ministros, usando default:', e.message);
+        this.activeMinistrosCount = 1;
+      }
 
       // Obtener todas las organizaciones del backend
       const organizations = await apiService.getOrganizations();
