@@ -4805,6 +4805,8 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const org = this.formData.organization;
     const members = this.formData.members;
     const commission = this.formData.commission;
+    const directorio = this.formData.directorioProvisorio || {};
+    const dirConfig = getDirectorioConfig(org.type);
     const today = new Date().toLocaleDateString('es-CL', {
       day: 'numeric',
       month: 'long',
@@ -4839,21 +4841,47 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       generatedAt: new Date().toISOString()
     };
 
-    // 4. Declaración Jurada del Presidente
-    this.formData.documents['DECLARACION_JURADA_PRESIDENTE'] = {
-      id: 'doc-declaracion-jurada',
-      type: 'DECLARACION_JURADA_PRESIDENTE',
+    // 4. Declaraciones Juradas - Una por cada miembro del directorio
+    dirConfig.cargos.forEach(cargo => {
+      const miembro = directorio[cargo.id];
+      if (miembro) {
+        const docKey = `DECLARACION_JURADA_${cargo.id.toUpperCase()}`;
+        this.formData.documents[docKey] = {
+          id: `doc-declaracion-${cargo.id}`,
+          type: docKey,
+          isGenerated: true,
+          content: this.generateDeclaracionJuradaDirector(org, miembro, cargo, today),
+          generatedAt: new Date().toISOString(),
+          cargoId: cargo.id,
+          cargoNombre: cargo.nombre
+        };
+      }
+    });
+
+    // 5. Certificado del Ministro de Fe
+    this.formData.documents['CERTIFICADO_MINISTRO_FE'] = {
+      id: 'doc-certificado-ministro',
+      type: 'CERTIFICADO_MINISTRO_FE',
       isGenerated: true,
-      content: this.generateDeclaracionJurada(org, commission, today),
+      content: this.generateCertificadoMinistroFe(org, directorio, today),
       generatedAt: new Date().toISOString()
     };
 
-    // 5. Acta Comisión Electoral
-    this.formData.documents['ACTA_COMISION_ELECTORAL'] = {
-      id: 'doc-acta-comision',
-      type: 'ACTA_COMISION_ELECTORAL',
+    // 6. Certificación de Secretaría Municipal
+    this.formData.documents['CERTIFICACION_MUNICIPAL'] = {
+      id: 'doc-certificacion-municipal',
+      type: 'CERTIFICACION_MUNICIPAL',
       isGenerated: true,
-      content: this.generateActaComisionElectoral(org, commission, today),
+      content: this.generateCertificacionMunicipal(org, directorio, commission, today),
+      generatedAt: new Date().toISOString()
+    };
+
+    // 7. Depósito de Antecedentes
+    this.formData.documents['DEPOSITO_ANTECEDENTES'] = {
+      id: 'doc-deposito-antecedentes',
+      type: 'DEPOSITO_ANTECEDENTES',
+      isGenerated: true,
+      content: this.generateDepositoAntecedentes(org, today),
       generatedAt: new Date().toISOString()
     };
 
@@ -5296,6 +5324,297 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
   }
 
   /**
+   * Genera una Declaración Jurada individual por cada miembro del Directorio
+   */
+  generateDeclaracionJuradaDirector(org, miembro, cargo, today) {
+    // Formatear nombre completo
+    const nombreCompleto = miembro
+      ? `${miembro.primerNombre}${miembro.segundoNombre ? ' ' + miembro.segundoNombre : ''} ${miembro.apellidoPaterno} ${miembro.apellidoMaterno}`
+      : '[Nombre]';
+    const rut = miembro?.rut || '[RUT]';
+    const direccion = miembro?.address || org.address || '[Dirección]';
+    const cargoNombre = cargo.nombre || 'Miembro del Directorio';
+    const iniciales = miembro
+      ? `${miembro.primerNombre[0]}${miembro.apellidoPaterno[0]}`
+      : 'XX';
+
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - MODELO DE DECLARACIÓN JURADA
+         ${cargoNombre.toUpperCase()} - ${iniciales}
+         Este documento será firmado el día de la Asamblea
+════════════════════════════════════════════════════════════════════
+
+DECLARACIÓN JURADA SIMPLE
+${cargoNombre.toUpperCase()} DEL DIRECTORIO PROVISORIO
+
+Yo, ${nombreCompleto}, RUT ${rut}, domiciliado/a en ${direccion}, en mi calidad de ${cargoNombre} del Directorio Provisorio de ${org.name}, DECLARO bajo juramento lo siguiente:
+
+1. Que cumplo con los requisitos legales establecidos en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias para ejercer el cargo de ${cargoNombre}.
+
+2. Que tengo residencia en la Unidad Vecinal/Comuna correspondiente al territorio de la organización.
+
+3. Que no me encuentro inhabilitado/a para ejercer cargos públicos ni tengo incompatibilidades legales para desempeñar este cargo.
+
+4. Que no tengo condenas por delitos que me inhabiliten para el ejercicio de funciones directivas en organizaciones comunitarias.
+
+5. Que la información proporcionada en la solicitud de constitución es verídica y que asumo la responsabilidad legal por la veracidad de esta declaración.
+
+6. Que conozco y acepto las responsabilidades que me corresponden según la Ley N° 19.418 y los estatutos de la organización.
+
+Asumo la responsabilidad legal por la veracidad de esta declaración, en conformidad con el artículo 212 del Código Penal.
+
+${org.commune}, [FECHA DE LA ASAMBLEA]
+
+
+[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
+________________________
+${nombreCompleto}
+RUT: ${rut}
+${cargoNombre} del Directorio Provisorio
+${org.name}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Esta declaración será firmada el día de la Asamblea
+Constitutiva, ante el Ministro de Fe.
+════════════════════════════════════════════════════════════════════`;
+  }
+
+  /**
+   * Genera el Certificado del Ministro de Fe
+   */
+  generateCertificadoMinistroFe(org, directorio, today) {
+    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
+    const totalSocios = this.formData.members?.length || 0;
+
+    // Formatear nombre del presidente
+    const presidente = directorio.presidente;
+    const nombrePresidente = presidente
+      ? `${presidente.primerNombre}${presidente.segundoNombre ? ' ' + presidente.segundoNombre : ''} ${presidente.apellidoPaterno} ${presidente.apellidoMaterno}`
+      : '[Nombre del Presidente]';
+
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - CERTIFICADO DEL MINISTRO DE FE
+           Este documento será completado por el funcionario municipal
+════════════════════════════════════════════════════════════════════
+
+
+                           C E R T I F I C A D O
+
+
+__________________________________________________________, funcionario (a)
+municipal designado (a) Ministro de Fe por la Ilustre Municipalidad de
+${org.commune}, Región ${org.region}, certifica que:
+
+
+Con fecha [FECHA DE LA ASAMBLEA], en dependencias ubicadas en
+${org.address || '[Dirección de la Asamblea]'}, se llevó a cabo la
+ASAMBLEA CONSTITUTIVA de la organización denominada:
+
+"${org.name.toUpperCase()}"
+
+Tipo de Organización: ${tipoOrg}
+Domicilio Legal: ${org.address || '[Dirección]'}
+Comuna: ${org.commune}
+
+
+La asamblea se desarrolló con la asistencia de ${totalSocios} personas,
+quienes cumplieron con los requisitos legales establecidos en la
+Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.
+
+
+En dicha asamblea:
+
+1. Se aprobaron los estatutos de la organización por unanimidad/mayoría de
+   los asistentes.
+
+2. Se eligió al Directorio Provisorio, encabezado por don(ña)
+   ${nombrePresidente} como Presidente/a.
+
+3. Se designó a la Comisión Electoral para la futura elección del
+   Directorio Definitivo.
+
+4. Los documentos de constitución fueron firmados por los miembros
+   correspondientes.
+
+
+Se extiende el presente certificado a petición del interesado/a, para los
+fines que estime conveniente.
+
+
+${org.commune}, [FECHA DE LA ASAMBLEA]
+
+
+
+________________________
+[Nombre del Funcionario]
+Ministro de Fe
+I. Municipalidad de ${org.commune}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este certificado será completado y firmado por el Ministro de Fe
+designado por la Municipalidad el día de la Asamblea Constitutiva.
+════════════════════════════════════════════════════════════════════`;
+  }
+
+  /**
+   * Genera la Certificación de Secretaría Municipal
+   */
+  generateCertificacionMunicipal(org, directorio, commission, today) {
+    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
+    const totalSocios = this.formData.members?.length || 0;
+    const dirConfig = getDirectorioConfig(org.type);
+
+    // Formatear miembros del directorio
+    const formatMiembro = (member) => {
+      if (!member) return '[Por designar]';
+      return `${member.primerNombre}${member.segundoNombre ? ' ' + member.segundoNombre : ''} ${member.apellidoPaterno} ${member.apellidoMaterno}`;
+    };
+
+    // Generar lista del directorio
+    let directorioList = '';
+    dirConfig.cargos.forEach(cargo => {
+      const miembro = directorio[cargo.id];
+      directorioList += `   - ${cargo.nombre}: ${formatMiembro(miembro)}\n`;
+    });
+
+    // Generar lista de comisión electoral
+    const comisionMembers = commission?.members || [];
+    let comisionList = '';
+    for (let i = 0; i < 3; i++) {
+      const member = comisionMembers[i];
+      const nombre = member ? `${member.firstName} ${member.lastName}` : '[Por designar]';
+      comisionList += `   - Miembro ${i + 1}: ${nombre}\n`;
+    }
+
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - CERTIFICACIÓN DE SECRETARÍA MUNICIPAL
+           Este documento será completado por la Secretaría Municipal
+════════════════════════════════════════════════════════════════════
+
+
+              CERTIFICACION N.º ________________/${new Date().getFullYear()}
+
+
+En ${org.commune}, a ________________________, el Secretario Municipal de la
+Ilustre Municipalidad de ${org.commune}, certifica:
+
+Que con fecha [FECHA DE LA ASAMBLEA], ante el Ministro de Fe designado por
+esta Municipalidad, se constituyó legalmente la siguiente organización
+comunitaria:
+
+
+NOMBRE: "${org.name.toUpperCase()}"
+TIPO: ${tipoOrg}
+DOMICILIO: ${org.address || '[Dirección]'}
+COMUNA: ${org.commune}
+REGIÓN: ${org.region}
+
+
+DIRECTORIO PROVISORIO:
+${directorioList}
+
+COMISIÓN ELECTORAL:
+${comisionList}
+
+NÚMERO DE SOCIOS FUNDADORES: ${totalSocios}
+
+
+Se certifica que la organización ha cumplido con los requisitos establecidos
+en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones
+Comunitarias, y sus documentos constitutivos han sido depositados en la
+Secretaría Municipal.
+
+
+Se extiende la presente certificación para los fines legales correspondientes.
+
+
+
+________________________
+[Nombre del Secretario Municipal]
+Secretario Municipal
+I. Municipalidad de ${org.commune}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Esta certificación será emitida por la Secretaría Municipal
+una vez completado el proceso de constitución.
+════════════════════════════════════════════════════════════════════`;
+  }
+
+  /**
+   * Genera el Depósito de Antecedentes
+   */
+  generateDepositoAntecedentes(org, today) {
+    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
+    const totalSocios = this.formData.members?.length || 0;
+
+    // Obtener presidente del directorio
+    const directorio = this.formData.directorioProvisorio || {};
+    const presidente = directorio.presidente;
+    const nombrePresidente = presidente
+      ? `${presidente.primerNombre}${presidente.segundoNombre ? ' ' + presidente.segundoNombre : ''} ${presidente.apellidoPaterno} ${presidente.apellidoMaterno}`
+      : '[Nombre del Presidente]';
+    const rutPresidente = presidente?.rut || '[RUT]';
+
+    return `════════════════════════════════════════════════════════════════════
+                    BORRADOR - DEPÓSITO DE ANTECEDENTES
+           Este documento será completado por la Secretaría Municipal
+════════════════════════════════════════════════════════════════════
+
+
+              DEPOSITO DE ANTECEDENTES N° __________/${new Date().getFullYear()}
+
+
+En ${org.commune}, Región ${org.region}, a [FECHA], comparece ante la
+Secretaría Municipal de la Ilustre Municipalidad de ${org.commune}:
+
+Don(ña) ${nombrePresidente}, RUT ${rutPresidente},
+en su calidad de Presidente/a del Directorio Provisorio de la organización
+denominada "${org.name}", quien solicita el depósito de los antecedentes
+de constitución de dicha organización comunitaria.
+
+
+ANTECEDENTES QUE SE DEPOSITAN:
+
+   [ ] 1. Acta de Asamblea Constitutiva
+   [ ] 2. Estatutos aprobados
+   [ ] 3. Registro de Socios Fundadores (${totalSocios} miembros)
+   [ ] 4. Declaraciones Juradas del Directorio Provisorio
+   [ ] 5. Certificado del Ministro de Fe
+   [ ] 6. Fotocopia de cédulas de identidad de los directores
+
+
+DATOS DE LA ORGANIZACIÓN:
+
+Nombre: ${org.name}
+Tipo: ${tipoOrg}
+Domicilio: ${org.address || '[Dirección]'}
+Comuna: ${org.commune}
+Región: ${org.region}
+
+
+Previa verificación de que los documentos cumplen con los requisitos legales
+establecidos en la Ley N° 19.418, se procede a efectuar el depósito de los
+antecedentes señalados.
+
+
+La organización adquiere personalidad jurídica a partir de la fecha de este
+depósito, sin perjuicio de las observaciones que pudiere formular el
+Secretario Municipal dentro del plazo legal.
+
+
+
+________________________                    ________________________
+${nombrePresidente.substring(0, 24)}              [Nombre Funcionario]
+Presidente/a del Directorio                 Secretaría Municipal
+Provisorio                                  I. Municipalidad de ${org.commune}
+
+════════════════════════════════════════════════════════════════════
+NOTA: Este documento será completado al momento de depositar los
+antecedentes en la Secretaría Municipal.
+════════════════════════════════════════════════════════════════════`;
+  }
+
+  /**
    * Actualiza los previews de documentos (deshabilitado - ya no se muestran previews)
    */
   updateDocumentPreviews() {
@@ -5316,19 +5635,21 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
       'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
       'ESTATUTOS': 'Estatutos',
       'REGISTRO_SOCIOS': 'Registro de Socios',
-      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada - Presidente/a',
+      'DECLARACION_JURADA_SECRETARIO': 'Declaración Jurada - Secretario/a',
+      'DECLARACION_JURADA_TESORERO': 'Declaración Jurada - Tesorero/a',
+      'DECLARACION_JURADA_DIRECTOR1': 'Declaración Jurada - Director/a 1',
+      'DECLARACION_JURADA_DIRECTOR2': 'Declaración Jurada - Director/a 2',
+      'DECLARACION_JURADA_DIRECTOR3': 'Declaración Jurada - Director/a 3',
+      'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+      'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+      'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
     };
 
-    // Configuración de qué firmas de la Comisión Electoral requiere cada documento
-    // Los índices son de la Comisión Electoral (NO del Directorio)
-    // La mayoría de documentos ya tienen sus firmas del Directorio incluidas en el contenido
+    // Configuración de qué firmas adicionales requiere cada documento
+    // Todos los documentos ya tienen sus firmas incluidas en el contenido
     const docSignatureConfig = {
-      // ACTA_CONSTITUTIVA: Ya tiene firmas del Directorio en el documento
-      // ESTATUTOS: Ya tiene firmas del Directorio en el documento
-      // REGISTRO_SOCIOS: Ya tiene firma del Secretario del Directorio
-      // DECLARACION_JURADA_PRESIDENTE: Ya tiene firma del Presidente del Directorio
-      'ACTA_COMISION_ELECTORAL': [0, 1, 2]    // Los 3 miembros de la Comisión Electoral
+      // Ningún documento requiere firmas adicionales
     };
 
     const requiredSigners = docSignatureConfig[docType] || [];
@@ -5486,8 +5807,15 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
       'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
       'ESTATUTOS': 'Estatutos',
       'REGISTRO_SOCIOS': 'Registro de Socios',
-      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada - Presidente/a',
+      'DECLARACION_JURADA_SECRETARIO': 'Declaración Jurada - Secretario/a',
+      'DECLARACION_JURADA_TESORERO': 'Declaración Jurada - Tesorero/a',
+      'DECLARACION_JURADA_DIRECTOR1': 'Declaración Jurada - Director/a 1',
+      'DECLARACION_JURADA_DIRECTOR2': 'Declaración Jurada - Director/a 2',
+      'DECLARACION_JURADA_DIRECTOR3': 'Declaración Jurada - Director/a 3',
+      'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+      'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+      'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
     };
 
     const modalHTML = `
@@ -5783,8 +6111,15 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
       'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
       'ESTATUTOS': 'Estatutos',
       'REGISTRO_SOCIOS': 'Registro de Socios',
-      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada - Presidente/a',
+      'DECLARACION_JURADA_SECRETARIO': 'Declaración Jurada - Secretario/a',
+      'DECLARACION_JURADA_TESORERO': 'Declaración Jurada - Tesorero/a',
+      'DECLARACION_JURADA_DIRECTOR1': 'Declaración Jurada - Director/a 1',
+      'DECLARACION_JURADA_DIRECTOR2': 'Declaración Jurada - Director/a 2',
+      'DECLARACION_JURADA_DIRECTOR3': 'Declaración Jurada - Director/a 3',
+      'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+      'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+      'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
     };
     document.getElementById('review-documents').innerHTML = `
       <p><strong>Documentos generados:</strong> ${docsCount}</p>
@@ -5949,8 +6284,15 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
       'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
       'ESTATUTOS': 'Estatutos',
       'REGISTRO_SOCIOS': 'Registro de Socios',
-      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada - Presidente/a',
+      'DECLARACION_JURADA_SECRETARIO': 'Declaración Jurada - Secretario/a',
+      'DECLARACION_JURADA_TESORERO': 'Declaración Jurada - Tesorero/a',
+      'DECLARACION_JURADA_DIRECTOR1': 'Declaración Jurada - Director/a 1',
+      'DECLARACION_JURADA_DIRECTOR2': 'Declaración Jurada - Director/a 2',
+      'DECLARACION_JURADA_DIRECTOR3': 'Declaración Jurada - Director/a 3',
+      'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+      'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+      'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
     };
 
     const modal = document.createElement('div');
@@ -6003,8 +6345,8 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
     // Generar bloque de firmas para los documentos
     const signaturesBlock = this.generateSignaturesBlock(signatures, commission);
 
-    // Actualizar cada documento que requiere firmas
-    const docsToUpdate = ['ACTA_CONSTITUTIVA', 'ACTA_COMISION_ELECTORAL'];
+    // Actualizar documentos que requieren firmas (solo Acta Constitutiva)
+    const docsToUpdate = ['ACTA_CONSTITUTIVA'];
 
     docsToUpdate.forEach(docType => {
       if (this.formData.documents[docType]) {
