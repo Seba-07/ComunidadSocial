@@ -5154,10 +5154,10 @@ aprobación por los miembros fundadores el día de la Asamblea.
    * Genera el Registro de Socios (BORRADOR)
    */
   generateRegistroSocios(org, members, today) {
-    let registro = `════════════════════════════════════════════════════════════════════════════════════════════════════════
-                              BORRADOR - LISTADO PRELIMINAR DE SOCIOS
-                     Los asistentes firmarán el registro el día de la Asamblea
-════════════════════════════════════════════════════════════════════════════════════════════════════════
+    let registro = `════════════════════════════════════════════════════════════════════════════════
+                    BORRADOR - LISTADO PRELIMINAR DE SOCIOS
+           Los asistentes firmarán el registro el día de la Asamblea
+════════════════════════════════════════════════════════════════════════════════
 
 REGISTRO DE SOCIOS FUNDADORES
 ${org.name.toUpperCase()}
@@ -5165,22 +5165,28 @@ ${org.name.toUpperCase()}
 Fecha de elaboración: Borrador previo a la Asamblea
 Total de Socios Fundadores Registrados: ${members.length}
 
-┌─────┬───────────────┬──────────────────────────────────────┬─────────────────────────────┬───────────────┐
-│ N°  │     RUT       │          NOMBRE COMPLETO             │         DOMICILIO           │   TELÉFONO    │
-├─────┼───────────────┼──────────────────────────────────────┼─────────────────────────────┼───────────────┤
+════════════════════════════════════════════════════════════════════════════════
 `;
 
     members.forEach((member, index) => {
-      const num = String(index + 1).padStart(3, ' ');
-      const rut = (member.rut || '').padEnd(13, ' ');
-      const nombre = `${member.firstName} ${member.lastName}`.substring(0, 36).padEnd(36, ' ');
-      const direccion = (member.address || '').substring(0, 27).padEnd(27, ' ');
-      const telefono = (member.phone || '').padEnd(13, ' ');
+      const num = index + 1;
+      const rut = member.rut || '';
+      const nombre = `${member.firstName} ${member.lastName}`;
+      const direccion = member.address || '';
+      const telefono = member.phone || '';
 
-      registro += `│ ${num} │ ${rut} │ ${nombre} │ ${direccion} │ ${telefono} │\n`;
+      registro += `
+SOCIO N° ${num}
+────────────────────────────────────────
+    RUT:        ${rut}
+    Nombre:     ${nombre}
+    Domicilio:  ${direccion}
+    Teléfono:   ${telefono}
+`;
     });
 
-    registro += `└─────┴───────────────┴──────────────────────────────────────┴─────────────────────────────┴───────────────┘`;
+    registro += `
+════════════════════════════════════════════════════════════════════════════════`;
 
     // Obtener secretario del directorio
     const directorio = this.formData.directorioProvisorio || {};
