@@ -4867,7 +4867,7 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
    */
   generateActaConstitutiva(org, members, commission, today) {
     // Formatear tipo de organización
-    const tipoOrg = this.getOrganizationTypeLabel(org.type);
+    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
 
     return `REPUBLICA DE CHILE
 ILUSTRE MUNICIPALIDAD DE RENCA
