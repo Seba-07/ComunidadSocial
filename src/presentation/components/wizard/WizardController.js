@@ -5320,14 +5320,15 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
       'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
     };
 
-    // Configuración de qué firmas requiere cada documento
-    // 0 = Presidente, 1 = Secretario, 2 = Vocal
+    // Configuración de qué firmas de la Comisión Electoral requiere cada documento
+    // Los índices son de la Comisión Electoral (NO del Directorio)
+    // La mayoría de documentos ya tienen sus firmas del Directorio incluidas en el contenido
     const docSignatureConfig = {
-      'ACTA_CONSTITUTIVA': [0, 1],           // Presidente y Secretario
-      'ESTATUTOS': [0, 1],                    // Presidente y Secretario
-      'REGISTRO_SOCIOS': [1],                 // Solo Secretario
-      'DECLARACION_JURADA_PRESIDENTE': [0],   // Solo Presidente
-      'ACTA_COMISION_ELECTORAL': [0, 1, 2]    // Los 3 miembros
+      // ACTA_CONSTITUTIVA: Ya tiene firmas del Directorio en el documento
+      // ESTATUTOS: Ya tiene firmas del Directorio en el documento
+      // REGISTRO_SOCIOS: Ya tiene firma del Secretario del Directorio
+      // DECLARACION_JURADA_PRESIDENTE: Ya tiene firma del Presidente del Directorio
+      'ACTA_COMISION_ELECTORAL': [0, 1, 2]    // Los 3 miembros de la Comisión Electoral
     };
 
     const requiredSigners = docSignatureConfig[docType] || [];
