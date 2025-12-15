@@ -429,21 +429,58 @@ class ScheduleService {
       // Obtener todas las organizaciones del backend
       const organizations = await apiService.getOrganizations();
 
+      console.log('📆 [ScheduleService] Organizaciones totales:', organizations.length);
+      console.log('📆 [ScheduleService] Orgs con fechas:', organizations.filter(org => org.electionDate || org.ministroData?.scheduledDate).map(o => ({
+        name: o.organizationName || o.name,
+        electionDate: o.electionDate,
+        electionTime: o.electionTime,
+        ministroDate: o.ministroData?.scheduledDate,
+        ministroTime: o.ministroData?.scheduledTime,
+        status: o.status
+      })));
+
+      // Función auxiliar para convertir fecha ISO a YYYY-MM-DD
+      const formatDateToKey = (dateValue) => {
+        if (!dateValue) return null;
+        // Si ya está en formato YYYY-MM-DD, retornarlo
+        if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          return dateValue;
+        }
+        // Si es fecha ISO, extraer solo la parte de fecha
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return null;
+        return date.toISOString().split('T')[0];
+      };
+
       // Filtrar organizaciones que tienen fecha de asamblea agendada
-      // y convertirlas al formato de booking
+      // Considerar tanto electionDate como ministroData.scheduledDate
       const backendBookings = organizations
-        .filter(org => org.electionDate && org.electionTime)
+        .filter(org => {
+          const hasElectionData = org.electionDate && org.electionTime;
+          const hasMinistroData = org.ministroData?.scheduledDate && org.ministroData?.scheduledTime;
+          return hasElectionData || hasMinistroData;
+        })
         .filter(org => !['REJECTED', 'CANCELLED'].includes(org.status))
-        .map(org => ({
-          id: `backend-${org.id}`,
-          date: org.electionDate,
-          time: org.electionTime,
-          organizationId: org.id,
-          organizationName: org.organizationName || org.name,
-          organizationType: org.organizationType,
-          status: org.status === 'COMPLETED' ? 'completed' : 'confirmed',
-          source: 'backend'
-        }));
+        .map(org => {
+          // Priorizar electionDate/electionTime, fallback a ministroData
+          const rawDate = org.electionDate || org.ministroData?.scheduledDate;
+          const time = org.electionTime || org.ministroData?.scheduledTime;
+          const dateKey = formatDateToKey(rawDate);
+
+          return {
+            id: `backend-${org._id || org.id}`,
+            date: dateKey,
+            time: time,
+            organizationId: org._id || org.id,
+            organizationName: org.organizationName || org.name,
+            organizationType: org.organizationType,
+            userName: org.representative?.name || 'N/A',
+            userEmail: org.representative?.email || 'N/A',
+            status: org.status === 'COMPLETED' ? 'completed' : 'confirmed',
+            source: 'backend'
+          };
+        })
+        .filter(b => b.date && b.time); // Filtrar bookings inválidos
 
       console.log('📆 [ScheduleService] Reservas del backend:', backendBookings.length);
       console.log('📆 [ScheduleService] Detalle:', backendBookings.map(b => `${b.date} ${b.time} - ${b.organizationName}`));

@@ -691,12 +691,13 @@ export class ScheduleManager {
 export let scheduleManager;
 
 export async function initScheduleManager(container) {
-  // Cargar ministros activos desde la API antes de renderizar
-  // Esto asegura que la disponibilidad se calcule correctamente
-  console.log('📆 [ScheduleManager] Inicializando y cargando ministros...');
+  // Cargar ministros activos y reservas desde la API antes de renderizar
+  console.log('📆 [ScheduleManager] Inicializando y cargando datos...');
   await scheduleService.loadActiveMinistros();
+  await scheduleService.syncBackendBookings();
 
   scheduleManager = new ScheduleManager(container);
+  window.scheduleManager = scheduleManager; // Exponer globalmente para onclick inline
   scheduleManager.render();
   return scheduleManager;
 }
