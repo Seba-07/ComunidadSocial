@@ -5339,53 +5339,48 @@ Electoral el día de la Asamblea Constitutiva, ante el Ministro de Fe.
     // Formatear nombre completo
     const nombreCompleto = miembro
       ? `${miembro.primerNombre}${miembro.segundoNombre ? ' ' + miembro.segundoNombre : ''} ${miembro.apellidoPaterno} ${miembro.apellidoMaterno}`
-      : '[Nombre]';
-    const rut = miembro?.rut || '[RUT]';
-    const direccion = miembro?.address || org.address || '[Dirección]';
-    const cargoNombre = cargo.nombre || 'Miembro del Directorio';
-    const iniciales = miembro
-      ? `${miembro.primerNombre[0]}${miembro.apellidoPaterno[0]}`
-      : 'XX';
+      : '________________________________________________________________';
+    const rut = miembro?.rut || '______________________________________________';
+    const direccion = miembro?.address || org.address || '__________________________________________________';
+    const email = miembro?.email || '_____________________________________________________';
 
-    return `════════════════════════════════════════════════════════════════════
-                    BORRADOR - MODELO DE DECLARACIÓN JURADA
-         ${cargoNombre.toUpperCase()} - ${iniciales}
-         Este documento será firmado el día de la Asamblea
-════════════════════════════════════════════════════════════════════
+    return `DECLARACION JURADA SIMPLE
 
-DECLARACIÓN JURADA SIMPLE
-${cargoNombre.toUpperCase()} DEL DIRECTORIO PROVISORIO
+YO, ${nombreCompleto}
 
-Yo, ${nombreCompleto}, RUT ${rut}, domiciliado/a en ${direccion}, en mi calidad de ${cargoNombre} del Directorio Provisorio de ${org.name}, DECLARO bajo juramento lo siguiente:
+CEDULA DE IDENTIDAD:
+${rut}
 
-1. Que cumplo con los requisitos legales establecidos en la Ley N° 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias para ejercer el cargo de ${cargoNombre}.
+CON DOMICILIO EN:
+${direccion}
 
-2. Que tengo residencia en la Unidad Vecinal/Comuna correspondiente al territorio de la organización.
+• Declaro bajo juramento:
 
-3. Que no me encuentro inhabilitado/a para ejercer cargos públicos ni tengo incompatibilidades legales para desempeñar este cargo.
+• Estar afiliado a la Organización Comunitaria.
 
-4. Que no tengo condenas por delitos que me inhabiliten para el ejercicio de funciones directivas en organizaciones comunitarias.
+• No tener menos de _______ años.
 
-5. Que la información proporcionada en la solicitud de constitución es verídica y que asumo la responsabilidad legal por la veracidad de esta declaración.
+• Ser Chileno.
 
-6. Que conozco y acepto las responsabilidades que me corresponden según la Ley N° 19.418 y los estatutos de la organización.
+• No ser procesado o cumpliendo condena por delito que merezca pena aflictiva.
 
-Asumo la responsabilidad legal por la veracidad de esta declaración, en conformidad con el artículo 212 del Código Penal.
+• No ser miembro de la Comisión Electoral de la Organización.
 
-${org.commune}, [FECHA DE LA ASAMBLEA]
+• No tener ninguna incompatibilidad o inhabilidad para pertenecer a una
+Organización Comunitaria, conforme a la Ley N° 19.418.
 
+Formulo la presente declaración para acreditar que cumplo con los requisitos
+Establecidos en el artículo 20° de la Ley N° 19.418, para ser Director de la Organización
+denominada:
 
-[ESPACIO PARA FIRMA - SE REALIZARÁ EN LA ASAMBLEA]
-________________________
-${nombreCompleto}
-RUT: ${rut}
-${cargoNombre} del Directorio Provisorio
 ${org.name}
 
-════════════════════════════════════════════════════════════════════
-NOTA: Esta declaración será firmada el día de la Asamblea
-Constitutiva, ante el Ministro de Fe.
-════════════════════════════════════════════════════════════════════`;
+Correo electrónico:
+${email}
+
+
+_________________
+FIRMA`;
   }
 
   /**
@@ -5553,74 +5548,28 @@ una vez completado el proceso de constitución.
    * Genera el Depósito de Antecedentes
    */
   generateDepositoAntecedentes(org, today) {
-    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
-    const totalSocios = this.formData.members?.length || 0;
+    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || '___________________________________________';
+    const unidadVecinal = org.neighborhood || '___________';
 
-    // Obtener presidente del directorio
-    const directorio = this.formData.directorioProvisorio || {};
-    const presidente = directorio.presidente;
-    const nombrePresidente = presidente
-      ? `${presidente.primerNombre}${presidente.segundoNombre ? ' ' + presidente.segundoNombre : ''} ${presidente.apellidoPaterno} ${presidente.apellidoMaterno}`
-      : '[Nombre del Presidente]';
-    const rutPresidente = presidente?.rut || '[RUT]';
+    return `DEPOSITO DE ANTECEDENTES N° __________/
 
-    return `════════════════════════════════════════════════════════════════════
-                    BORRADOR - DEPÓSITO DE ANTECEDENTES
-           Este documento será completado por la Secretaría Municipal
-════════════════════════════════════════════════════════════════════
+TIPO DE ORGANIZACIÓN: ${tipoOrg}
 
+NOMBRE DE LA ORGANIZACIÓN:
+${org.name || '_____________________________________'}
 
-              DEPOSITO DE ANTECEDENTES N° __________/${new Date().getFullYear()}
+UNIDAD VECINAL: ${unidadVecinal}/
 
+En Renca, a ______________________ de conformidad a lo que establece la Ley Nº
+19.418 del 09 de octubre de 1995, procedo a inscribir en el presente Libro de Registro a la
+Organización Comunitaria antes señalada.
 
-En ${org.commune}, Región ${org.region}, a [FECHA], comparece ante la
-Secretaría Municipal de la Ilustre Municipalidad de ${org.commune}:
-
-Don(ña) ${nombrePresidente}, RUT ${rutPresidente},
-en su calidad de Presidente/a del Directorio Provisorio de la organización
-denominada "${org.name}", quien solicita el depósito de los antecedentes
-de constitución de dicha organización comunitaria.
+Los documentos relativos al Acta de Constitución, Aprobación de Estatutos, Listado
+de Socios, Asistentes y Elección de Directorio Provisional, se encuentran archivados
+en Carpeta Digital en el Departamento de Registro y Certificación.
 
 
-ANTECEDENTES QUE SE DEPOSITAN:
-
-   [ ] 1. Acta de Asamblea Constitutiva
-   [ ] 2. Estatutos aprobados
-   [ ] 3. Registro de Socios Fundadores (${totalSocios} miembros)
-   [ ] 4. Declaraciones Juradas del Directorio Provisorio
-   [ ] 5. Certificado del Ministro de Fe
-   [ ] 6. Fotocopia de cédulas de identidad de los directores
-
-
-DATOS DE LA ORGANIZACIÓN:
-
-Nombre: ${org.name}
-Tipo: ${tipoOrg}
-Domicilio: ${org.address || '[Dirección]'}
-Comuna: ${org.commune}
-Región: ${org.region}
-
-
-Previa verificación de que los documentos cumplen con los requisitos legales
-establecidos en la Ley N° 19.418, se procede a efectuar el depósito de los
-antecedentes señalados.
-
-
-La organización adquiere personalidad jurídica a partir de la fecha de este
-depósito, sin perjuicio de las observaciones que pudiere formular el
-Secretario Municipal dentro del plazo legal.
-
-
-
-________________________                    ________________________
-${nombrePresidente.substring(0, 24)}              [Nombre Funcionario]
-Presidente/a del Directorio                 Secretaría Municipal
-Provisorio                                  I. Municipalidad de ${org.commune}
-
-════════════════════════════════════════════════════════════════════
-NOTA: Este documento será completado al momento de depositar los
-antecedentes en la Secretaría Municipal.
-════════════════════════════════════════════════════════════════════`;
+Secretaria Municipal`;
   }
 
   /**
