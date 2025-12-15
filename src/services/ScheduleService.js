@@ -219,6 +219,7 @@ class ScheduleService {
   getMonthAvailability(year, month) {
     const schedule = this.getSchedule();
     const bookings = this.getAllBookings();
+    const activeMinistrosCount = this.getActiveMinistrosCount();
     const availability = {
       available: [],
       partial: [],
@@ -226,10 +227,8 @@ class ScheduleService {
     };
 
     console.log('📆 [ScheduleService] getMonthAvailability para:', year, month);
+    console.log('📆 [ScheduleService] Ministros activos:', activeMinistrosCount);
     console.log('📆 [ScheduleService] Total reservas:', bookings.length);
-    if (bookings.length > 0) {
-      console.log('📆 [ScheduleService] Reservas existentes:', bookings.map(b => `${b.date} ${b.time} (${b.status})`));
-    }
 
     // Iterar todos los días del mes
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -244,14 +243,31 @@ class ScheduleService {
         continue;
       }
 
-      // Contar slots disponibles vs reservados
-      const totalSlots = daySchedule.slots.length;
-      const bookedSlots = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled').length;
-      const availableSlots = totalSlots - bookedSlots;
+      // Contar reservas por horario para este día
+      const dayBookings = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled');
+      const bookingsCountByTime = {};
+      dayBookings.forEach(b => {
+        bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
+      });
 
-      if (availableSlots === 0) {
+      // Contar slots con disponibilidad
+      let slotsWithAvailability = 0;
+      let slotsPartial = 0;
+      daySchedule.slots.forEach(slot => {
+        if (slot.available) {
+          const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+          if (bookingsAtTime < activeMinistrosCount) {
+            slotsWithAvailability++;
+            if (bookingsAtTime > 0) {
+              slotsPartial++;
+            }
+          }
+        }
+      });
+
+      if (slotsWithAvailability === 0) {
         availability.unavailable.push(dateKey);
-      } else if (availableSlots < totalSlots) {
+      } else if (slotsPartial > 0 || slotsWithAvailability < daySchedule.slots.filter(s => s.available).length) {
         availability.partial.push(dateKey);
       } else {
         availability.available.push(dateKey);
@@ -265,6 +281,7 @@ class ScheduleService {
 
   /**
    * Obtiene slots disponibles de un día específico (excluyendo reservados)
+   * Considera el número de ministros activos para permitir reservas simultáneas
    */
   getAvailableSlots(date) {
     const daySchedule = this.getDaySchedule(date);
@@ -276,23 +293,52 @@ class ScheduleService {
     const dateKey = this.getDateKey(date);
     const bookings = this.getAllBookings();
 
+    // Obtener número de ministros activos
+    const activeMinistrosCount = this.getActiveMinistrosCount();
+    console.log('📅 [ScheduleService] Ministros activos:', activeMinistrosCount);
+
     console.log('📅 [ScheduleService] getAvailableSlots para fecha:', dateKey);
     console.log('📅 [ScheduleService] Total reservas en sistema:', bookings.length);
-    console.log('📅 [ScheduleService] Reservas:', bookings.map(b => ({ date: b.date, time: b.time, status: b.status })));
 
-    const bookedTimes = bookings
-      .filter(b => b.date === dateKey && b.status !== 'cancelled')
-      .map(b => b.time);
+    // Contar reservas por horario para esta fecha
+    const bookingsForDate = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled');
+    const bookingsCountByTime = {};
+    bookingsForDate.forEach(b => {
+      bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
+    });
 
-    console.log('📅 [ScheduleService] Horarios ya reservados para esta fecha:', bookedTimes);
+    console.log('📅 [ScheduleService] Reservas por horario:', bookingsCountByTime);
 
+    // Filtrar slots donde aún hay ministros disponibles
     const availableSlots = daySchedule.slots
-      .filter(slot => slot.available && !bookedTimes.includes(slot.time))
+      .filter(slot => {
+        if (!slot.available) return false;
+        const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+        // Solo disponible si hay menos reservas que ministros activos
+        return bookingsAtTime < activeMinistrosCount;
+      })
       .map(slot => slot.time);
 
     console.log('📅 [ScheduleService] Horarios disponibles (después de filtrar):', availableSlots);
 
     return availableSlots;
+  }
+
+  /**
+   * Obtiene el número de ministros activos desde localStorage
+   */
+  getActiveMinistrosCount() {
+    try {
+      const ministrosData = localStorage.getItem('ministros_fe');
+      if (ministrosData) {
+        const ministros = JSON.parse(ministrosData);
+        const activeCount = ministros.filter(m => m.active).length;
+        return activeCount > 0 ? activeCount : 1; // Mínimo 1 para evitar división por cero
+      }
+    } catch (e) {
+      console.warn('Error obteniendo ministros:', e);
+    }
+    return 1; // Default: 1 ministro si no hay datos
   }
 
   // ============ GESTIÓN DE RESERVAS ============

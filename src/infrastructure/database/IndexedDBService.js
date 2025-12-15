@@ -7,7 +7,7 @@
 export class IndexedDBService {
   constructor() {
     this.dbName = 'ComunidadRencaDB';
-    this.version = 1;
+    this.version = 2; // Incrementado para añadir store de certificados wizard
     this.db = null;
   }
 
@@ -59,6 +59,11 @@ export class IndexedDBService {
           const docsStore = db.createObjectStore('documents', { keyPath: 'id' });
           docsStore.createIndex('applicationId', 'applicationId', { unique: false });
           docsStore.createIndex('type', 'type', { unique: false });
+        }
+
+        // Store para certificados del wizard (base64 grandes)
+        if (!db.objectStoreNames.contains('wizard_certificates')) {
+          db.createObjectStore('wizard_certificates', { keyPath: 'key' });
         }
 
         console.log('📦 Stores creadas en IndexedDB');
@@ -214,6 +219,79 @@ export class IndexedDBService {
     }
 
     return new Blob([ab], { type: mimeType });
+  }
+
+  // ============ MÉTODOS PARA CERTIFICADOS DEL WIZARD ============
+
+  /**
+   * Guarda un certificado del wizard
+   */
+  async saveWizardCertificate(key, certData) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readwrite');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.put({ key, ...certData, savedAt: new Date().toISOString() });
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(new Error('Error al guardar certificado'));
+    });
+  }
+
+  /**
+   * Obtiene un certificado del wizard
+   */
+  async getWizardCertificate(key) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readonly');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.get(key);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error('Error al obtener certificado'));
+    });
+  }
+
+  /**
+   * Obtiene todos los certificados del wizard
+   */
+  async getAllWizardCertificates() {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readonly');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        // Convertir array a objeto con key como propiedad
+        const certs = {};
+        request.result.forEach(cert => {
+          certs[cert.key] = cert;
+        });
+        resolve(certs);
+      };
+      request.onerror = () => reject(new Error('Error al obtener certificados'));
+    });
+  }
+
+  /**
+   * Limpia todos los certificados del wizard
+   */
+  async clearWizardCertificates() {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readwrite');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.clear();
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(new Error('Error al limpiar certificados'));
+    });
   }
 }
 

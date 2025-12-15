@@ -433,7 +433,7 @@ export class WizardController {
       this.startWizard();
     });
 
-    document.getElementById('btn-continue').addEventListener('click', () => {
+    document.getElementById('btn-continue').addEventListener('click', async () => {
       document.getElementById('resume-wizard-modal').remove();
       // Restaurar formData asegurando que todos los campos existan
       this.formData = {
@@ -449,6 +449,23 @@ export class WizardController {
         directorioProvisorio: savedProgress.formData.directorioProvisorio || {},
         certificatesStep5: savedProgress.formData.certificatesStep5 || {}
       };
+
+      // Cargar certificados desde IndexedDB (tienen el base64 completo)
+      try {
+        const idbCerts = await indexedDBService.getAllWizardCertificates();
+        if (Object.keys(idbCerts).length > 0) {
+          console.log('✅ Certificados restaurados desde IndexedDB:', Object.keys(idbCerts));
+          // Merge con los metadatos de localStorage
+          Object.keys(idbCerts).forEach(key => {
+            if (idbCerts[key].base64) {
+              this.formData.certificatesStep5[key] = idbCerts[key];
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar certificados de IndexedDB:', e);
+      }
+
       this.currentStep = savedProgress.currentStep;
       // Restaurar organizationId si existe (para actualizar org existente)
       this.existingOrganizationId = savedProgress.organizationId || null;
@@ -471,6 +488,14 @@ export class WizardController {
     this.updateUI();
     this.updateProgressBar();
     this.initializeCurrentStep();
+
+    // Si estamos resumiendo y el usuario estaba en la pantalla del Ministro, mostrarla
+    if (resuming && this.currentStep === 6 && this.formData.showingMinistroScreen) {
+      console.log('🔄 Restaurando pantalla de solicitud de Ministro de Fe...');
+      setTimeout(() => {
+        this.showMinistroRequestScreen();
+      }, 100);
+    }
   }
 
   /**
@@ -2400,12 +2425,21 @@ export class WizardController {
             if (!this.formData.certificatesStep5) {
               this.formData.certificatesStep5 = {};
             }
-            this.formData.certificatesStep5[certInfo.key] = {
+            const certData = {
               name: file.name,
               size: file.size,
               type: file.type,
               base64: base64Data // Guardar como base64 en lugar de File object
             };
+            this.formData.certificatesStep5[certInfo.key] = certData;
+
+            // Guardar también en IndexedDB para persistencia (localStorage tiene límite de ~5MB)
+            try {
+              await indexedDBService.saveWizardCertificate(certInfo.key, certData);
+              console.log('✅ Certificado guardado en IndexedDB:', certInfo.key);
+            } catch (e) {
+              console.warn('No se pudo guardar certificado en IndexedDB:', e);
+            }
 
             // Actualizar UI
             const nameDisplay = document.getElementById(certInfo.name);
@@ -6861,6 +6895,10 @@ Secretaria Municipal`;
   async showMinistroRequestScreen() {
     const stepContent = document.querySelector('#step-6');
     if (!stepContent) return;
+
+    // Marcar que estamos mostrando la pantalla del Ministro para poder restaurarla
+    this.formData.showingMinistroScreen = true;
+    this.saveProgress();
 
     // Reemplazar el contenido del paso 6 con el formulario de solicitud de Ministro
     const orgTypeName = getOrgTypeName(this.formData.organization.type);
