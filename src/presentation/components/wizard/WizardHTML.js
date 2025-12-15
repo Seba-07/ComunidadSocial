@@ -1088,17 +1088,17 @@ export function getStep6HTML_Documentos() {
       ">
         <span style="font-size: 20px;">📄</span>
         <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #374151;">Documentos Generados</h4>
-        <span style="
+        <span id="documents-count-badge" style="
           background: #3b82f6;
           color: white;
           padding: 4px 10px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
-        ">5 documentos</span>
+        ">Cargando...</span>
       </div>
 
-      <!-- Lista de documentos -->
+      <!-- Lista de documentos - se genera dinámicamente -->
       <div class="documents-list" id="documents-list" style="
         background: white;
         border: 1px solid #e5e7eb;
@@ -1106,11 +1106,7 @@ export function getStep6HTML_Documentos() {
         overflow: hidden;
         margin-bottom: 24px;
       ">
-        ${getAutoDocumentItemHTML('ACTA_CONSTITUTIVA', 'Acta Constitutiva', 'Proyecto del acta de la asamblea constitutiva', true)}
-        ${getAutoDocumentItemHTML('ESTATUTOS', 'Estatutos', 'Proyecto de estatutos para votación', true)}
-        ${getAutoDocumentItemHTML('REGISTRO_SOCIOS', 'Registro de Socios', 'Listado preliminar de socios fundadores', true)}
-        ${getAutoDocumentItemHTML('DECLARACION_JURADA_PRESIDENTE', 'Declaración Jurada', 'Modelo de declaración del presidente', true)}
-        ${getAutoDocumentItemHTML('ACTA_COMISION_ELECTORAL', 'Acta Comisión Electoral', 'Proyecto del acta de la comisión', true)}
+        <!-- Los documentos se cargan dinámicamente en initializeStep6_Documentos -->
       </div>
 
       <!-- Otros Documentos -->

@@ -4723,11 +4723,20 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
    * Descarga todos los documentos
    */
   downloadAllDocuments() {
-    const docs = ['ACTA_CONSTITUTIVA', 'ESTATUTOS', 'REGISTRO_SOCIOS', 'DECLARACION_JURADA_PRESIDENTE', 'ACTA_COMISION_ELECTORAL'];
-    docs.forEach(docType => {
-      setTimeout(() => this.downloadDocument(docType), 500);
+    const documents = this.formData.documents || {};
+    const docKeys = Object.keys(documents);
+
+    if (docKeys.length === 0) {
+      showToast('No hay documentos para descargar', 'warning');
+      return;
+    }
+
+    let delay = 0;
+    docKeys.forEach(docType => {
+      setTimeout(() => this.downloadDocument(docType), delay);
+      delay += 500; // Espaciar las descargas
     });
-    showToast('Descargando documentos...', 'info');
+    showToast(`Descargando ${docKeys.length} documentos...`, 'info');
   }
 
   /**
@@ -5973,6 +5982,144 @@ antecedentes en la Secretaría Municipal.
   }
 
   /**
+   * Renderiza la lista de documentos dinámicamente
+   */
+  renderDocumentsList() {
+    const container = document.getElementById('documents-list');
+    const badge = document.getElementById('documents-count-badge');
+    if (!container) return;
+
+    // Obtener todos los documentos generados
+    const documents = this.formData.documents || {};
+    const docKeys = Object.keys(documents);
+
+    // Mapeo de tipos a nombres legibles y descripciones
+    const docInfo = {
+      'ACTA_CONSTITUTIVA': { name: 'Acta Constitutiva', desc: 'Proyecto del acta de la asamblea constitutiva' },
+      'ESTATUTOS': { name: 'Estatutos', desc: 'Proyecto de estatutos para votación' },
+      'REGISTRO_SOCIOS': { name: 'Registro de Socios', desc: 'Listado preliminar de socios fundadores' },
+      'DECLARACION_JURADA_PRESIDENTE': { name: 'Declaración Jurada - Presidente/a', desc: 'Declaración del presidente del directorio' },
+      'DECLARACION_JURADA_SECRETARIO': { name: 'Declaración Jurada - Secretario/a', desc: 'Declaración del secretario del directorio' },
+      'DECLARACION_JURADA_TESORERO': { name: 'Declaración Jurada - Tesorero/a', desc: 'Declaración del tesorero del directorio' },
+      'DECLARACION_JURADA_DIRECTOR1': { name: 'Declaración Jurada - Director/a 1', desc: 'Declaración del director 1' },
+      'DECLARACION_JURADA_DIRECTOR2': { name: 'Declaración Jurada - Director/a 2', desc: 'Declaración del director 2' },
+      'DECLARACION_JURADA_DIRECTOR3': { name: 'Declaración Jurada - Director/a 3', desc: 'Declaración del director 3' },
+      'CERTIFICADO_MINISTRO_FE': { name: 'Certificado del Ministro de Fe', desc: 'Certificado de la asamblea constitutiva' },
+      'CERTIFICACION_MUNICIPAL': { name: 'Certificación Municipal', desc: 'Certificación de la Secretaría Municipal' },
+      'DEPOSITO_ANTECEDENTES': { name: 'Depósito de Antecedentes', desc: 'Formulario de depósito de documentos' }
+    };
+
+    // Generar HTML para cada documento
+    let html = '';
+    docKeys.forEach(docType => {
+      const info = docInfo[docType] || { name: docType, desc: '' };
+      html += this.getDocumentItemHTML(docType, info.name, info.desc);
+    });
+
+    container.innerHTML = html;
+
+    // Actualizar badge con cantidad de documentos
+    if (badge) {
+      badge.textContent = `${docKeys.length} documentos`;
+    }
+  }
+
+  /**
+   * Genera el HTML para un item de documento
+   */
+  getDocumentItemHTML(type, name, description) {
+    return `
+      <div class="document-row" data-doc-type="${type}" style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        gap: 12px;
+        flex-wrap: wrap;
+      ">
+        <!-- Nombre del documento con badge -->
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;">
+          <span style="font-size: 15px; font-weight: 600; color: #1f2937;">${name}</span>
+          <span style="
+            background: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+          ">Generado</span>
+        </div>
+
+        <!-- Botones de acción compactos -->
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <button type="button" class="btn-preview" data-doc-type="${type}" style="
+            padding: 8px 14px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Ver
+          </button>
+          <button type="button" class="btn-edit-doc" data-doc-type="${type}" style="
+            padding: 8px 14px;
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Editar
+          </button>
+          <button type="button" class="btn-download" data-doc-type="${type}" style="
+            padding: 8px 14px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Descargar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Inicializa paso 6: Documentos
    */
   initializeStep6_Documentos() {
@@ -5981,6 +6128,9 @@ antecedentes en la Secretaría Municipal.
 
     // Aplicar firmas a los documentos
     this.updateDocumentsWithSignatures();
+
+    // Renderizar lista de documentos dinámicamente
+    this.renderDocumentsList();
 
     // Generar lista inicial de otros documentos
     this.renderOtherDocumentsList();
