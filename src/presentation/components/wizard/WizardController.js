@@ -4944,16 +4944,18 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     };
 
     // Generar líneas dinámicas para la directiva provisional (formato alineado)
-    let directivaLines = 'DIRECTIVA PROVISIONAL                                              CED. IDENTIDAD\n';
+    // Usar ancho fijo total de 80 caracteres para alinear todos los RUTs
+    let directivaLines = 'DIRECTIVA PROVISIONAL                                                  CED. IDENTIDAD\n';
+    directivaLines +=    '─────────────────────────────────────────────────────────────────────────────────────\n';
     dirConfig.cargos.forEach(cargo => {
       const member = directorio[cargo.id];
       const cargoNombre = cargo.nombre.toUpperCase().replace('/A', ' (A)');
       const nombreCompleto = formatNombre(member);
       const rut = formatRut(member);
-      // Formatear con cargo fijo de 20 caracteres, nombre con guiones hasta 45, luego RUT
+      // Usar ancho fijo: cargo 20 chars, nombre 40 chars con guiones, RUT alineado
       const cargoFixed = cargoNombre.padEnd(20, ' ');
-      const nombreFixed = nombreCompleto.padEnd(45, '_');
-      directivaLines += `\n${cargoFixed}${nombreFixed} ${rut}`;
+      const nombreFixed = nombreCompleto.substring(0, 40).padEnd(40, '_');
+      directivaLines += `${cargoFixed}${nombreFixed} ${rut}\n`;
     });
 
     // Generar líneas dinámicas para la comisión electoral
@@ -5152,10 +5154,10 @@ aprobación por los miembros fundadores el día de la Asamblea.
    * Genera el Registro de Socios (BORRADOR)
    */
   generateRegistroSocios(org, members, today) {
-    let registro = `════════════════════════════════════════════════════════════════════
-                    BORRADOR - LISTADO PRELIMINAR DE SOCIOS
-       Los asistentes firmarán el registro el día de la Asamblea
-════════════════════════════════════════════════════════════════════
+    let registro = `════════════════════════════════════════════════════════════════════════════════════════════════════════
+                              BORRADOR - LISTADO PRELIMINAR DE SOCIOS
+                     Los asistentes firmarán el registro el día de la Asamblea
+════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 REGISTRO DE SOCIOS FUNDADORES
 ${org.name.toUpperCase()}
@@ -5163,20 +5165,22 @@ ${org.name.toUpperCase()}
 Fecha de elaboración: Borrador previo a la Asamblea
 Total de Socios Fundadores Registrados: ${members.length}
 
-${'='.repeat(100)}
-N°   | RUT              | NOMBRE COMPLETO                    | DOMICILIO                    | TELÉFONO
-${'='.repeat(100)}
+┌─────┬───────────────┬──────────────────────────────────────┬─────────────────────────────┬───────────────┐
+│ N°  │     RUT       │          NOMBRE COMPLETO             │         DOMICILIO           │   TELÉFONO    │
+├─────┼───────────────┼──────────────────────────────────────┼─────────────────────────────┼───────────────┤
 `;
 
     members.forEach((member, index) => {
       const num = String(index + 1).padStart(3, ' ');
-      const rut = member.rut.padEnd(16, ' ');
-      const nombre = `${member.firstName} ${member.lastName}`.substring(0, 34).padEnd(34, ' ');
-      const direccion = (member.address || '').substring(0, 28).padEnd(28, ' ');
-      const telefono = member.phone || '';
+      const rut = (member.rut || '').padEnd(13, ' ');
+      const nombre = `${member.firstName} ${member.lastName}`.substring(0, 36).padEnd(36, ' ');
+      const direccion = (member.address || '').substring(0, 27).padEnd(27, ' ');
+      const telefono = (member.phone || '').padEnd(13, ' ');
 
-      registro += `${num}  | ${rut} | ${nombre} | ${direccion} | ${telefono}\n`;
+      registro += `│ ${num} │ ${rut} │ ${nombre} │ ${direccion} │ ${telefono} │\n`;
     });
+
+    registro += `└─────┴───────────────┴──────────────────────────────────────┴─────────────────────────────┴───────────────┘`;
 
     // Obtener secretario del directorio
     const directorio = this.formData.directorioProvisorio || {};
@@ -5483,15 +5487,17 @@ designado por la Municipalidad el día de la Asamblea Constitutiva.
     };
 
     // Generar líneas dinámicas del directorio - según cantidad de cargos
+    // Usar formato alineado: cargo 20 chars, nombre 35 chars con guiones, CI alineado
     let directivaLines = '';
     dirConfig.cargos.forEach(cargo => {
       const miembro = directorio[cargo.id];
       const cargoLabel = cargo.nombre.toUpperCase().replace('/A', '');
       const nombre = formatNombre(miembro);
       const rut = formatRut(miembro);
-      // Formato alineado: CARGO + nombre con guiones hasta 40 chars + RUT
-      const nombreConGuiones = nombre.length < 40 ? nombre + '_'.repeat(40 - nombre.length) : nombre;
-      directivaLines += `${cargoLabel.padEnd(12)} ${nombreConGuiones} C.I. Nº ${rut}\n`;
+      // Cargo fijo 20 chars, nombre fijo 35 chars con guiones
+      const cargoFixed = cargoLabel.padEnd(20, ' ');
+      const nombreFixed = nombre.substring(0, 35).padEnd(35, '_');
+      directivaLines += `${cargoFixed}${nombreFixed} C.I. Nº ${rut}\n`;
     });
 
     // Generar líneas de comisión electoral (siempre 3)
@@ -5499,9 +5505,10 @@ designado por la Municipalidad el día de la Asamblea Constitutiva.
     let comisionLines = '';
     for (let i = 0; i < 3; i++) {
       const member = comisionMembers[i];
-      const nombre = member ? `${member.firstName} ${member.lastName}`.padEnd(40, '_') : '____________________________________________';
+      const nombre = member ? `${member.firstName} ${member.lastName}`.substring(0, 35).padEnd(35, '_') : '_'.repeat(35);
       const rut = member?.rut || '____________________';
-      comisionLines += `DON (ÑA) ${nombre} C.I. Nº ${rut}\n`;
+      // Mismo formato: prefijo 20 chars, nombre 35 chars
+      comisionLines += `${'DON (ÑA)'.padEnd(20, ' ')}${nombre} C.I. Nº ${rut}\n`;
     }
 
     // Datos del presidente
