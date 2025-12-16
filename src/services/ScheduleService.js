@@ -256,16 +256,17 @@ class ScheduleService {
       let slotsPartial = 0;
       let totalAvailableSlots = 0;
 
+      // Obtener total de ministros activos (disponibles todo el día)
+      const totalMinistros = this.getActiveMinistrosCount();
+
       daySchedule.slots.forEach(slot => {
         if (slot.available) {
-          // Obtener ministros disponibles para ESTA HORA específica
-          const ministrosForTime = this.getActiveMinistrosCountForTime(slot.time);
           const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
 
-          // Solo contar si hay al menos un ministro disponible para esta hora
-          if (ministrosForTime > 0) {
+          // Solo contar si hay al menos un ministro activo
+          if (totalMinistros > 0) {
             totalAvailableSlots++;
-            if (bookingsAtTime < ministrosForTime) {
+            if (bookingsAtTime < totalMinistros) {
               slotsWithAvailability++;
               if (bookingsAtTime > 0) {
                 slotsPartial++;
@@ -315,19 +316,21 @@ class ScheduleService {
 
     console.log('📅 [ScheduleService] Reservas por horario:', bookingsCountByTime);
 
-    // Filtrar slots donde aún hay ministros disponibles EN ESA HORA ESPECÍFICA
+    // Obtener total de ministros activos (disponibles todo el día)
+    const totalMinistros = this.getActiveMinistrosCount();
+    console.log('📅 [ScheduleService] Total ministros activos:', totalMinistros);
+
+    // Filtrar slots donde aún hay ministros disponibles
     const availableSlots = daySchedule.slots
       .filter(slot => {
         if (!slot.available) return false;
 
-        // Obtener ministros disponibles para ESTA HORA específica
-        const ministrosForTime = this.getActiveMinistrosCountForTime(slot.time);
         const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
 
-        console.log(`📅 [ScheduleService] Hora ${slot.time}: ${ministrosForTime} ministros disponibles, ${bookingsAtTime} reservas`);
+        console.log(`📅 [ScheduleService] Hora ${slot.time}: ${totalMinistros} ministros, ${bookingsAtTime} reservas`);
 
-        // Solo disponible si hay ministros para esa hora Y hay menos reservas que ministros
-        return ministrosForTime > 0 && bookingsAtTime < ministrosForTime;
+        // Solo disponible si hay ministros activos Y hay menos reservas que ministros
+        return totalMinistros > 0 && bookingsAtTime < totalMinistros;
       })
       .map(slot => slot.time);
 
@@ -362,8 +365,6 @@ class ScheduleService {
       this.activeMinistrosCount = this.activeMinistrosList.length;
       this.lastMinistrosSync = now;
       console.log('👥 [ScheduleService] Ministros activos cargados:', this.activeMinistrosCount);
-      console.log('👥 [ScheduleService] Ministros con availableHours:',
-        this.activeMinistrosList.filter(m => m.availableHours?.length > 0).length);
       return this.activeMinistrosCount;
     } catch (e) {
       console.warn('⚠️ [ScheduleService] Error cargando ministros:', e.message);
@@ -373,26 +374,13 @@ class ScheduleService {
 
   /**
    * Obtiene el número de ministros disponibles para una hora específica
-   * @param {string} time - Hora en formato "HH:MM" (ej: "09:00")
-   * @returns {number} Cantidad de ministros disponibles en esa hora
+   * NOTA: Ahora todos los ministros activos están disponibles todo el día
+   * @param {string} time - Hora en formato "HH:MM" (ej: "09:00") - ignorado
+   * @returns {number} Cantidad de ministros activos
    */
   getActiveMinistrosCountForTime(time) {
-    // Si no hay lista de ministros, devolver 0
-    if (!this.activeMinistrosList || this.activeMinistrosList.length === 0) {
-      return 0;
-    }
-
-    // Contar ministros que tienen esta hora en sus availableHours
-    const count = this.activeMinistrosList.filter(ministro => {
-      // Si el ministro no tiene availableHours definido, considerarlo NO disponible
-      // (esto obliga a configurar horarios para cada ministro)
-      if (!ministro.availableHours || !Array.isArray(ministro.availableHours) || ministro.availableHours.length === 0) {
-        return false;
-      }
-      return ministro.availableHours.includes(time);
-    }).length;
-
-    return count;
+    // Todos los ministros activos están disponibles todo el día
+    return this.activeMinistrosCount;
   }
 
   // ============ GESTIÓN DE RESERVAS ============
@@ -419,8 +407,6 @@ class ScheduleService {
         this.activeMinistrosCount = this.activeMinistrosList.length;
         this.lastMinistrosSync = now;
         console.log('👥 [ScheduleService] Ministros activos desde API:', this.activeMinistrosCount);
-        console.log('👥 [ScheduleService] Ministros con availableHours:',
-          this.activeMinistrosList.filter(m => m.availableHours?.length > 0).length);
       } catch (e) {
         console.warn('⚠️ [ScheduleService] No se pudieron cargar ministros:', e.message);
         // En caso de error, mantener el valor anterior (no cambiar a 1)
