@@ -7493,7 +7493,7 @@ Secretaria Municipal`;
       }
 
       // Mostrar mensaje de confirmación
-      const stepContent = document.querySelector('#step-5');
+      const stepContent = document.querySelector('#step-6');
       if (stepContent) {
         stepContent.innerHTML = `
           <div style="text-align: center; padding: 60px 20px;">
