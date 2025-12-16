@@ -7258,9 +7258,11 @@ Secretaria Municipal`;
     const { scheduleService } = await import('../../../services/ScheduleService.js');
 
     // Cargar ministros activos y sincronizar reservas del backend
-    // Esto asegura que el cálculo de disponibilidad sea correcto
-    await scheduleService.loadActiveMinistros();
-    await scheduleService.syncBackendBookings();
+    // Forzar recarga para asegurar datos actualizados al mostrar el calendario
+    console.log('📅 [Wizard] Inicializando calendario, cargando datos frescos...');
+    await scheduleService.loadActiveMinistros(true); // forceRefresh = true
+    await scheduleService.syncBackendBookings(true); // forceRefresh = true
+    console.log('📅 [Wizard] Ministros activos:', scheduleService.getActiveMinistrosCount());
 
     let currentDate = new Date();
     let selectedDateKey = null;

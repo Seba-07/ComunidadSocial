@@ -350,16 +350,20 @@ class ScheduleService {
 
   /**
    * Carga el número de ministros activos desde la API
-   * Se usa para inicializar el servicio y mantener el dato actualizado
+   * @param {boolean} forceRefresh - Si es true, ignora el caché
    */
-  async loadActiveMinistros() {
+  async loadActiveMinistros(forceRefresh = false) {
     const now = Date.now();
-    // Usar caché si no ha expirado
-    if (now - this.lastMinistrosSync < this.CACHE_TTL && this.activeMinistrosCount >= 0) {
+    // Usar caché si no ha expirado y no se fuerza recarga
+    // Solo usar caché si ya tenemos datos cargados (lastMinistrosSync > 0)
+    if (!forceRefresh && this.lastMinistrosSync > 0 &&
+        now - this.lastMinistrosSync < this.CACHE_TTL) {
+      console.log('👥 [ScheduleService] Usando caché de ministros:', this.activeMinistrosCount);
       return this.activeMinistrosCount;
     }
 
     try {
+      console.log('👥 [ScheduleService] Cargando ministros desde API...');
       const ministros = await apiService.getActiveMinistros();
       this.activeMinistrosList = Array.isArray(ministros) ? ministros : [];
       this.activeMinistrosCount = this.activeMinistrosList.length;
@@ -388,12 +392,14 @@ class ScheduleService {
   /**
    * Sincroniza las reservas con el backend (desde organizaciones con electionDate/electionTime)
    * Esto permite que todos los usuarios vean los mismos horarios ocupados
+   * @param {boolean} forceRefresh - Si es true, ignora el caché
    */
-  async syncBackendBookings() {
+  async syncBackendBookings(forceRefresh = false) {
     try {
       const now = Date.now();
-      // Usar caché si no ha expirado
-      if (now - this.lastBackendSync < this.CACHE_TTL && this.backendBookingsCache.length > 0) {
+      // Usar caché si no ha expirado y no se fuerza recarga
+      if (!forceRefresh && this.lastBackendSync > 0 &&
+          now - this.lastBackendSync < this.CACHE_TTL && this.backendBookingsCache.length > 0) {
         console.log('📆 [ScheduleService] Usando caché de reservas backend');
         return this.backendBookingsCache;
       }
