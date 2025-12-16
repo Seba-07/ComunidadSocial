@@ -14662,6 +14662,43 @@ a.header-logo:hover {
     color: var(--text-primary);
 }
 
+.time-slot-item span.slot-status {
+    flex: 0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.time-slot-item.slot-occupied {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.time-slot-item.slot-occupied svg {
+    color: #dc2626;
+}
+
+.time-slot-item.slot-occupied span.slot-status {
+    background: #dc2626;
+    color: white;
+}
+
+.time-slot-item.slot-available {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.time-slot-item.slot-available svg {
+    color: #16a34a;
+}
+
+.time-slot-item.slot-available span.slot-status {
+    background: #16a34a;
+    color: white;
+}
+
 .btn-remove-slot {
     width: 28px;
     height: 28px;

@@ -277,21 +277,43 @@ export class ScheduleManager {
       return;
     }
 
-    container.innerHTML = slots.map(slot => `
-      <div class="time-slot-item">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <span>${slot.time}</span>
-        <button type="button" class="btn-remove-slot" data-time="${slot.time}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
+    // Obtener reservas para esta fecha para marcar slots ocupados
+    const bookings = this.selectedDate ? scheduleService.getAllBookings().filter(
+      b => b.date === this.selectedDate && b.status !== 'cancelled'
+    ) : [];
+
+    // Contar reservas por hora
+    const bookingsCountByTime = {};
+    bookings.forEach(b => {
+      bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
+    });
+
+    container.innerHTML = slots.map(slot => {
+      const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+      const ministrosForTime = scheduleService.getActiveMinistrosCountForTime(slot.time);
+      const isOccupied = bookingsAtTime >= ministrosForTime || ministrosForTime === 0;
+      const statusClass = isOccupied ? 'slot-occupied' : 'slot-available';
+      const statusText = isOccupied
+        ? `Ocupado (${bookingsAtTime}/${ministrosForTime} MF)`
+        : `Disponible (${bookingsAtTime}/${ministrosForTime} MF)`;
+
+      return `
+        <div class="time-slot-item ${statusClass}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-        </button>
-      </div>
-    `).join('');
+          <span>${slot.time}</span>
+          <span class="slot-status">${statusText}</span>
+          <button type="button" class="btn-remove-slot" data-time="${slot.time}" title="Eliminar horario">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      `;
+    }).join('');
 
     // Event listeners para eliminar slots
     container.querySelectorAll('.btn-remove-slot').forEach(btn => {

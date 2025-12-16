@@ -467,6 +467,15 @@ class ScheduleService {
           const time = org.electionTime || org.ministroData?.scheduledTime;
           const dateKey = formatDateToKey(rawDate);
 
+          // Obtener nombre del usuario desde userId (populado) o provisionalDirectorio
+          const user = org.userId; // Populado con {firstName, lastName, email}
+          const userName = user?.firstName && user?.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : org.provisionalDirectorio?.president?.firstName
+              ? `${org.provisionalDirectorio.president.firstName} ${org.provisionalDirectorio.president.lastName || ''}`
+              : 'Sin nombre';
+          const userEmail = user?.email || org.contactEmail || 'Sin email';
+
           return {
             id: `backend-${org._id || org.id}`,
             date: dateKey,
@@ -474,8 +483,8 @@ class ScheduleService {
             organizationId: org._id || org.id,
             organizationName: org.organizationName || org.name,
             organizationType: org.organizationType,
-            userName: org.representative?.name || 'N/A',
-            userEmail: org.representative?.email || 'N/A',
+            userName: userName,
+            userEmail: userEmail,
             status: org.status === 'COMPLETED' ? 'completed' : 'confirmed',
             source: 'backend'
           };
