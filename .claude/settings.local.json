@@ -30,7 +30,8 @@
       "Bash(git add:*)",
       "Bash(node scripts/clear-organizations.js:*)",
       "Bash(pkill:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:comunidad-social-api.onrender.com)"
     ],
     "deny": [],
     "ask": []

@@ -159,6 +159,11 @@ class ApiService {
     return this.get('/organizations');
   }
 
+  // PUBLIC: Get booked time slots (no auth required)
+  async getBookedSlots() {
+    return this.get('/organizations/availability/booked-slots');
+  }
+
   async getMyOrganizations() {
     return this.get('/organizations/my');
   }

@@ -406,85 +406,22 @@ class ScheduleService {
 
       console.log('📆 [ScheduleService] Sincronizando reservas desde backend...');
 
-      // Cargar ministros activos desde la API (con lista completa para availableHours)
-      try {
-        const ministros = await apiService.getActiveMinistros();
-        this.activeMinistrosList = Array.isArray(ministros) ? ministros : [];
-        this.activeMinistrosCount = this.activeMinistrosList.length;
-        this.lastMinistrosSync = now;
-        console.log('👥 [ScheduleService] Ministros activos desde API:', this.activeMinistrosCount);
-      } catch (e) {
-        console.warn('⚠️ [ScheduleService] No se pudieron cargar ministros:', e.message);
-        // En caso de error, mantener el valor anterior (no cambiar a 1)
-      }
+      // Usar endpoint público para obtener horarios ocupados (no requiere auth)
+      const bookedSlots = await apiService.getBookedSlots();
 
-      // Obtener todas las organizaciones del backend
-      const organizations = await apiService.getOrganizations();
+      console.log('📆 [ScheduleService] Horarios ocupados desde API:', bookedSlots.length);
 
-      console.log('📆 [ScheduleService] Organizaciones totales:', organizations.length);
-      console.log('📆 [ScheduleService] Orgs con fechas:', organizations.filter(org => org.electionDate || org.ministroData?.scheduledDate).map(o => ({
-        name: o.organizationName || o.name,
-        electionDate: o.electionDate,
-        electionTime: o.electionTime,
-        ministroDate: o.ministroData?.scheduledDate,
-        ministroTime: o.ministroData?.scheduledTime,
-        status: o.status
-      })));
-
-      // Función auxiliar para convertir fecha ISO a YYYY-MM-DD
-      const formatDateToKey = (dateValue) => {
-        if (!dateValue) return null;
-        // Si ya está en formato YYYY-MM-DD, retornarlo
-        if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          return dateValue;
-        }
-        // Si es fecha ISO, extraer solo la parte de fecha
-        const date = new Date(dateValue);
-        if (isNaN(date.getTime())) return null;
-        return date.toISOString().split('T')[0];
-      };
-
-      // Filtrar organizaciones que tienen fecha de asamblea agendada
-      // Considerar tanto electionDate como ministroData.scheduledDate
-      const backendBookings = organizations
-        .filter(org => {
-          const hasElectionData = org.electionDate && org.electionTime;
-          const hasMinistroData = org.ministroData?.scheduledDate && org.ministroData?.scheduledTime;
-          return hasElectionData || hasMinistroData;
-        })
-        .filter(org => !['REJECTED', 'CANCELLED'].includes(org.status))
-        .map(org => {
-          // Priorizar electionDate/electionTime, fallback a ministroData
-          const rawDate = org.electionDate || org.ministroData?.scheduledDate;
-          const time = org.electionTime || org.ministroData?.scheduledTime;
-          const dateKey = formatDateToKey(rawDate);
-
-          // Obtener nombre del usuario desde userId (populado) o provisionalDirectorio
-          const user = org.userId; // Populado con {firstName, lastName, email}
-          const userName = user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : org.provisionalDirectorio?.president?.firstName
-              ? `${org.provisionalDirectorio.president.firstName} ${org.provisionalDirectorio.president.lastName || ''}`
-              : 'Sin nombre';
-          const userEmail = user?.email || org.contactEmail || 'Sin email';
-
-          return {
-            id: `backend-${org._id || org.id}`,
-            date: dateKey,
-            time: time,
-            organizationId: org._id || org.id,
-            organizationName: org.organizationName || org.name,
-            organizationType: org.organizationType,
-            userName: userName,
-            userEmail: userEmail,
-            status: org.status === 'COMPLETED' ? 'completed' : 'confirmed',
-            source: 'backend'
-          };
-        })
-        .filter(b => b.date && b.time); // Filtrar bookings inválidos
+      // Convertir a formato de booking (solo necesitamos date y time para el cálculo)
+      const backendBookings = (bookedSlots || []).map((slot, index) => ({
+        id: `backend-${index}`,
+        date: slot.date,
+        time: slot.time,
+        status: 'confirmed',
+        source: 'backend'
+      })).filter(b => b.date && b.time);
 
       console.log('📆 [ScheduleService] Reservas del backend:', backendBookings.length);
-      console.log('📆 [ScheduleService] Detalle:', backendBookings.map(b => `${b.date} ${b.time} - ${b.organizationName}`));
+      console.log('📆 [ScheduleService] Detalle:', backendBookings.map(b => `${b.date} ${b.time}`));
 
       this.backendBookingsCache = backendBookings;
       this.lastBackendSync = now;

@@ -5,6 +5,42 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// PUBLIC: Get booked time slots (for calendar availability)
+// Returns only date/time pairs without sensitive organization data
+router.get('/availability/booked-slots', async (req, res) => {
+  try {
+    // Get organizations with scheduled dates (not cancelled/rejected)
+    const organizations = await Organization.find({
+      status: { $nin: ['REJECTED', 'CANCELLED'] },
+      $or: [
+        { electionDate: { $exists: true, $ne: null } },
+        { 'ministroData.scheduledDate': { $exists: true, $ne: null } }
+      ]
+    }).select('electionDate electionTime ministroData.scheduledDate ministroData.scheduledTime');
+
+    // Extract only date/time pairs
+    const bookedSlots = organizations
+      .map(org => {
+        const date = org.electionDate || org.ministroData?.scheduledDate;
+        const time = org.electionTime || org.ministroData?.scheduledTime;
+        if (!date || !time) return null;
+
+        // Format date to YYYY-MM-DD
+        const d = new Date(date);
+        const dateKey = d.toISOString().split('T')[0];
+
+        return { date: dateKey, time };
+      })
+      .filter(Boolean);
+
+    console.log('📅 [API] Booked slots:', bookedSlots.length);
+    res.json(bookedSlots);
+  } catch (error) {
+    console.error('Get booked slots error:', error);
+    res.status(500).json({ error: 'Error al obtener horarios ocupados' });
+  }
+});
+
 // Get all organizations (Admin only)
 router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
   try {
