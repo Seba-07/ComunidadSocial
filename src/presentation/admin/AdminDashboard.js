@@ -238,9 +238,7 @@ class AdminDashboard {
       Volver a Solicitudes
     `;
 
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.disabled = true;
-    ministroBtn.style.opacity = '0.5';
+    // Los otros botones de manager se mantienen activos para navegación directa
 
     // Inicializar schedule manager si no existe
     if (!this.scheduleManager) {
@@ -276,15 +274,7 @@ class AdminDashboard {
       Volver a Solicitudes
     `;
 
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.disabled = true;
-    scheduleBtn.style.opacity = '0.5';
-
-    const uvBtn = document.getElementById('btn-uv-manager');
-    if (uvBtn) {
-      uvBtn.disabled = true;
-      uvBtn.style.opacity = '0.5';
-    }
+    // Los otros botones de manager se mantienen activos para navegación directa
 
     // Inicializar ministro manager si no existe
     if (!this.ministroManager) {
@@ -320,14 +310,7 @@ class AdminDashboard {
       Volver a Solicitudes
     `;
 
-    // Deshabilitar otros botones
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.disabled = true;
-    scheduleBtn.style.opacity = '0.5';
-
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.disabled = true;
-    ministroBtn.style.opacity = '0.5';
+    // Los otros botones de manager se mantienen activos para navegación directa
 
     // Inicializar UV manager si no existe
     if (!this.uvManager) {
