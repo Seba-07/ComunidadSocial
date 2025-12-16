@@ -7257,8 +7257,9 @@ Secretaria Municipal`;
     // Importar servicio de horarios
     const { scheduleService } = await import('../../../services/ScheduleService.js');
 
-    // Sincronizar reservas del backend antes de mostrar el calendario
-    // Esto asegura que todos los usuarios vean los mismos horarios ocupados
+    // Cargar ministros activos y sincronizar reservas del backend
+    // Esto asegura que el cálculo de disponibilidad sea correcto
+    await scheduleService.loadActiveMinistros();
     await scheduleService.syncBackendBookings();
 
     let currentDate = new Date();
