@@ -71,14 +71,28 @@ async function loadStats() {
   const ministroId = currentMinistro._id || currentMinistro.id;
   try {
     const stats = await ministroAssignmentService.getStatsByMinistro(ministroId);
-    const total = (stats.pending || 0) + (stats.completed || 0);
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-pending').textContent = stats.pending || 0;
-    document.getElementById('stat-completed').textContent = stats.completed || 0;
-    document.getElementById('stat-validated').textContent = stats.signaturesValidated || 0;
+    const pending = stats.pending || 0;
+    const completed = stats.completed || 0;
+    const validated = stats.signaturesValidated || 0;
+    const total = pending + completed;
+
+    // Update stat cards
+    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('stat-completed').textContent = completed;
+    document.getElementById('stat-validated').textContent = validated;
+
+    // Update filter chip counts
+    const countAll = document.getElementById('count-all');
+    const countPending = document.getElementById('count-pending');
+    const countCompleted = document.getElementById('count-completed');
+    const countValidated = document.getElementById('count-validated');
+
+    if (countAll) countAll.textContent = total;
+    if (countPending) countPending.textContent = pending;
+    if (countCompleted) countCompleted.textContent = completed;
+    if (countValidated) countValidated.textContent = validated;
   } catch (error) {
     console.error('Error loading stats:', error);
-    document.getElementById('stat-total').textContent = '0';
     document.getElementById('stat-pending').textContent = '0';
     document.getElementById('stat-completed').textContent = '0';
     document.getElementById('stat-validated').textContent = '0';
@@ -450,25 +464,33 @@ function renderAvailability() {
 // Current filter state
 let currentFilter = 'all';
 
-// Stat card switching (new design)
-document.querySelectorAll('.stat-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const tabName = card.dataset.tab;
-    const filterType = card.dataset.filter;
+// Tab button switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabName = btn.dataset.tab;
 
-    // Update active state on stat cards
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
+    // Update active state on tab buttons
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 
     // Update content (switch tab)
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
+  });
+});
 
-    // If it's an assignment filter, apply filtering
-    if (tabName === 'assignments' && filterType) {
-      currentFilter = filterType;
-      applyAssignmentFilter();
-    }
+// Filter chip switching
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const filterType = chip.dataset.filter;
+
+    // Update active state on filter chips
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+
+    // Apply filter
+    currentFilter = filterType;
+    applyAssignmentFilter();
   });
 });
 

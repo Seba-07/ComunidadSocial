@@ -15,7 +15,7 @@
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #f5f7ff 100%);
+            background: #f5f7fa;
             min-height: 100vh;
         }
 
@@ -25,25 +25,24 @@
             flex-direction: column;
         }
 
-        /* ===== HEADER MODERNO ===== */
+        /* ===== HEADER ===== */
         .dashboard-header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             color: white;
-            padding: 0;
+            padding: 24px 32px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.25);
         }
 
         .header-content {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            gap: 20px;
         }
 
         .header-left {
@@ -53,302 +52,307 @@
         }
 
         .header-logo {
-            width: 48px;
-            height: 48px;
+            width: 56px;
+            height: 56px;
             background: rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            backdrop-filter: blur(10px);
+            font-size: 28px;
         }
 
         .header-info h1 {
             margin: 0;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
-            letter-spacing: -0.3px;
         }
 
         .header-subtitle {
-            margin: 4px 0 0;
-            opacity: 0.85;
-            font-size: 13px;
-            font-weight: 500;
+            margin: 6px 0 0;
+            opacity: 0.9;
+            font-size: 15px;
         }
 
         .header-right {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
 
         .btn-header {
-            padding: 10px 16px;
+            padding: 12px 20px;
             border: none;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.2s;
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 8px;
-            backdrop-filter: blur(10px);
         }
 
         .btn-header:hover {
-            background: rgba(255, 255, 255, 0.22);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.25);
         }
 
         .btn-header.btn-logout {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.25);
         }
 
         .btn-header.btn-logout:hover {
-            background: rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.4);
         }
 
         /* ===== MAIN CONTENT ===== */
         .dashboard-main {
             flex: 1;
             padding: 24px;
-            max-width: 1400px;
+            max-width: 1200px;
             width: 100%;
             margin: 0 auto;
         }
 
-        /* ===== STATS CARDS ===== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        /* ===== STATS ROW ===== */
+        .stats-row {
+            display: flex;
             gap: 16px;
             margin-bottom: 24px;
+            flex-wrap: wrap;
         }
 
-        .stat-card {
+        .stat-mini {
             background: white;
-            border-radius: 20px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: currentColor;
-            opacity: 0.15;
-            transition: height 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-        }
-
-        .stat-card.active {
-            border-color: currentColor;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card.active::before {
-            height: 100%;
-            opacity: 0.08;
-        }
-
-        .stat-card-header {
+            border-radius: 12px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            min-width: 140px;
         }
 
-        .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+        .stat-mini-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 18px;
         }
 
-        .stat-card.all { color: #3b82f6; }
-        .stat-card.all .stat-icon { background: #dbeafe; }
+        .stat-mini.pending .stat-mini-icon { background: #fef3c7; }
+        .stat-mini.completed .stat-mini-icon { background: #d1fae5; }
+        .stat-mini.validated .stat-mini-icon { background: #ede9fe; }
 
-        .stat-card.pending { color: #f59e0b; }
-        .stat-card.pending .stat-icon { background: #fef3c7; }
+        .stat-mini-info {
+            display: flex;
+            flex-direction: column;
+        }
 
-        .stat-card.completed { color: #10b981; }
-        .stat-card.completed .stat-icon { background: #d1fae5; }
+        .stat-mini-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1;
+        }
 
-        .stat-card.validated { color: #8b5cf6; }
-        .stat-card.validated .stat-icon { background: #ede9fe; }
+        .stat-mini-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
 
-        .stat-card.availability { color: #ec4899; }
-        .stat-card.availability .stat-icon { background: #fce7f3; }
+        /* ===== FILTER CHIPS ===== */
+        .filter-section {
+            margin-bottom: 20px;
+        }
 
-        .stat-label {
-            font-size: 13px;
+        .filter-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 10px 18px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 25px;
+            font-size: 14px;
             font-weight: 600;
             color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .stat-value {
-            font-size: 32px;
-            font-weight: 800;
-            line-height: 1;
-            margin-top: 4px;
+        .filter-chip:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .filter-chip.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .filter-chip .chip-count {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .filter-chip.active .chip-count {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ===== TAB BUTTONS ===== */
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: #3b82f6;
+        }
+
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
         }
 
         /* ===== TAB CONTENT ===== */
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
+            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ===== SECTION CARD ===== */
-        .section-card {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        .section-header {
+        /* ===== ASSIGNMENT CARDS ===== */
+        .assignments-grid {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #f3f4f6;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 16px;
         }
 
-        .section-header h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-header h2 .icon {
-            font-size: 24px;
-        }
-
-        /* ===== ASSIGNMENT CARDS ===== */
         .assignment-card {
             background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 24px;
-            margin-bottom: 16px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
 
         .assignment-card:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
             transform: translateY(-2px);
         }
 
         .assignment-card.modified {
             border-color: #f59e0b;
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+            background: linear-gradient(135deg, #fffbeb 0%, white 100%);
         }
 
-        .assignment-header {
+        .assignment-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 16px;
             margin-bottom: 16px;
         }
 
-        .assignment-title {
-            margin: 0 0 8px;
+        .assignment-org-name {
             font-size: 18px;
             font-weight: 700;
             color: #1f2937;
+            margin: 0 0 8px;
         }
 
-        .assignment-meta {
+        .assignment-date-time {
             display: flex;
+            gap: 20px;
             flex-wrap: wrap;
-            gap: 16px;
+        }
+
+        .assignment-date-time span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             font-size: 14px;
             color: #6b7280;
         }
 
-        .assignment-meta span {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .assignment-date-time span strong {
+            color: #374151;
         }
 
         .status-badge {
             padding: 8px 16px;
-            border-radius: 30px;
+            border-radius: 20px;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             white-space: nowrap;
         }
 
         .status-badge.pending {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            background: #dbeafe;
             color: #1e40af;
         }
 
         .status-badge.completed {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            background: #d1fae5;
             color: #065f46;
         }
 
         .status-badge.cancelled {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            background: #fee2e2;
             color: #991b1b;
         }
 
         .assignment-location {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            background: #f9fafb;
             padding: 14px 18px;
-            border-radius: 14px;
+            border-radius: 10px;
             margin-bottom: 16px;
-            font-size: 14px;
-            color: #374151;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 14px;
+            color: #374151;
         }
 
         .assignment-location .icon {
@@ -365,22 +369,16 @@
         .modification-alert {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             border: 2px solid #f59e0b;
-            border-radius: 14px;
-            padding: 14px 18px;
+            border-radius: 10px;
+            padding: 12px 16px;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 14px;
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 2px 12px rgba(245, 158, 11, 0.25); }
-            50% { box-shadow: 0 4px 24px rgba(245, 158, 11, 0.4); }
+            gap: 12px;
         }
 
         .modification-alert .alert-icon {
-            font-size: 28px;
+            font-size: 24px;
         }
 
         .modification-alert .alert-content p {
@@ -399,53 +397,53 @@
             margin-top: 2px;
         }
 
-        /* ===== COMPLETED ASSIGNMENT ===== */
+        /* ===== COMPLETED SECTION IN CARD ===== */
         .completed-section {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            border-radius: 16px;
-            padding: 20px;
+            background: #d1fae5;
+            border-radius: 12px;
+            padding: 16px;
         }
 
         .completed-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 16px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
         .completed-icon {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             background: #10b981;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
         }
 
         .completed-info h4 {
             margin: 0;
             color: #065f46;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
 
         .completed-info p {
             margin: 4px 0 0;
             color: #047857;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .completed-details {
             background: white;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 16px;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
         }
 
         .completed-details-row {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .completed-details-row:last-child {
@@ -457,12 +455,10 @@
             font-weight: 700;
             color: #065f46;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 2px;
         }
 
         .completed-details-value {
-            font-size: 13px;
             color: #047857;
             line-height: 1.4;
         }
@@ -473,69 +469,23 @@
             flex-wrap: wrap;
         }
 
-        .btn-completed {
-            flex: 1;
-            min-width: 140px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 14px;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            border: 2px solid;
-        }
-
-        .btn-completed.primary {
-            background: white;
-            border-color: #10b981;
-            color: #065f46;
-        }
-
-        .btn-completed.primary:hover {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-completed.secondary {
-            background: #f3f4f6;
-            border-color: #e5e7eb;
-            color: #374151;
-        }
-
-        .btn-completed.secondary:hover {
-            background: #e5e7eb;
-        }
-
         /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 60px 24px;
+            background: white;
+            border-radius: 16px;
         }
 
-        .empty-state-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-
-        .empty-state-icon svg {
+        .empty-state svg {
             color: #9ca3af;
+            margin-bottom: 16px;
         }
 
         .empty-state h3 {
             margin: 0 0 8px;
             font-size: 18px;
             color: #374151;
-            font-weight: 600;
         }
 
         .empty-state p {
@@ -548,25 +498,23 @@
         .btn {
             padding: 12px 20px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: #3b82f6;
             color: white;
-            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            background: #2563eb;
         }
 
         .btn-secondary {
@@ -579,40 +527,62 @@
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: #ef4444;
             color: white;
         }
 
         .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: white;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+
+        .btn-success:hover {
+            background: #10b981;
+            color: white;
         }
 
         /* ===== AVAILABILITY SECTION ===== */
-        .availability-header-actions {
+        .availability-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .availability-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .availability-actions {
             display: flex;
             gap: 12px;
-            flex-wrap: wrap;
         }
 
         .availability-block {
-            border: 2px solid #e5e7eb;
-            border-radius: 16px;
+            background: white;
+            border-radius: 12px;
             padding: 20px;
             margin-bottom: 16px;
-            transition: all 0.25s ease;
-        }
-
-        .availability-block:hover {
-            border-color: #d1d5db;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .availability-date {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
         .availability-date h3 {
@@ -626,9 +596,9 @@
         }
 
         .full-day-block {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            padding: 14px 18px;
-            border-radius: 12px;
+            background: #fee2e2;
+            padding: 12px 16px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -645,16 +615,16 @@
         .time-blocks {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .time-block {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 10px;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #fef3c7;
+            border-radius: 8px;
             font-size: 14px;
             color: #92400e;
             font-weight: 600;
@@ -665,33 +635,21 @@
             background: transparent;
             color: #dc2626;
             cursor: pointer;
-            padding: 4px;
+            padding: 2px;
             display: flex;
             align-items: center;
-            transition: transform 0.2s;
-        }
-
-        .time-block button:hover {
-            transform: scale(1.1);
         }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width: 1024px) {
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .stat-card.availability {
-                grid-column: span 3;
-            }
-        }
-
         @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 20px;
+            }
+
             .header-content {
                 flex-direction: column;
                 align-items: stretch;
-                padding: 16px;
-                gap: 12px;
+                gap: 16px;
             }
 
             .header-left {
@@ -702,9 +660,8 @@
                 justify-content: center;
             }
 
-            .btn-header {
-                padding: 10px 14px;
-                font-size: 13px;
+            .header-info h1 {
+                font-size: 20px;
             }
 
             .btn-header .btn-text {
@@ -715,68 +672,33 @@
                 padding: 16px;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
+            .stats-row {
+                justify-content: center;
             }
 
-            .stat-card {
-                padding: 16px;
-                border-radius: 16px;
+            .stat-mini {
+                min-width: calc(50% - 8px);
             }
 
-            .stat-card.availability {
-                grid-column: span 2;
+            .filter-chips {
+                justify-content: center;
             }
 
-            .stat-value {
-                font-size: 26px;
-            }
-
-            .stat-icon {
-                width: 38px;
-                height: 38px;
-                font-size: 18px;
-            }
-
-            .section-card {
-                padding: 18px;
-                border-radius: 20px;
-            }
-
-            .section-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .section-header h2 {
-                font-size: 18px;
-            }
-
-            .availability-header-actions {
-                width: 100%;
-            }
-
-            .availability-header-actions .btn {
-                flex: 1;
+            .tab-buttons {
                 justify-content: center;
             }
 
             .assignment-card {
                 padding: 18px;
-                border-radius: 16px;
             }
 
-            .assignment-header {
+            .assignment-top {
                 flex-direction: column;
+                gap: 12px;
             }
 
             .status-badge {
                 align-self: flex-start;
-            }
-
-            .assignment-meta {
-                gap: 10px;
             }
 
             .assignment-actions {
@@ -788,92 +710,51 @@
                 justify-content: center;
             }
 
-            .completed-actions {
+            .availability-header {
                 flex-direction: column;
+                align-items: stretch;
             }
 
-            .btn-completed {
+            .availability-actions {
                 width: 100%;
+            }
+
+            .availability-actions .btn {
+                flex: 1;
+                justify-content: center;
             }
         }
 
         @media (max-width: 480px) {
+            .header-logo {
+                width: 48px;
+                height: 48px;
+                font-size: 24px;
+            }
+
             .header-info h1 {
-                font-size: 17px;
+                font-size: 18px;
             }
 
             .header-subtitle {
-                font-size: 12px;
-            }
-
-            .header-logo {
-                width: 42px;
-                height: 42px;
-                font-size: 22px;
-            }
-
-            .stats-grid {
-                gap: 10px;
-            }
-
-            .stat-card {
-                padding: 14px;
-            }
-
-            .stat-label {
-                font-size: 11px;
-            }
-
-            .stat-value {
-                font-size: 22px;
-            }
-
-            .stat-card-header {
-                gap: 10px;
-                margin-bottom: 8px;
-            }
-
-            .stat-icon {
-                width: 34px;
-                height: 34px;
-                font-size: 16px;
-                border-radius: 10px;
-            }
-
-            .section-card {
-                padding: 14px;
-            }
-
-            .assignment-card {
-                padding: 14px;
-            }
-
-            .assignment-title {
-                font-size: 16px;
-            }
-
-            .assignment-meta {
                 font-size: 13px;
             }
 
-            .assignment-location {
-                padding: 12px 14px;
+            .stat-mini {
+                min-width: 100%;
+            }
+
+            .filter-chip {
+                padding: 8px 14px;
                 font-size: 13px;
+            }
+
+            .assignment-org-name {
+                font-size: 16px;
             }
         }
 
-        /* ===== ANIMATIONS ===== */
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-
-        /* Modal overlay base */
+        /* ===== MODAL ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -891,10 +772,26 @@
 
         .modal-content {
             background: white;
-            border-radius: 24px;
+            border-radius: 20px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5); }
         }
     </style>
 </head>
@@ -932,79 +829,82 @@
 
         <!-- Main Content -->
         <main class="dashboard-main">
-            <!-- Stats Cards -->
-            <div class="stats-grid">
-                <div class="stat-card all active" data-tab="assignments" data-filter="all">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">📋</div>
-                        <div class="stat-label">Todas</div>
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-mini pending">
+                    <div class="stat-mini-icon">📅</div>
+                    <div class="stat-mini-info">
+                        <span class="stat-mini-value" id="stat-pending">0</span>
+                        <span class="stat-mini-label">Pendientes</span>
                     </div>
-                    <div class="stat-value" id="stat-total">-</div>
                 </div>
-                <div class="stat-card pending" data-tab="assignments" data-filter="pending">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">📅</div>
-                        <div class="stat-label">Pendientes</div>
+                <div class="stat-mini completed">
+                    <div class="stat-mini-icon">✅</div>
+                    <div class="stat-mini-info">
+                        <span class="stat-mini-value" id="stat-completed">0</span>
+                        <span class="stat-mini-label">Completadas</span>
                     </div>
-                    <div class="stat-value" id="stat-pending">0</div>
                 </div>
-                <div class="stat-card completed" data-tab="assignments" data-filter="completed">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-label">Completadas</div>
+                <div class="stat-mini validated">
+                    <div class="stat-mini-icon">📝</div>
+                    <div class="stat-mini-info">
+                        <span class="stat-mini-value" id="stat-validated">0</span>
+                        <span class="stat-mini-label">Validadas</span>
                     </div>
-                    <div class="stat-value" id="stat-completed">0</div>
                 </div>
-                <div class="stat-card validated" data-tab="assignments" data-filter="validated">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">📝</div>
-                        <div class="stat-label">Validadas</div>
-                    </div>
-                    <div class="stat-value" id="stat-validated">0</div>
-                </div>
-                <div class="stat-card availability" data-tab="availability">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">🗓️</div>
-                        <div class="stat-label">Gestionar Disponibilidad</div>
-                    </div>
-                    <div class="stat-value" style="font-size: 16px; color: #6b7280;">Bloquear días u horas</div>
-                </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="assignments">📋 Asambleas</button>
+                <button class="tab-btn" data-tab="availability">🗓️ Disponibilidad</button>
             </div>
 
             <!-- Tab: Assignments -->
             <div id="tab-assignments" class="tab-content active">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2><span class="icon">📋</span> Asambleas Asignadas</h2>
+                <!-- Filter Chips -->
+                <div class="filter-section">
+                    <div class="filter-chips">
+                        <button class="filter-chip active" data-filter="all">
+                            Todas <span class="chip-count" id="count-all">0</span>
+                        </button>
+                        <button class="filter-chip" data-filter="pending">
+                            Pendientes <span class="chip-count" id="count-pending">0</span>
+                        </button>
+                        <button class="filter-chip" data-filter="completed">
+                            Completadas <span class="chip-count" id="count-completed">0</span>
+                        </button>
+                        <button class="filter-chip" data-filter="validated">
+                            Validadas <span class="chip-count" id="count-validated">0</span>
+                        </button>
                     </div>
-                    <div id="assignments-list"></div>
                 </div>
+
+                <div id="assignments-list" class="assignments-grid"></div>
             </div>
 
             <!-- Tab: Availability -->
             <div id="tab-availability" class="tab-content">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2><span class="icon">🗓️</span> Gestión de Disponibilidad</h2>
-                        <div class="availability-header-actions">
-                            <button class="btn btn-primary" id="btn-add-block">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Bloquear Día/Hora
-                            </button>
-                            <button class="btn btn-danger" id="btn-clear-blocks">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                                Limpiar Todo
-                            </button>
-                        </div>
+                <div class="availability-header">
+                    <h2>🗓️ Gestión de Disponibilidad</h2>
+                    <div class="availability-actions">
+                        <button class="btn btn-primary" id="btn-add-block">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Bloquear Día/Hora
+                        </button>
+                        <button class="btn btn-danger" id="btn-clear-blocks">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Limpiar Todo
+                        </button>
                     </div>
-                    <div id="availability-list"></div>
                 </div>
+                <div id="availability-list"></div>
             </div>
         </main>
     </div>
