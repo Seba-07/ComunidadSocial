@@ -3156,10 +3156,19 @@ class AdminDashboard {
 
     modal.innerHTML = `
       <div class="admin-review-modal ministro-request-modal">
-        <div class="review-modal-header" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
+        <div class="review-modal-header ministro-modal-header-redesign">
           <div class="review-header-left">
-            <h2 style="color: white;">Solicitud de Ministro de Fe</h2>
-            <p style="margin: 4px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">${getOrgName(org)}</p>
+            <div class="ministro-modal-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 8v8"></path>
+                <path d="M8 12h8"></path>
+              </svg>
+            </div>
+            <div class="ministro-modal-titles">
+              <h2>Solicitud de Ministro de Fe</h2>
+              <p>${getOrgName(org)}</p>
+            </div>
           </div>
           <button class="review-close-btn ministro-close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

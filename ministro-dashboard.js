@@ -7,6 +7,7 @@ import { ministroService } from './src/services/MinistroService.js';
 import { ministroAssignmentService } from './src/services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from './src/services/MinistroAvailabilityService.js';
 import { openValidationWizard } from './src/presentation/ministro/ValidationWizard.js';
+import { apiService } from './src/services/ApiService.js';
 
 console.log('⚖️ Ministro dashboard loaded');
 

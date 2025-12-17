@@ -9907,15 +9907,111 @@ a.header-logo:hover {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Modal de Solicitud de Ministro de Fe - Más grande */
+/* Modal de Solicitud de Ministro de Fe - Rediseñado */
 .admin-review-modal.ministro-request-modal {
-    max-width: 1000px;
-    max-height: 95vh;
+    max-width: 960px;
+    max-height: 92vh;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
 }
 
 .admin-review-modal.ministro-request-modal .review-modal-body {
-    max-height: calc(95vh - 80px);
+    max-height: calc(92vh - 90px);
     overflow-y: auto;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+/* Header rediseñado del modal de Ministro */
+.ministro-modal-header-redesign {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #0ea5e9 100%) !important;
+    padding: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.ministro-modal-header-redesign::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.ministro-modal-header-redesign::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: 10%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.ministro-modal-header-redesign .review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.ministro-modal-icon {
+    width: 52px;
+    height: 52px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.ministro-modal-icon svg {
+    color: white;
+}
+
+.ministro-modal-titles {
+    flex: 1;
+}
+
+.ministro-modal-titles h2 {
+    color: white !important;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.ministro-modal-titles p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.ministro-modal-header-redesign .review-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
+}
+
+.ministro-modal-header-redesign .review-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }
 
 /* Review Modal Header */
@@ -16073,46 +16169,55 @@ a.header-logo:hover {
     gap: 16px;
 }
 
-/* Columna derecha - Formulario */
+/* Columna derecha - Formulario - Rediseñado */
 .ministro-form-column {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 20px;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 16px;
+    padding: 24px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
 
-/* Tarjeta de información compacta */
+/* Tarjeta de información compacta - Rediseñada */
 .ministro-info-card {
     background: white;
-    border-radius: 12px;
+    border-radius: 16px;
     border: 1px solid #e2e8f0;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.ministro-info-card:hover {
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
 }
 
 .ministro-info-card-header {
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    padding: 12px 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 14px 18px;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .ministro-info-card-header h4 {
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
-    color: #334155;
+    color: #1e293b;
+    letter-spacing: -0.01em;
 }
 
 .ministro-info-card-header svg {
-    width: 18px;
-    height: 18px;
-    color: #64748b;
+    width: 20px;
+    height: 20px;
+    color: #3b82f6;
 }
 
 .ministro-info-card-body {
-    padding: 16px;
+    padding: 18px;
 }
 
 /* Grid de datos dentro de tarjeta */
@@ -16160,23 +16265,31 @@ a.header-logo:hover {
     font-style: italic;
 }
 
-/* Tarjeta destacada para solicitud */
+/* Tarjeta destacada para solicitud - Rediseñada */
 .ministro-request-highlight {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     border: 2px solid #3b82f6 !important;
+    box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.2), 0 4px 10px -5px rgba(59, 130, 246, 0.1) !important;
+}
+
+.ministro-request-highlight:hover {
+    box-shadow: 0 12px 30px -5px rgba(59, 130, 246, 0.25), 0 6px 12px -5px rgba(59, 130, 246, 0.15) !important;
 }
 
 .ministro-request-highlight .ministro-info-card-header {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border-bottom-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    border-bottom: none;
+    padding: 16px 18px;
 }
 
 .ministro-request-highlight .ministro-info-card-header h4 {
     color: white;
+    font-size: 15px;
 }
 
 .ministro-request-highlight .ministro-info-card-header svg {
     color: white;
+    opacity: 0.9;
 }
 
 /* Contacto del usuario con ambos datos */
@@ -16342,30 +16455,32 @@ a.header-logo:hover {
     grid-template-columns: 1fr;
 }
 
-/* Alerta de acción requerida */
+/* Alerta de acción requerida - Rediseñado */
 .ministro-action-alert {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid #f59e0b;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    gap: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px solid #10b981;
+    border-radius: 14px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.15);
 }
 
 .ministro-action-alert svg {
-    width: 24px;
-    height: 24px;
-    color: #d97706;
+    width: 26px;
+    height: 26px;
+    color: #059669;
     flex-shrink: 0;
 }
 
 .ministro-action-alert p {
     margin: 0;
-    font-size: 13px;
-    color: #92400e;
-    font-weight: 500;
+    font-size: 14px;
+    color: #065f46;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 /* ============================================
