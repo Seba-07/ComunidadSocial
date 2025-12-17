@@ -71,11 +71,14 @@ async function loadStats() {
   const ministroId = currentMinistro._id || currentMinistro.id;
   try {
     const stats = await ministroAssignmentService.getStatsByMinistro(ministroId);
+    const total = (stats.pending || 0) + (stats.completed || 0);
+    document.getElementById('stat-total').textContent = total;
     document.getElementById('stat-pending').textContent = stats.pending || 0;
     document.getElementById('stat-completed').textContent = stats.completed || 0;
     document.getElementById('stat-validated').textContent = stats.signaturesValidated || 0;
   } catch (error) {
     console.error('Error loading stats:', error);
+    document.getElementById('stat-total').textContent = '0';
     document.getElementById('stat-pending').textContent = '0';
     document.getElementById('stat-completed').textContent = '0';
     document.getElementById('stat-validated').textContent = '0';
@@ -447,15 +450,15 @@ function renderAvailability() {
 // Current filter state
 let currentFilter = 'all';
 
-// Filter chip switching
-document.querySelectorAll('.filter-chip').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tabName = btn.dataset.tab;
-    const filterType = btn.dataset.filter;
+// Stat card switching (new design)
+document.querySelectorAll('.stat-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const tabName = card.dataset.tab;
+    const filterType = card.dataset.filter;
 
-    // Update buttons
-    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    // Update active state on stat cards
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
 
     // Update content (switch tab)
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
