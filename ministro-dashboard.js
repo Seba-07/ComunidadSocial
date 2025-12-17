@@ -1638,6 +1638,8 @@ function renderNotificationsPanel(panel) {
     new Date(b.createdAt) - new Date(a.createdAt)
   );
 
+  const unreadCount = sortedNotifications.filter(n => !n.read).length;
+
   panel.innerHTML = `
     <div class="notifications-header">
       <h2>
@@ -1645,14 +1647,21 @@ function renderNotificationsPanel(panel) {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
-        Notificaciones
+        Notificaciones ${unreadCount > 0 ? `<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 10px; margin-left: 8px;">${unreadCount} nuevas</span>` : ''}
       </h2>
-      <button class="notifications-close" onclick="closeNotificationsPanel()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
+      <div class="notifications-header-actions">
+        ${unreadCount > 0 ? `
+          <button class="notifications-mark-all" onclick="markAllNotificationsRead()">
+            Marcar todas
+          </button>
+        ` : ''}
+        <button class="notifications-close" onclick="closeNotificationsPanel()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="notifications-list">
       ${sortedNotifications.length === 0 ? `
@@ -1666,13 +1675,23 @@ function renderNotificationsPanel(panel) {
       ` : sortedNotifications.map(notif => {
         const date = new Date(notif.createdAt);
         const timeAgo = getTimeAgo(date);
+        const notifId = notif._id || notif.id;
 
         return `
-          <div class="notification-item ${notif.read ? '' : 'unread'}"
-               onclick="markNotificationRead('${notif._id || notif.id}')">
+          <div class="notification-item ${notif.read ? '' : 'unread'}">
             <div class="notification-title">${notif.title}</div>
             <div class="notification-message">${notif.message}</div>
             <div class="notification-time">${timeAgo}</div>
+            <div class="notification-actions">
+              ${!notif.read ? `
+                <button class="notification-action-btn mark-read" onclick="event.stopPropagation(); markNotificationRead('${notifId}')">
+                  Marcar como leída
+                </button>
+              ` : ''}
+              <button class="notification-action-btn delete" onclick="event.stopPropagation(); deleteNotification('${notifId}')">
+                Eliminar
+              </button>
+            </div>
           </div>
         `;
       }).join('')}
@@ -1718,12 +1737,63 @@ async function markNotificationRead(notifId) {
   }
 }
 
+// Mark all notifications as read
+async function markAllNotificationsRead() {
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  try {
+    await apiService.post(`/notifications/ministro/${ministroId}/read-all`);
+
+    // Update local state
+    ministroNotifications.forEach(n => {
+      n.read = true;
+    });
+
+    updateNotificationBadge();
+
+    // Re-render panel
+    const panel = document.querySelector('.notifications-panel');
+    if (panel) {
+      renderNotificationsPanel(panel);
+    }
+
+    showToast('Todas las notificaciones marcadas como leídas', 'success');
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    showToast('Error al marcar notificaciones', 'error');
+  }
+}
+
+// Delete notification
+async function deleteNotification(notifId) {
+  try {
+    await apiService.delete(`/notifications/${notifId}`);
+
+    // Remove from local state
+    ministroNotifications = ministroNotifications.filter(n => (n._id || n.id) !== notifId);
+
+    updateNotificationBadge();
+
+    // Re-render panel
+    const panel = document.querySelector('.notifications-panel');
+    if (panel) {
+      renderNotificationsPanel(panel);
+    }
+
+    showToast('Notificación eliminada', 'success');
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    showToast('Error al eliminar notificación', 'error');
+  }
+}
+
 // Notifications button click
 document.getElementById('btn-notifications').addEventListener('click', openNotificationsPanel);
 
 // Global functions for notifications
 window.closeNotificationsPanel = closeNotificationsPanel;
 window.markNotificationRead = markNotificationRead;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.deleteNotification = deleteNotification;
 
 // Load notifications on init
 loadMinistroNotifications();

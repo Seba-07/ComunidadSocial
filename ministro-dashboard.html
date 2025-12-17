@@ -142,7 +142,7 @@
             height: 100vh;
             background: white;
             box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-            z-index: 10001;
+            z-index: 10002; /* Mayor que el overlay */
             display: flex;
             flex-direction: column;
             transform: translateX(100%);
@@ -169,6 +169,62 @@
         .notifications-overlay.open {
             opacity: 1;
             visibility: visible;
+        }
+
+        /* Estilos para acciones de notificaciones */
+        .notification-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .notification-action-btn {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .notification-action-btn.mark-read {
+            color: #3b82f6;
+        }
+
+        .notification-action-btn.mark-read:hover {
+            background: #eff6ff;
+        }
+
+        .notification-action-btn.delete {
+            color: #ef4444;
+        }
+
+        .notification-action-btn.delete:hover {
+            background: #fef2f2;
+        }
+
+        .notifications-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notifications-mark-all {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .notifications-mark-all:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .notifications-header {

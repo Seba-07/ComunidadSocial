@@ -3091,9 +3091,10 @@ class AdminDashboard {
     const assignment = ministroAssignmentService.getByOrganizationId(org.id || org._id)?.[0];
 
     // Combinar datos: priorizar asignación, luego org.ministroData
+    // NOTA: En el servidor, ministroData guarda "name" y "rut", no "ministroName" y "ministroRut"
     const ministroInfo = {
-      ministroName: assignment?.ministroName || org.ministroData?.ministroName || null,
-      ministroRut: assignment?.ministroRut || org.ministroData?.ministroRut || null,
+      ministroName: assignment?.ministroName || org.ministroData?.ministroName || org.ministroData?.name || null,
+      ministroRut: assignment?.ministroRut || org.ministroData?.ministroRut || org.ministroData?.rut || null,
       scheduledDate: assignment?.scheduledDate || org.ministroData?.scheduledDate || null,
       scheduledTime: assignment?.scheduledTime || org.ministroData?.scheduledTime || null,
       location: assignment?.location || org.ministroData?.location || null
@@ -3831,9 +3832,10 @@ class AdminDashboard {
     const currentAssignment = ministroAssignmentService.getByOrganizationId(orgId)?.[0];
 
     // Combinar datos: priorizar asignación, luego org.ministroData
+    // NOTA: En el servidor, ministroData guarda "name" y "rut", no "ministroName" y "ministroRut"
     const ministroInfo = {
-      ministroName: currentAssignment?.ministroName || org.ministroData?.ministroName || null,
-      ministroRut: currentAssignment?.ministroRut || org.ministroData?.ministroRut || null,
+      ministroName: currentAssignment?.ministroName || org.ministroData?.ministroName || org.ministroData?.name || null,
+      ministroRut: currentAssignment?.ministroRut || org.ministroData?.ministroRut || org.ministroData?.rut || null,
       scheduledDate: currentAssignment?.scheduledDate || org.ministroData?.scheduledDate || null,
       scheduledTime: currentAssignment?.scheduledTime || org.ministroData?.scheduledTime || null,
       location: currentAssignment?.location || org.ministroData?.location || null
@@ -3851,13 +3853,21 @@ class AdminDashboard {
     }
 
     modal.innerHTML = `
-      <div class="admin-review-modal" style="max-width: 600px;">
-        <div class="review-modal-header" style="background: linear-gradient(135deg, #fff4e6 0%, #ffe0b2 100%);">
+      <div class="admin-review-modal ministro-request-modal" style="max-width: 600px;">
+        <div class="review-modal-header ministro-modal-header-redesign" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%) !important;">
           <div class="review-header-left">
-            <h2 style="color: #ff9800;">✏️ Editar Ministro de Fe Asignado</h2>
-            <p style="margin: 4px 0 0; color: #f57c00; font-size: 14px;">${getOrgName(org)}</p>
+            <div class="ministro-modal-icon" style="background: rgba(255,255,255,0.2);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
+            <div class="ministro-modal-titles">
+              <h2>Modificar Asignación</h2>
+              <p>${getOrgName(org)}</p>
+            </div>
           </div>
-          <button class="review-close-btn edit-ministro-close">
+          <button class="review-close-btn ministro-close edit-ministro-close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -3866,12 +3876,33 @@ class AdminDashboard {
         </div>
 
         <div class="review-modal-body" style="padding: 24px;">
-          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-            <h4 style="margin: 0 0 8px 0; color: #1e40af;">Asignaci\u00f3n Actual:</h4>
-            <div style="color: #3b82f6; font-size: 14px;">
-              <p style="margin: 4px 0;"><strong>Ministro:</strong> ${ministroInfo.ministroName || 'No asignado'}</p>
-              <p style="margin: 4px 0;"><strong>Fecha:</strong> ${dateForInput ? new Date(dateForInput + 'T12:00:00').toLocaleDateString('es-CL') : 'No especificada'}</p>
-              <p style="margin: 4px 0;"><strong>Hora:</strong> ${ministroInfo.scheduledTime || 'No especificada'}</p>
+          <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <h4 style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700;">Asignación Actual</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="background: white; padding: 12px; border-radius: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Ministro</span>
+                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #065f46;">${ministroInfo.ministroName || 'No asignado'}</p>
+              </div>
+              <div style="background: white; padding: 12px; border-radius: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Fecha</span>
+                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #065f46;">${dateForInput ? new Date(dateForInput + 'T12:00:00').toLocaleDateString('es-CL') : 'No especificada'}</p>
+              </div>
+              <div style="background: white; padding: 12px; border-radius: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Hora</span>
+                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #065f46;">${ministroInfo.scheduledTime || 'No especificada'}</p>
+              </div>
+              <div style="background: white; padding: 12px; border-radius: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Lugar</span>
+                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #065f46; word-break: break-word;">${ministroInfo.location || 'No especificado'}</p>
+              </div>
             </div>
           </div>
 
@@ -3927,9 +3958,9 @@ class AdminDashboard {
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
-              <button type="button" class="btn btn-secondary edit-ministro-close">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="btn edit-ministro-close" style="background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer;">Cancelar</button>
+              <button type="submit" class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 Guardar Cambios
