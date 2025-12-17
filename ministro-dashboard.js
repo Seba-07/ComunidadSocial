@@ -1610,6 +1610,10 @@ function openNotificationsPanel() {
   if (!panel) {
     panel = document.createElement('div');
     panel.className = 'notifications-panel';
+    // IMPORTANTE: Evitar que los clicks en el panel cierren el overlay
+    panel.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
     document.body.appendChild(panel);
   }
 
