@@ -279,76 +279,102 @@ document.addEventListener('DOMContentLoaded', async () => {
   const notificationsList = document.getElementById('notifications-list');
   const btnMarkAllRead = document.getElementById('btn-mark-all-read');
 
-  function loadNotifications() {
+  async function loadNotifications() {
     if (!appState.currentUser) return;
 
-    const notifications = notificationService.getByUserId(appState.currentUser.id);
-    const unreadCount = notificationService.getUnreadCount(appState.currentUser.id);
+    try {
+      // Cargar notificaciones desde el servidor
+      const notifications = await notificationService.getAllAsync();
+      const unreadNotifications = notifications.filter(n => !n.read);
+      const unreadCount = unreadNotifications.length;
 
-    // Update badge
-    const badge = document.querySelector('.notification-badge');
-    if (badge) {
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-        badge.style.display = 'block';
-      } else {
-        badge.style.display = 'none';
+      // Update badge
+      const badge = document.querySelector('.notification-badge');
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
       }
-    }
 
-    // Render notifications
-    if (notifications.length === 0) {
-      notificationsList.innerHTML = `
-        <div class="notifications-empty">
-          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-          </svg>
-          <p>No tienes notificaciones</p>
-        </div>
-      `;
-    } else {
-      notificationsList.innerHTML = notifications.map(notif => {
-        const timeAgo = getTimeAgo(new Date(notif.createdAt));
-        const icon = notif.type === 'schedule_change' ? '📅' :
-                     notif.type === 'ministro_assigned' ? '⚖️' :
-                     notif.type === 'status_update' ? '🔔' : '📬';
+      // Render notifications
+      if (notifications.length === 0) {
+        notificationsList.innerHTML = `
+          <div class="notifications-empty">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            <p>No tienes notificaciones</p>
+          </div>
+        `;
+      } else {
+        notificationsList.innerHTML = notifications.map(notif => {
+          const timeAgo = getTimeAgo(new Date(notif.createdAt));
+          const icon = notif.type === 'schedule_change' ? '📅' :
+                       notif.type === 'ministro_assigned' ? '⚖️' :
+                       notif.type === 'status_update' ? '🔔' : '📬';
+          const notifId = notif._id || notif.id;
 
-        return `
-          <div class="notification-item ${notif.read ? '' : 'unread'}" data-id="${notif.id}">
-            <div class="notification-content">
-              <div class="notification-icon">${icon}</div>
-              <div class="notification-text">
-                <p class="notification-title">${notif.title}</p>
-                <p class="notification-message">${notif.message}</p>
-                <span class="notification-time">${timeAgo}</span>
-                <div class="notification-actions">
-                  ${!notif.read ? `<button class="btn-notification btn-mark-read" data-id="${notif.id}">Marcar como leída</button>` : ''}
-                  <button class="btn-notification btn-delete" data-id="${notif.id}">Eliminar</button>
+          return `
+            <div class="notification-item ${notif.read ? '' : 'unread'}" data-id="${notifId}">
+              <div class="notification-content">
+                <div class="notification-icon">${icon}</div>
+                <div class="notification-text">
+                  <p class="notification-title">${notif.title}</p>
+                  <p class="notification-message">${notif.message}</p>
+                  <span class="notification-time">${timeAgo}</span>
+                  <div class="notification-actions">
+                    ${!notif.read ? `<button class="btn-notification btn-mark-read" data-id="${notifId}">Marcar como leída</button>` : ''}
+                    <button class="btn-notification btn-delete" data-id="${notifId}">Eliminar</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
 
-      // Add event listeners to actions
-      notificationsList.querySelectorAll('.btn-mark-read').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const notifId = btn.dataset.id;
-          notificationService.markAsRead(notifId);
-          loadNotifications();
+        // Add event listeners to actions
+        notificationsList.querySelectorAll('.btn-mark-read').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const notifId = btn.dataset.id;
+            await notificationService.markAsRead(notifId);
+            loadNotifications();
+          });
         });
-      });
 
-      notificationsList.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const notifId = btn.dataset.id;
-          notificationService.delete(notifId);
-          loadNotifications();
+        notificationsList.querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const notifId = btn.dataset.id;
+            await notificationService.delete(notifId);
+            loadNotifications();
+          });
         });
-      });
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }
+
+  // Función para actualizar solo el badge sin recargar todo el panel
+  async function updateNotificationBadge() {
+    if (!appState.currentUser) return;
+    try {
+      const count = await notificationService.getUnreadCountAsync();
+      const badge = document.querySelector('.notification-badge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      console.error('Error updating badge:', e);
     }
   }
 
@@ -389,18 +415,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (btnMarkAllRead) {
-    btnMarkAllRead.addEventListener('click', () => {
+    btnMarkAllRead.addEventListener('click', async () => {
       if (appState.currentUser) {
-        notificationService.markAllAsRead(appState.currentUser.id);
+        await notificationService.markAllAsRead(appState.currentUser.id);
         loadNotifications();
         showToast('Todas las notificaciones marcadas como leídas', 'success');
       }
     });
   }
 
-  // Load notifications on init
+  // Load notification badge on init (cargar badge al inicio)
   if (appState.currentUser) {
-    loadNotifications();
+    updateNotificationBadge();
   }
 
   // Navegación
