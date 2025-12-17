@@ -4,7 +4,12 @@ const notificationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false  // No longer required - can be ministroId instead
+  },
+  ministroId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Ministro',
+    required: false
   },
   type: {
     type: String,
@@ -18,7 +23,12 @@ const notificationSchema = new mongoose.Schema({
       'correction_required',
       'organization_approved',
       'organization_rejected',
-      'general'
+      'general',
+      // Tipos para notificaciones de ministros
+      'new_assignment',
+      'assignment_removed',
+      'assignment_schedule_change',
+      'assignment_location_change'
     ],
     required: true
   },
@@ -46,6 +56,7 @@ const notificationSchema = new mongoose.Schema({
 
 // Index for efficient queries
 notificationSchema.index({ userId: 1, read: 1 });
+notificationSchema.index({ ministroId: 1, read: 1 });
 notificationSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Notification', notificationSchema);

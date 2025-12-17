@@ -161,14 +161,20 @@ async function renderAssignments() {
     let formattedDate = 'Fecha no especificada';
     if (assignment.scheduledDate) {
       let date;
-      if (assignment.scheduledDate.includes('T')) {
-        // Es un ISO string del servidor
-        date = new Date(assignment.scheduledDate);
+      const dateStr = assignment.scheduledDate;
+
+      if (dateStr.includes('T')) {
+        // Es un ISO string del servidor - extraer solo la parte de fecha
+        // para evitar problemas de timezone (YYYY-MM-DDTHH:MM:SS.sssZ)
+        const datePart = dateStr.split('T')[0]; // "2024-12-22"
+        const [year, month, day] = datePart.split('-').map(Number);
+        date = new Date(year, month - 1, day); // Crear fecha LOCAL sin timezone
       } else {
         // Es un string "yyyy-mm-dd"
-        const [year, month, day] = assignment.scheduledDate.split('-').map(Number);
+        const [year, month, day] = dateStr.split('-').map(Number);
         date = new Date(year, month - 1, day);
       }
+
       formattedDate = date.toLocaleDateString('es-CL', {
         weekday: 'long',
         year: 'numeric',
@@ -1691,7 +1697,7 @@ function getTimeAgo(date) {
 // Mark notification as read
 async function markNotificationRead(notifId) {
   try {
-    await apiService.post(`/notifications/${notifId}/read`);
+    await apiService.post(`/notifications/ministro/${notifId}/read`);
 
     // Update local state
     const notif = ministroNotifications.find(n => (n._id || n.id) === notifId);

@@ -125,6 +125,13 @@ class AppState {
     if (userName && this.currentUser) {
       userName.textContent = this.currentUser.profile?.firstName || this.currentUser.email;
     }
+
+    // Actualizar mensaje de bienvenida
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage && this.currentUser) {
+      const firstName = this.currentUser.profile?.firstName || 'Usuario';
+      welcomeMessage.textContent = `Bienvenido/a, ${firstName}`;
+    }
   }
 }
 
