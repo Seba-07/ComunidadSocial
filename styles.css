@@ -9498,16 +9498,32 @@ a.header-logo:hover {
     margin-bottom: 20px;
 }
 
-.admin-header-content h1 {
+.admin-header-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.admin-header-text h1 {
     font-size: 26px;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 6px;
 }
 
-.admin-header-content p {
+.admin-header-text p {
     color: var(--text-secondary);
     font-size: 15px;
+    margin: 0;
+}
+
+/* Admin Navigation Buttons */
+.admin-nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 /* Admin Stats Row - Compact - Wrap on mobile */
@@ -14351,13 +14367,12 @@ a.header-logo:hover {
 
 /* Button Schedule Access */
 .btn-schedule-access {
-    margin-top: 12px;
-    padding: 10px 20px;
+    padding: 10px 16px;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
     border: none;
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
@@ -14365,6 +14380,7 @@ a.header-logo:hover {
     gap: 8px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 12px rgba(127, 169, 155, 0.3);
+    white-space: nowrap;
 }
 
 .btn-schedule-access:hover {
@@ -14373,8 +14389,18 @@ a.header-logo:hover {
 }
 
 .btn-schedule-access svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.btn-schedule-access.btn-uv {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-schedule-access.btn-uv:hover {
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
 }
 
 /* ======================================
@@ -17296,11 +17322,63 @@ a.header-logo:hover {
     display: inline;
 }
 
-/* Mobile responsive */
+/* ============================================
+   ADMIN DASHBOARD MOBILE RESPONSIVE
+   ============================================ */
 @media (max-width: 768px) {
+    .admin-dashboard {
+        padding: 12px;
+    }
+
+    .admin-header-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .admin-header-text h1 {
+        font-size: 20px;
+    }
+
+    .admin-header-text p {
+        font-size: 13px;
+    }
+
+    .admin-nav-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .admin-nav-buttons .btn-schedule-access {
+        padding: 10px 12px;
+        font-size: 11px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .admin-nav-buttons .btn-schedule-access svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .admin-nav-buttons .btn-schedule-access:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .admin-nav-buttons .btn-schedule-access .btn-text {
+        display: block;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
     .admin-unified-filter-bar {
         padding: 10px;
         gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
 
     .admin-filter-chip {
@@ -17308,6 +17386,7 @@ a.header-logo:hover {
         font-size: 12px;
         border-radius: 10px;
         gap: 4px;
+        flex-shrink: 0;
     }
 
     .admin-filter-chip .chip-icon {
@@ -17327,6 +17406,75 @@ a.header-logo:hover {
 
     .admin-filter-chip .chip-text-short {
         display: inline;
+    }
+
+    .admin-toolbar {
+        gap: 10px;
+    }
+
+    .admin-search-box input {
+        padding: 10px 12px 10px 40px;
+        font-size: 14px;
+    }
+
+    .admin-stats-row {
+        gap: 8px;
+    }
+
+    .admin-stat-card {
+        padding: 10px;
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+    }
+
+    .admin-stat-card .stat-number {
+        font-size: 20px;
+    }
+
+    .admin-stat-card .stat-label {
+        font-size: 10px;
+    }
+
+    .admin-stat-card .stat-icon {
+        font-size: 16px;
+    }
+
+    /* Admin row items mobile */
+    .admin-app-row {
+        border-radius: 10px;
+    }
+
+    .admin-app-row-main {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .admin-app-row .org-name {
+        font-size: 14px;
+    }
+
+    .admin-app-row .org-type {
+        font-size: 11px;
+    }
+
+    .admin-app-row .status-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+    .admin-nav-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-nav-buttons .btn-schedule-access:last-child {
+        grid-column: auto;
+    }
+
+    .admin-stat-card {
+        flex: 1 1 100%;
     }
 }
 
