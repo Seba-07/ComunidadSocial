@@ -3087,6 +3087,18 @@ class AdminDashboard {
     const isWaiting = org.status === ORG_STATUS.WAITING_MINISTRO_REQUEST;
     const isScheduled = org.status === ORG_STATUS.MINISTRO_SCHEDULED;
 
+    // Obtener datos de la asignación (fuente más confiable que org.ministroData)
+    const assignment = ministroAssignmentService.getByOrganizationId(org.id || org._id)?.[0];
+
+    // Combinar datos: priorizar asignación, luego org.ministroData
+    const ministroInfo = {
+      ministroName: assignment?.ministroName || org.ministroData?.ministroName || null,
+      ministroRut: assignment?.ministroRut || org.ministroData?.ministroRut || null,
+      scheduledDate: assignment?.scheduledDate || org.ministroData?.scheduledDate || null,
+      scheduledTime: assignment?.scheduledTime || org.ministroData?.scheduledTime || null,
+      location: assignment?.location || org.ministroData?.location || null
+    };
+
     const modal = document.createElement('div');
     modal.className = 'admin-review-modal-overlay';
 
@@ -3172,8 +3184,8 @@ class AdminDashboard {
                     </svg>
                   </div>
                   <div>
-                    <h3 style="margin: 0; color: #065f46; font-size: 18px; font-weight: 700;">${org.ministroData?.ministroName || 'Sin asignar'}</h3>
-                    <p style="margin: 4px 0 0; color: #059669; font-size: 13px;">RUT: ${org.ministroData?.ministroRut || 'No disponible'}</p>
+                    <h3 style="margin: 0; color: #065f46; font-size: 18px; font-weight: 700;">${ministroInfo.ministroName || 'Sin asignar'}</h3>
+                    <p style="margin: 4px 0 0; color: #059669; font-size: 13px;">RUT: ${ministroInfo.ministroRut || 'No disponible'}</p>
                   </div>
                 </div>
 
@@ -3182,8 +3194,8 @@ class AdminDashboard {
                   <div style="background: white; padding: 14px; border-radius: 10px; text-align: center;">
                     <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Fecha</span>
                     <p style="margin: 0; font-size: 15px; font-weight: 700; color: #065f46;">${(() => {
-                      if (org.ministroData?.scheduledDate) {
-                        const dateStr = org.ministroData.scheduledDate;
+                      if (ministroInfo.scheduledDate) {
+                        const dateStr = ministroInfo.scheduledDate;
                         if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
                           const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
                           const date = new Date(year, month - 1, day, 12, 0, 0);
@@ -3195,14 +3207,14 @@ class AdminDashboard {
                   </div>
                   <div style="background: white; padding: 14px; border-radius: 10px; text-align: center;">
                     <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Hora</span>
-                    <p style="margin: 0; font-size: 15px; font-weight: 700; color: #065f46;">${org.ministroData?.scheduledTime || 'No especificada'}</p>
+                    <p style="margin: 0; font-size: 15px; font-weight: 700; color: #065f46;">${ministroInfo.scheduledTime || 'No especificada'}</p>
                   </div>
                 </div>
 
                 <!-- Lugar -->
                 <div style="background: white; padding: 14px; border-radius: 10px; margin-bottom: 16px;">
                   <span style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Lugar</span>
-                  <p style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">${org.ministroData?.location || 'No especificado'}</p>
+                  <p style="margin: 0; font-size: 14px; font-weight: 600; color: #065f46;">${ministroInfo.location || 'No especificado'}</p>
                 </div>
 
                 <!-- Botón modificar -->
