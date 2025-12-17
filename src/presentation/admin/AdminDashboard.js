@@ -4070,14 +4070,50 @@ class AdminDashboard {
         // Actualizar o crear asignación
         const ministroIdForAssignment = ministro.id || ministro._id;
         if (currentAssignment) {
-          await ministroAssignmentService.update(currentAssignment.id, {
+          // Obtener el ID correcto de la asignación (MongoDB usa _id)
+          const assignmentId = currentAssignment._id || currentAssignment.id;
+
+          // Construir registro de cambios para el ministro
+          const changes = {};
+          if (hadPreviousData) {
+            if (hasMinistroChanged) changes.ministro = true;
+            if (oldMinistroData.scheduledDate !== scheduledDate) changes.date = true;
+            if (oldMinistroData.scheduledTime !== scheduledTime) changes.time = true;
+            if (oldMinistroData.location !== location) changes.location = true;
+          }
+
+          const hasAnyChange = Object.keys(changes).length > 0;
+
+          // Preparar datos de actualización
+          const updateData = {
             ministroId: ministroIdForAssignment,
             ministroName: `${ministro.firstName} ${ministro.lastName}`,
             ministroRut: ministro.rut,
             scheduledDate,
             scheduledTime,
             location
-          });
+          };
+
+          // Si hubo cambios, marcar como modificado y guardar el historial
+          if (hasAnyChange) {
+            updateData.appointmentWasModified = true;
+            updateData.appointmentChanges = [
+              ...(currentAssignment.appointmentChanges || []),
+              {
+                changedAt: new Date().toISOString(),
+                changedBy: 'admin',
+                changes,
+                previousData: {
+                  scheduledDate: oldMinistroData.scheduledDate,
+                  scheduledTime: oldMinistroData.scheduledTime,
+                  location: oldMinistroData.location,
+                  ministroName: oldMinistroData.ministroName
+                }
+              }
+            ];
+          }
+
+          await ministroAssignmentService.update(assignmentId, updateData);
         } else {
           await ministroAssignmentService.create({
             ministroId: ministroIdForAssignment,

@@ -1557,4 +1557,171 @@ loadStats();
 renderAssignments();
 renderAvailability();
 
+// ==================== NOTIFICATIONS SYSTEM ====================
+
+let ministroNotifications = [];
+
+// Load notifications for ministro
+async function loadMinistroNotifications() {
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  try {
+    const response = await apiService.get(`/notifications/ministro/${ministroId}`);
+    ministroNotifications = response || [];
+    updateNotificationBadge();
+  } catch (error) {
+    console.error('Error loading ministro notifications:', error);
+    ministroNotifications = [];
+  }
+}
+
+// Update notification badge
+function updateNotificationBadge() {
+  const badge = document.getElementById('notification-badge');
+  const unreadCount = ministroNotifications.filter(n => !n.read).length;
+
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Open notifications panel
+function openNotificationsPanel() {
+  // Create overlay and panel if not exist
+  let overlay = document.querySelector('.notifications-overlay');
+  let panel = document.querySelector('.notifications-panel');
+
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'notifications-overlay';
+    overlay.addEventListener('click', closeNotificationsPanel);
+    document.body.appendChild(overlay);
+  }
+
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'notifications-panel';
+    document.body.appendChild(panel);
+  }
+
+  // Render notifications
+  renderNotificationsPanel(panel);
+
+  // Open
+  requestAnimationFrame(() => {
+    overlay.classList.add('open');
+    panel.classList.add('open');
+  });
+}
+
+// Close notifications panel
+function closeNotificationsPanel() {
+  const overlay = document.querySelector('.notifications-overlay');
+  const panel = document.querySelector('.notifications-panel');
+
+  if (overlay) overlay.classList.remove('open');
+  if (panel) panel.classList.remove('open');
+}
+
+// Render notifications panel content
+function renderNotificationsPanel(panel) {
+  const sortedNotifications = [...ministroNotifications].sort((a, b) =>
+    new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
+  panel.innerHTML = `
+    <div class="notifications-header">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        Notificaciones
+      </h2>
+      <button class="notifications-close" onclick="closeNotificationsPanel()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="notifications-list">
+      ${sortedNotifications.length === 0 ? `
+        <div class="notifications-empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <p>No tienes notificaciones</p>
+        </div>
+      ` : sortedNotifications.map(notif => {
+        const date = new Date(notif.createdAt);
+        const timeAgo = getTimeAgo(date);
+
+        return `
+          <div class="notification-item ${notif.read ? '' : 'unread'}"
+               onclick="markNotificationRead('${notif._id || notif.id}')">
+            <div class="notification-title">${notif.title}</div>
+            <div class="notification-message">${notif.message}</div>
+            <div class="notification-time">${timeAgo}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// Get time ago string
+function getTimeAgo(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Ahora';
+  if (minutes < 60) return `Hace ${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+  if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? 's' : ''}`;
+  if (days < 7) return `Hace ${days} día${days !== 1 ? 's' : ''}`;
+  return date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+// Mark notification as read
+async function markNotificationRead(notifId) {
+  try {
+    await apiService.post(`/notifications/${notifId}/read`);
+
+    // Update local state
+    const notif = ministroNotifications.find(n => (n._id || n.id) === notifId);
+    if (notif) {
+      notif.read = true;
+    }
+
+    updateNotificationBadge();
+
+    // Re-render panel
+    const panel = document.querySelector('.notifications-panel');
+    if (panel) {
+      renderNotificationsPanel(panel);
+    }
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+  }
+}
+
+// Notifications button click
+document.getElementById('btn-notifications').addEventListener('click', openNotificationsPanel);
+
+// Global functions for notifications
+window.closeNotificationsPanel = closeNotificationsPanel;
+window.markNotificationRead = markNotificationRead;
+
+// Load notifications on init
+loadMinistroNotifications();
+
+// Refresh notifications every 60 seconds
+setInterval(loadMinistroNotifications, 60000);
+
 console.log('✅ Dashboard initialized');
