@@ -3815,8 +3815,31 @@ class AdminDashboard {
     const modal = document.createElement('div');
     modal.className = 'admin-review-modal-overlay';
 
+    // Obtener el ID correcto de la organización
+    const orgId = org.id || org._id;
+
     // Obtener la asignación actual
-    const currentAssignment = ministroAssignmentService.getByOrganizationId(org.id)[0];
+    const currentAssignment = ministroAssignmentService.getByOrganizationId(orgId)?.[0];
+
+    // Combinar datos: priorizar asignación, luego org.ministroData
+    const ministroInfo = {
+      ministroName: currentAssignment?.ministroName || org.ministroData?.ministroName || null,
+      ministroRut: currentAssignment?.ministroRut || org.ministroData?.ministroRut || null,
+      scheduledDate: currentAssignment?.scheduledDate || org.ministroData?.scheduledDate || null,
+      scheduledTime: currentAssignment?.scheduledTime || org.ministroData?.scheduledTime || null,
+      location: currentAssignment?.location || org.ministroData?.location || null
+    };
+
+    // Formatear fecha para input date (yyyy-MM-dd)
+    let dateForInput = '';
+    if (ministroInfo.scheduledDate) {
+      const dateStr = ministroInfo.scheduledDate;
+      if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+        dateForInput = dateStr.split('T')[0]; // Toma solo la parte yyyy-MM-dd
+      } else if (dateStr instanceof Date) {
+        dateForInput = dateStr.toISOString().split('T')[0];
+      }
+    }
 
     modal.innerHTML = `
       <div class="admin-review-modal" style="max-width: 600px;">
@@ -3835,11 +3858,11 @@ class AdminDashboard {
 
         <div class="review-modal-body" style="padding: 24px;">
           <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-            <h4 style="margin: 0 0 8px 0; color: #1e40af;">Asignación Actual:</h4>
+            <h4 style="margin: 0 0 8px 0; color: #1e40af;">Asignaci\u00f3n Actual:</h4>
             <div style="color: #3b82f6; font-size: 14px;">
-              <p style="margin: 4px 0;"><strong>Ministro:</strong> ${org.ministroData?.ministroName || org.ministroData?.name || 'No asignado'}</p>
-              <p style="margin: 4px 0;"><strong>Fecha:</strong> ${org.ministroData?.scheduledDate ? new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL') : 'No especificada'}</p>
-              <p style="margin: 4px 0;"><strong>Hora:</strong> ${org.ministroData?.scheduledTime || 'No especificada'}</p>
+              <p style="margin: 4px 0;"><strong>Ministro:</strong> ${ministroInfo.ministroName || 'No asignado'}</p>
+              <p style="margin: 4px 0;"><strong>Fecha:</strong> ${dateForInput ? new Date(dateForInput + 'T12:00:00').toLocaleDateString('es-CL') : 'No especificada'}</p>
+              <p style="margin: 4px 0;"><strong>Hora:</strong> ${ministroInfo.scheduledTime || 'No especificada'}</p>
             </div>
           </div>
 
@@ -3866,7 +3889,7 @@ class AdminDashboard {
               <div class="form-group">
                 <label>Nueva Fecha <span class="required">*</span></label>
                 <input type="date" name="scheduledDate" required
-                  value="${org.ministroData?.scheduledDate || ''}"
+                  value="${dateForInput}"
                   min="${new Date().toISOString().split('T')[0]}">
               </div>
 
@@ -3875,7 +3898,7 @@ class AdminDashboard {
                 <select name="scheduledTime" required class="input-styled">
                   <option value="">-- Seleccionar Hora --</option>
                   ${ministroAvailabilityService.getAvailableHours().map(hour => {
-                    const currentTime = org.ministroData?.scheduledTime || '10:00';
+                    const currentTime = ministroInfo.scheduledTime || '10:00';
                     const normalizedCurrent = ministroAvailabilityService.normalizeTime(currentTime);
                     return `
                       <option value="${hour}" ${hour === normalizedCurrent ? 'selected' : ''}>
@@ -3890,7 +3913,7 @@ class AdminDashboard {
             <div class="form-group">
               <label>Lugar <span class="required">*</span></label>
               <input type="text" name="location" required
-                value="${org.ministroData?.location || ''}"
+                value="${ministroInfo.location || ''}"
                 placeholder="Ej: Municipalidad de Renca, Sala de Reuniones">
             </div>
 
@@ -4016,7 +4039,7 @@ class AdminDashboard {
 
       // Verificar conflictos (solo si es diferente ministro o diferente horario)
       const isDifferentMinistro = !currentAssignment || currentAssignment.ministroId !== ministroId;
-      const isDifferentSchedule = org.ministroData?.scheduledDate !== scheduledDate || org.ministroData?.scheduledTime !== scheduledTime;
+      const isDifferentSchedule = ministroInfo.scheduledDate !== scheduledDate || ministroInfo.scheduledTime !== scheduledTime;
 
       if (isDifferentMinistro || isDifferentSchedule) {
         const hasConflict = ministroAssignmentService.hasScheduleConflict(ministroId, scheduledDate, scheduledTime);
@@ -4029,7 +4052,7 @@ class AdminDashboard {
         }
       }
 
-      const oldMinistroData = { ...org.ministroData };
+      const oldMinistroData = { ...ministroInfo };
 
       const newMinistroData = {
         ministroId: ministro.id || ministro._id,
@@ -4041,13 +4064,14 @@ class AdminDashboard {
       };
 
       // Actualizar la organización con los nuevos datos
-      const updated = organizationsService.scheduleMinistro(org.id, newMinistroData);
+      const updated = await organizationsService.scheduleMinistro(orgId, newMinistroData);
 
       if (updated) {
         // Actualizar o crear asignación
+        const ministroIdForAssignment = ministro.id || ministro._id;
         if (currentAssignment) {
-          ministroAssignmentService.update(currentAssignment.id, {
-            ministroId: ministro.id,
+          await ministroAssignmentService.update(currentAssignment.id, {
+            ministroId: ministroIdForAssignment,
             ministroName: `${ministro.firstName} ${ministro.lastName}`,
             ministroRut: ministro.rut,
             scheduledDate,
@@ -4055,11 +4079,11 @@ class AdminDashboard {
             location
           });
         } else {
-          ministroAssignmentService.create({
-            ministroId: ministro.id,
+          await ministroAssignmentService.create({
+            ministroId: ministroIdForAssignment,
             ministroName: `${ministro.firstName} ${ministro.lastName}`,
             ministroRut: ministro.rut,
-            organizationId: org.id,
+            organizationId: orgId,
             organizationName: getOrgName(org),
             scheduledDate,
             scheduledTime,
