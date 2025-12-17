@@ -3228,8 +3228,8 @@ class AdminDashboard {
                 </div>
 
                 <!-- Botón modificar -->
-                <button type="button" id="btn-edit-ministro" class="btn" style="width: 100%; background: white; color: #047857; border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" id="btn-edit-ministro" style="width: 100%; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: white; border: none; padding: 14px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3); transition: all 0.2s ease;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
