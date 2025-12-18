@@ -151,20 +151,19 @@
         .notifications-panel {
             position: fixed;
             top: 0;
-            right: -420px;
+            right: 0;
             width: 400px;
             max-width: 100%;
             height: 100%;
             background: white;
             box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
             z-index: 9999;
-            display: flex;
+            display: none;
             flex-direction: column;
-            transition: right 0.3s ease;
         }
 
         .notifications-panel.active {
-            right: 0;
+            display: flex;
         }
 
         /* Estilos para acciones de notificaciones */
