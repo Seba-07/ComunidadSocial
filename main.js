@@ -1749,10 +1749,6 @@ async function viewOrganization(orgId) {
     const timeToUse = org.ministroData.scheduledTime || org.electionTime || '-';
     const locationToUse = org.ministroData.location || org.assemblyAddress || org.organization?.address || '-';
 
-    // Verificar si la cita fue modificada
-    const wasModified = org.appointmentWasModified && org.appointmentChanges && org.appointmentChanges.length > 0;
-    const lastChange = wasModified ? org.appointmentChanges[org.appointmentChanges.length - 1] : null;
-
     // Detectar diferencias entre lo solicitado y lo asignado
     const requestedDate = org.electionDate;
     const requestedTime = org.electionTime;
@@ -1780,303 +1776,127 @@ async function viewOrganization(orgId) {
       } catch { return dateStr; }
     };
 
-    // HTML de comparación solicitado vs asignado
-    let changesComparisonHTML = '';
+    // Notificación de cambios (solo si hay cambios reales)
+    let changesNoticeHTML = '';
     if (hasAnyChanges) {
-      changesComparisonHTML = `
-        <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f3f4f6;">
-            <span style="font-size: 24px;">📋</span>
-            <div>
-              <h4 style="margin: 0; color: #1f2937; font-weight: 700; font-size: 16px;">Cambios respecto a tu solicitud</h4>
-              <p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">El administrador ajustó los siguientes datos:</p>
-            </div>
+      changesNoticeHTML = `
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #f59e0b;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 20px;">📋</span>
+            <p style="margin: 0; color: #92400e; font-weight: 700; font-size: 14px;">Cambios respecto a tu solicitud</p>
           </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="background: #fef2f2; border-radius: 12px; padding: 14px; border-left: 4px solid #ef4444;">
-              <p style="margin: 0 0 10px 0; font-size: 11px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">📤 Lo que solicitaste</p>
-              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Fecha:</strong> ${formatDateCompare(requestedDate)}</p>` : ''}
-              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Hora:</strong> ${requestedTime}</p>` : ''}
-              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #7f1d1d;"><strong style="color: #991b1b;">Lugar:</strong> ${requestedLocation}</p>` : ''}
-            </div>
-            <div style="background: #ecfdf5; border-radius: 12px; padding: 14px; border-left: 4px solid #10b981;">
-              <p style="margin: 0 0 10px 0; font-size: 11px; color: #065f46; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">✅ Lo confirmado</p>
-              ${dateChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Fecha:</strong> ${formatDateCompare(assignedDate)}</p>` : ''}
-              ${timeChanged ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Hora:</strong> ${assignedTime}</p>` : ''}
-              ${locationChanged ? `<p style="margin: 0; font-size: 13px; color: #064e3b;"><strong style="color: #065f46;">Lugar:</strong> ${assignedLocation}</p>` : ''}
-            </div>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            ${dateChanged ? `<div style="background: white; border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 150px;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; color: #6b7280; text-transform: uppercase;">Fecha</p>
+              <p style="margin: 0; font-size: 13px;"><span style="color: #dc2626; text-decoration: line-through;">${formatDateCompare(requestedDate)}</span> → <span style="color: #059669; font-weight: 600;">${formatDateCompare(assignedDate)}</span></p>
+            </div>` : ''}
+            ${timeChanged ? `<div style="background: white; border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 150px;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; color: #6b7280; text-transform: uppercase;">Hora</p>
+              <p style="margin: 0; font-size: 13px;"><span style="color: #dc2626; text-decoration: line-through;">${requestedTime}</span> → <span style="color: #059669; font-weight: 600;">${assignedTime}</span></p>
+            </div>` : ''}
+            ${locationChanged ? `<div style="background: white; border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 200px;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; color: #6b7280; text-transform: uppercase;">Lugar</p>
+              <p style="margin: 0; font-size: 12px; color: #059669; font-weight: 600;">${assignedLocation}</p>
+            </div>` : ''}
           </div>
         </div>
-      `;
-    }
-
-    // Generar HTML de alerta de modificación si aplica
-    let modificationAlertHTML = '';
-    if (wasModified && lastChange) {
-      const modDate = new Date(lastChange.changedAt);
-      const modDateFormatted = modDate.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
-      const modTimeFormatted = modDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-
-      // Descripción de qué cambió
-      const changesList = [];
-      if (lastChange.changes?.ministro) changesList.push('Ministro de Fe');
-      if (lastChange.changes?.date) changesList.push('Fecha');
-      if (lastChange.changes?.time) changesList.push('Hora');
-      if (lastChange.changes?.location) changesList.push('Lugar');
-
-      modificationAlertHTML = `
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white; animation: pulse-attention 2s ease-in-out infinite;">
-          <div style="display: flex; align-items: flex-start; gap: 16px;">
-            <div style="font-size: 32px; animation: shake 0.5s ease-in-out;">🔔</div>
-            <div style="flex: 1;">
-              <h4 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700;">Cita Re-agendada</h4>
-              <p style="margin: 0 0 12px 0; font-size: 14px; opacity: 0.95;">
-                Tu cita fue modificada el <strong>${modDateFormatted}</strong> a las <strong>${modTimeFormatted}</strong>
-              </p>
-              <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 12px;">
-                <p style="margin: 0; font-size: 13px;">
-                  <strong>Cambios realizados:</strong> ${changesList.join(', ')}
-                </p>
-              </div>
-              <button onclick="window.showAppointmentHistory('${org.id}')" style="margin-top: 12px; background: rgba(255,255,255,0.25); border: none; color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                Ver historial de cambios
-              </button>
-            </div>
-          </div>
-        </div>
-        <style>
-          @keyframes pulse-attention {
-            0%, 100% { box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4); }
-            50% { box-shadow: 0 4px 30px rgba(245, 158, 11, 0.7); }
-          }
-          @keyframes shake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
-          }
-        </style>
       `;
     }
 
     appointmentHTML = `
-      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 20px; padding: 28px; margin-bottom: 24px; color: white; box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);">
-        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
-          <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- Header Principal -->
+      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 24px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+          <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
           </div>
           <div>
-            <h3 style="margin: 0; font-size: 22px; font-weight: 700;">Ministro de Fe Asignado</h3>
-            <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Tu asamblea de constitución ha sido confirmada</p>
+            <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Cita Confirmada</h3>
+            <p style="margin: 2px 0 0; opacity: 0.9; font-size: 13px;">Tu asamblea de constitución está programada</p>
           </div>
         </div>
 
-        ${modificationAlertHTML}
-
-        ${changesComparisonHTML}
-
-        <!-- Información del Ministro -->
-        <div style="background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px;">
-              ⚖️
-            </div>
-            <div style="flex: 1;">
-              <p style="margin: 0; font-size: 12px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">Ministro de Fe</p>
-              <p style="margin: 4px 0 0; font-size: 22px; font-weight: 700;">${org.ministroData.name || 'Por asignar'}</p>
-              ${org.ministroData.rut ? `<p style="margin: 4px 0 0; font-size: 14px; opacity: 0.9;">RUT: ${org.ministroData.rut}</p>` : ''}
-            </div>
+        <!-- Info Grid -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 20px;">📅</p>
+            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Fecha</p>
+            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${formattedDate}</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 20px;">🕐</p>
+            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Hora</p>
+            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${timeToUse}</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 20px;">⚖️</p>
+            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Ministro</p>
+            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${org.ministroData.name || 'Por asignar'}</p>
           </div>
         </div>
 
-        <!-- Fecha, Hora y Lugar -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-          <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; backdrop-filter: blur(10px);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="font-size: 28px;">📅</div>
-              <div>
-                <p style="margin: 0; font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">Fecha Confirmada</p>
-                <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700;">${formattedDate}</p>
-              </div>
-            </div>
-          </div>
-
-          <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; backdrop-filter: blur(10px);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="font-size: 28px;">🕐</div>
-              <div>
-                <p style="margin: 0; font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">Hora</p>
-                <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700;">${timeToUse}</p>
-              </div>
-            </div>
-          </div>
-
-          <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; grid-column: 1 / -1; backdrop-filter: blur(10px);">
-            <div style="display: flex; align-items: flex-start; gap: 12px;">
-              <div style="font-size: 28px;">📍</div>
-              <div>
-                <p style="margin: 0; font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">Lugar de la Asamblea</p>
-                <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700;">${locationToUse}</p>
-              </div>
-            </div>
+        <!-- Ubicación -->
+        <div style="margin-top: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 18px;">📍</span>
+          <div>
+            <p style="margin: 0; font-size: 11px; opacity: 0.8;">Lugar</p>
+            <p style="margin: 2px 0 0; font-size: 14px; font-weight: 500;">${locationToUse}</p>
           </div>
         </div>
-
       </div>
 
-      <!-- Sección Informativa para la Asamblea -->
-      <div style="background: white; border-radius: 20px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 20px 0; color: #1f2937; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-          📚 Prepárate para la Asamblea Constitutiva
-        </h4>
+      ${changesNoticeHTML}
 
-        <!-- ¿Qué es el Ministro de Fe? -->
-        <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #10b981;">
-          <h5 style="margin: 0 0 8px 0; color: #065f46; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            ⚖️ ¿Quién es el Ministro de Fe?
-          </h5>
-          <p style="margin: 0; color: #047857; font-size: 13px; line-height: 1.6;">
-            <strong>${org.ministroData?.name || 'El Ministro de Fe asignado'}</strong> es un funcionario municipal autorizado para dar fe pública de los actos realizados en la asamblea.
-            Su rol es verificar la identidad de los asistentes, certificar las firmas y validar que el proceso se realice conforme a la Ley 19.418.
-          </p>
+      <!-- Qué llevar - Compacto -->
+      <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
+        <h5 style="margin: 0 0 12px 0; color: #334155; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          🎒 Qué llevar a la asamblea
+        </h5>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">🪪 Cédula de todos</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📕 Libro de Actas</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📗 Libro de Socios</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📘 Libro Contabilidad</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">🖊️ Lápiz azul</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📄 Estatutos (3 copias)</span>
         </div>
+      </div>
 
-        <!-- ¿Qué se hará en la asamblea? -->
-        <div style="background: #eff6ff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #3b82f6;">
-          <h5 style="margin: 0 0 12px 0; color: #1e40af; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            📋 ¿Qué se hará en la Asamblea?
-          </h5>
-          <ol style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 13px; line-height: 1.8;">
-            <li><strong>Lectura del Acta de Constitución</strong> - Se leerá el documento que formaliza la creación de la organización</li>
-            <li><strong>Aprobación de Estatutos</strong> - Los socios fundadores aprobarán las normas internas</li>
-            <li><strong>Elección del Directorio Provisorio</strong> - Se elegirá presidente, secretario y tesorero</li>
-            <li><strong>Firma del Acta</strong> - Todos los miembros del directorio firmarán ante el Ministro de Fe</li>
-            <li><strong>Certificación</strong> - El Ministro certificará la validez del acto</li>
-          </ol>
-        </div>
-
-        <!-- Quiénes deben asistir -->
-        <div style="background: #fef3c7; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #f59e0b;">
-          <h5 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            👥 ¿Quiénes deben asistir? (OBLIGATORIO)
-          </h5>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-            <div style="background: white; border-radius: 8px; padding: 12px;">
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio Provisorio</p>
-              ${(() => {
-                // Primero intentar desde provisionalDirectorio (nuevo formato)
-                const dir = org.provisionalDirectorio;
-                if (dir && (dir.president || dir.secretary || dir.treasurer)) {
-                  let html = '';
-                  if (dir.president) {
-                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Presidente:</strong> ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
-                  }
-                  if (dir.secretary) {
-                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Secretario:</strong> ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
-                  }
-                  if (dir.treasurer) {
-                    html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
-                  }
-                  return html || '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros del directorio definidos en tu solicitud</p>';
-                }
-                // Fallback: buscar en members con roles
-                const directors = org.members?.filter(m => ['president', 'secretary', 'treasurer'].includes(m.role)) || [];
-                if (directors.length === 0) {
-                  return '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros del directorio definidos en tu solicitud</p>';
-                }
-                return directors.map(m => {
-                  const roleNames = { president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero' };
-                  return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>' + (roleNames[m.role] || m.role) + ':</strong> ' + (m.firstName || '') + ' ' + (m.lastName || '') + '</p>';
-                }).join('');
-              })()}
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 12px;">
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 700; text-transform: uppercase;">Comisión Electoral</p>
-              ${(() => {
-                const commission = org.electoralCommission || [];
-                if (commission.length === 0) {
-                  return '<p style="margin: 0; font-size: 13px; color: #78716c;">Los miembros de la comisión definidos en tu solicitud</p>';
-                }
-                return commission.map(m => {
-                  return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '') + '</p>';
-                }).join('');
+      <!-- Quiénes deben asistir -->
+      <div style="background: #fef3c7; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #fcd34d;">
+        <h5 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 700;">
+          👥 Asistencia obligatoria
+        </h5>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: white; border-radius: 8px; padding: 10px;">
+            <p style="margin: 0 0 6px 0; font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio</p>
+            ${(() => {
+              const dir = org.provisionalDirectorio;
+              if (dir && (dir.president || dir.secretary || dir.treasurer)) {
+                let html = '';
+                if (dir.president) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
+                if (dir.secretary) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
+                if (dir.treasurer) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
+                return html || '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
+              }
+              const directors = org.members?.filter(m => ['president', 'secretary', 'treasurer'].includes(m.role)) || [];
+              if (directors.length === 0) return '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
+              return directors.map(m => '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (m.firstName || '') + ' ' + (m.lastName || '') + '</p>').join('');
+            })()}
+          </div>
+          <div style="background: white; border-radius: 8px; padding: 10px;">
+            <p style="margin: 0 0 6px 0; font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase;">Comisión Electoral</p>
+            ${(() => {
+              const commission = org.electoralCommission || [];
+              if (commission.length === 0) return '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
+              return commission.map(m => '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '') + '</p>').join('');
               })()}
             </div>
           </div>
         </div>
-
-        <!-- Qué llevar -->
-        <div style="background: #fdf2f8; border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #ec4899;">
-          <h5 style="margin: 0 0 12px 0; color: #9d174d; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            🎒 ¿Qué debes llevar?
-          </h5>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">🪪</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Cédula de Identidad</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">De TODOS los asistentes</p>
-              </div>
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📕</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Actas</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Foliado y empastado</p>
-              </div>
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📗</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Socios</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Registro de miembros</p>
-              </div>
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📘</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Libro de Contabilidad</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Para registro financiero</p>
-              </div>
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">🖊️</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Lápiz Azul</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">Para firmar documentos</p>
-              </div>
-            </div>
-            <div style="background: white; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📄</span>
-              <div>
-                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #831843;">Estatutos Impresos</p>
-                <p style="margin: 2px 0 0; font-size: 11px; color: #9d174d;">3 copias firmadas</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Consejos finales -->
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 16px; color: white;">
-          <h5 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            💡 Consejos Importantes
-          </h5>
-          <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
-            <li>Lleguen <strong>15 minutos antes</strong> de la hora programada</li>
-            <li>Asegúrense de que <strong>todos los miembros del directorio</strong> estén presentes</li>
-            <li>Verifiquen que las <strong>cédulas de identidad estén vigentes</strong></li>
-            <li>Los libros deben estar <strong>foliados (numerados) y empastados</strong></li>
-            <li>Si tienen dudas, pueden contactar a la municipalidad</li>
-          </ul>
-        </div>
-      </div>
     `;
   }
   // Si está esperando asignación de Ministro
