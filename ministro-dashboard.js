@@ -1596,25 +1596,15 @@ function updateNotificationBadge() {
 
 // Open notifications panel
 function openNotificationsPanel() {
-  let overlay = document.querySelector('.notifications-overlay');
-  let panel = document.querySelector('.notifications-panel');
+  const overlay = document.getElementById('notifications-overlay');
+  const panel = document.getElementById('notifications-panel');
 
-  // Create overlay if not exists
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.className = 'notifications-overlay';
-    overlay.onclick = closeNotificationsPanel;
-    document.body.appendChild(overlay);
+  if (!overlay || !panel) {
+    console.error('Notifications elements not found');
+    return;
   }
 
-  // Create panel if not exists
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.className = 'notifications-panel';
-    document.body.appendChild(panel);
-  }
-
-  // Render notifications
+  // Render notifications content
   renderNotificationsPanel(panel);
 
   // Show overlay and panel
@@ -1624,8 +1614,8 @@ function openNotificationsPanel() {
 
 // Close notifications panel
 function closeNotificationsPanel() {
-  const overlay = document.querySelector('.notifications-overlay');
-  const panel = document.querySelector('.notifications-panel');
+  const overlay = document.getElementById('notifications-overlay');
+  const panel = document.getElementById('notifications-panel');
 
   if (overlay) overlay.classList.remove('active');
   if (panel) panel.classList.remove('active');
