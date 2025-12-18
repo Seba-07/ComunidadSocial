@@ -1454,9 +1454,20 @@ function renderOrganizationCard(org) {
   `;
 }
 
-function viewOrganization(orgId) {
-  const org = organizationsService.getById(orgId);
-  if (!org) return;
+async function viewOrganization(orgId) {
+  let org = organizationsService.getById(orgId);
+
+  // Si no se encuentra localmente, intentar obtenerla del servidor
+  if (!org) {
+    console.log('Organización no encontrada localmente, buscando en servidor:', orgId);
+    org = await organizationsService.getByIdAsync(orgId);
+  }
+
+  if (!org) {
+    console.error('No se pudo encontrar la organización:', orgId);
+    showToast('No se pudo cargar la organización', 'error');
+    return;
+  }
 
   const statusLabel = ORG_STATUS_LABELS[org.status] || org.status;
   const statusColor = ORG_STATUS_COLORS[org.status] || '#6b7280';
