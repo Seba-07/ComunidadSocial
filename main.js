@@ -1805,45 +1805,47 @@ async function viewOrganization(orgId) {
 
     appointmentHTML = `
       <!-- Header Principal -->
-      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 24px; margin-bottom: 20px; color: white;">
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
-          <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px; margin-bottom: 16px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 40px; height: 40px; min-width: 40px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
           </div>
-          <div>
-            <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Cita Confirmada</h3>
-            <p style="margin: 2px 0 0; opacity: 0.9; font-size: 13px;">Tu asamblea de constitución está programada</p>
+          <div style="min-width: 0;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Cita Confirmada</h3>
+            <p style="margin: 2px 0 0; opacity: 0.9; font-size: 12px;">Asamblea de constitución programada</p>
           </div>
         </div>
 
-        <!-- Info Grid -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
-            <p style="margin: 0 0 4px 0; font-size: 20px;">📅</p>
-            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Fecha</p>
-            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${formattedDate}</p>
+        <!-- Info - Fecha y Hora en fila, Ministro abajo -->
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="flex: 1; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; text-align: center;">
+            <p style="margin: 0; font-size: 16px;">📅</p>
+            <p style="margin: 4px 0 0; font-size: 13px; font-weight: 600;">${formattedDate}</p>
           </div>
-          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
-            <p style="margin: 0 0 4px 0; font-size: 20px;">🕐</p>
-            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Hora</p>
-            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${timeToUse}</p>
+          <div style="flex: 1; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; text-align: center;">
+            <p style="margin: 0; font-size: 16px;">🕐</p>
+            <p style="margin: 4px 0 0; font-size: 13px; font-weight: 600;">${timeToUse}</p>
           </div>
-          <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; text-align: center;">
-            <p style="margin: 0 0 4px 0; font-size: 20px;">⚖️</p>
-            <p style="margin: 0; font-size: 11px; opacity: 0.8; text-transform: uppercase;">Ministro</p>
-            <p style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">${org.ministroData.name || 'Por asignar'}</p>
+        </div>
+
+        <!-- Ministro -->
+        <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span style="font-size: 16px;">⚖️</span>
+          <div style="min-width: 0;">
+            <p style="margin: 0; font-size: 10px; opacity: 0.8; text-transform: uppercase;">Ministro de Fe</p>
+            <p style="margin: 2px 0 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${org.ministroData.name || 'Por asignar'}</p>
           </div>
         </div>
 
         <!-- Ubicación -->
-        <div style="margin-top: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 18px;">📍</span>
-          <div>
-            <p style="margin: 0; font-size: 11px; opacity: 0.8;">Lugar</p>
-            <p style="margin: 2px 0 0; font-size: 14px; font-weight: 500;">${locationToUse}</p>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 16px;">📍</span>
+          <div style="min-width: 0; flex: 1;">
+            <p style="margin: 0; font-size: 10px; opacity: 0.8;">Lugar</p>
+            <p style="margin: 2px 0 0; font-size: 13px; font-weight: 500; word-break: break-word;">${locationToUse}</p>
           </div>
         </div>
       </div>
@@ -1851,48 +1853,48 @@ async function viewOrganization(orgId) {
       ${changesNoticeHTML}
 
       <!-- Qué llevar - Compacto -->
-      <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
-        <h5 style="margin: 0 0 12px 0; color: #334155; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-          🎒 Qué llevar a la asamblea
+      <div style="background: #f8fafc; border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
+        <h5 style="margin: 0 0 10px 0; color: #334155; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+          🎒 Qué llevar
         </h5>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">🪪 Cédula de todos</span>
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📕 Libro de Actas</span>
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📗 Libro de Socios</span>
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📘 Libro Contabilidad</span>
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">🖊️ Lápiz azul</span>
-          <span style="background: white; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #475569;">📄 Estatutos (3 copias)</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">🪪 Cédulas</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">📕 Actas</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">📗 Socios</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">📘 Contabilidad</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">🖊️ Lápiz azul</span>
+          <span style="background: white; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 16px; font-size: 11px; color: #475569;">📄 Estatutos x3</span>
         </div>
       </div>
 
       <!-- Quiénes deben asistir -->
-      <div style="background: #fef3c7; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #fcd34d;">
-        <h5 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 700;">
+      <div style="background: #fef3c7; border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid #fcd34d;">
+        <h5 style="margin: 0 0 10px 0; color: #92400e; font-size: 13px; font-weight: 700;">
           👥 Asistencia obligatoria
         </h5>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div style="background: white; border-radius: 8px; padding: 10px;">
-            <p style="margin: 0 0 6px 0; font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="background: white; border-radius: 8px; padding: 10px; flex: 1; min-width: 130px;">
+            <p style="margin: 0 0 6px 0; font-size: 10px; color: #92400e; font-weight: 700; text-transform: uppercase;">Directorio</p>
             ${(() => {
               const dir = org.provisionalDirectorio;
               if (dir && (dir.president || dir.secretary || dir.treasurer)) {
                 let html = '';
-                if (dir.president) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '') + '</p>';
-                if (dir.secretary) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '') + '</p>';
-                if (dir.treasurer) html += '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '') + '</p>';
-                return html || '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
+                if (dir.president) html += '<p style="margin: 0 0 2px 0; font-size: 11px; color: #44403c;">• ' + (dir.president.firstName || '') + ' ' + (dir.president.lastName || '').charAt(0) + '.</p>';
+                if (dir.secretary) html += '<p style="margin: 0 0 2px 0; font-size: 11px; color: #44403c;">• ' + (dir.secretary.firstName || '') + ' ' + (dir.secretary.lastName || '').charAt(0) + '.</p>';
+                if (dir.treasurer) html += '<p style="margin: 0 0 2px 0; font-size: 11px; color: #44403c;">• ' + (dir.treasurer.firstName || '') + ' ' + (dir.treasurer.lastName || '').charAt(0) + '.</p>';
+                return html || '<p style="margin: 0; font-size: 11px; color: #78716c;">Ver solicitud</p>';
               }
               const directors = org.members?.filter(m => ['president', 'secretary', 'treasurer'].includes(m.role)) || [];
-              if (directors.length === 0) return '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
-              return directors.map(m => '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (m.firstName || '') + ' ' + (m.lastName || '') + '</p>').join('');
+              if (directors.length === 0) return '<p style="margin: 0; font-size: 11px; color: #78716c;">Ver solicitud</p>';
+              return directors.map(m => '<p style="margin: 0 0 2px 0; font-size: 11px; color: #44403c;">• ' + (m.firstName || '') + ' ' + (m.lastName || '').charAt(0) + '.</p>').join('');
             })()}
           </div>
-          <div style="background: white; border-radius: 8px; padding: 10px;">
-            <p style="margin: 0 0 6px 0; font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase;">Comisión Electoral</p>
+          <div style="background: white; border-radius: 8px; padding: 10px; flex: 1; min-width: 130px;">
+            <p style="margin: 0 0 6px 0; font-size: 10px; color: #92400e; font-weight: 700; text-transform: uppercase;">Com. Electoral</p>
             ${(() => {
               const commission = org.electoralCommission || [];
-              if (commission.length === 0) return '<p style="margin: 0; font-size: 12px; color: #78716c;">Según solicitud</p>';
-              return commission.map(m => '<p style="margin: 0 0 2px 0; font-size: 12px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '') + '</p>').join('');
+              if (commission.length === 0) return '<p style="margin: 0; font-size: 11px; color: #78716c;">Ver solicitud</p>';
+              return commission.map(m => '<p style="margin: 0 0 2px 0; font-size: 11px; color: #44403c;">• ' + (m.firstName || m.name || '') + ' ' + (m.lastName || '').charAt(0) + '.</p>').join('');
               })()}
             </div>
           </div>
