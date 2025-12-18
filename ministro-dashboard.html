@@ -154,16 +154,17 @@
             right: 0;
             width: 400px;
             max-width: 100%;
-            height: 100%;
-            background: white;
+            height: 100vh;
+            background: #ffffff !important;
             box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-            z-index: 10001;
+            z-index: 99999 !important;
             display: none;
             flex-direction: column;
+            isolation: isolate;
         }
 
         .notifications-panel.active {
-            display: flex;
+            display: flex !important;
         }
 
         /* Estilos para acciones de notificaciones */
