@@ -196,4 +196,22 @@ router.post('/ministro/:ministroId/read-all', authenticate, async (req, res) => 
   }
 });
 
+// Delete ministro notification
+router.delete('/ministro/:notificationId', authenticate, async (req, res) => {
+  try {
+    const result = await Notification.deleteOne({
+      _id: req.params.notificationId
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Notificación no encontrada' });
+    }
+
+    res.json({ message: 'Notificación eliminada' });
+  } catch (error) {
+    console.error('Delete ministro notification error:', error);
+    res.status(500).json({ error: 'Error al eliminar notificación' });
+  }
+});
+
 export default router;

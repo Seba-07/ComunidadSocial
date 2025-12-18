@@ -1632,20 +1632,21 @@ function renderNotificationsPanel(panel) {
   panel.innerHTML = `
     <div class="notifications-header">
       <h2>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
-        Notificaciones ${unreadCount > 0 ? `<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 10px; margin-left: 8px;">${unreadCount} nuevas</span>` : ''}
+        Notificaciones
+        ${unreadCount > 0 ? `<span class="notification-count-badge">${unreadCount} nueva${unreadCount !== 1 ? 's' : ''}</span>` : ''}
       </h2>
       <div class="notifications-header-actions">
         ${unreadCount > 0 ? `
           <button class="notifications-mark-all" onclick="markAllNotificationsRead()">
-            Marcar todas
+            Marcar todas como leídas
           </button>
         ` : ''}
         <button class="notifications-close" onclick="closeNotificationsPanel()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -1655,7 +1656,7 @@ function renderNotificationsPanel(panel) {
     <div class="notifications-list">
       ${sortedNotifications.length === 0 ? `
         <div class="notifications-empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
@@ -1674,10 +1675,17 @@ function renderNotificationsPanel(panel) {
             <div class="notification-actions">
               ${!notif.read ? `
                 <button class="notification-action-btn mark-read" onclick="event.stopPropagation(); markNotificationRead('${notifId}')">
-                  Marcar como leída
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Marcar leída
                 </button>
               ` : ''}
               <button class="notification-action-btn delete" onclick="event.stopPropagation(); deleteNotification('${notifId}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
                 Eliminar
               </button>
             </div>
@@ -1755,7 +1763,7 @@ async function markAllNotificationsRead() {
 // Delete notification
 async function deleteNotification(notifId) {
   try {
-    await apiService.delete(`/notifications/${notifId}`);
+    await apiService.delete(`/notifications/ministro/${notifId}`);
 
     // Remove from local state
     ministroNotifications = ministroNotifications.filter(n => (n._id || n.id) !== notifId);
