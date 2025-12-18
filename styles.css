@@ -129,7 +129,7 @@ body {
 }
 
 .menu-btn, .notifications-btn {
-    background: rgba(255, 255, 255, 0.15);
+    background: transparent;
     border: none;
     color: white;
     cursor: pointer;
@@ -143,7 +143,7 @@ body {
 }
 
 .menu-btn:hover, .notifications-btn:hover {
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .menu-btn:active, .notifications-btn:active {
@@ -8502,7 +8502,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.15);
+    background: transparent;
     border: none;
     color: white;
     font-size: 14px;
@@ -8514,7 +8514,7 @@ body {
 }
 
 .user-name-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .user-name-btn svg {

@@ -1165,6 +1165,12 @@ async function renderOrganizations() {
           renderOrganizations(); // Re-renderizar sin el borrador
         }
       });
+
+      // Agregar click al aviso de cita con cambios para ver detalles
+      card.querySelector('.org-appointment-modified-notice')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewOrganization(orgId);
+      });
     });
   } else {
     // Mostrar mensaje vacío
@@ -1350,7 +1356,7 @@ function renderOrganizationCard(org) {
           if (timeChanged) changes.push('🕐 ' + requestedTime + ' → ' + assignedTime);
           if (locationChanged) changes.push('📍 Lugar modificado');
 
-          return '<div class="org-appointment-modified-notice" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 12px; margin-top: 12px; animation: pulse-card 2s ease-in-out infinite;">' +
+          return '<div class="org-appointment-modified-notice" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 12px; margin-top: 12px; animation: pulse-card 2s ease-in-out infinite; cursor: pointer;">' +
             '<div style="display: flex; align-items: flex-start; gap: 10px;">' +
               '<span style="font-size: 24px; animation: bell-shake 1s ease-in-out infinite;">🔔</span>' +
               '<div style="flex: 1;">' +
