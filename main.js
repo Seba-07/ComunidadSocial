@@ -278,6 +278,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const notificationsPanel = document.getElementById('notifications-panel');
   const notificationsList = document.getElementById('notifications-list');
   const btnMarkAllRead = document.getElementById('btn-mark-all-read');
+  const notificationsOverlay = document.getElementById('notifications-overlay');
+  const btnCloseNotifications = document.getElementById('btn-close-notifications');
+  const notificationCountBadge = document.getElementById('notification-count-badge');
+
+  function openNotificationsPanel() {
+    if (notificationsOverlay) notificationsOverlay.classList.add('open');
+    if (notificationsPanel) notificationsPanel.classList.add('open');
+    loadNotifications();
+  }
+
+  function closeNotificationsPanel() {
+    if (notificationsOverlay) notificationsOverlay.classList.remove('open');
+    if (notificationsPanel) notificationsPanel.classList.remove('open');
+  }
 
   async function loadNotifications() {
     if (!appState.currentUser) return;
@@ -288,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const unreadNotifications = notifications.filter(n => !n.read);
       const unreadCount = unreadNotifications.length;
 
-      // Update badge
+      // Update header badge
       const badge = document.querySelector('.notification-badge');
       if (badge) {
         if (unreadCount > 0) {
@@ -297,6 +311,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           badge.style.display = 'none';
         }
+      }
+
+      // Update panel count badge
+      if (notificationCountBadge) {
+        if (unreadCount > 0) {
+          notificationCountBadge.textContent = `${unreadCount} nueva${unreadCount !== 1 ? 's' : ''}`;
+          notificationCountBadge.style.display = 'inline-block';
+        } else {
+          notificationCountBadge.style.display = 'none';
+        }
+      }
+
+      // Show/hide mark all button
+      if (btnMarkAllRead) {
+        btnMarkAllRead.style.display = unreadCount > 0 ? 'block' : 'none';
       }
 
       // Render notifications
@@ -393,25 +422,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     return date.toLocaleDateString('es-CL');
   }
 
-  if (notificationsBtn && notificationsPanel) {
+  if (notificationsBtn) {
     notificationsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const isOpen = notificationsPanel.classList.contains('open');
+      const isOpen = notificationsPanel && notificationsPanel.classList.contains('open');
 
       if (isOpen) {
-        notificationsPanel.classList.remove('open');
+        closeNotificationsPanel();
       } else {
-        notificationsPanel.classList.add('open');
-        loadNotifications();
+        openNotificationsPanel();
       }
     });
+  }
 
-    // Close panel when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!notificationsPanel.contains(e.target) && !notificationsBtn.contains(e.target)) {
-        notificationsPanel.classList.remove('open');
-      }
-    });
+  // Close button
+  if (btnCloseNotifications) {
+    btnCloseNotifications.addEventListener('click', closeNotificationsPanel);
+  }
+
+  // Close on overlay click
+  if (notificationsOverlay) {
+    notificationsOverlay.addEventListener('click', closeNotificationsPanel);
   }
 
   if (btnMarkAllRead) {
