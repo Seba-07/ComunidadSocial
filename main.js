@@ -1820,10 +1820,10 @@ async function viewOrganization(orgId) {
 
       // Descripción de qué cambió
       const changesList = [];
-      if (lastChange.changes.ministro) changesList.push('Ministro de Fe');
-      if (lastChange.changes.date) changesList.push('Fecha');
-      if (lastChange.changes.time) changesList.push('Hora');
-      if (lastChange.changes.location) changesList.push('Lugar');
+      if (lastChange.changes?.ministro) changesList.push('Ministro de Fe');
+      if (lastChange.changes?.date) changesList.push('Fecha');
+      if (lastChange.changes?.time) changesList.push('Hora');
+      if (lastChange.changes?.location) changesList.push('Lugar');
 
       modificationAlertHTML = `
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white; animation: pulse-attention 2s ease-in-out infinite;">
@@ -3086,28 +3086,28 @@ window.showAppointmentHistory = function(orgId) {
               <h5 style="margin: 0 0 12px 0; color: #991b1b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                 Antes
               </h5>
-              ${change.changes.ministro ? `
+              ${change.changes?.ministro ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Ministro:</span><br>
-                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData.name}</strong>
+                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData?.name || '-'}</strong>
                 </p>
               ` : ''}
-              ${change.changes.date ? `
+              ${change.changes?.date ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Fecha:</span><br>
-                  <strong style="color: #991b1b; text-decoration: line-through;">${formatDate(change.previousData.scheduledDate)}</strong>
+                  <strong style="color: #991b1b; text-decoration: line-through;">${formatDate(change.previousData?.scheduledDate)}</strong>
                 </p>
               ` : ''}
-              ${change.changes.time ? `
+              ${change.changes?.time ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Hora:</span><br>
-                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData.scheduledTime}</strong>
+                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData?.scheduledTime || '-'}</strong>
                 </p>
               ` : ''}
-              ${change.changes.location ? `
+              ${change.changes?.location ? `
                 <p style="margin: 0; font-size: 14px;">
                   <span style="color: #6b7280;">Lugar:</span><br>
-                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData.location}</strong>
+                  <strong style="color: #991b1b; text-decoration: line-through;">${change.previousData?.location || '-'}</strong>
                 </p>
               ` : ''}
             </div>
@@ -3125,28 +3125,28 @@ window.showAppointmentHistory = function(orgId) {
               <h5 style="margin: 0 0 12px 0; color: #065f46; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                 Después
               </h5>
-              ${change.changes.ministro ? `
+              ${change.changes?.ministro ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Ministro:</span><br>
-                  <strong style="color: #065f46;">${change.newData.name}</strong>
+                  <strong style="color: #065f46;">${change.newData?.name || '-'}</strong>
                 </p>
               ` : ''}
-              ${change.changes.date ? `
+              ${change.changes?.date ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Fecha:</span><br>
-                  <strong style="color: #065f46;">${formatDate(change.newData.scheduledDate)}</strong>
+                  <strong style="color: #065f46;">${formatDate(change.newData?.scheduledDate)}</strong>
                 </p>
               ` : ''}
-              ${change.changes.time ? `
+              ${change.changes?.time ? `
                 <p style="margin: 0 0 8px 0; font-size: 14px;">
                   <span style="color: #6b7280;">Hora:</span><br>
-                  <strong style="color: #065f46;">${change.newData.scheduledTime}</strong>
+                  <strong style="color: #065f46;">${change.newData?.scheduledTime || '-'}</strong>
                 </p>
               ` : ''}
-              ${change.changes.location ? `
+              ${change.changes?.location ? `
                 <p style="margin: 0; font-size: 14px;">
                   <span style="color: #6b7280;">Lugar:</span><br>
-                  <strong style="color: #065f46;">${change.newData.location}</strong>
+                  <strong style="color: #065f46;">${change.newData?.location || '-'}</strong>
                 </p>
               ` : ''}
             </div>
