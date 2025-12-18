@@ -133,59 +133,38 @@
         }
 
         /* ===== NOTIFICATIONS PANEL ===== */
-        .notifications-container {
+        .notifications-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10000;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        .notifications-container.open {
-            visibility: visible;
-            pointer-events: auto;
-        }
-
-        .notifications-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            transition: opacity 0.3s;
+            z-index: 9998;
+            display: none;
         }
 
-        .notifications-container.open .notifications-overlay {
-            opacity: 1;
+        .notifications-overlay.active {
+            display: block;
         }
 
         .notifications-panel {
-            position: absolute;
+            position: fixed;
             top: 0;
-            right: 0;
+            right: -420px;
             width: 400px;
             max-width: 100%;
             height: 100%;
             background: white;
             box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
             display: flex;
             flex-direction: column;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            z-index: 2;
+            transition: right 0.3s ease;
         }
 
-        .notifications-overlay {
-            z-index: 1;
-        }
-
-        .notifications-container.open .notifications-panel {
-            transform: translateX(0);
+        .notifications-panel.active {
+            right: 0;
         }
 
         /* Estilos para acciones de notificaciones */

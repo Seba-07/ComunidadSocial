@@ -1596,53 +1596,39 @@ function updateNotificationBadge() {
 
 // Open notifications panel
 function openNotificationsPanel() {
-  // Create container if not exist (overlay contains panel)
-  let container = document.querySelector('.notifications-container');
+  let overlay = document.querySelector('.notifications-overlay');
+  let panel = document.querySelector('.notifications-panel');
 
-  if (!container) {
-    container = document.createElement('div');
-    container.className = 'notifications-container';
-
-    // Create overlay (background)
-    const overlay = document.createElement('div');
+  // Create overlay if not exists
+  if (!overlay) {
+    overlay = document.createElement('div');
     overlay.className = 'notifications-overlay';
-
-    // Create panel
-    const panel = document.createElement('div');
-    panel.className = 'notifications-panel';
-
-    // Panel stops propagation - clicks inside panel don't close
-    panel.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-
-    // Append panel to container
-    container.appendChild(overlay);
-    container.appendChild(panel);
-
-    // Container click closes panel (only when clicking outside panel)
-    container.addEventListener('click', closeNotificationsPanel);
-
-    document.body.appendChild(container);
+    overlay.onclick = closeNotificationsPanel;
+    document.body.appendChild(overlay);
   }
 
-  const panel = container.querySelector('.notifications-panel');
+  // Create panel if not exists
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'notifications-panel';
+    document.body.appendChild(panel);
+  }
 
   // Render notifications
   renderNotificationsPanel(panel);
 
-  // Open
-  requestAnimationFrame(() => {
-    container.classList.add('open');
-  });
+  // Show overlay and panel
+  overlay.classList.add('active');
+  panel.classList.add('active');
 }
 
 // Close notifications panel
 function closeNotificationsPanel() {
-  const container = document.querySelector('.notifications-container');
-  if (container) {
-    container.classList.remove('open');
-  }
+  const overlay = document.querySelector('.notifications-overlay');
+  const panel = document.querySelector('.notifications-panel');
+
+  if (overlay) overlay.classList.remove('active');
+  if (panel) panel.classList.remove('active');
 }
 
 // Render notifications panel content
