@@ -1447,6 +1447,16 @@ class AdminDashboard {
       modal.remove();
     });
 
+    // Botón para enviar a Registro Civil (desde ministro_approved)
+    modal.querySelector('.btn-send-to-registry')?.addEventListener('click', () => {
+      this.openSendToRegistryModal(org, modal);
+    });
+
+    // Botón para confirmar Registro Civil (desde sent_registry)
+    modal.querySelector('.btn-confirm-registry')?.addEventListener('click', () => {
+      this.openConfirmRegistryModal(org, modal);
+    });
+
     // FASE 5: Botón de disolución
     modal.querySelector('.btn-dissolve-org')?.addEventListener('click', () => {
       this.openDissolveModal(org, modal);
@@ -2926,21 +2936,26 @@ class AdminDashboard {
           </button>
         `;
 
+      case ORG_STATUS.MINISTRO_APPROVED:
+        return `
+          <button class="btn-primary btn-send-to-registry">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+            Enviar a Registro Civil
+          </button>
+        `;
+
       case ORG_STATUS.SENT_TO_REGISTRY:
         return `
-          <button class="btn-danger btn-reject">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="15" y1="9" x2="9" y2="15"></line>
-              <line x1="9" y1="9" x2="15" y2="15"></line>
-            </svg>
-            Rechazar
-          </button>
-          <button class="btn-success btn-approve">
+          <button class="btn-success btn-confirm-registry">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-            Aprobar Organización
+            Confirmar Registro Civil
           </button>
         `;
 
@@ -3076,6 +3091,217 @@ class AdminDashboard {
         this.updateStats();
       } else {
         showToast('Error al disolver la organización', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para enviar solicitud al Registro Civil
+   */
+  openSendToRegistryModal(org, parentModal) {
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'admin-review-modal-overlay';
+    confirmModal.style.zIndex = '10002';
+
+    confirmModal.innerHTML = `
+      <div class="admin-review-modal" style="max-width: 500px;">
+        <div class="review-modal-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);">
+          <h3 style="color: #1e40af; margin: 0;">📤 Enviar a Registro Civil</h3>
+          <button class="review-close-btn send-cancel">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="review-modal-body" style="padding: 24px;">
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #166534; font-size: 14px;">
+              <strong>La asamblea ha sido validada por el Ministro de Fe.</strong>
+              Ahora debe enviar la documentación al Registro Civil para la inscripción oficial.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong>Organización:</strong> ${getOrgName(org)}
+          </div>
+
+          <div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0 0 8px 0; color: #92400e; font-size: 13px; font-weight: 600;">
+              Documentos a enviar:
+            </p>
+            <ul style="margin: 0; padding-left: 20px; color: #92400e; font-size: 13px;">
+              <li>Acta de Asamblea Constitutiva</li>
+              <li>Lista de Miembros Fundadores</li>
+              <li>Estatutos de la Organización</li>
+              <li>Certificado del Ministro de Fe</li>
+            </ul>
+          </div>
+
+          <form id="send-registry-form">
+            <div class="form-group">
+              <label>Número de Oficio/Referencia (opcional)</label>
+              <input type="text" name="reference" placeholder="Ej: OF-2024-001234"
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 12px;">
+            </div>
+
+            <div class="form-group">
+              <label>Notas adicionales</label>
+              <textarea name="notes" rows="3"
+                placeholder="Información adicional sobre el envío..."
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary send-cancel">Cancelar</button>
+              <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                  <path d="M22 2L11 13"></path>
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+                </svg>
+                Confirmar Envío
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(confirmModal);
+
+    // Event listeners
+    confirmModal.querySelectorAll('.send-cancel').forEach(btn => {
+      btn.addEventListener('click', () => confirmModal.remove());
+    });
+
+    const form = confirmModal.querySelector('#send-registry-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const reference = formData.get('reference');
+      const notes = formData.get('notes');
+
+      const comment = `Enviado al Registro Civil${reference ? ' - Ref: ' + reference : ''}${notes ? '. Notas: ' + notes : ''}`;
+
+      // Actualizar estado a sent_registry
+      const result = organizationsService.updateStatus(org.id, ORG_STATUS.SENT_TO_REGISTRY, comment);
+      if (result) {
+        showToast('Solicitud enviada al Registro Civil', 'success');
+        confirmModal.remove();
+        parentModal.remove();
+        this.renderApplicationsList();
+        this.updateStats();
+      } else {
+        showToast('Error al actualizar el estado', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para confirmar respuesta del Registro Civil
+   */
+  openConfirmRegistryModal(org, parentModal) {
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'admin-review-modal-overlay';
+    confirmModal.style.zIndex = '10002';
+
+    confirmModal.innerHTML = `
+      <div class="admin-review-modal" style="max-width: 500px;">
+        <div class="review-modal-header" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);">
+          <h3 style="color: #166534; margin: 0;">✅ Confirmar Registro Civil</h3>
+          <button class="review-close-btn confirm-cancel">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="review-modal-body" style="padding: 24px;">
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #166534; font-size: 14px;">
+              <strong>¡Felicitaciones!</strong> El Registro Civil ha aprobado la inscripción de esta organización.
+              Al confirmar, la organización quedará oficialmente registrada.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong>Organización:</strong> ${getOrgName(org)}
+          </div>
+
+          <form id="confirm-registry-form">
+            <div class="form-group">
+              <label>Número de Inscripción en Registro Civil <span class="required">*</span></label>
+              <input type="text" name="registryNumber" required placeholder="Ej: RC-2024-12345"
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 12px;">
+            </div>
+
+            <div class="form-group">
+              <label>Fecha de Inscripción <span class="required">*</span></label>
+              <input type="date" name="registryDate" required
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 12px;">
+            </div>
+
+            <div class="form-group">
+              <label>Observaciones</label>
+              <textarea name="observations" rows="3"
+                placeholder="Observaciones adicionales..."
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary confirm-cancel">Cancelar</button>
+              <button type="submit" class="btn btn-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Aprobar Organización
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(confirmModal);
+
+    // Establecer fecha de hoy por defecto
+    const dateInput = confirmModal.querySelector('input[name="registryDate"]');
+    dateInput.value = new Date().toISOString().split('T')[0];
+
+    // Event listeners
+    confirmModal.querySelectorAll('.confirm-cancel').forEach(btn => {
+      btn.addEventListener('click', () => confirmModal.remove());
+    });
+
+    const form = confirmModal.querySelector('#confirm-registry-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const registryNumber = formData.get('registryNumber');
+      const registryDate = formData.get('registryDate');
+      const observations = formData.get('observations');
+
+      const comment = `Inscripción confirmada - N° ${registryNumber} - Fecha: ${registryDate}${observations ? '. Obs: ' + observations : ''}`;
+
+      // Guardar datos del registro civil en la organización
+      org.registryCivil = {
+        number: registryNumber,
+        date: registryDate,
+        observations: observations
+      };
+
+      // Actualizar estado a approved
+      const result = organizationsService.updateStatus(org.id, ORG_STATUS.APPROVED, comment);
+      if (result) {
+        showToast('¡Organización aprobada exitosamente!', 'success');
+        confirmModal.remove();
+        parentModal.remove();
+        this.renderApplicationsList();
+        this.updateStats();
+      } else {
+        showToast('Error al aprobar la organización', 'error');
       }
     });
   }
