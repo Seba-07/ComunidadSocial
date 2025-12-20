@@ -1236,7 +1236,8 @@ function renderOrganizationCard(org) {
   const isRejected = org.status === ORG_STATUS.REJECTED;
   const isDraft = org.status === ORG_STATUS.DRAFT || org.status === 'draft';
   const isLocalDraft = org.isLocalDraft === true;
-  const canContinueWizard = org.status === ORG_STATUS.MINISTRO_APPROVED;
+  const isMinistroApproved = org.status === ORG_STATUS.MINISTRO_APPROVED;
+  const isSentToRegistry = org.status === ORG_STATUS.SENT_TO_REGISTRY;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
   const orgType = org.organizationType || org.organization?.type;
@@ -1372,13 +1373,25 @@ function renderOrganizationCard(org) {
           '</style>';
         })()}
 
-        ${canContinueWizard ? `
-          <div class="org-continue-wizard-notice" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #10b981; border-radius: 12px; padding: 14px; margin-top: 12px;">
+        ${isMinistroApproved ? `
+          <div class="org-waiting-registry-notice" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 14px; margin-top: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 24px;">✅</span>
               <div style="flex: 1;">
-                <p style="margin: 0; font-weight: 700; color: #065f46; font-size: 14px;">Ministro de Fe Aprobo</p>
-                <p style="margin: 2px 0 0; font-size: 12px; color: #047857;">Ya puedes continuar con el proceso de registro.</p>
+                <p style="margin: 0; font-weight: 700; color: #1e40af; font-size: 14px;">Asamblea Validada</p>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #1d4ed8;">Esperando que la municipalidad envíe documentación al Registro Civil.</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${isSentToRegistry ? `
+          <div class="org-sent-registry-notice" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 24px;">📄</span>
+              <div style="flex: 1;">
+                <p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Enviado al Registro Civil</p>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">Tu documentación está siendo procesada. Te notificaremos cuando esté lista.</p>
               </div>
             </div>
           </div>
@@ -2015,6 +2028,77 @@ async function viewOrganization(orgId) {
       </div>
     `;
   }
+  // Si la asamblea fue validada por el ministro - esperando envío a RC
+  else if (org.status === ORG_STATUS.MINISTRO_APPROVED) {
+    appointmentHTML = `
+      <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #3b82f6;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+          <div style="width: 48px; height: 48px; background: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e40af;">Asamblea Validada</h3>
+            <p style="margin: 2px 0 0; color: #1d4ed8; font-size: 13px;">El Ministro de Fe validó tu asamblea constitutiva</p>
+          </div>
+        </div>
+        <div style="background: white; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 24px;">⏳</span>
+          <div>
+            <p style="margin: 0; font-weight: 600; color: #1e40af; font-size: 14px;">Esperando envío al Registro Civil</p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #3b82f6;">La municipalidad preparará la documentación y la enviará al Registro Civil. Te notificaremos cuando esto ocurra.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  // Si ya fue enviada al Registro Civil
+  else if (org.status === ORG_STATUS.SENT_TO_REGISTRY) {
+    appointmentHTML = `
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #f59e0b;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+          <div style="width: 48px; height: 48px; background: #f59e0b; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #92400e;">Enviado al Registro Civil</h3>
+            <p style="margin: 2px 0 0; color: #a16207; font-size: 13px;">Tu documentación está siendo procesada</p>
+          </div>
+        </div>
+        <div style="background: white; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 24px;">📋</span>
+          <div>
+            <p style="margin: 0; font-weight: 600; color: #92400e; font-size: 14px;">Esperando respuesta del Registro Civil</p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #a16207;">Este proceso puede tomar algunos días. Te notificaremos cuando tu organización esté oficialmente registrada.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  // Si ya está aprobada/registrada
+  else if (org.status === ORG_STATUS.APPROVED) {
+    appointmentHTML = `
+      <div style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #10b981;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 48px; height: 48px; background: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #065f46;">¡Organización Registrada!</h3>
+            <p style="margin: 2px 0 0; color: #047857; font-size: 13px;">Tu organización está legalmente constituida en el Registro Civil</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   const modal = document.createElement('div');
   modal.className = 'org-detail-modal-overlay';
@@ -2069,7 +2153,7 @@ async function viewOrganization(orgId) {
           </div>
         </div>
 
-        ${(org.status === 'ministro_approved' || org.status === 'registered') && (org.provisionalDirectorio || org.comisionElectoral) ? `
+        ${(org.status === 'ministro_approved' || org.status === 'sent_registry' || org.status === 'approved') && (org.provisionalDirectorio || org.comisionElectoral) ? `
         <div class="org-detail-section">
           <h4 style="display: flex; align-items: center; gap: 8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
