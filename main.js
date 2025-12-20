@@ -1238,6 +1238,8 @@ function renderOrganizationCard(org) {
   const isLocalDraft = org.isLocalDraft === true;
   const isMinistroApproved = org.status === ORG_STATUS.MINISTRO_APPROVED;
   const isSentToRegistry = org.status === ORG_STATUS.SENT_TO_REGISTRY;
+  // canContinueWizard solo para estados donde usuario puede continuar (rechazado con correcciones pendientes)
+  const canContinueWizard = org.status === ORG_STATUS.REJECTED && org.corrections && !org.corrections.resolved;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
   const orgType = org.organizationType || org.organization?.type;
