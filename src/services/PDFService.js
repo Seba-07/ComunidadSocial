@@ -638,7 +638,9 @@ class PDFService {
     const ministroData = organization.ministroData || organization.ministroAssignment || {};
     const assemblyDate = ministroData.scheduledDate || organization.createdAt;
 
-    this.drawHeader(doc, `CERTIFICACIÓN N.º ${certNumber || '________'}/ `);
+    // Usar certNumber del parámetro o del objeto organization
+    const finalCertNumber = certNumber || org.certNumber || organization.certNumber || '________';
+    this.drawHeader(doc, `CERTIFICACIÓN N.º ${finalCertNumber}`);
 
     this.currentY = 55;
     doc.setFontSize(10);
@@ -865,7 +867,9 @@ class PDFService {
     const doc = new jsPDF();
     const org = organization.organization || organization;
 
-    this.drawHeader(doc, `DEPOSITO DE ANTECEDENTES N° ${depositNumber || '________'}/`, 'DEPARTAMENTO DE REGISTRO Y CERTIFICACIÓN');
+    // Usar depositNumber del parámetro o del objeto organization
+    const finalDepositNumber = depositNumber || org.depositNumber || organization.depositNumber || '________';
+    this.drawHeader(doc, `DEPOSITO DE ANTECEDENTES N° ${finalDepositNumber}`, 'DEPARTAMENTO DE REGISTRO Y CERTIFICACIÓN');
 
     this.currentY = 60;
     doc.setFontSize(11);
@@ -930,18 +934,20 @@ class PDFService {
       doc: this.generateCertificado(organization)
     });
 
-    // Certificación
+    // Certificación (usar certNumber almacenado en la organización)
+    const certNumber = org.certNumber || organization.certNumber || '';
     documents.push({
       name: `Certificacion_${orgName}.pdf`,
       type: 'certificacion',
-      doc: this.generateCertificacion(organization)
+      doc: this.generateCertificacion(organization, certNumber)
     });
 
-    // Depósito de Antecedentes
+    // Depósito de Antecedentes (usar depositNumber almacenado en la organización)
+    const depositNumber = org.depositNumber || organization.depositNumber || '';
     documents.push({
       name: `Deposito_Antecedentes_${orgName}.pdf`,
       type: 'deposito',
-      doc: this.generateDepositoAntecedentes(organization)
+      doc: this.generateDepositoAntecedentes(organization, depositNumber)
     });
 
     // Declaraciones Juradas

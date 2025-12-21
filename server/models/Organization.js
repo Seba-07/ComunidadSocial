@@ -75,6 +75,10 @@ const organizationSchema = new mongoose.Schema({
   unidadVecinal: String,
   territory: String,
 
+  // Números de certificación y depósito (se generan al aprobar)
+  certNumber: String,
+  depositNumber: String,
+
   // Datos de contacto del solicitante
   contactEmail: {
     type: String,

@@ -1,6 +1,7 @@
 import express from 'express';
 import Assignment from '../models/Assignment.js';
 import Organization from '../models/Organization.js';
+import Counter from '../models/Counter.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -162,8 +163,14 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
 
     // Update organization status and save validation data
     if (assignment.organizationId) {
+      // Generar números únicos de certificación y depósito
+      const certNumber = await Counter.generateNumber('certificacion');
+      const depositNumber = await Counter.generateNumber('deposito');
+
       const updateData = {
         status: 'ministro_approved',
+        certNumber,
+        depositNumber,
         $push: {
           statusHistory: {
             status: 'ministro_approved',
