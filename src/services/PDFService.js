@@ -972,10 +972,13 @@ class PDFService {
   }
 
   /**
-   * Obtiene el PDF como Data URL para previsualización en iframe
+   * Obtiene el PDF como Blob URL para previsualización en iframe
+   * Usa Blob URL en lugar de data URI para soportar PDFs grandes con imágenes
    */
   getPDFDataURL(doc) {
-    return doc.output('datauristring');
+    // Usar bloburl para PDFs grandes (con firmas/imágenes)
+    // bloburl no tiene límite de tamaño como datauristring
+    return doc.output('bloburl');
   }
 }
 

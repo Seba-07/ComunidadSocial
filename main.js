@@ -2402,8 +2402,14 @@ async function viewUserPDF(orgId, docId) {
 
     document.body.appendChild(previewModal);
 
-    previewModal.querySelector('.btn-close-preview').addEventListener('click', () => previewModal.remove());
-    previewModal.addEventListener('click', (e) => { if (e.target === previewModal) previewModal.remove(); });
+    // Función para limpiar el modal y revocar el blob URL
+    const closeModal = () => {
+      URL.revokeObjectURL(pdfDataUrl); // Limpiar blob URL para evitar memory leaks
+      previewModal.remove();
+    };
+
+    previewModal.querySelector('.btn-close-preview').addEventListener('click', closeModal);
+    previewModal.addEventListener('click', (e) => { if (e.target === previewModal) closeModal(); });
     previewModal.querySelector('.btn-download-preview').addEventListener('click', () => {
       downloadUserPDF(orgId, docId);
     });
