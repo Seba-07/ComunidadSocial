@@ -14,100 +14,27 @@ import { ministroAssignmentService } from '../../services/MinistroAssignmentServ
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
 import { pdfService } from '../../services/PDFService.js';
 
-// Helper: Obtener nombre de organización (soporta formato nuevo y legacy)
-function getOrgName(org) {
-  return org.organizationName || org.organization?.name || 'Sin nombre';
-}
+// Importar utilidades compartidas
+import {
+  formatDate,
+  getOrgName,
+  getOrgType as getOrgTypeFromUtils,
+  getOrgAddress,
+  getOrgComuna,
+  getOrgIcon
+} from '../../shared/utils/index.js';
 
-// Helper: Obtener tipo de organización (soporta formato nuevo y legacy)
-function getOrgType(org) {
-  return org.organizationType || org.organization?.type;
-}
+// Wrapper para compatibilidad - formatDateSafe usa formatDate
+const formatDateSafe = (dateStr) => formatDate(dateStr, { fallback: '-' });
 
-// Helper: Obtener dirección de organización
-function getOrgAddress(org) {
-  return org.address || org.organization?.address || '';
-}
+// Wrapper para getOrgType que soporta formato legacy
+const getOrgType = (org) => {
+  if (typeof org === 'string') return org;
+  return org?.organizationType || org?.organization?.type || org?.type;
+};
 
-// Helper: Obtener comuna de organización
-function getOrgComuna(org) {
-  return org.comuna || org.organization?.commune || 'Renca';
-}
-
-// Helper: Formatear fecha sin problemas de timezone
-function formatDateSafe(dateStr) {
-  if (!dateStr) return '-';
-  try {
-    // Si es string en formato YYYY-MM-DD o ISO
-    if (typeof dateStr === 'string') {
-      // Tomar solo la parte de la fecha si viene con hora
-      const datePart = dateStr.split('T')[0];
-      const [year, month, day] = datePart.split('-').map(Number);
-      if (year && month && day) {
-        const dateObj = new Date(year, month - 1, day, 12, 0, 0);
-        return dateObj.toLocaleDateString('es-CL');
-      }
-    }
-    // Fallback para objetos Date
-    return new Date(dateStr).toLocaleDateString('es-CL');
-  } catch (e) {
-    return dateStr;
-  }
-}
-
-// Helper: Obtener icono según tipo de organización
-function getOrgIcon(type) {
-  // Organizaciones territoriales
-  if (type === 'JUNTA_VECINOS' || type === 'COMITE_VECINOS') return '🏘️';
-
-  // Organizaciones funcionales por categoría
-  if (type?.startsWith('CLUB_')) return '⚽';
-  if (type?.startsWith('CENTRO_')) return '🏢';
-  if (type?.startsWith('AGRUPACION_')) return '👥';
-  if (type?.startsWith('COMITE_')) return '📋';
-  if (type?.startsWith('ORG_')) return '🎯';
-  if (type === 'GRUPO_TEATRO') return '🎭';
-  if (type === 'CORO') return '🎵';
-  if (type === 'TALLER_ARTESANIA') return '🎨';
-
-  // Default
-  return '👥';
-}
-
-// Helper: Obtener nombre legible del tipo
-function getOrgTypeName(type) {
-  const types = {
-    // Territoriales
-    'JUNTA_VECINOS': 'Junta de Vecinos',
-    'COMITE_VECINOS': 'Comité de Vecinos',
-    // Funcionales - Clubes
-    'CLUB_DEPORTIVO': 'Club Deportivo',
-    'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
-    'CLUB_JUVENIL': 'Club Juvenil',
-    'CLUB_CULTURAL': 'Club Cultural',
-    // Funcionales - Centros
-    'CENTRO_MADRES': 'Centro de Madres',
-    'CENTRO_PADRES': 'Centro de Padres y Apoderados',
-    'CENTRO_CULTURAL': 'Centro Cultural',
-    // Funcionales - Agrupaciones
-    'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
-    'AGRUPACION_CULTURAL': 'Agrupación Cultural',
-    'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
-    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental',
-    // Funcionales - Comités
-    'COMITE_VIVIENDA': 'Comité de Vivienda',
-    'COMITE_ALLEGADOS': 'Comité de Allegados',
-    'COMITE_APR': 'Comité de Agua Potable Rural',
-    // Funcionales - Otras
-    'ORG_SCOUT': 'Organización Scout',
-    'ORG_MUJERES': 'Organización de Mujeres',
-    'GRUPO_TEATRO': 'Grupo de Teatro',
-    'CORO': 'Coro o Agrupación Musical',
-    'TALLER_ARTESANIA': 'Taller de Artesanía',
-    'OTRA_FUNCIONAL': 'Otra Organización Funcional'
-  };
-  return types[type] || 'Organización Comunitaria';
-}
+// Usar getOrgType de utils para nombre legible
+const getOrgTypeName = getOrgTypeFromUtils;
 
 class AdminDashboard {
   constructor() {

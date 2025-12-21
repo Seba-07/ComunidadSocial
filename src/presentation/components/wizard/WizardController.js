@@ -11,6 +11,9 @@ import { ESTATUTOS_TIPO, generarEstatutos, mapearTipoOrganizacion } from '../../
 import unidadesVecinalesService from '../../../services/UnidadesVecinalesService.js';
 import { jsPDF } from 'jspdf';
 
+// Importar utilidades compartidas
+import { getOrgType as getOrgTypeFromUtils } from '../../../shared/utils/index.js';
+
 // Tipos de organizaciones territoriales
 const TERRITORIAL_TYPES = {
   'JUNTA_VECINOS': 'Junta de Vecinos',
@@ -163,27 +166,8 @@ function generateCertBadgesHTML(config) {
   return html;
 }
 
-// Helper: Obtener nombre legible del tipo de organización
-function getOrgTypeName(type) {
-  const allTypes = {
-    ...TERRITORIAL_TYPES,
-    ...FUNCIONAL_TYPES,
-    'CLUB_JUVENIL': 'Club Juvenil',
-    'CLUB_CULTURAL': 'Club Cultural',
-    'CENTRO_MADRES': 'Centro de Madres',
-    'CENTRO_CULTURAL': 'Centro Cultural',
-    'AGRUPACION_CULTURAL': 'Agrupación Cultural',
-    'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
-    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental',
-    'COMITE_ALLEGADOS': 'Comité de Allegados',
-    'COMITE_APR': 'Comité de Agua Potable Rural',
-    'ORG_SCOUT': 'Organización Scout',
-    'GRUPO_TEATRO': 'Grupo de Teatro',
-    'CORO': 'Coro o Agrupación Musical',
-    'TALLER_ARTESANIA': 'Taller de Artesanía'
-  };
-  return allTypes[type] || 'Organización Comunitaria';
-}
+// Usar getOrgType de utils para nombre legible
+const getOrgTypeName = getOrgTypeFromUtils;
 
 export class WizardController {
   constructor() {

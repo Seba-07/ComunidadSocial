@@ -557,12 +557,63 @@ export const dateUtils = {
   MESES_CORTOS
 };
 
+/**
+ * Obtiene icono según tipo de organización
+ * @param {string} type - Tipo de organización
+ * @returns {string} Emoji del icono
+ */
+export function getOrgIcon(type) {
+  if (type === 'JUNTA_VECINOS' || type === 'COMITE_VECINOS') return '🏘️';
+  if (type?.startsWith('CLUB_')) return '⚽';
+  if (type?.startsWith('CENTRO_')) return '🏢';
+  if (type?.startsWith('AGRUPACION_')) return '👥';
+  if (type?.startsWith('COMITE_')) return '📋';
+  if (type?.startsWith('ORG_')) return '🎯';
+  if (type === 'GRUPO_TEATRO') return '🎭';
+  if (type === 'CORO') return '🎵';
+  if (type === 'TALLER_ARTESANIA') return '🎨';
+  return '👥';
+}
+
+/**
+ * Parsea fecha + hora de forma segura (evita Invalid Date)
+ * @param {string} dateStr - Fecha en string
+ * @param {string} timeStr - Hora en string
+ * @returns {Date|null} Fecha parseada
+ */
+export function parseDateTimeSafe(dateStr, timeStr) {
+  if (!dateStr) return null;
+  try {
+    const datePart = dateStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+
+    let hours = 12, minutes = 0;
+    if (timeStr) {
+      const timeParts = timeStr.split(':');
+      hours = parseInt(timeParts[0]) || 12;
+      minutes = parseInt(timeParts[1]) || 0;
+    }
+
+    if (year && month && day) {
+      return new Date(year, month - 1, day, hours, minutes, 0);
+    }
+
+    const date = new Date(dateStr + (timeStr ? ' ' + timeStr : ''));
+    if (isNaN(date.getTime())) return null;
+    return date;
+  } catch (e) {
+    console.error('Error parseando fecha/hora:', e);
+    return null;
+  }
+}
+
 export const orgUtils = {
   getOrgName,
   getOrgType,
   getOrgAddress,
   getOrgComuna,
   getOrgUnidadVecinal,
+  getOrgIcon,
   getStatusInfo,
   getStatusBadge
 };

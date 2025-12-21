@@ -8,91 +8,17 @@ import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { showToast } from '../../app.js';
 
-// Helper: Formatear fecha de forma segura (evita Invalid Date)
-function formatDateSafe(dateStr, options = {}) {
-  if (!dateStr) return '-';
-  try {
-    // Si es string en formato YYYY-MM-DD o ISO
-    if (typeof dateStr === 'string') {
-      // Tomar solo la parte de la fecha si viene con hora
-      const datePart = dateStr.split('T')[0];
-      const [year, month, day] = datePart.split('-').map(Number);
-      if (year && month && day) {
-        const dateObj = new Date(year, month - 1, day, 12, 0, 0);
-        return dateObj.toLocaleDateString('es-CL', options);
-      }
-    }
-    // Fallback para objetos Date
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('es-CL', options);
-  } catch (e) {
-    console.error('Error formateando fecha:', e);
-    return '-';
-  }
-}
+// Importar utilidades compartidas
+import {
+  formatDate,
+  parseDateTimeSafe,
+  getOrgType,
+  getOrgIcon
+} from '../../shared/utils/index.js';
 
-// Helper: Parsear fecha + hora de forma segura (evita Invalid Date)
-function parseDateTimeSafe(dateStr, timeStr) {
-  if (!dateStr) return null;
-  try {
-    // Extraer partes de la fecha
-    const datePart = dateStr.split('T')[0];
-    const [year, month, day] = datePart.split('-').map(Number);
-
-    // Extraer partes de la hora (formato HH:MM o HH:MM:SS)
-    let hours = 12, minutes = 0;
-    if (timeStr) {
-      const timeParts = timeStr.split(':');
-      hours = parseInt(timeParts[0]) || 12;
-      minutes = parseInt(timeParts[1]) || 0;
-    }
-
-    if (year && month && day) {
-      return new Date(year, month - 1, day, hours, minutes, 0);
-    }
-
-    // Fallback
-    const date = new Date(dateStr + (timeStr ? ' ' + timeStr : ''));
-    if (isNaN(date.getTime())) return null;
-    return date;
-  } catch (e) {
-    console.error('Error parseando fecha/hora:', e);
-    return null;
-  }
-}
-
-// Helper: Obtener icono según tipo de organización
-function getOrgIcon(type) {
-  if (type === 'JUNTA_VECINOS' || type === 'COMITE_VECINOS') return '🏘️';
-  if (type?.startsWith('CLUB_')) return '⚽';
-  if (type?.startsWith('CENTRO_')) return '🏢';
-  if (type?.startsWith('AGRUPACION_')) return '👥';
-  if (type?.startsWith('COMITE_')) return '📋';
-  if (type?.startsWith('ORG_')) return '🎯';
-  if (type === 'GRUPO_TEATRO') return '🎭';
-  if (type === 'CORO') return '🎵';
-  if (type === 'TALLER_ARTESANIA') return '🎨';
-  return '👥';
-}
-
-// Helper: Obtener nombre legible del tipo
-function getOrgTypeName(type) {
-  const types = {
-    'JUNTA_VECINOS': 'Junta de Vecinos', 'COMITE_VECINOS': 'Comité de Vecinos',
-    'CLUB_DEPORTIVO': 'Club Deportivo', 'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
-    'CLUB_JUVENIL': 'Club Juvenil', 'CLUB_CULTURAL': 'Club Cultural',
-    'CENTRO_MADRES': 'Centro de Madres', 'CENTRO_PADRES': 'Centro de Padres y Apoderados',
-    'CENTRO_CULTURAL': 'Centro Cultural', 'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
-    'AGRUPACION_CULTURAL': 'Agrupación Cultural', 'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
-    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental', 'COMITE_VIVIENDA': 'Comité de Vivienda',
-    'COMITE_ALLEGADOS': 'Comité de Allegados', 'COMITE_APR': 'Comité de Agua Potable Rural',
-    'ORG_SCOUT': 'Organización Scout', 'ORG_MUJERES': 'Organización de Mujeres',
-    'GRUPO_TEATRO': 'Grupo de Teatro', 'CORO': 'Coro o Agrupación Musical',
-    'TALLER_ARTESANIA': 'Taller de Artesanía', 'OTRA_FUNCIONAL': 'Otra Organización Funcional'
-  };
-  return types[type] || 'Organización Comunitaria';
-}
+// Wrapper para compatibilidad con código existente
+const formatDateSafe = (dateStr, options = {}) => formatDate(dateStr, { fallback: '-', ...options });
+const getOrgTypeName = getOrgType;
 
 class OrganizationDashboard {
   constructor() {

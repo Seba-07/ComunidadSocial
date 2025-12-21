@@ -4,6 +4,10 @@
  */
 
 import { jsPDF } from 'jspdf';
+import { getOrgType as getOrgTypeFromUtils, formatDate as formatDateFromUtils } from '../shared/utils/index.js';
+
+// Alias para compatibilidad
+const getOrgTypeName = getOrgTypeFromUtils;
 
 // Colores institucionales de Renca
 const COLORS = {
@@ -23,24 +27,6 @@ const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
 const MARGIN_TOP = 15;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
-
-// Helper: Obtener nombre legible del tipo de organización
-function getOrgTypeName(type) {
-  const types = {
-    'JUNTA_VECINOS': 'Junta de Vecinos', 'COMITE_VECINOS': 'Comité de Vecinos',
-    'CLUB_DEPORTIVO': 'Club Deportivo', 'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
-    'CLUB_JUVENIL': 'Club Juvenil', 'CLUB_CULTURAL': 'Club Cultural',
-    'CENTRO_MADRES': 'Centro de Madres', 'CENTRO_PADRES': 'Centro de Padres y Apoderados',
-    'CENTRO_CULTURAL': 'Centro Cultural', 'AGRUPACION_FOLCLORICA': 'Agrupación Folclórica',
-    'AGRUPACION_CULTURAL': 'Agrupación Cultural', 'AGRUPACION_JUVENIL': 'Agrupación Juvenil',
-    'AGRUPACION_AMBIENTAL': 'Agrupación Ambiental', 'COMITE_VIVIENDA': 'Comité de Vivienda',
-    'COMITE_ALLEGADOS': 'Comité de Allegados', 'COMITE_APR': 'Comité de Agua Potable Rural',
-    'ORG_SCOUT': 'Organización Scout', 'ORG_MUJERES': 'Organización de Mujeres',
-    'GRUPO_TEATRO': 'Grupo de Teatro', 'CORO': 'Coro o Agrupación Musical',
-    'TALLER_ARTESANIA': 'Taller de Artesanía', 'OTRA_FUNCIONAL': 'Otra Organización Funcional'
-  };
-  return types[type] || type || 'Organización Comunitaria';
-}
 
 class PDFService {
   constructor() {
