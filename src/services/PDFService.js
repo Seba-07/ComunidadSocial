@@ -204,31 +204,35 @@ class PDFService {
    * Genera el Acta de Asamblea General Constitutiva
    */
   generateActaAsamblea(organization) {
-    const doc = new jsPDF();
-    const org = organization.organization || organization;
-    const members = organization.members || [];
-    const directorio = organization.provisionalDirectorio || {};
-    // comisionElectoral puede ser un array directo o tener .members
-    const comision = Array.isArray(organization.comisionElectoral)
-      ? organization.comisionElectoral
-      : (organization.comisionElectoral?.members || []);
-    // ministroData puede venir en diferentes campos
-    const ministroData = organization.ministroData || organization.ministroAssignment || {};
+    try {
+      console.log('📄 [generateActaAsamblea] INICIO - organization recibida:', !!organization);
 
-    // Guardar referencia a members para usar en getMemberName
-    this._currentMembers = members;
+      const doc = new jsPDF();
+      console.log('📄 [generateActaAsamblea] jsPDF creado');
 
-    // DEBUG: Ver qué datos llegan
-    console.log('🔍 PDFService.generateActaAsamblea - organization:', organization);
-    console.log('🔍 PDFService - provisionalDirectorio:', directorio);
-    console.log('🔍 PDFService - president:', directorio.president);
-    console.log('🔍 PDFService - president RUT:', directorio.president?.rut);
-    console.log('🔍 PDFService - members count:', members.length);
-    console.log('🔍 PDFService - members[0]:', members[0]);
-    console.log('🔍 PDFService - comisionElectoral:', comision);
+      const org = organization.organization || organization;
+      const members = organization.members || [];
+      const directorio = organization.provisionalDirectorio || {};
+      // comisionElectoral puede ser un array directo o tener .members
+      const comision = Array.isArray(organization.comisionElectoral)
+        ? organization.comisionElectoral
+        : (organization.comisionElectoral?.members || []);
+      // ministroData puede venir en diferentes campos
+      const ministroData = organization.ministroData || organization.ministroAssignment || {};
 
-    this.drawHeader(doc, 'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO', 'Departamento de Registro y Certificación');
-    this.drawHeader(doc, 'Y ELECCIÓN DE DIRECTIVA PROVISIONAL');
+      // Guardar referencia a members para usar en getMemberName
+      this._currentMembers = members;
+
+      // DEBUG: Ver qué datos llegan
+      console.log('📄 [generateActaAsamblea] org:', org?.organizationName || org?.name);
+      console.log('📄 [generateActaAsamblea] members count:', members.length);
+      console.log('📄 [generateActaAsamblea] directorio:', JSON.stringify(directorio).substring(0, 200));
+      console.log('📄 [generateActaAsamblea] comision length:', comision.length);
+      console.log('📄 [generateActaAsamblea] ministroData:', JSON.stringify(ministroData).substring(0, 200));
+
+      this.drawHeader(doc, 'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO', 'Departamento de Registro y Certificación');
+      this.drawHeader(doc, 'Y ELECCIÓN DE DIRECTIVA PROVISIONAL');
+      console.log('📄 [generateActaAsamblea] Headers dibujados');
 
     // Reiniciar posición
     this.currentY = 55;
@@ -420,22 +424,39 @@ class PDFService {
 
     this.drawFooter(doc, 2);
 
-    return doc;
+      console.log('📄 [generateActaAsamblea] PDF generado exitosamente');
+      return doc;
+    } catch (error) {
+      console.error('❌ [generateActaAsamblea] ERROR:', error);
+      console.error('❌ [generateActaAsamblea] Stack:', error.stack);
+      throw error;
+    }
   }
 
   /**
    * Genera Lista de Socios Constitución
    */
   generateListaSocios(organization) {
-    const doc = new jsPDF();
-    const org = organization.organization || organization;
-    const members = organization.members || [];
-    // Usar asistentes de la asamblea si existen, sino usar miembros
-    const attendees = organization.validatedAttendees || organization.assemblyAttendees || members;
-    const ministroData = organization.ministroData || organization.ministroAssignment || {};
-    const assemblyDate = ministroData.scheduledDate || organization.createdAt;
+    try {
+      console.log('📄 [generateListaSocios] INICIO - organization recibida:', !!organization);
 
-    this.drawHeader(doc, 'LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN', 'DEPARTAMENTO DE REGISTRO Y CERTIFICACIÓN');
+      const doc = new jsPDF();
+      console.log('📄 [generateListaSocios] jsPDF creado');
+
+      const org = organization.organization || organization;
+      const members = organization.members || [];
+      // Usar asistentes de la asamblea si existen, sino usar miembros
+      const attendees = organization.validatedAttendees || organization.assemblyAttendees || members;
+      const ministroData = organization.ministroData || organization.ministroAssignment || {};
+      const assemblyDate = ministroData.scheduledDate || organization.createdAt;
+
+      console.log('📄 [generateListaSocios] org:', org?.organizationName || org?.name);
+      console.log('📄 [generateListaSocios] members count:', members.length);
+      console.log('📄 [generateListaSocios] attendees count:', attendees.length);
+      console.log('📄 [generateListaSocios] ministroData:', JSON.stringify(ministroData).substring(0, 200));
+
+      this.drawHeader(doc, 'LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN', 'DEPARTAMENTO DE REGISTRO Y CERTIFICACIÓN');
+      console.log('📄 [generateListaSocios] Header dibujado');
 
     this.currentY = 55;
     doc.setFontSize(9);
@@ -496,7 +517,13 @@ class PDFService {
 
     this.drawFooter(doc, pageNum);
 
-    return doc;
+      console.log('📄 [generateListaSocios] PDF generado exitosamente');
+      return doc;
+    } catch (error) {
+      console.error('❌ [generateListaSocios] ERROR:', error);
+      console.error('❌ [generateListaSocios] Stack:', error.stack);
+      throw error;
+    }
   }
 
   /**
