@@ -2313,8 +2313,14 @@ async function viewOrganization(orgId) {
 }
 
 // Funciones para manejo de PDFs del usuario
-function viewUserPDF(orgId, docId) {
-  const org = organizationsService.getById(orgId);
+async function viewUserPDF(orgId, docId) {
+  let org = organizationsService.getById(orgId);
+
+  // Si no se encuentra localmente, intentar obtenerla del servidor
+  if (!org) {
+    org = await organizationsService.getByIdAsync(orgId);
+  }
+
   if (!org) {
     showToast('Organización no encontrada', 'error');
     return;
@@ -2398,8 +2404,14 @@ function viewUserPDF(orgId, docId) {
   }
 }
 
-function downloadUserPDF(orgId, docId) {
-  const org = organizationsService.getById(orgId);
+async function downloadUserPDF(orgId, docId) {
+  let org = organizationsService.getById(orgId);
+
+  // Si no se encuentra localmente, intentar obtenerla del servidor
+  if (!org) {
+    org = await organizationsService.getByIdAsync(orgId);
+  }
+
   if (!org) {
     showToast('Organización no encontrada', 'error');
     return;
@@ -2450,8 +2462,14 @@ function downloadUserPDF(orgId, docId) {
   }
 }
 
-function downloadAllUserPDFs(orgId) {
-  const org = organizationsService.getById(orgId);
+async function downloadAllUserPDFs(orgId) {
+  let org = organizationsService.getById(orgId);
+
+  // Si no se encuentra localmente, intentar obtenerla del servidor
+  if (!org) {
+    org = await organizationsService.getByIdAsync(orgId);
+  }
+
   if (!org) {
     showToast('Organización no encontrada', 'error');
     return;
