@@ -2314,12 +2314,17 @@ async function viewOrganization(orgId) {
 
 // Funciones para manejo de PDFs del usuario
 async function viewUserPDF(orgId, docId) {
+  console.log('viewUserPDF called with:', { orgId, docId });
+
   let org = organizationsService.getById(orgId);
 
   // Si no se encuentra localmente, intentar obtenerla del servidor
   if (!org) {
+    console.log('Org not found locally, fetching from server...');
     org = await organizationsService.getByIdAsync(orgId);
   }
+
+  console.log('Organization data:', org);
 
   if (!org) {
     showToast('Organización no encontrada', 'error');
@@ -2330,13 +2335,18 @@ async function viewUserPDF(orgId, docId) {
   let docTitle = '';
 
   try {
+    console.log('Generating PDF for:', docId);
     switch (docId) {
       case 'acta_asamblea':
+        console.log('Calling generateActaAsamblea...');
         pdfDoc = pdfService.generateActaAsamblea(org);
+        console.log('generateActaAsamblea returned:', pdfDoc);
         docTitle = 'Acta de Asamblea General Constitutiva';
         break;
       case 'lista_socios':
+        console.log('Calling generateListaSocios...');
         pdfDoc = pdfService.generateListaSocios(org);
+        console.log('generateListaSocios returned:', pdfDoc);
         docTitle = 'Lista de Socios Constitución';
         break;
       case 'certificado':
