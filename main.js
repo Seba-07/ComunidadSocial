@@ -2171,8 +2171,8 @@ async function viewOrganization(orgId) {
                 📜 Acta de Asamblea General Constitutiva
               </span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-view-user-pdf" data-doc-id="acta_asamblea" data-org-id="${org.id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
-                <button class="btn-download-user-pdf" data-doc-id="acta_asamblea" data-org-id="${org.id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
+                <button class="btn-view-user-pdf" data-doc-id="acta_asamblea" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
+                <button class="btn-download-user-pdf" data-doc-id="acta_asamblea" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
               </div>
             </div>
             <div class="doc-item-user" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
@@ -2180,8 +2180,8 @@ async function viewOrganization(orgId) {
                 📋 Lista de Socios Constitución
               </span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-view-user-pdf" data-doc-id="lista_socios" data-org-id="${org.id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
-                <button class="btn-download-user-pdf" data-doc-id="lista_socios" data-org-id="${org.id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
+                <button class="btn-view-user-pdf" data-doc-id="lista_socios" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
+                <button class="btn-download-user-pdf" data-doc-id="lista_socios" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
               </div>
             </div>
             <div class="doc-item-user" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
@@ -2189,8 +2189,8 @@ async function viewOrganization(orgId) {
                 🏛️ Certificado del Ministro de Fe
               </span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-view-user-pdf" data-doc-id="certificado" data-org-id="${org.id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
-                <button class="btn-download-user-pdf" data-doc-id="certificado" data-org-id="${org.id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
+                <button class="btn-view-user-pdf" data-doc-id="certificado" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
+                <button class="btn-download-user-pdf" data-doc-id="certificado" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
               </div>
             </div>
             <div class="doc-item-user" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
@@ -2198,8 +2198,8 @@ async function viewOrganization(orgId) {
                 📄 Certificación Municipal
               </span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-view-user-pdf" data-doc-id="certificacion" data-org-id="${org.id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
-                <button class="btn-download-user-pdf" data-doc-id="certificacion" data-org-id="${org.id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
+                <button class="btn-view-user-pdf" data-doc-id="certificacion" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
+                <button class="btn-download-user-pdf" data-doc-id="certificacion" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
               </div>
             </div>
             <div class="doc-item-user" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
@@ -2207,12 +2207,12 @@ async function viewOrganization(orgId) {
                 📁 Depósito de Antecedentes
               </span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-view-user-pdf" data-doc-id="deposito" data-org-id="${org.id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
-                <button class="btn-download-user-pdf" data-doc-id="deposito" data-org-id="${org.id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
+                <button class="btn-view-user-pdf" data-doc-id="deposito" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Ver</button>
+                <button class="btn-download-user-pdf" data-doc-id="deposito" data-org-id="${org.id || org._id}" style="padding: 6px 10px; background: #065f46; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Descargar</button>
               </div>
             </div>
           </div>
-          <button class="btn-download-all-user-pdfs" data-org-id="${org.id}" style="width: 100%; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <button class="btn-download-all-user-pdfs" data-org-id="${org.id || org._id}" style="width: 100%; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
