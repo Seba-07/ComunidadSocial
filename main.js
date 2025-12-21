@@ -3,6 +3,10 @@
  * Integra la nueva arquitectura con la UI existente
  */
 
+// Importar estilos compartidos (se incluirán en el bundle CSS)
+import './src/shared/styles/variables.css';
+import './src/shared/styles/components.css';
+
 import { initializeApp, appState, showToast, handleLogout } from './src/app.js';
 import { WizardController } from './src/presentation/components/wizard/WizardController.js';
 import { CHILE_REGIONS, getComunasByRegion } from './src/data/chile-regions.js';
