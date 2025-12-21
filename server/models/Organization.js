@@ -147,8 +147,8 @@ const organizationSchema = new mongoose.Schema({
     default: ''
   },
 
-  // Validated attendees from assembly
-  validatedAttendees: [memberSchema],
+  // Validated attendees from assembly (flexible schema para soportar externos con name)
+  validatedAttendees: [mongoose.Schema.Types.Mixed],
 
   // Validation data from Ministro de Fe
   validationData: {
