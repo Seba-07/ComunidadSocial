@@ -847,6 +847,15 @@ class AdminDashboard {
             </svg>
             Historial
           </button>
+          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+            <button class="review-tab" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              Registro Civil
+            </button>
+          ` : ''}
         </div>
 
         ${this.renderNextStepIndicator(org)}
@@ -867,6 +876,11 @@ class AdminDashboard {
           <div class="review-tab-content" id="tab-history">
             ${this.renderHistoryTab(org)}
           </div>
+          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+            <div class="review-tab-content" id="tab-registro-civil">
+              ${this.renderRegistroCivilTab(org)}
+            </div>
+          ` : ''}
         </div>
 
         <div class="review-modal-footer">
@@ -1379,6 +1393,11 @@ class AdminDashboard {
       this.openSendToRegistryModal(org, modal);
     });
 
+    // Botón para enviar a Registro Civil (desde tab Registro Civil)
+    modal.querySelector('.btn-send-to-registry-tab')?.addEventListener('click', () => {
+      this.openSendToRegistryModal(org, modal);
+    });
+
     // Botón para confirmar Registro Civil (desde sent_registry)
     modal.querySelector('.btn-confirm-registry')?.addEventListener('click', () => {
       this.openConfirmRegistryModal(org, modal);
@@ -1387,6 +1406,16 @@ class AdminDashboard {
     // FASE 5: Botón de disolución
     modal.querySelector('.btn-dissolve-org')?.addEventListener('click', () => {
       this.openDissolveModal(org, modal);
+    });
+
+    // Botón para agregar observaciones del Registro Civil
+    modal.querySelector('.btn-registry-observations')?.addEventListener('click', () => {
+      this.openRegistryObservationsModal(org, modal);
+    });
+
+    // Botón para reenviar al Registro Civil después de corregir observaciones
+    modal.querySelector('.btn-resend-registry')?.addEventListener('click', () => {
+      this.openSendToRegistryModal(org, modal);
     });
 
     // Event listeners para ver documentos
@@ -2330,6 +2359,9 @@ class AdminDashboard {
       });
     }
 
+    // En estado ministro_approved solo mostramos info, no opciones de carga
+    const isReadOnly = org.status === ORG_STATUS.MINISTRO_APPROVED;
+
     const renderCertCell = (row) => {
       if (row.cert) {
         return `<button class="btn-view-cert-admin" data-member-id="${row.memberId}" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
@@ -2339,6 +2371,10 @@ class AdminDashboard {
           </svg>
           Ver
         </button>`;
+      }
+      // En modo solo lectura (ministro_approved), mostrar indicador sin opción de subir
+      if (isReadOnly) {
+        return `<span style="color: #9ca3af; font-size: 12px; font-style: italic;">No disponible</span>`;
       }
       return `
         <input type="file" class="cert-file-input" data-member-id="${row.memberId}" data-member-rut="${row.rut}" data-member-name="${row.nombre}" accept=".pdf" style="display: none;">
@@ -2603,45 +2639,86 @@ class AdminDashboard {
           `).join('')}
         ` : ''}
 
-        ${org.certificates ? `
-          <h4 class="docs-subtitle">Certificados de Antecedentes</h4>
-          ${Object.entries(org.certificates).map(([memberId, cert]) => {
-            const memberIndex = org.commission?.members?.findIndex(m => m.id === memberId) ?? -1;
-            const member = org.commission?.members?.[memberIndex];
-            const role = roles[memberIndex] || 'Miembro';
-            const certLabel = `Certificado ${role}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}`;
-            return `
-              <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
-                <div class="doc-info">
-                  <span class="doc-icon">📋</span>
-                  <span class="doc-name">${role}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}</span>
-                  <span class="cert-uploaded-badge">✓ Subido</span>
-                </div>
-                <div class="doc-actions">
-                  <button class="btn-view-cert-admin" data-member-id="${memberId}" title="Ver certificado">
+        ${(() => {
+          // Certificados del Directorio Provisorio
+          const dirCerts = [];
+          const dir = org.provisionalDirectorio || {};
+          if (dir.president) {
+            const cert = org.certificates?.[dir.president.id] || org.certificates?.[dir.president._id];
+            dirCerts.push({ role: 'Presidente', name: dir.president.name, cert, memberId: dir.president.id || dir.president._id });
+          }
+          if (dir.secretary) {
+            const cert = org.certificates?.[dir.secretary.id] || org.certificates?.[dir.secretary._id];
+            dirCerts.push({ role: 'Secretario', name: dir.secretary.name, cert, memberId: dir.secretary.id || dir.secretary._id });
+          }
+          if (dir.treasurer) {
+            const cert = org.certificates?.[dir.treasurer.id] || org.certificates?.[dir.treasurer._id];
+            dirCerts.push({ role: 'Tesorero', name: dir.treasurer.name, cert, memberId: dir.treasurer.id || dir.treasurer._id });
+          }
+          if (dir.additionalMembers) {
+            dir.additionalMembers.forEach((m, i) => {
+              const cert = org.certificates?.[m.id] || org.certificates?.[m._id];
+              dirCerts.push({ role: m.cargo || 'Director', name: m.name, cert, memberId: m.id || m._id });
+            });
+          }
+
+          // Certificados de la Comisión Electoral
+          const comCerts = [];
+          const comMembers = org.comisionElectoral || org.commission?.members || [];
+          comMembers.forEach((m, i) => {
+            const cert = org.certificates?.[m.id] || org.certificates?.[m._id];
+            const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
+            comCerts.push({ role: roles[i] || 'Miembro', name, cert, memberId: m.id || m._id });
+          });
+
+          const hasAnyCerts = dirCerts.length > 0 || comCerts.length > 0;
+          if (!hasAnyCerts) return '';
+
+          const renderCertItem = (item, type) => `
+            <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
+              <div class="doc-info">
+                <span class="doc-icon">📋</span>
+                <span class="doc-name">${item.role}: ${item.name || 'Sin nombre'}</span>
+                ${item.cert ? '<span class="cert-uploaded-badge">✓ Subido</span>' : '<span style="color: #f59e0b; font-size: 11px;">Pendiente</span>'}
+              </div>
+              <div class="doc-actions">
+                ${item.cert ? `
+                  <button class="btn-view-cert-admin" data-member-id="${item.memberId}" title="Ver certificado">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                     Ver
                   </button>
-                  ${isReviewable ? `
-                    <button class="btn-mark-error doc-error" data-type="certificate" data-key="${memberId}" data-label="${certLabel}" title="Marcar para corrección">
-                      <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                      </svg>
-                      <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                      </svg>
-                    </button>
-                  ` : ''}
-                </div>
+                ` : ''}
+                ${isReviewable && item.cert ? `
+                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.memberId}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para corrección">
+                    <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </button>
+                ` : ''}
               </div>
-            `;
-          }).join('')}
-        ` : ''}
+            </div>
+          `;
+
+          return `
+            <h4 class="docs-subtitle">Certificados de Antecedentes</h4>
+            ${dirCerts.length > 0 ? `
+              <p style="font-size: 12px; color: #6b7280; margin: 8px 0 4px; font-weight: 600;">Directorio Provisorio</p>
+              ${dirCerts.map(c => renderCertItem(c, 'directorio')).join('')}
+            ` : ''}
+            ${comCerts.length > 0 ? `
+              <p style="font-size: 12px; color: #6b7280; margin: ${dirCerts.length > 0 ? '16px' : '8px'} 0 4px; font-weight: 600;">Comisión Electoral</p>
+              ${comCerts.map(c => renderCertItem(c, 'comision')).join('')}
+            ` : ''}
+          `;
+        })()}
       </div>
     `;
   }
@@ -2687,15 +2764,16 @@ class AdminDashboard {
 
       case ORG_STATUS.MINISTRO_APPROVED:
         icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <polyline points="16 11 18 13 22 9"></polyline>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>`;
-        title = 'Esperando Accion del Usuario';
-        message = 'El Ministro de Fe validó la asamblea. El usuario debe continuar con el proceso completando los pasos restantes del formulario (documentos, comisión electoral, etc.).';
-        bgColor = '#d1fae5';
-        borderColor = '#10b981';
-        iconBg = '#10b981';
+        title = 'Listo para Enviar al Registro Civil';
+        message = 'El Ministro de Fe validó la asamblea constitutiva. Revise la información y documentos que serán enviados al Registro Civil para la inscripción oficial de la organización.';
+        bgColor = '#dbeafe';
+        borderColor = '#3b82f6';
+        iconBg = '#3b82f6';
         break;
 
       case ORG_STATUS.PENDING_REVIEW:
@@ -2747,6 +2825,19 @@ class AdminDashboard {
         bgColor = '#dbeafe';
         borderColor = '#1e3a5f';
         iconBg = '#1e3a5f';
+        break;
+
+      case ORG_STATUS.REGISTRY_OBSERVATIONS:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>`;
+        title = 'Observaciones del Registro Civil';
+        message = 'El Registro Civil ha enviado observaciones. El usuario debe revisar y corregir los puntos indicados para continuar con la inscripción.';
+        bgColor = '#fef2f2';
+        borderColor = '#dc2626';
+        iconBg = '#dc2626';
         break;
 
       case ORG_STATUS.APPROVED:
@@ -2827,6 +2918,140 @@ class AdminDashboard {
   }
 
   /**
+   * Renderiza el tab de Registro Civil con resumen y botón de envío
+   */
+  renderRegistroCivilTab(org) {
+    const orgId = org._id || org.id;
+    const directorio = org.provisionalDirectorio || {};
+    const comision = org.comisionElectoral || [];
+    const members = org.members || [];
+    const orgType = getOrgType(org.type);
+
+    // Contar documentos disponibles
+    const docsCount = {
+      oficiales: 5, // Acta, Lista, Certificado, Certificación, Depósito
+      declaraciones: 0,
+      certificados: Object.keys(org.certificates || {}).length
+    };
+
+    if (directorio.president) docsCount.declaraciones++;
+    if (directorio.secretary) docsCount.declaraciones++;
+    if (directorio.treasurer) docsCount.declaraciones++;
+    if (directorio.additionalMembers) docsCount.declaraciones += directorio.additionalMembers.length;
+
+    return `
+      <div class="registro-civil-tab">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 50%;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 18px;">Envío al Registro Civil</h3>
+              <p style="margin: 4px 0 0; opacity: 0.9; font-size: 13px;">Paso final para la inscripción oficial de la organización</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 12px; color: #1e293b; font-size: 14px;">Resumen de la Solicitud</h4>
+
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Organización</div>
+              <div style="font-weight: 600; color: #1e293b;">${org.name}</div>
+              <div style="font-size: 12px; color: #64748b;">${orgType}</div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Miembros Fundadores</div>
+              <div style="font-weight: 600; color: #1e293b;">${members.length} personas</div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Directorio Provisorio</div>
+              <div style="font-weight: 600; color: #1e293b;">
+                ${directorio.president ? directorio.president.name : 'No asignado'} (Presidente)
+              </div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Comisión Electoral</div>
+              <div style="font-weight: 600; color: #1e293b;">${comision.length} miembros</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 12px; color: #166534; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Documentos a Enviar
+          </h4>
+          <div style="display: grid; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
+              <span style="color: #374151;">Documentos Oficiales</span>
+              <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.oficiales}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
+              <span style="color: #374151;">Declaraciones Juradas</span>
+              <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.declaraciones}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
+              <span style="color: #374151;">Certificados de Antecedentes</span>
+              <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.certificados}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+              <div style="font-weight: 600; color: #854d0e; margin-bottom: 4px;">Importante</div>
+              <p style="margin: 0; color: #713f12; font-size: 13px; line-height: 1.5;">
+                Una vez enviada la solicitud al Registro Civil, deberá esperar su respuesta.
+                El Registro Civil puede aprobar la inscripción o solicitar correcciones que serán
+                notificadas al usuario correspondiente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-send-to-registry-tab" data-org-id="${orgId}" style="
+          width: 100%;
+          padding: 16px 24px;
+          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          transition: all 0.2s;
+          box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          Enviar al Registro Civil
+        </button>
+      </div>
+    `;
+  }
+
+  /**
    * Renderiza los botones de acción según el estado
    */
   renderActionButtons(org) {
@@ -2878,11 +3103,30 @@ class AdminDashboard {
 
       case ORG_STATUS.SENT_TO_REGISTRY:
         return `
+          <button class="btn-warning btn-registry-observations">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Agregar Observaciones
+          </button>
           <button class="btn-success btn-confirm-registry">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             Confirmar Registro Civil
+          </button>
+        `;
+
+      case ORG_STATUS.REGISTRY_OBSERVATIONS:
+        return `
+          <button class="btn-primary btn-resend-registry">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13"></path>
+              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+            </svg>
+            Reenviar al Registro Civil
           </button>
         `;
 
@@ -3229,6 +3473,111 @@ class AdminDashboard {
         this.updateStats();
       } else {
         showToast('Error al aprobar la organización', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para agregar observaciones del Registro Civil
+   */
+  openRegistryObservationsModal(org, parentModal) {
+    const obsModal = document.createElement('div');
+    obsModal.className = 'admin-review-modal-overlay';
+    obsModal.style.zIndex = '10002';
+
+    obsModal.innerHTML = `
+      <div class="admin-review-modal" style="max-width: 550px;">
+        <div class="review-modal-header" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);">
+          <h3 style="color: #dc2626; margin: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Observaciones del Registro Civil
+          </h3>
+          <button class="review-close-btn obs-cancel">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="review-modal-body" style="padding: 24px;">
+          <div style="background: #fefce8; border: 2px solid #fde047; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #854d0e; font-size: 14px;">
+              <strong>Importante:</strong> Al agregar observaciones, el usuario será notificado y deberá corregir los puntos indicados antes de poder continuar con la inscripción.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong>Organización:</strong> ${getOrgName(org)}
+          </div>
+
+          <form id="registry-observations-form">
+            <div class="form-group">
+              <label>Observaciones del Registro Civil <span class="required">*</span></label>
+              <textarea name="observations" rows="5" required
+                placeholder="Detalle las observaciones o correcciones requeridas por el Registro Civil..."
+                style="width: 100%; padding: 12px; border: 1px solid #fca5a5; border-radius: 6px; font-size: 14px;"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+              <label>Fecha límite para corrección</label>
+              <input type="date" name="deadline"
+                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary obs-cancel">Cancelar</button>
+              <button type="submit" class="btn btn-danger" style="background: #dc2626;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Registrar Observaciones
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(obsModal);
+
+    // Event listeners
+    obsModal.querySelectorAll('.obs-cancel').forEach(btn => {
+      btn.addEventListener('click', () => obsModal.remove());
+    });
+
+    const form = obsModal.querySelector('#registry-observations-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const observations = formData.get('observations');
+      const deadline = formData.get('deadline');
+
+      const comment = `Observaciones del Registro Civil: ${observations}${deadline ? ' - Fecha límite: ' + deadline : ''}`;
+
+      // Guardar observaciones en la organización
+      org.registryObservations = {
+        observations: observations,
+        deadline: deadline,
+        date: new Date().toISOString()
+      };
+
+      // Actualizar estado a registry_observations
+      const result = organizationsService.updateStatus(org.id, ORG_STATUS.REGISTRY_OBSERVATIONS, comment);
+      if (result) {
+        showToast('Observaciones registradas. El usuario será notificado.', 'success');
+        obsModal.remove();
+        parentModal.remove();
+        this.renderApplicationsList();
+        this.updateStats();
+      } else {
+        showToast('Error al registrar observaciones', 'error');
       }
     });
   }

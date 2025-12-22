@@ -16,6 +16,7 @@ export const ORG_STATUS = {
   IN_REVIEW: 'in_review',
   REJECTED: 'rejected',
   SENT_TO_REGISTRY: 'sent_registry',
+  REGISTRY_OBSERVATIONS: 'registry_observations', // Observaciones del Registro Civil
   APPROVED: 'approved',
   DISSOLVED: 'dissolved'
 };
@@ -30,6 +31,7 @@ export const ORG_STATUS_LABELS = {
   [ORG_STATUS.IN_REVIEW]: 'En Revisión',
   [ORG_STATUS.REJECTED]: 'Requiere Correcciones',
   [ORG_STATUS.SENT_TO_REGISTRY]: 'Enviada al Registro Civil',
+  [ORG_STATUS.REGISTRY_OBSERVATIONS]: 'Observaciones del Registro Civil',
   [ORG_STATUS.APPROVED]: 'Aprobada',
   [ORG_STATUS.DISSOLVED]: 'Disuelta'
 };
@@ -44,6 +46,7 @@ export const ORG_STATUS_COLORS = {
   [ORG_STATUS.IN_REVIEW]: '#3b82f6',
   [ORG_STATUS.REJECTED]: '#ef4444',
   [ORG_STATUS.SENT_TO_REGISTRY]: '#0891b2',
+  [ORG_STATUS.REGISTRY_OBSERVATIONS]: '#dc2626',
   [ORG_STATUS.APPROVED]: '#10b981',
   [ORG_STATUS.DISSOLVED]: '#4b5563'
 };
