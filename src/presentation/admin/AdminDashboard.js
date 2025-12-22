@@ -2955,7 +2955,8 @@ class AdminDashboard {
     const directorio = org.provisionalDirectorio || {};
     const comision = org.comisionElectoral || [];
     const members = org.members || [];
-    const orgType = getOrgType(org.type);
+    const orgName = getOrgName(org) || 'Sin nombre';
+    const orgType = getOrgTypeName(org.organization?.type || org.type) || 'Organizacion Comunitaria';
 
     // Contar documentos disponibles
     const docsCount = {
@@ -2992,7 +2993,7 @@ class AdminDashboard {
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
             <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
               <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Organización</div>
-              <div style="font-weight: 600; color: #1e293b;">${org.name}</div>
+              <div style="font-weight: 600; color: #1e293b;">${orgName}</div>
               <div style="font-size: 12px; color: #64748b;">${orgType}</div>
             </div>
             <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
