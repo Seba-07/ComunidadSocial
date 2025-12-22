@@ -807,14 +807,24 @@ class AdminDashboard {
         </div>
 
         <div class="review-modal-tabs">
-          <button class="review-tab active" data-tab="info">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            Información
-          </button>
+          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+            <button class="review-tab active" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              Registro Civil
+            </button>
+          ` : `
+            <button class="review-tab active" data-tab="info">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              Informacion
+            </button>
+          `}
           <button class="review-tab" data-tab="members">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -847,23 +857,20 @@ class AdminDashboard {
             </svg>
             Historial
           </button>
-          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
-            <button class="review-tab" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              Registro Civil
-            </button>
-          ` : ''}
         </div>
 
         ${this.renderNextStepIndicator(org)}
 
         <div class="review-modal-body">
-          <div class="review-tab-content active" id="tab-info">
-            ${this.renderInfoTab(org)}
-          </div>
+          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+            <div class="review-tab-content active" id="tab-registro-civil">
+              ${this.renderRegistroCivilTab(org)}
+            </div>
+          ` : `
+            <div class="review-tab-content active" id="tab-info">
+              ${this.renderInfoTab(org)}
+            </div>
+          `}
           <div class="review-tab-content" id="tab-members">
             ${this.renderMembersTab(org)}
           </div>
@@ -876,11 +883,6 @@ class AdminDashboard {
           <div class="review-tab-content" id="tab-history">
             ${this.renderHistoryTab(org)}
           </div>
-          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
-            <div class="review-tab-content" id="tab-registro-civil">
-              ${this.renderRegistroCivilTab(org)}
-            </div>
-          ` : ''}
         </div>
 
         <div class="review-modal-footer">
@@ -2640,46 +2642,25 @@ class AdminDashboard {
         ` : ''}
 
         ${(() => {
-          // Certificados del Directorio Provisorio
-          const dirCerts = [];
-          const dir = org.provisionalDirectorio || {};
-          if (dir.president) {
-            const cert = org.certificates?.[dir.president.id] || org.certificates?.[dir.president._id];
-            dirCerts.push({ role: 'Presidente', name: dir.president.name, cert, memberId: dir.president.id || dir.president._id });
-          }
-          if (dir.secretary) {
-            const cert = org.certificates?.[dir.secretary.id] || org.certificates?.[dir.secretary._id];
-            dirCerts.push({ role: 'Secretario', name: dir.secretary.name, cert, memberId: dir.secretary.id || dir.secretary._id });
-          }
-          if (dir.treasurer) {
-            const cert = org.certificates?.[dir.treasurer.id] || org.certificates?.[dir.treasurer._id];
-            dirCerts.push({ role: 'Tesorero', name: dir.treasurer.name, cert, memberId: dir.treasurer.id || dir.treasurer._id });
-          }
-          if (dir.additionalMembers) {
-            dir.additionalMembers.forEach((m, i) => {
-              const cert = org.certificates?.[m.id] || org.certificates?.[m._id];
-              dirCerts.push({ role: m.cargo || 'Director', name: m.name, cert, memberId: m.id || m._id });
-            });
-          }
-
-          // Certificados de la Comisión Electoral
+          // Certificados de Antecedentes (solo Comisión Electoral los tiene)
           const comCerts = [];
           const comMembers = org.comisionElectoral || org.commission?.members || [];
+          const comRoles = ['Presidente', 'Secretario', 'Vocal'];
+
           comMembers.forEach((m, i) => {
             const cert = org.certificates?.[m.id] || org.certificates?.[m._id];
             const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
-            comCerts.push({ role: roles[i] || 'Miembro', name, cert, memberId: m.id || m._id });
+            comCerts.push({ role: comRoles[i] || 'Miembro', name, cert, memberId: m.id || m._id });
           });
 
-          const hasAnyCerts = dirCerts.length > 0 || comCerts.length > 0;
-          if (!hasAnyCerts) return '';
+          if (comCerts.length === 0) return '';
 
-          const renderCertItem = (item, type) => `
+          const renderCertItem = (item) => `
             <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
               <div class="doc-info">
                 <span class="doc-icon">📋</span>
                 <span class="doc-name">${item.role}: ${item.name || 'Sin nombre'}</span>
-                ${item.cert ? '<span class="cert-uploaded-badge">✓ Subido</span>' : '<span style="color: #f59e0b; font-size: 11px;">Pendiente</span>'}
+                ${item.cert ? '<span class="cert-uploaded-badge">Subido</span>' : '<span style="color: #dc2626; font-size: 11px;">No disponible</span>'}
               </div>
               <div class="doc-actions">
                 ${item.cert ? `
@@ -2692,7 +2673,7 @@ class AdminDashboard {
                   </button>
                 ` : ''}
                 ${isReviewable && item.cert ? `
-                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.memberId}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para corrección">
+                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.memberId}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para correccion">
                     <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"></circle>
                       <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -2708,15 +2689,8 @@ class AdminDashboard {
           `;
 
           return `
-            <h4 class="docs-subtitle">Certificados de Antecedentes</h4>
-            ${dirCerts.length > 0 ? `
-              <p style="font-size: 12px; color: #6b7280; margin: 8px 0 4px; font-weight: 600;">Directorio Provisorio</p>
-              ${dirCerts.map(c => renderCertItem(c, 'directorio')).join('')}
-            ` : ''}
-            ${comCerts.length > 0 ? `
-              <p style="font-size: 12px; color: #6b7280; margin: ${dirCerts.length > 0 ? '16px' : '8px'} 0 4px; font-weight: 600;">Comisión Electoral</p>
-              ${comCerts.map(c => renderCertItem(c, 'comision')).join('')}
-            ` : ''}
+            <h4 class="docs-subtitle">Certificados de Antecedentes - Comision Electoral</h4>
+            ${comCerts.map(c => renderCertItem(c)).join('')}
           `;
         })()}
       </div>
