@@ -7450,6 +7450,8 @@ Secretaria Municipal`;
         },
         // Datos del paso 5: Comisión Electoral
         comisionElectoral: this.formData.commission?.members || [],
+        // Datos del paso 5: Certificados de Antecedentes
+        certificatesStep5: this.formData.certificatesStep5 || {},
         // Datos del paso 6: Estatutos
         estatutos: this.formData.estatutos?.contenido || '',
         electionDate: electionDate,

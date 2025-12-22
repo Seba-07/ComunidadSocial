@@ -31,7 +31,14 @@
       "Bash(node scripts/clear-organizations.js:*)",
       "Bash(pkill:*)",
       "Bash(npm install:*)",
-      "WebFetch(domain:comunidad-social-api.onrender.com)"
+      "WebFetch(domain:comunidad-social-api.onrender.com)",
+      "Bash(node scripts/fix-attendee-name.js:*)",
+      "Bash(node ../scripts/fix-attendee-name.js:*)",
+      "Bash(node fix-attendee-name.js:*)",
+      "Bash(git tag:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

@@ -1439,8 +1439,9 @@ class AdminDashboard {
     // Event listeners para ver certificados
     modal.querySelectorAll('.btn-view-cert-admin').forEach(btn => {
       btn.addEventListener('click', () => {
+        const certKey = btn.dataset.certKey;
         const memberId = btn.dataset.memberId;
-        this.viewCertificate(org, memberId);
+        this.viewCertificate(org, certKey || memberId);
       });
     });
 
@@ -1723,8 +1724,9 @@ class AdminDashboard {
   /**
    * Ver certificado de antecedentes
    */
-  viewCertificate(org, memberId) {
+  viewCertificate(org, keyOrMemberId) {
     const certificates = org.certificates || {};
+    const certificatesStep5 = org.certificatesStep5 || {};
 
     // Helper para normalizar RUT
     const normalizeRut = (rut) => {
@@ -1733,7 +1735,13 @@ class AdminDashboard {
     };
 
     // Buscar certificado por múltiples métodos
-    let cert = certificates[memberId];
+    // Primero buscar en certificatesStep5 (presidente, secretario, tesorero, comision1, comision2, comision3)
+    let cert = certificatesStep5[keyOrMemberId];
+
+    // Si no, buscar en certificates tradicional
+    if (!cert) {
+      cert = certificates[keyOrMemberId];
+    }
 
     // Si no se encuentra por ID, buscar por RUT en la comisión
     if (!cert) {
@@ -1779,13 +1787,24 @@ class AdminDashboard {
       return;
     }
 
-    const member = org.commission?.members?.find(m => m.id === memberId) ||
-                   org.comisionElectoral?.find(m => m.id === memberId);
-    const memberName = member ? (member.name || `${member.firstName} ${member.lastName}`) : 'Miembro';
+    // Buscar nombre del miembro segun el key
+    let memberName = 'Miembro';
+    const roleLabels = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', comision1: 'Comision Electoral 1', comision2: 'Comision Electoral 2', comision3: 'Comision Electoral 3' };
+    if (roleLabels[keyOrMemberId]) {
+      memberName = roleLabels[keyOrMemberId];
+    } else {
+      const member = org.commission?.members?.find(m => m.id === keyOrMemberId) ||
+                     org.comisionElectoral?.find(m => m.id === keyOrMemberId);
+      if (member) memberName = member.name || `${member.firstName} ${member.lastName}`;
+    }
+
+    // Normalizar formato del certificado (certificatesStep5 usa base64/type, anterior usa data)
+    const certData = cert.data || (cert.base64 ? `data:${cert.type || 'application/pdf'};base64,${cert.base64}` : null);
+    const certFileName = cert.fileName || cert.name || 'certificado';
 
     // Determinar si es PDF o imagen
-    const isPDF = cert.data && cert.data.startsWith('data:application/pdf');
-    const isImage = cert.data && cert.data.startsWith('data:image/');
+    const isPDF = certData && (certData.startsWith('data:application/pdf') || (cert.type && cert.type.includes('pdf')));
+    const isImage = certData && (certData.startsWith('data:image/') || (cert.type && cert.type.startsWith('image/')));
 
     const certModal = document.createElement('div');
     certModal.className = 'document-view-modal-overlay';
@@ -1802,19 +1821,19 @@ class AdminDashboard {
         </div>
         <div class="document-view-body certificate-body">
           ${isPDF ? `
-            <iframe src="${cert.data}" class="certificate-pdf-viewer" title="Certificado de ${memberName}"></iframe>
+            <iframe src="${certData}" class="certificate-pdf-viewer" title="Certificado de ${memberName}"></iframe>
           ` : isImage ? `
-            <img src="${cert.data}" alt="Certificado de ${memberName}" class="certificate-image">
-          ` : cert.fileName ? `
+            <img src="${certData}" alt="Certificado de ${memberName}" class="certificate-image">
+          ` : certFileName ? `
             <div class="certificate-file-info">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
               </svg>
-              <span class="cert-filename">${cert.fileName}</span>
-              <span class="cert-upload-date">Subido: ${new Date(cert.uploadedAt).toLocaleDateString('es-CL')}</span>
-              ${cert.data ? `
-                <a href="${cert.data}" download="${cert.fileName}" class="btn-download-cert">
+              <span class="cert-filename">${certFileName}</span>
+              <span class="cert-upload-date">Subido: ${cert.uploadedAt ? new Date(cert.uploadedAt).toLocaleDateString('es-CL') : 'N/A'}</span>
+              ${certData ? `
+                <a href="${certData}" download="${certFileName}" class="btn-download-cert">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -1829,8 +1848,8 @@ class AdminDashboard {
           `}
         </div>
         <div class="document-view-footer">
-          ${cert.data ? `
-            <a href="${cert.data}" download="${cert.fileName || 'certificado.pdf'}" class="btn-download-cert-footer">
+          ${certData ? `
+            <a href="${certData}" download="${certFileName || 'certificado.pdf'}" class="btn-download-cert-footer">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -2642,19 +2661,7 @@ class AdminDashboard {
         ` : ''}
 
         ${(() => {
-          // Certificados de Antecedentes (solo Comisión Electoral los tiene)
-          const comCerts = [];
-          const comMembers = org.comisionElectoral || org.commission?.members || [];
-          const comRoles = ['Presidente', 'Secretario', 'Vocal'];
-
-          comMembers.forEach((m, i) => {
-            const cert = org.certificates?.[m.id] || org.certificates?.[m._id];
-            const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
-            comCerts.push({ role: comRoles[i] || 'Miembro', name, cert, memberId: m.id || m._id });
-          });
-
-          if (comCerts.length === 0) return '';
-
+          // Funcion para renderizar un certificado
           const renderCertItem = (item) => `
             <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
               <div class="doc-info">
@@ -2664,7 +2671,7 @@ class AdminDashboard {
               </div>
               <div class="doc-actions">
                 ${item.cert ? `
-                  <button class="btn-view-cert-admin" data-member-id="${item.memberId}" title="Ver certificado">
+                  <button class="btn-view-cert-admin" data-cert-key="${item.certKey}" title="Ver certificado">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
@@ -2673,7 +2680,7 @@ class AdminDashboard {
                   </button>
                 ` : ''}
                 ${isReviewable && item.cert ? `
-                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.memberId}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para correccion">
+                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.certKey}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para correccion">
                     <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"></circle>
                       <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -2688,10 +2695,59 @@ class AdminDashboard {
             </div>
           `;
 
-          return `
-            <h4 class="docs-subtitle">Certificados de Antecedentes - Comision Electoral</h4>
-            ${comCerts.map(c => renderCertItem(c)).join('')}
-          `;
+          // Certificados del Directorio Provisorio (desde certificatesStep5)
+          const certs = org.certificatesStep5 || {};
+          const dir = org.provisionalDirectorio || {};
+          const dirCerts = [];
+
+          // Presidente
+          if (dir.president) {
+            const cert = certs.presidente || certs.president;
+            const name = dir.president.name || `${dir.president.firstName || ''} ${dir.president.lastName || ''}`.trim();
+            dirCerts.push({ role: 'Presidente', name, cert, certKey: 'presidente' });
+          }
+
+          // Secretario
+          if (dir.secretary) {
+            const cert = certs.secretario || certs.secretary;
+            const name = dir.secretary.name || `${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}`.trim();
+            dirCerts.push({ role: 'Secretario', name, cert, certKey: 'secretario' });
+          }
+
+          // Tesorero
+          if (dir.treasurer) {
+            const cert = certs.tesorero || certs.treasurer;
+            const name = dir.treasurer.name || `${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}`.trim();
+            dirCerts.push({ role: 'Tesorero', name, cert, certKey: 'tesorero' });
+          }
+
+          // Certificados de la Comision Electoral
+          const comCerts = [];
+          const comMembers = org.comisionElectoral || org.commission?.members || [];
+          const comRoles = ['Presidente', 'Secretario', 'Vocal'];
+
+          comMembers.forEach((m, i) => {
+            const certKey = `comision${i + 1}`;
+            const cert = certs[certKey] || org.certificates?.[m.id] || org.certificates?.[m._id];
+            const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
+            comCerts.push({ role: comRoles[i] || 'Miembro', name, cert, certKey });
+          });
+
+          let html = '';
+
+          // Mostrar certificados del Directorio Provisorio
+          if (dirCerts.length > 0) {
+            html += `<h4 class="docs-subtitle">Certificados de Antecedentes - Directorio Provisorio</h4>`;
+            html += dirCerts.map(c => renderCertItem(c)).join('');
+          }
+
+          // Mostrar certificados de la Comision Electoral
+          if (comCerts.length > 0) {
+            html += `<h4 class="docs-subtitle" style="margin-top: 20px;">Certificados de Antecedentes - Comision Electoral</h4>`;
+            html += comCerts.map(c => renderCertItem(c)).join('');
+          }
+
+          return html;
         })()}
       </div>
     `;
