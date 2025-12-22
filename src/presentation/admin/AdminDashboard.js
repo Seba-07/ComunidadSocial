@@ -3670,7 +3670,8 @@ class AdminDashboard {
       const comment = `Enviado al Registro Civil${reference ? ' - Ref: ' + reference : ''}${notes ? '. Notas: ' + notes : ''}`;
 
       // Actualizar estado a sent_registry
-      const result = organizationsService.updateStatus(org.id, ORG_STATUS.SENT_TO_REGISTRY, comment);
+      const orgId = org._id || org.id;
+      const result = organizationsService.updateStatus(orgId, ORG_STATUS.SENT_TO_REGISTRY, comment);
       if (result) {
         showToast('Solicitud enviada al Registro Civil', 'success');
         confirmModal.remove();
