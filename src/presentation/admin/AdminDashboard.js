@@ -3294,7 +3294,7 @@ class AdminDashboard {
   openDissolveModal(org, parentModal) {
     const confirmModal = document.createElement('div');
     confirmModal.className = 'admin-review-modal-overlay';
-    confirmModal.style.zIndex = '10002';
+    confirmModal.style.zIndex = '200000';
 
     confirmModal.innerHTML = `
       <div class="admin-review-modal" style="max-width: 500px;">
@@ -3586,7 +3586,7 @@ class AdminDashboard {
   openSendToRegistryModal(org, parentModal) {
     const confirmModal = document.createElement('div');
     confirmModal.className = 'admin-review-modal-overlay';
-    confirmModal.style.zIndex = '10002';
+    confirmModal.style.zIndex = '200000';
 
     confirmModal.innerHTML = `
       <div class="admin-review-modal" style="max-width: 500px;">
@@ -3689,7 +3689,7 @@ class AdminDashboard {
   openConfirmRegistryModal(org, parentModal) {
     const confirmModal = document.createElement('div');
     confirmModal.className = 'admin-review-modal-overlay';
-    confirmModal.style.zIndex = '10002';
+    confirmModal.style.zIndex = '200000';
 
     confirmModal.innerHTML = `
       <div class="admin-review-modal" style="max-width: 500px;">
@@ -3797,7 +3797,7 @@ class AdminDashboard {
   openRegistryObservationsModal(org, parentModal) {
     const obsModal = document.createElement('div');
     obsModal.className = 'admin-review-modal-overlay';
-    obsModal.style.zIndex = '10002';
+    obsModal.style.zIndex = '200000';
 
     obsModal.innerHTML = `
       <div class="admin-review-modal" style="max-width: 550px;">
