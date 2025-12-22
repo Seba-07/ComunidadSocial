@@ -13,6 +13,7 @@ import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
 import { pdfService } from '../../services/PDFService.js';
+import JSZip from 'jszip';
 
 // Importar utilidades compartidas
 import {
@@ -1398,6 +1399,40 @@ class AdminDashboard {
     // Botón para enviar a Registro Civil (desde tab Registro Civil)
     modal.querySelector('.btn-send-to-registry-tab')?.addEventListener('click', () => {
       this.openSendToRegistryModal(org, modal);
+    });
+
+    // Botones para navegar a secciones de documentos
+    modal.querySelectorAll('.btn-goto-docs-section').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const section = btn.dataset.section;
+        // Cambiar a la pestaña de Documentos
+        const docsTab = modal.querySelector('.review-tab[data-tab="documents"]');
+        if (docsTab) {
+          docsTab.click();
+          // Esperar a que se renderice y hacer scroll a la sección
+          setTimeout(() => {
+            let targetElement = null;
+            if (section === 'oficiales') {
+              targetElement = modal.querySelector('.docs-subtitle');
+            } else if (section === 'declaraciones') {
+              targetElement = modal.querySelector('h4.docs-subtitle:nth-of-type(2)') ||
+                              [...modal.querySelectorAll('.docs-subtitle')].find(el => el.textContent.includes('Declaraciones'));
+            } else if (section === 'certificados') {
+              targetElement = [...modal.querySelectorAll('.docs-subtitle')].find(el => el.textContent.includes('Certificados'));
+            }
+            if (targetElement) {
+              targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              targetElement.style.background = '#fef3c7';
+              setTimeout(() => { targetElement.style.background = ''; }, 2000);
+            }
+          }, 100);
+        }
+      });
+    });
+
+    // Botón para descargar carpeta de Registro Civil
+    modal.querySelector('.btn-download-registry-package')?.addEventListener('click', () => {
+      this.downloadRegistryPackage(org);
     });
 
     // Botón para confirmar Registro Civil (desde sent_registry)
@@ -3022,18 +3057,47 @@ class AdminDashboard {
             Documentos a Enviar
           </h4>
           <div style="display: grid; gap: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
-              <span style="color: #374151;">Documentos Oficiales</span>
-              <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.oficiales}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
-              <span style="color: #374151;">Declaraciones Juradas</span>
-              <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.declaraciones}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px;">
-              <span style="color: #374151;">Certificados de Antecedentes</span>
-              <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.certificados}</span>
-            </div>
+            <button class="btn-goto-docs-section" data-section="oficiales" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <span style="color: #374151; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Documentos Oficiales
+              </span>
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.oficiales}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </button>
+            <button class="btn-goto-docs-section" data-section="declaraciones" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <span style="color: #374151; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Declaraciones Juradas
+              </span>
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.declaraciones}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </button>
+            <button class="btn-goto-docs-section" data-section="certificados" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; width: 100%; transition: all 0.2s;">
+              <span style="color: #374151; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Certificados de Antecedentes
+              </span>
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.certificados}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </button>
           </div>
         </div>
 
@@ -3055,29 +3119,55 @@ class AdminDashboard {
           </div>
         </div>
 
-        <button class="btn-send-to-registry-tab" data-org-id="${orgId}" style="
-          width: 100%;
-          padding: 16px 24px;
-          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 16px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: all 0.2s;
-          box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-        ">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-          Enviar al Registro Civil
-        </button>
+        <div style="display: grid; gap: 12px;">
+          <button class="btn-download-registry-package" data-org-id="${orgId}" style="
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+          ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Descargar Carpeta para Registro Civil
+          </button>
+          <button class="btn-send-to-registry-tab" data-org-id="${orgId}" style="
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+          ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Marcar como Enviado al Registro Civil
+          </button>
+        </div>
       </div>
     `;
   }
@@ -3295,6 +3385,199 @@ class AdminDashboard {
         showToast('Error al disolver la organización', 'error');
       }
     });
+  }
+
+  /**
+   * Descargar carpeta ZIP con toda la documentación para el Registro Civil
+   */
+  async downloadRegistryPackage(org) {
+    const orgName = getOrgName(org) || 'Organizacion';
+    const safeOrgName = orgName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '').replace(/\s+/g, '_');
+
+    // Mostrar loading
+    const loadingToast = document.createElement('div');
+    loadingToast.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 24px 32px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100000; text-align: center;';
+    loadingToast.innerHTML = `
+      <div style="width: 48px; height: 48px; border: 4px solid #e5e7eb; border-top-color: #059669; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+      <p style="margin: 0; font-weight: 600; color: #1f2937;">Generando carpeta ZIP...</p>
+      <p style="margin: 8px 0 0; font-size: 13px; color: #6b7280;">Esto puede tomar unos segundos</p>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    `;
+    document.body.appendChild(loadingToast);
+
+    try {
+      const zip = new JSZip();
+      const directorio = org.provisionalDirectorio || {};
+
+      // Carpeta 1: Documentos Oficiales
+      const oficiales = zip.folder('01_Documentos_Oficiales');
+
+      // Acta de Asamblea
+      try {
+        const actaPdf = pdfService.generateActaAsamblea(org);
+        if (actaPdf) {
+          const actaBlob = pdfService.getPDFBlob(actaPdf);
+          oficiales.file('01_Acta_Asamblea_Constitutiva.pdf', actaBlob);
+        }
+      } catch (e) { console.warn('Error generando Acta:', e); }
+
+      // Lista de Socios
+      try {
+        const listaPdf = pdfService.generateListaSocios(org);
+        if (listaPdf) {
+          const listaBlob = pdfService.getPDFBlob(listaPdf);
+          oficiales.file('02_Lista_Socios_Constitucion.pdf', listaBlob);
+        }
+      } catch (e) { console.warn('Error generando Lista:', e); }
+
+      // Certificado del Ministro de Fe
+      try {
+        const certPdf = pdfService.generateCertificado(org);
+        if (certPdf) {
+          const certBlob = pdfService.getPDFBlob(certPdf);
+          oficiales.file('03_Certificado_Ministro_Fe.pdf', certBlob);
+        }
+      } catch (e) { console.warn('Error generando Certificado:', e); }
+
+      // Certificación Municipal
+      try {
+        const certMunPdf = pdfService.generateCertificacion(org);
+        if (certMunPdf) {
+          const certMunBlob = pdfService.getPDFBlob(certMunPdf);
+          oficiales.file('04_Certificacion_Municipal.pdf', certMunBlob);
+        }
+      } catch (e) { console.warn('Error generando Certificación:', e); }
+
+      // Depósito de Antecedentes
+      try {
+        const depPdf = pdfService.generateDepositoAntecedentes(org);
+        if (depPdf) {
+          const depBlob = pdfService.getPDFBlob(depPdf);
+          oficiales.file('05_Deposito_Antecedentes.pdf', depBlob);
+        }
+      } catch (e) { console.warn('Error generando Depósito:', e); }
+
+      // Carpeta 2: Declaraciones Juradas
+      const declaraciones = zip.folder('02_Declaraciones_Juradas');
+      let declNum = 1;
+
+      // Declaración del Presidente
+      if (directorio.president) {
+        try {
+          const declPdf = pdfService.generateDeclaracionJurada(org, directorio.president);
+          if (declPdf) {
+            const declBlob = pdfService.getPDFBlob(declPdf);
+            const fileName = `${String(declNum++).padStart(2, '0')}_Declaracion_Presidente_${directorio.president.name.replace(/\s+/g, '_')}.pdf`;
+            declaraciones.file(fileName, declBlob);
+          }
+        } catch (e) { console.warn('Error generando declaración presidente:', e); }
+      }
+
+      // Declaración del Secretario
+      if (directorio.secretary) {
+        try {
+          const declPdf = pdfService.generateDeclaracionJurada(org, directorio.secretary);
+          if (declPdf) {
+            const declBlob = pdfService.getPDFBlob(declPdf);
+            const fileName = `${String(declNum++).padStart(2, '0')}_Declaracion_Secretario_${directorio.secretary.name.replace(/\s+/g, '_')}.pdf`;
+            declaraciones.file(fileName, declBlob);
+          }
+        } catch (e) { console.warn('Error generando declaración secretario:', e); }
+      }
+
+      // Declaración del Tesorero
+      if (directorio.treasurer) {
+        try {
+          const declPdf = pdfService.generateDeclaracionJurada(org, directorio.treasurer);
+          if (declPdf) {
+            const declBlob = pdfService.getPDFBlob(declPdf);
+            const fileName = `${String(declNum++).padStart(2, '0')}_Declaracion_Tesorero_${directorio.treasurer.name.replace(/\s+/g, '_')}.pdf`;
+            declaraciones.file(fileName, declBlob);
+          }
+        } catch (e) { console.warn('Error generando declaración tesorero:', e); }
+      }
+
+      // Declaraciones de miembros adicionales
+      if (directorio.additionalMembers) {
+        for (const member of directorio.additionalMembers) {
+          try {
+            const declPdf = pdfService.generateDeclaracionJurada(org, member);
+            if (declPdf) {
+              const declBlob = pdfService.getPDFBlob(declPdf);
+              const cargo = member.cargo || 'Director';
+              const fileName = `${String(declNum++).padStart(2, '0')}_Declaracion_${cargo}_${member.name.replace(/\s+/g, '_')}.pdf`;
+              declaraciones.file(fileName, declBlob);
+            }
+          } catch (e) { console.warn('Error generando declaración adicional:', e); }
+        }
+      }
+
+      // Carpeta 3: Certificados de Antecedentes
+      const certificados = zip.folder('03_Certificados_Antecedentes');
+      const certs = org.certificatesStep5 || {};
+
+      const certMapping = {
+        presidente: { name: directorio.president?.name, cargo: 'Presidente' },
+        secretario: { name: directorio.secretary?.name, cargo: 'Secretario' },
+        tesorero: { name: directorio.treasurer?.name, cargo: 'Tesorero' },
+        comision1: { name: org.comisionElectoral?.[0]?.name, cargo: 'Comision_Electoral_1' },
+        comision2: { name: org.comisionElectoral?.[1]?.name, cargo: 'Comision_Electoral_2' },
+        comision3: { name: org.comisionElectoral?.[2]?.name, cargo: 'Comision_Electoral_3' }
+      };
+
+      let certNum = 1;
+      for (const [key, info] of Object.entries(certMapping)) {
+        const cert = certs[key];
+        if (cert && info.name) {
+          try {
+            let certData, certType;
+            if (cert.base64) {
+              certData = cert.base64;
+              certType = cert.type || 'image/png';
+            } else if (cert.data) {
+              certData = cert.data;
+              certType = cert.type || 'image/png';
+            } else if (typeof cert === 'string') {
+              certData = cert;
+              certType = 'image/png';
+            }
+
+            if (certData) {
+              const extension = certType.includes('pdf') ? 'pdf' : certType.includes('png') ? 'png' : 'jpg';
+              const fileName = `${String(certNum++).padStart(2, '0')}_Certificado_${info.cargo}_${info.name.replace(/\s+/g, '_')}.${extension}`;
+
+              // Convertir base64 a blob
+              const byteCharacters = atob(certData.replace(/^data:.*?;base64,/, ''));
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              certificados.file(fileName, byteArray);
+            }
+          } catch (e) { console.warn(`Error agregando certificado ${key}:`, e); }
+        }
+      }
+
+      // Generar y descargar el ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Registro_Civil_${safeOrgName}_${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      loadingToast.remove();
+      showToast('Carpeta ZIP descargada correctamente', 'success');
+
+    } catch (error) {
+      console.error('Error generando ZIP:', error);
+      loadingToast.remove();
+      showToast('Error al generar la carpeta ZIP', 'error');
+    }
   }
 
   /**
