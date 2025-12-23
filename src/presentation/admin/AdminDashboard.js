@@ -808,7 +808,7 @@ class AdminDashboard {
         </div>
 
         <div class="review-modal-tabs">
-          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+          ${(org.status === ORG_STATUS.MINISTRO_APPROVED || org.status === ORG_STATUS.SENT_TO_REGISTRY) ? `
             <button class="review-tab active" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -863,7 +863,7 @@ class AdminDashboard {
         ${this.renderNextStepIndicator(org)}
 
         <div class="review-modal-body">
-          ${org.status === ORG_STATUS.MINISTRO_APPROVED ? `
+          ${(org.status === ORG_STATUS.MINISTRO_APPROVED || org.status === ORG_STATUS.SENT_TO_REGISTRY) ? `
             <div class="review-tab-content active" id="tab-registro-civil">
               ${this.renderRegistroCivilTab(org)}
             </div>
@@ -1429,6 +1429,16 @@ class AdminDashboard {
     // Botón para descargar carpeta de Registro Civil
     modal.querySelector('.btn-download-registry-package')?.addEventListener('click', () => {
       this.downloadRegistryPackage(org);
+    });
+
+    // Botón para confirmar Registro Civil (desde tab de Registro Civil)
+    modal.querySelector('.btn-confirm-registry-tab')?.addEventListener('click', () => {
+      this.openConfirmRegistryModal(org, modal);
+    });
+
+    // Botón para agregar observaciones del Registro Civil (desde tab de Registro Civil)
+    modal.querySelector('.btn-registry-observations-tab')?.addEventListener('click', () => {
+      this.openRegistryObservationsModal(org, modal);
     });
 
     // Botón para confirmar Registro Civil (desde sent_registry)
@@ -3097,50 +3107,119 @@ class AdminDashboard {
           </div>
         </div>
 
-        <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-            <div>
-              <div style="font-weight: 600; color: #854d0e; margin-bottom: 4px;">Importante</div>
-              <p style="margin: 0; color: #713f12; font-size: 13px; line-height: 1.5;">
-                Una vez enviada la solicitud al Registro Civil, deberá esperar su respuesta.
-                El Registro Civil puede aprobar la inscripción o solicitar correcciones que serán
-                notificadas al usuario correspondiente.
-              </p>
+        ${org.status === ORG_STATUS.SENT_TO_REGISTRY ? `
+          <!-- Estado: Enviada al Registro Civil - Esperando respuesta -->
+          <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <div style="background: #3b82f6; padding: 10px; border-radius: 50%;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h4 style="margin: 0; color: #1e40af; font-size: 16px;">Esperando Respuesta del Registro Civil</h4>
+                <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;">La solicitud fue enviada. Cuando reciba respuesta, seleccione una opcion:</p>
+              </div>
+            </div>
+
+            <div style="display: grid; gap: 12px;">
+              <button class="btn-confirm-registry-tab" data-org-id="${orgId}" style="
+                width: 100%;
+                padding: 16px 24px;
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-weight: 600;
+                font-size: 15px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                transition: all 0.2s;
+                box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+              ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Registro Civil Aprobo la Organizacion
+              </button>
+
+              <button class="btn-registry-observations-tab" data-org-id="${orgId}" style="
+                width: 100%;
+                padding: 16px 24px;
+                background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-weight: 600;
+                font-size: 15px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                transition: all 0.2s;
+                box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+              ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Registro Civil Envio Observaciones
+              </button>
             </div>
           </div>
-        </div>
+        ` : `
+          <!-- Estado: Listo para enviar al Registro Civil -->
+          <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <div>
+                <div style="font-weight: 600; color: #854d0e; margin-bottom: 4px;">Importante</div>
+                <p style="margin: 0; color: #713f12; font-size: 13px; line-height: 1.5;">
+                  Una vez enviada la solicitud al Registro Civil, deberá esperar su respuesta.
+                  El Registro Civil puede aprobar la inscripción o solicitar correcciones que serán
+                  notificadas al usuario correspondiente.
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <div style="display: grid; gap: 12px;">
-          <button class="btn-download-registry-package" data-org-id="${orgId}" style="
-            width: 100%;
-            padding: 14px 24px;
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-          ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Descargar Carpeta para Registro Civil
-          </button>
-        </div>
+          <div style="display: grid; gap: 12px;">
+            <button class="btn-download-registry-package" data-org-id="${orgId}" style="
+              width: 100%;
+              padding: 14px 24px;
+              background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+              color: white;
+              border: none;
+              border-radius: 10px;
+              font-weight: 600;
+              font-size: 15px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              transition: all 0.2s;
+              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+            ">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Descargar Carpeta para Registro Civil
+            </button>
+          </div>
+        `}
       </div>
     `;
   }
