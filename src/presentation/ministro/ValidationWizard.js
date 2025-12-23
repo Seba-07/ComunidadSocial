@@ -374,7 +374,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // Función para abrir modal de firma grande
   const openSignatureModal = (signatureKey, title, onSave) => {
     const sigModal = document.createElement('div');
-    sigModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 250000; padding: 20px; box-sizing: border-box;';
+    sigModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; box-sizing: border-box;';
     sigModal.innerHTML = `
       <div style="background: white; border-radius: 20px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.4);">
         <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px 24px;">
@@ -526,7 +526,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // Crear modal
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
-  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 150000; padding: 20px; box-sizing: border-box;';
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; box-sizing: border-box;';
 
   // Función para renderizar el wizard
   const renderWizard = (skipSave = false) => {
@@ -1533,7 +1533,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     const estatutosContent = wizardData.estatutos || generateDefaultEstatutos();
 
     const estatutosModal = document.createElement('div');
-    estatutosModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200000; padding: 20px; box-sizing: border-box;';
+    estatutosModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; box-sizing: border-box;';
 
     estatutosModal.innerHTML = `
       <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
@@ -1841,7 +1841,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     const availableMembers = members.filter(m => !existingIds.has(m.id));
 
     const selModal = document.createElement('div');
-    selModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200000;';
+    selModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1050;';
     selModal.innerHTML = `
       <div style="background: white; border-radius: 16px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
         <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
@@ -1889,7 +1889,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
   // Modal para persona externa
   const showExternalPersonModal = () => {
     const extModal = document.createElement('div');
-    extModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200000;';
+    extModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1050;';
     extModal.innerHTML = `
       <div style="background: white; border-radius: 16px; max-width: 400px; width: 90%; padding: 24px;">
         <h3 style="margin: 0 0 16px; font-size: 18px; color: #1f2937;">Agregar Persona Externa</h3>
@@ -1941,7 +1941,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
 
     // Confirmación final
     const confirmModal = document.createElement('div');
-    confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200000;';
+    confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1050;';
     confirmModal.innerHTML = `
       <div style="background: white; border-radius: 20px; max-width: 450px; width: 90%; padding: 32px; text-align: center;">
         <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
@@ -1986,7 +1986,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
   const showToast = (message, type = 'info') => {
     const toast = document.createElement('div');
     toast.style.cssText = `
-      position: fixed; top: 24px; right: 24px; z-index: 300000;
+      position: fixed; top: 24px; right: 24px; z-index: 1080;
       background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
       color: white; padding: 16px 24px; border-radius: 12px;
       font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2);

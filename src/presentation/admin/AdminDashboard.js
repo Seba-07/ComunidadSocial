@@ -3448,7 +3448,7 @@ class AdminDashboard {
 
     // Mostrar loading
     const loadingToast = document.createElement('div');
-    loadingToast.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 24px 32px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100000; text-align: center;';
+    loadingToast.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 24px 32px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1080; text-align: center;';
     loadingToast.innerHTML = `
       <div style="width: 48px; height: 48px; border: 4px solid #e5e7eb; border-top-color: #059669; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
       <p style="margin: 0; font-weight: 600; color: #1f2937;">Generando carpeta ZIP...</p>
@@ -5317,7 +5317,7 @@ class AdminDashboard {
 
       const previewModal = document.createElement('div');
       previewModal.className = 'pdf-preview-modal';
-      previewModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 500000;';
+      previewModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050;';
       previewModal.innerHTML = `
         <div style="background: white; border-radius: 12px; width: 90%; max-width: 900px; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
           <div style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">

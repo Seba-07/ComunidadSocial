@@ -151,6 +151,21 @@
   --shadow-primary: 0 4px 14px 0 rgba(110, 180, 63, 0.39);
   --shadow-success: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
   --shadow-error: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+  --shadow-info: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+  --shadow-header: 0 4px 20px rgba(30, 90, 61, 0.25);
+
+  /* ============================================
+     GRADIENTES CORPORATIVOS
+     ============================================ */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  --gradient-primary-light: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+  --gradient-header: linear-gradient(135deg, #2d5a3d 0%, #1e4a2d 100%);
+  --gradient-header-light: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
+  --gradient-secondary: linear-gradient(135deg, #f0f7f0 0%, #e8f2e8 100%);
+  --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-success-dark));
+  --gradient-error: linear-gradient(135deg, var(--color-error), var(--color-error-dark));
+  --gradient-info: linear-gradient(135deg, var(--color-info), var(--color-info-dark));
+  --gradient-warning: linear-gradient(135deg, var(--color-warning), var(--color-warning-dark));
 
   /* ============================================
      TRANSICIONES
