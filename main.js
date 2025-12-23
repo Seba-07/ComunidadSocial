@@ -202,11 +202,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.removeItem('isAuthenticated');
   }
 
-  // Click en logo para volver al inicio
+  // Click en logo para volver al inicio (o admin si es administrador)
   const logoHomeLink = document.getElementById('logo-home-link');
   if (logoHomeLink) {
     logoHomeLink.addEventListener('click', (e) => {
       e.preventDefault();
+      // Verificar si el usuario es admin
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.role === 'ADMIN') {
+            appState.navigateTo('admin');
+            return;
+          }
+        } catch (err) {
+          console.error('Error parsing user data:', err);
+        }
+      }
       appState.navigateTo('home');
     });
   }
