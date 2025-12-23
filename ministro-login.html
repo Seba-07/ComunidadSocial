@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#7fa99b">
+    <meta name="theme-color" content="#2D9A8B">
     <title>Login Ministro de Fe - Comunidad Renca</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <!-- Design System -->
@@ -15,7 +15,7 @@
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, var(--renca-teal-dark, #1F7A6D) 0%, var(--renca-teal, #2D9A8B) 50%, var(--renca-teal-light, #4CB8A8) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -39,14 +39,14 @@
         .login-icon {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            background: linear-gradient(135deg, var(--renca-teal, #2D9A8B) 0%, var(--renca-teal-dark, #1F7A6D) 100%);
             border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 40px;
             margin: 0 auto 20px;
-            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 16px rgba(45, 154, 139, 0.3);
         }
 
         .login-title {
@@ -86,8 +86,8 @@
 
         .form-group input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: var(--renca-teal, #2D9A8B);
+            box-shadow: 0 0 0 3px rgba(45, 154, 139, 0.15);
         }
 
         .form-group input.error {
@@ -108,7 +108,7 @@
         .btn-login {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            background: linear-gradient(135deg, var(--renca-teal, #2D9A8B) 0%, var(--renca-teal-dark, #1F7A6D) 100%);
             color: white;
             border: none;
             border-radius: 10px;
@@ -121,7 +121,7 @@
 
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 8px 16px rgba(45, 154, 139, 0.4);
         }
 
         .btn-login:disabled {
@@ -138,7 +138,7 @@
         }
 
         .login-footer a {
-            color: #3b82f6;
+            color: var(--renca-teal, #2D9A8B);
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
