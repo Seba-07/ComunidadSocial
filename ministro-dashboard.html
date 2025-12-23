@@ -9,6 +9,7 @@
     <!-- Design System -->
     <link rel="stylesheet" href="/src/shared/styles/variables.css">
     <link rel="stylesheet" href="/src/shared/styles/components.css">
+    <link rel="stylesheet" href="/src/shared/styles/redesign.css">
     <link rel="stylesheet" href="/styles.css">
     <style>
         * {
@@ -28,15 +29,15 @@
             flex-direction: column;
         }
 
-        /* ===== HEADER ===== */
+        /* ===== HEADER - Nuevo Diseno Unificado ===== */
         .dashboard-header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            background: linear-gradient(135deg, var(--cs-primary-dark, #3d8229) 0%, var(--cs-primary, #4a9b32) 50%, var(--cs-primary-light, #5fb842) 100%);
             color: white;
-            padding: 24px 32px;
+            padding: 20px 32px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.25);
+            box-shadow: var(--cs-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1)), 0 4px 20px rgba(74, 155, 50, 0.25);
         }
 
         .header-content {
@@ -536,13 +537,13 @@
         }
 
         .filter-chip:hover {
-            border-color: #3b82f6;
-            color: #3b82f6;
+            border-color: var(--cs-primary, #4a9b32);
+            color: var(--cs-primary, #4a9b32);
         }
 
         .filter-chip.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, var(--cs-primary-dark, #3d8229) 100%);
+            border-color: var(--cs-primary, #4a9b32);
             color: white;
         }
 
@@ -580,12 +581,12 @@
         }
 
         .tab-btn:hover {
-            color: #3b82f6;
+            color: var(--cs-primary, #4a9b32);
         }
 
         .tab-btn.active {
-            color: #3b82f6;
-            border-bottom-color: #3b82f6;
+            color: var(--cs-primary, #4a9b32);
+            border-bottom-color: var(--cs-primary, #4a9b32);
         }
 
         /* ===== TAB CONTENT ===== */
@@ -850,12 +851,14 @@
         }
 
         .btn-primary {
-            background: #3b82f6;
+            background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, var(--cs-primary-dark, #3d8229) 100%);
             color: white;
+            box-shadow: 0 2px 8px rgba(74, 155, 50, 0.3);
         }
 
         .btn-primary:hover {
-            background: #2563eb;
+            background: linear-gradient(135deg, var(--cs-primary-light, #5fb842) 0%, var(--cs-primary, #4a9b32) 100%);
+            box-shadow: 0 4px 12px rgba(74, 155, 50, 0.4);
         }
 
         .btn-secondary {

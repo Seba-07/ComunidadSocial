@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#065f46">
+    <meta name="theme-color" content="#4a9b32">
     <title>Iniciar Sesión - Comunidad Renca</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <!-- Design System -->
     <link rel="stylesheet" href="/src/shared/styles/variables.css">
     <link rel="stylesheet" href="/src/shared/styles/components.css">
+    <link rel="stylesheet" href="/src/shared/styles/redesign.css">
     <link rel="stylesheet" href="/styles.css">
     <style>
         .auth-page {
             min-height: 100vh;
             display: flex;
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            background: linear-gradient(135deg, var(--cs-primary-dark, #3d8229) 0%, var(--cs-primary, #4a9b32) 50%, var(--cs-primary-light, #5fb842) 100%);
             position: relative;
             overflow: hidden;
         }
@@ -105,7 +106,7 @@
         .auth-card h3 {
             font-size: 32px;
             font-weight: 700;
-            color: #065f46;
+            color: var(--cs-primary, #4a9b32);
             margin: 0 0 12px 0;
         }
 
@@ -139,7 +140,7 @@
 
         .auth-tab.active {
             background: white;
-            color: #065f46;
+            color: var(--cs-primary, #4a9b32);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
@@ -175,7 +176,7 @@
 
         .form-group input:focus {
             outline: none;
-            border-color: #065f46;
+            border-color: var(--cs-primary, #4a9b32);
             box-shadow: 0 0 0 4px rgba(6, 95, 70, 0.1);
         }
 
@@ -197,7 +198,7 @@
         .btn-auth {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, #047857 100%);
             color: white;
             border: none;
             border-radius: 12px;
@@ -318,7 +319,7 @@
                         </button>
 
                         <div class="form-footer">
-                            <a href="#" id="forgot-password-link" style="color: #065f46; font-weight: 600; text-decoration: none;">
+                            <a href="#" id="forgot-password-link" style="color: var(--cs-primary, #4a9b32); font-weight: 600; text-decoration: none;">
                                 ¿Olvidaste tu contraseña?
                             </a>
                             <div style="margin-top: 12px; color: #6b7280;">
@@ -418,7 +419,7 @@
     <div id="forgot-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; align-items: center; justify-content: center;">
         <div style="background: white; border-radius: 24px; padding: 48px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="margin: 0; color: #065f46; font-size: 28px; font-weight: 700;">Recuperar Contraseña</h3>
+                <h3 style="margin: 0; color: var(--cs-primary, #4a9b32); font-size: 28px; font-weight: 700;">Recuperar Contraseña</h3>
                 <button id="close-modal" style="background: none; border: none; font-size: 32px; color: #6b7280; cursor: pointer; line-height: 1;">&times;</button>
             </div>
             <p style="color: #6b7280; margin-bottom: 24px; font-size: 16px;">
@@ -440,9 +441,9 @@
                 </button>
             </form>
             <div id="password-result" style="display: none; margin-top: 24px; padding: 20px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px;">
-                <p style="margin: 0 0 12px 0; color: #065f46; font-weight: 600; font-size: 16px;">✅ Contraseña encontrada:</p>
+                <p style="margin: 0 0 12px 0; color: var(--cs-primary, #4a9b32); font-weight: 600; font-size: 16px;">✅ Contraseña encontrada:</p>
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <code id="password-display" style="flex: 1; padding: 12px 16px; background: white; border: 2px solid #10b981; border-radius: 8px; font-size: 18px; font-weight: 700; color: #065f46; letter-spacing: 2px;"></code>
+                    <code id="password-display" style="flex: 1; padding: 12px 16px; background: white; border: 2px solid #10b981; border-radius: 8px; font-size: 18px; font-weight: 700; color: var(--cs-primary, #4a9b32); letter-spacing: 2px;"></code>
                     <button id="copy-password" style="padding: 12px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
                         Copiar
                     </button>
