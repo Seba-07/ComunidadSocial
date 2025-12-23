@@ -223,7 +223,7 @@ const ESTADOS = {
   'pending_review': { label: 'Pendiente Revisión', color: 'orange', icon: 'eye' },
   'in_review': { label: 'En Revisión', color: 'blue', icon: 'search' },
   'rejected': { label: 'Rechazado', color: 'red', icon: 'x' },
-  'sent_registry': { label: 'Enviado a Registro', color: 'purple', icon: 'send' },
+  'sent_registry': { label: 'Enviada al Registro Civil', color: 'cyan', icon: 'send' },
   'approved': { label: 'Aprobado', color: 'green', icon: 'check-circle' },
   'dissolved': { label: 'Disuelta', color: 'gray', icon: 'archive' }
 };

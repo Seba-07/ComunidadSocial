@@ -1396,10 +1396,6 @@ class AdminDashboard {
       this.openSendToRegistryModal(org, modal);
     });
 
-    // Botón para enviar a Registro Civil (desde tab Registro Civil)
-    modal.querySelector('.btn-send-to-registry-tab')?.addEventListener('click', () => {
-      this.openSendToRegistryModal(org, modal);
-    });
 
     // Botones para navegar a secciones de documentos
     modal.querySelectorAll('.btn-goto-docs-section').forEach(btn => {
@@ -3144,29 +3140,6 @@ class AdminDashboard {
             </svg>
             Descargar Carpeta para Registro Civil
           </button>
-          <button class="btn-send-to-registry-tab" data-org-id="${orgId}" style="
-            width: 100%;
-            padding: 14px 24px;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-          ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-            Marcar como Enviado al Registro Civil
-          </button>
         </div>
       </div>
     `;
@@ -3779,7 +3752,8 @@ class AdminDashboard {
       };
 
       // Actualizar estado a approved
-      const result = organizationsService.updateStatus(org.id, ORG_STATUS.APPROVED, comment);
+      const orgId = org._id || org.id;
+      const result = organizationsService.updateStatus(orgId, ORG_STATUS.APPROVED, comment);
       if (result) {
         showToast('¡Organización aprobada exitosamente!', 'success');
         confirmModal.remove();
@@ -3884,7 +3858,8 @@ class AdminDashboard {
       };
 
       // Actualizar estado a registry_observations
-      const result = organizationsService.updateStatus(org.id, ORG_STATUS.REGISTRY_OBSERVATIONS, comment);
+      const orgId = org._id || org.id;
+      const result = organizationsService.updateStatus(orgId, ORG_STATUS.REGISTRY_OBSERVATIONS, comment);
       if (result) {
         showToast('Observaciones registradas. El usuario será notificado.', 'success');
         obsModal.remove();
