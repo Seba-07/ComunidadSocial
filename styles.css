@@ -18965,14 +18965,15 @@ a.header-logo:hover {
 .muni-panel {
     background: white;
     border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
-    border: 1px solid #e5e7eb;
+    overflow: hidden;
 }
 
 .muni-panel-header {
+    background: linear-gradient(135deg, #f0f7ee 0%, #e8f5e4 100%);
     padding: 20px 24px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #d4e8cf;
 }
 
 .muni-panel-top {
@@ -18981,7 +18982,7 @@ a.header-logo:hover {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .muni-panel-title {
@@ -19015,7 +19016,7 @@ a.header-logo:hover {
 .muni-panel-title p {
     font-size: 14px;
     margin: 0;
-    color: #6b7280;
+    color: #4b5563;
 }
 
 .muni-nav-buttons {
@@ -19028,20 +19029,21 @@ a.header-logo:hover {
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: white;
+    border: 1px solid #d1d5db;
     border-radius: 10px;
     color: #374151;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .muni-nav-btn:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-    color: var(--cs-primary, #4a9b32);
+    background: var(--cs-primary, #4a9b32);
+    border-color: var(--cs-primary, #4a9b32);
+    color: white;
 }
 
 .muni-nav-btn svg {
@@ -19050,33 +19052,34 @@ a.header-logo:hover {
 }
 
 .muni-nav-btn:hover svg {
-    color: var(--cs-primary, #4a9b32);
+    color: white;
 }
 
-/* Filtros - Diseño moderno */
+/* Filtros - Una sola fila en desktop */
 .muni-filters {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
 }
 
 .muni-filter-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    gap: 5px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     color: #4b5563;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .muni-filter-chip:hover {
-    background: #f3f4f6;
     border-color: var(--cs-primary, #4a9b32);
     color: var(--cs-primary, #4a9b32);
 }
@@ -19085,17 +19088,18 @@ a.header-logo:hover {
     background: var(--cs-primary, #4a9b32);
     border-color: var(--cs-primary, #4a9b32);
     color: white;
+    box-shadow: 0 2px 8px rgba(74, 155, 50, 0.3);
 }
 
 .muni-filter-chip .chip-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    background: rgba(0, 0, 0, 0.06);
-    border-radius: 10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 9px;
     font-size: 11px;
     font-weight: 700;
 }
@@ -19108,6 +19112,7 @@ a.header-logo:hover {
 .muni-search-bar {
     position: relative;
     padding: 16px 24px;
+    background: white;
 }
 
 .muni-search-bar .search-icon {
@@ -19142,13 +19147,20 @@ a.header-logo:hover {
 }
 
 /* Responsive Tablet */
+@media (max-width: 1100px) {
+    .muni-filter-chip {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+}
+
 @media (max-width: 900px) {
     .muni-panel-header {
         padding: 16px 20px;
     }
 
     .muni-panel-top {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
     .muni-nav-btn span {
@@ -19158,6 +19170,17 @@ a.header-logo:hover {
     .muni-nav-btn {
         padding: 10px 12px;
     }
+
+    .muni-filter-chip {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .muni-filter-chip .chip-count {
+        min-width: 16px;
+        height: 16px;
+        font-size: 10px;
+    }
 }
 
 /* Responsive Mobile */
@@ -19165,7 +19188,6 @@ a.header-logo:hover {
     .muni-panel {
         border-radius: 12px;
         margin: 0 -8px 16px;
-        border: none;
     }
 
     .muni-panel-header {
@@ -19173,7 +19195,7 @@ a.header-logo:hover {
     }
 
     .muni-panel-top {
-        margin-bottom: 14px;
+        margin-bottom: 12px;
         gap: 12px;
     }
 
@@ -19216,23 +19238,24 @@ a.header-logo:hover {
     /* Filtros en grid para móvil */
     .muni-filters {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 6px;
+        flex-wrap: wrap;
     }
 
     .muni-filter-chip {
-        padding: 8px 6px;
-        font-size: 11px;
+        padding: 8px 4px;
+        font-size: 10px;
         justify-content: center;
         text-align: center;
         border-radius: 6px;
     }
 
     .muni-filter-chip .chip-count {
-        min-width: 16px;
-        height: 16px;
-        padding: 0 4px;
-        font-size: 10px;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 3px;
+        font-size: 9px;
     }
 
     .muni-search-bar {
@@ -19269,13 +19292,12 @@ a.header-logo:hover {
         justify-content: center;
     }
 
-    /* Filtros 2 columnas en pantallas muy pequeñas */
+    /* Filtros 4 columnas, primera fila "Todas" sola */
     .muni-filters {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    /* Primera fila con "Todas" ocupando todo el ancho */
     .muni-filter-chip:first-child {
-        grid-column: span 2;
+        grid-column: span 3;
     }
 }
