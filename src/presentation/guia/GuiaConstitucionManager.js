@@ -147,9 +147,12 @@ class GuiaConstitucionManager {
       });
     }
 
-    // Cargar contenido actual en el editor
-    if (this.quill) {
-      this.quill.root.innerHTML = this.currentContent;
+    // Cargar contenido actual en el editor usando el método correcto de Quill
+    if (this.quill && this.currentContent) {
+      // Limpiar el editor primero
+      this.quill.setContents([]);
+      // Usar dangerouslyPasteHTML para cargar HTML correctamente
+      this.quill.clipboard.dangerouslyPasteHTML(0, this.currentContent);
     }
   }
 
