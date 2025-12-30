@@ -195,9 +195,7 @@
     width: auto;
     object-fit: contain;
     transition: var(--transition-base);
-    border-radius: var(--radius-md);
-    background: white;
-    padding: 4px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .header-logo:hover .logo-img {
