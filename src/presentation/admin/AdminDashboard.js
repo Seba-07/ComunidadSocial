@@ -146,9 +146,9 @@ class AdminDashboard {
     this.currentView = 'schedule';
 
     // Ocultar elementos de la vista de solicitudes
-    const filterBar = document.querySelector('.admin-unified-filter-bar');
+    const filterBar = document.querySelector('.muni-filters');
     if (filterBar) filterBar.style.display = 'none';
-    document.querySelector('.admin-toolbar').style.display = 'none';
+    document.querySelector('.muni-search-bar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
 
@@ -159,33 +159,33 @@ class AdminDashboard {
     // Cambiar texto del botón actual a "Volver a Solicitudes"
     const scheduleBtn = document.getElementById('btn-schedule-manager');
     scheduleBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      <span class="btn-text">Volver a Solicitudes</span>
+      <span>Volver</span>
     `;
 
     // Restaurar otros botones de manager a su estado original
     const ministroBtn = document.getElementById('btn-ministro-manager');
     ministroBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      <span class="btn-text">Gestionar Ministros</span>
+      <span>Ministros</span>
     `;
 
     const uvBtn = document.getElementById('btn-uv-manager');
     if (uvBtn) {
       uvBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span class="btn-text">Unidades Vecinales</span>
+        <span>Unidades Vecinales</span>
       `;
     }
 
@@ -202,9 +202,9 @@ class AdminDashboard {
     this.currentView = 'ministro';
 
     // Ocultar elementos de la vista de solicitudes
-    const filterBarM = document.querySelector('.admin-unified-filter-bar');
+    const filterBarM = document.querySelector('.muni-filters');
     if (filterBarM) filterBarM.style.display = 'none';
-    document.querySelector('.admin-toolbar').style.display = 'none';
+    document.querySelector('.muni-search-bar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('uv-manager-view').style.display = 'none';
@@ -216,33 +216,33 @@ class AdminDashboard {
     // Cambiar texto del botón actual a "Volver a Solicitudes"
     const ministroBtn = document.getElementById('btn-ministro-manager');
     ministroBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      <span class="btn-text">Volver a Solicitudes</span>
+      <span>Volver</span>
     `;
 
     // Restaurar otros botones de manager a su estado original
     const scheduleBtn = document.getElementById('btn-schedule-manager');
     scheduleBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="16" y1="2" x2="16" y2="6"></line>
         <line x1="8" y1="2" x2="8" y2="6"></line>
         <line x1="3" y1="10" x2="21" y2="10"></line>
       </svg>
-      <span class="btn-text">Gestionar Horarios</span>
+      <span>Horarios</span>
     `;
 
     const uvBtn = document.getElementById('btn-uv-manager');
     if (uvBtn) {
       uvBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span class="btn-text">Unidades Vecinales</span>
+        <span>Unidades Vecinales</span>
       `;
     }
 
@@ -259,9 +259,9 @@ class AdminDashboard {
     this.currentView = 'uv';
 
     // Ocultar elementos de la vista de solicitudes
-    const filterBarUV = document.querySelector('.admin-unified-filter-bar');
+    const filterBarUV = document.querySelector('.muni-filters');
     if (filterBarUV) filterBarUV.style.display = 'none';
-    document.querySelector('.admin-toolbar').style.display = 'none';
+    document.querySelector('.muni-search-bar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
@@ -273,34 +273,34 @@ class AdminDashboard {
     // Cambiar texto del botón actual a "Volver a Solicitudes"
     const uvBtn = document.getElementById('btn-uv-manager');
     uvBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      <span class="btn-text">Volver a Solicitudes</span>
+      <span>Volver</span>
     `;
 
     // Restaurar otros botones de manager a su estado original
     const scheduleBtn = document.getElementById('btn-schedule-manager');
     scheduleBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="16" y1="2" x2="16" y2="6"></line>
         <line x1="8" y1="2" x2="8" y2="6"></line>
         <line x1="3" y1="10" x2="21" y2="10"></line>
       </svg>
-      <span class="btn-text">Gestionar Horarios</span>
+      <span>Horarios</span>
     `;
 
     const ministroBtn = document.getElementById('btn-ministro-manager');
     ministroBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      <span class="btn-text">Gestionar Ministros</span>
+      <span>Ministros</span>
     `;
 
     // Inicializar UV manager si no existe
@@ -319,9 +319,9 @@ class AdminDashboard {
     await this.loadOrganizations();
 
     // Mostrar elementos de la vista de solicitudes
-    const filterBarApp = document.querySelector('.admin-unified-filter-bar');
-    if (filterBarApp) filterBarApp.style.display = 'flex';
-    document.querySelector('.admin-toolbar').style.display = 'flex';
+    const filterBarApp = document.querySelector('.muni-filters');
+    if (filterBarApp) filterBarApp.style.display = 'block';
+    document.querySelector('.muni-search-bar').style.display = 'block';
     document.getElementById('admin-applications-list').style.display = 'block';
 
     // Ocultar vistas de managers
@@ -336,13 +336,13 @@ class AdminDashboard {
     // Restaurar botón de horarios
     const scheduleBtn = document.getElementById('btn-schedule-manager');
     scheduleBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="16" y1="2" x2="16" y2="6"></line>
         <line x1="8" y1="2" x2="8" y2="6"></line>
         <line x1="3" y1="10" x2="21" y2="10"></line>
       </svg>
-      <span class="btn-text">Gestionar Horarios</span>
+      <span>Horarios</span>
     `;
     scheduleBtn.disabled = false;
     scheduleBtn.style.opacity = '1';
@@ -350,13 +350,13 @@ class AdminDashboard {
     // Restaurar botón de ministros
     const ministroBtn = document.getElementById('btn-ministro-manager');
     ministroBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      <span class="btn-text">Gestionar Ministros</span>
+      <span>Ministros</span>
     `;
     ministroBtn.disabled = false;
     ministroBtn.style.opacity = '1';
@@ -365,11 +365,11 @@ class AdminDashboard {
     const uvBtn = document.getElementById('btn-uv-manager');
     if (uvBtn) {
       uvBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span class="btn-text">Unidades Vecinales</span>
+        <span>Unidades Vecinales</span>
       `;
       uvBtn.disabled = false;
       uvBtn.style.opacity = '1';
@@ -381,11 +381,11 @@ class AdminDashboard {
    */
   setupEventListeners() {
     // Filtros (nueva barra unificada)
-    document.querySelectorAll('.admin-filter-chip').forEach(chip => {
+    document.querySelectorAll('.muni-filter-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
-        const target = e.target.closest('.admin-filter-chip');
+        const target = e.target.closest('.muni-filter-chip');
         if (!target) return;
-        document.querySelectorAll('.admin-filter-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.muni-filter-chip').forEach(c => c.classList.remove('active'));
         target.classList.add('active');
         this.currentFilter = target.dataset.filter;
         this.renderApplicationsList();
