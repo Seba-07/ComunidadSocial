@@ -15498,22 +15498,23 @@ a.header-logo:hover {
     padding: 0;
 }
 
-/* Header */
+/* Header - Ficha Informativa */
 .sm-header {
     display: flex;
     align-items: center;
     gap: 16px;
     margin-bottom: 24px;
     padding: 20px 24px;
-    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
+    background: white;
     border-radius: 16px;
-    color: white;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary-color);
 }
 
 .sm-header-icon {
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #f0f7f0 0%, #e8f5e8 100%);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -15522,19 +15523,20 @@ a.header-logo:hover {
 }
 
 .sm-header-icon svg {
-    color: white;
+    color: var(--primary-color);
 }
 
 .sm-header-text h2 {
     margin: 0;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
+    color: var(--text-primary);
 }
 
 .sm-header-text p {
     margin: 4px 0 0 0;
     font-size: 14px;
-    opacity: 0.9;
+    color: var(--text-secondary);
 }
 
 /* Layout Principal */
