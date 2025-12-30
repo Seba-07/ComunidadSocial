@@ -519,16 +519,122 @@
             <div id="page-guia-constitucion" class="page-view">
                 <div class="guia-container">
                     <div class="guia-header">
-                        <h1>Guía de Constitución</h1>
-                        <p>Información para crear y formalizar organizaciones comunitarias</p>
+                        <h1>📋 Guía de Constitución</h1>
+                        <p>Información importante sobre el proceso de constitución según la Ley 19.418</p>
                     </div>
-                    <div id="guia-content" class="guia-content">
-                        <!-- Se carga dinámicamente -->
-                        <div class="guia-loading">
-                            <div class="spinner"></div>
-                            <p>Cargando guía...</p>
+
+                    <!-- Tarjetas Informativas -->
+                    <div class="info-cards-grid">
+                        <div class="info-card-home">
+                            <div class="info-card-icon">👥</div>
+                            <h3>Requisitos Mínimos</h3>
+                            <ul class="info-list">
+                                <li><strong>Juntas de Vecinos:</strong> mínimo 50 personas</li>
+                                <li><strong>Otras organizaciones:</strong> mínimo 15 personas</li>
+                                <li><strong>Miembros:</strong> mayores de 14 años, residentes de la comuna</li>
+                                <li><strong>Directorio y Comisión Electoral:</strong> mayores de 18 años</li>
+                                <li>Cédula de identidad vigente</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-card-home">
+                            <div class="info-card-icon">📝</div>
+                            <h3>Directorio Provisorio</h3>
+                            <ul class="info-list">
+                                <li><strong>Presidente:</strong> Representa legalmente a la organización</li>
+                                <li><strong>Secretario:</strong> Maneja documentación y actas</li>
+                                <li><strong>Tesorero:</strong> Administra los recursos</li>
+                                <li><strong>2 Directores:</strong> Apoyan la gestión</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-card-home">
+                            <div class="info-card-icon">✅</div>
+                            <h3>Comisión Electoral</h3>
+                            <ul class="info-list">
+                                <li><strong>3 miembros</strong> que no sean del directorio</li>
+                                <li>Organizan las futuras elecciones</li>
+                                <li>Velan por la transparencia del proceso</li>
+                                <li>Son designados en la asamblea constitutiva</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-card-home">
+                            <div class="info-card-icon">📄</div>
+                            <h3>Documentos Generados</h3>
+                            <ul class="info-list">
+                                <li>Acta de Asamblea Constitutiva</li>
+                                <li>Lista de Socios Constitución</li>
+                                <li>Certificado del Ministro de Fe</li>
+                                <li>Declaraciones Juradas del Directorio</li>
+                            </ul>
                         </div>
                     </div>
+
+                    <!-- Proceso de Constitución Visual -->
+                    <div class="proceso-steps-modern">
+                        <h3>Proceso de Constitución</h3>
+                        <p class="proceso-subtitle">Sigue estos pasos para formalizar tu organización</p>
+                        <div class="steps-horizontal">
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-icon">📝</div>
+                                </div>
+                                <h4>Crear Solicitud</h4>
+                                <p>Ingresa los datos de la organización, directorio y socios</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-icon">🔍</div>
+                                </div>
+                                <h4>Revisión Municipal</h4>
+                                <p>El municipio verifica que la documentación esté completa</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-icon">✍️</div>
+                                </div>
+                                <h4>Asamblea Constitutiva</h4>
+                                <p>Reunión con Ministro de Fe para firmar documentos oficiales</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-icon">🏛️</div>
+                                </div>
+                                <h4>Registro Civil</h4>
+                                <p>Envío de documentación para personalidad jurídica</p>
+                            </div>
+                            <div class="step-connector"></div>
+                            <div class="step-card step-final">
+                                <div class="step-icon-wrapper">
+                                    <span class="step-badge final">✓</span>
+                                    <div class="step-icon">🎉</div>
+                                </div>
+                                <h4>¡Constituida!</h4>
+                                <p>Recibes tu número de registro y certificado oficial</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido Adicional Editable -->
+                    <div class="guia-additional-content">
+                        <h3>Información Adicional</h3>
+                        <div id="guia-content" class="guia-content">
+                            <!-- Se carga dinámicamente -->
+                            <div class="guia-loading">
+                                <div class="spinner"></div>
+                                <p>Cargando información adicional...</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Editor solo visible para MUNICIPALIDAD -->
                     <div id="guia-editor-container" class="guia-editor-container" style="display: none;">
                         <div class="guia-editor-toolbar">
@@ -537,7 +643,7 @@
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
-                                Editar Guía
+                                Editar Información Adicional
                             </button>
                         </div>
                         <div id="guia-editor" class="guia-editor" style="display: none;">

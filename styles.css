@@ -20069,6 +20069,20 @@ a.header-logo:hover {
     text-align: center;
 }
 
+/* Sección de información adicional */
+.guia-additional-content {
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.guia-additional-content h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 16px 0;
+}
+
 .guia-editor-container {
     margin-top: 24px;
 }
@@ -20284,6 +20298,30 @@ a.header-logo:hover {
 
 .biblioteca-card-actions .btn-delete-doc:hover {
     background: #ef4444;
+}
+
+.biblioteca-card-actions .btn-external-link:hover {
+    background: #3b82f6;
+}
+
+/* Estilos para documentos placeholder y enlaces externos */
+.biblioteca-card.placeholder {
+    opacity: 0.85;
+    border-style: dashed;
+}
+
+.biblioteca-card-meta .meta-placeholder {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+.biblioteca-card-meta .meta-external {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.placeholder-icon {
+    font-size: 2rem;
 }
 
 .biblioteca-empty,

@@ -15,30 +15,40 @@ const libraryDocumentSchema = new mongoose.Schema({
     enum: ['FORMULARIOS', 'LEYES', 'GUIAS', 'PLANTILLAS', 'OTROS'],
     default: 'OTROS'
   },
+  // Campos de archivo (opcionales si es placeholder o enlace externo)
   fileName: {
     type: String,
-    required: true
+    default: null
   },
   originalName: {
     type: String,
-    required: true
+    default: null
   },
   mimeType: {
     type: String,
-    required: true
+    default: null
   },
   fileSize: {
     type: Number,
-    required: true
+    default: 0
   },
   filePath: {
     type: String,
-    required: true
+    default: null
+  },
+  // Para documentos sin archivo (placeholder o enlace externo)
+  isPlaceholder: {
+    type: Boolean,
+    default: false
+  },
+  externalUrl: {
+    type: String,
+    default: null
   },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    default: null
   },
   isPublished: {
     type: Boolean,

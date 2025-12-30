@@ -108,6 +108,7 @@ class BibliotecaManager {
     // Agregar event listeners a los cards
     this.listEl.querySelectorAll('.biblioteca-card').forEach(card => {
       const downloadBtn = card.querySelector('.btn-download');
+      const externalBtn = card.querySelector('.btn-external-link');
       const deleteBtn = card.querySelector('.btn-delete-doc');
       const editBtn = card.querySelector('.btn-edit-doc');
 
@@ -115,6 +116,16 @@ class BibliotecaManager {
         downloadBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.downloadDocument(card.dataset.id);
+        });
+      }
+
+      if (externalBtn) {
+        externalBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const url = externalBtn.dataset.url;
+          if (url) {
+            window.open(url, '_blank');
+          }
         });
       }
 
@@ -139,12 +150,38 @@ class BibliotecaManager {
    */
   renderDocumentCard(doc) {
     const categoryLabel = libraryDocumentService.getCategoryLabel(doc.category);
-    const fileIcon = libraryDocumentService.getFileIcon(doc.mimeType);
-    const fileSize = libraryDocumentService.formatFileSize(doc.fileSize);
+    const fileIcon = doc.isPlaceholder ? this.getPlaceholderIcon(doc.category) : libraryDocumentService.getFileIcon(doc.mimeType);
+    const fileSize = doc.fileSize ? libraryDocumentService.formatFileSize(doc.fileSize) : '';
     const date = new Date(doc.createdAt).toLocaleDateString('es-CL');
+    const isExternal = !!doc.externalUrl;
+    const isPlaceholder = doc.isPlaceholder && !doc.externalUrl;
+
+    // Determinar el texto del botón de acción
+    let actionButton = '';
+    if (isExternal) {
+      actionButton = `
+        <button class="btn-external-link" title="Abrir enlace externo" data-url="${doc.externalUrl}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </button>
+      `;
+    } else if (!isPlaceholder && doc.filePath) {
+      actionButton = `
+        <button class="btn-download" title="Descargar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+      `;
+    }
 
     return `
-      <div class="biblioteca-card ${!doc.isPublished ? 'unpublished' : ''}" data-id="${doc._id}" data-name="${doc.name}">
+      <div class="biblioteca-card ${!doc.isPublished ? 'unpublished' : ''} ${isPlaceholder ? 'placeholder' : ''}" data-id="${doc._id}" data-name="${doc.name}" data-external="${isExternal}">
         <div class="biblioteca-card-icon">
           ${fileIcon}
         </div>
@@ -153,19 +190,15 @@ class BibliotecaManager {
           ${doc.description ? `<p class="biblioteca-card-desc">${doc.description}</p>` : ''}
           <div class="biblioteca-card-meta">
             <span class="meta-category">${categoryLabel}</span>
-            <span class="meta-size">${fileSize}</span>
+            ${fileSize ? `<span class="meta-size">${fileSize}</span>` : ''}
             <span class="meta-date">${date}</span>
+            ${isPlaceholder ? '<span class="meta-placeholder">Próximamente</span>' : ''}
+            ${isExternal ? '<span class="meta-external">Enlace externo</span>' : ''}
             ${!doc.isPublished ? '<span class="meta-unpublished">No publicado</span>' : ''}
           </div>
         </div>
         <div class="biblioteca-card-actions">
-          <button class="btn-download" title="Descargar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </button>
+          ${actionButton}
           ${this.isAdmin ? `
             <button class="btn-edit-doc" title="Editar">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -183,6 +216,20 @@ class BibliotecaManager {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Obtener icono para documento placeholder
+   */
+  getPlaceholderIcon(category) {
+    const icons = {
+      'FORMULARIOS': '📋',
+      'LEYES': '⚖️',
+      'GUIAS': '📖',
+      'PLANTILLAS': '📝',
+      'OTROS': '📄'
+    };
+    return `<span class="placeholder-icon">${icons[category] || '📄'}</span>`;
   }
 
   /**
