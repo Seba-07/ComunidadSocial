@@ -14,6 +14,7 @@ import unidadesVecinalesRoutes from './routes/unidadesVecinales.js';
 import guiaConstitucionRoutes from './routes/guiaConstitucion.js';
 import libraryDocumentsRoutes from './routes/libraryDocuments.js';
 import newsRoutes from './routes/news.js';
+import estatutoTemplatesRoutes from './routes/estatutoTemplates.js';
 
 // Model for auto-migration
 import Organization from './models/Organization.js';
@@ -146,6 +147,7 @@ app.use('/api/unidades-vecinales', unidadesVecinalesRoutes);
 app.use('/api/guia-constitucion', guiaConstitucionRoutes);
 app.use('/api/library-documents', libraryDocumentsRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/estatuto-templates', estatutoTemplatesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

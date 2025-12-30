@@ -9,6 +9,7 @@ import { showToast } from '../../app.js';
 import { initScheduleManager } from './ScheduleManager.js';
 import { initMinistroManager } from './MinistroManager.js';
 import { initUnidadesVecinalesManager } from './UnidadesVecinalesManager.js';
+import { initEstatutosAdminManager } from './EstatutosAdminManager.js';
 import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
@@ -45,6 +46,7 @@ class AdminDashboard {
     this.scheduleManager = null;
     this.ministroManager = null;
     this.uvManager = null;
+    this.estatutosManager = null;
   }
 
   /**
@@ -62,6 +64,7 @@ class AdminDashboard {
     this.setupScheduleManagerButton();
     this.setupMinistroManagerButton();
     this.setupUVManagerButton();
+    this.setupEstatutosManagerButton();
   }
 
   /**
@@ -136,6 +139,41 @@ class AdminDashboard {
           this.showUVManager();
         }
       });
+    }
+  }
+
+  /**
+   * Configura el botón de gestión de estatutos
+   */
+  setupEstatutosManagerButton() {
+    const btn = document.getElementById('btn-estatutos-manager');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        this.showEstatutosManager();
+      });
+    }
+  }
+
+  /**
+   * Muestra la página de gestión de estatutos
+   */
+  showEstatutosManager() {
+    // Navegar a la página de estatutos
+    if (typeof window.showPage === 'function') {
+      window.showPage('page-estatutos-admin');
+    } else {
+      // Fallback: mostrar la página manualmente
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+      const page = document.getElementById('page-estatutos-admin');
+      if (page) page.classList.add('active');
+    }
+
+    // Inicializar el manager de estatutos
+    if (!this.estatutosManager) {
+      this.estatutosManager = initEstatutosAdminManager();
+    }
+    if (this.estatutosManager) {
+      this.estatutosManager.show();
     }
   }
 

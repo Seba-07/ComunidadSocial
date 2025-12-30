@@ -39,9 +39,9 @@ const FUNCIONAL_TYPES = {
   'OTRA_FUNCIONAL': 'Otra'
 };
 
-// Configuración de Directorio por tipo de organización
-// Define los cargos requeridos según los estatutos de cada tipo
-const DIRECTORIO_CONFIG = {
+// Configuración de Directorio por tipo de organización (FALLBACK)
+// Se usa solo cuando la API no está disponible
+const DIRECTORIO_CONFIG_FALLBACK = {
   // Organizaciones Territoriales - 5 miembros
   'JUNTA_VECINOS': {
     cargos: [
@@ -109,9 +109,48 @@ const DIRECTORIO_CONFIG = {
   }
 };
 
-// Función para obtener la configuración del directorio según el tipo de organización
+// Caché de configuraciones de directorio obtenidas desde la API
+const directorioConfigCache = {};
+
+/**
+ * Obtiene la configuración del directorio desde la API (con caché)
+ * @param {string} orgType - Tipo de organización
+ * @returns {Promise<Object>} Configuración del directorio
+ */
+async function fetchDirectorioConfig(orgType) {
+  // Si ya está en caché, devolverla
+  if (directorioConfigCache[orgType]) {
+    return directorioConfigCache[orgType];
+  }
+
+  try {
+    const response = await fetch(`/api/estatuto-templates/${orgType}/config`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.directorio) {
+        // Guardar en caché
+        directorioConfigCache[orgType] = data.directorio;
+        return data.directorio;
+      }
+    }
+  } catch (error) {
+    console.warn(`No se pudo obtener config de directorio desde API para ${orgType}:`, error);
+  }
+
+  // Fallback a configuración local
+  const fallbackConfig = DIRECTORIO_CONFIG_FALLBACK[orgType] || DIRECTORIO_CONFIG_FALLBACK['DEFAULT'];
+  directorioConfigCache[orgType] = fallbackConfig;
+  return fallbackConfig;
+}
+
+// Función sincrónica para obtener la configuración (usa caché o fallback)
 function getDirectorioConfig(orgType) {
-  return DIRECTORIO_CONFIG[orgType] || DIRECTORIO_CONFIG['DEFAULT'];
+  // Primero intentar desde caché
+  if (directorioConfigCache[orgType]) {
+    return directorioConfigCache[orgType];
+  }
+  // Si no está en caché, usar fallback local
+  return DIRECTORIO_CONFIG_FALLBACK[orgType] || DIRECTORIO_CONFIG_FALLBACK['DEFAULT'];
 }
 
 /**
@@ -1385,7 +1424,7 @@ export class WizardController {
   /**
    * Inicializa el paso actual
    */
-  initializeCurrentStep() {
+  async initializeCurrentStep() {
     switch (this.currentStep) {
       case 1:
         this.initializeStep1();
@@ -1400,7 +1439,7 @@ export class WizardController {
         this.initializeStep4_Estatutos(); // Estatutos es paso 4
         break;
       case 5:
-        this.initializeStep5_Comision(); // Comisión es paso 5
+        await this.initializeStep5_Comision(); // Comisión es paso 5 (async para cargar config)
         break;
       case 6:
         this.initializeStep6_Documentos(); // Documentos es paso 6
@@ -2133,10 +2172,12 @@ export class WizardController {
   /**
    * Inicializa paso 5: Directorio Provisorio y Comisión Electoral
    */
-  initializeStep5_Comision() {
+  async initializeStep5_Comision() {
     // Obtener el tipo de organización seleccionada
     const orgType = this.formData.organization?.type || 'DEFAULT';
-    const directorioConfig = getDirectorioConfig(orgType);
+
+    // Obtener configuración desde API (async) con fallback a local
+    const directorioConfig = await fetchDirectorioConfig(orgType);
 
     // Guardar la configuración actual para uso en otras funciones
     this.currentDirectorioConfig = directorioConfig;
@@ -4836,7 +4877,7 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const members = this.formData.members;
     const commission = this.formData.commission;
     const directorio = this.formData.directorioProvisorio || {};
-    const dirConfig = getDirectorioConfig(org.type);
+    const dirConfig = await fetchDirectorioConfig(org.type);
     const today = new Date().toLocaleDateString('es-CL', {
       day: 'numeric',
       month: 'long',

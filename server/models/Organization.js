@@ -151,6 +151,32 @@ const organizationSchema = new mongoose.Schema({
     default: ''
   },
 
+  // Snapshot del estatuto al momento de crear la organización
+  // Esto permite que cambios futuros en las plantillas NO afecten a organizaciones ya creadas
+  estatutosSnapshot: {
+    templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'EstatutoTemplate' },
+    version: Number,
+    tipoOrganizacion: String,
+    nombreTipo: String,
+    articulos: [mongoose.Schema.Types.Mixed],
+    directorio: {
+      cargos: [mongoose.Schema.Types.Mixed],
+      totalRequerido: Number,
+      duracionMandato: Number,
+      puedeReelegirse: Boolean,
+      maxReelecciones: Number
+    },
+    miembrosMinimos: Number,
+    comisionElectoral: {
+      cantidad: Number,
+      descripcion: String
+    },
+    placeholders: [mongoose.Schema.Types.Mixed],
+    imagenesDocumento: [mongoose.Schema.Types.Mixed],
+    documentoGenerado: String,
+    fechaSnapshot: Date
+  },
+
   // Validated attendees from assembly (flexible schema para soportar externos con name)
   validatedAttendees: [mongoose.Schema.Types.Mixed],
 
