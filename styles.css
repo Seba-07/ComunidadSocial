@@ -21411,6 +21411,164 @@ a.header-logo:hover {
     gap: 16px;
 }
 
+/* Vista de Lista de Estatutos */
+.estatutos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.estatuto-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+
+.estatuto-row:last-child {
+    border-bottom: none;
+}
+
+.estatuto-row:hover {
+    background: #f8fafc;
+}
+
+.estatuto-row.not-configured {
+    background: #fafafa;
+}
+
+.estatuto-row.not-configured:hover {
+    background: #f1f5f9;
+}
+
+.estatuto-row-main {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex: 1;
+    min-width: 0;
+}
+
+.estatuto-row-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 280px;
+}
+
+.estatuto-name {
+    font-weight: 500;
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.estatuto-status-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.estatuto-status-badge.published {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.estatuto-status-badge.draft {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.estatuto-status-badge.unconfigured {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.estatuto-row-info {
+    display: flex;
+    gap: 16px;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.estatuto-row-info .info-item {
+    white-space: nowrap;
+}
+
+.estatuto-row-info .info-item strong {
+    color: #475569;
+}
+
+.estatuto-row-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-row-edit,
+.btn-row-publish {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.btn-row-edit:hover {
+    background: #1a3a12;
+    border-color: #1a3a12;
+    color: white;
+}
+
+.btn-row-publish:hover {
+    background: #f1f5f9;
+}
+
+.btn-row-publish.publish:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.btn-row-publish.unpublish:hover {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #92400e;
+}
+
+.btn-row-configure {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    background: white;
+    color: #64748b;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-row-configure:hover {
+    border-color: #2d5f1f;
+    background: #f0fdf4;
+    color: #2d5f1f;
+}
+
 .estatuto-card {
     background: white;
     border-radius: 12px;
@@ -22154,6 +22312,36 @@ a.header-logo:hover {
 
     .estatutos-stats { grid-template-columns: 1fr; }
     .estatutos-grid { grid-template-columns: 1fr; }
+
+    /* Lista de estatutos responsive */
+    .estatuto-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+    }
+
+    .estatuto-row-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .estatuto-row-name {
+        min-width: unset;
+        flex-wrap: wrap;
+    }
+
+    .estatuto-row-info {
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .estatuto-row-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
     .editor-tabs { flex-wrap: wrap; }
     .editor-tab { flex: 1; min-width: 120px; justify-content: center; }
     .directorio-config-row { grid-template-columns: 1fr; }

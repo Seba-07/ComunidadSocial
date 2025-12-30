@@ -111,8 +111,8 @@ class EstatutosAdminManager {
           ${Object.entries(categorias).map(([categoria, tipos]) => `
             <div class="categoria-section">
               <h3 class="categoria-title">${this.getCategoriaLabel(categoria)}</h3>
-              <div class="estatutos-grid">
-                ${tipos.map(tipo => this.renderTemplateCard(tipo)).join('')}
+              <div class="estatutos-list">
+                ${tipos.map(tipo => this.renderTemplateRow(tipo)).join('')}
               </div>
             </div>
           `).join('')}
@@ -169,48 +169,51 @@ class EstatutosAdminManager {
     return { total, publicadas, sinConfigurar };
   }
 
-  renderTemplateCard(tipo) {
+  renderTemplateRow(tipo) {
     const template = tipo.template;
     const hasTemplate = !!template;
 
     return `
-      <div class="estatuto-card ${hasTemplate ? 'configured' : 'not-configured'}"
-           data-tipo="${tipo.id}">
-        <div class="estatuto-card-header">
-          <span class="estatuto-tipo-badge ${tipo.categoria.toLowerCase()}">${tipo.categoria}</span>
-          ${hasTemplate && template.publicado ?
-            '<span class="estatuto-published-badge">Publicado</span>' :
-            hasTemplate ? '<span class="estatuto-draft-badge">Borrador</span>' : ''}
-        </div>
-        <h4>${tipo.nombre}</h4>
-        ${hasTemplate ? `
-          <div class="estatuto-card-info">
-            <span><strong>${template.articulos?.length || 0}</strong> artículos</span>
-            <span><strong>${template.directorio?.cargos?.length || 0}</strong> cargos</span>
-            <span>v${template.version || 1}</span>
+      <div class="estatuto-row ${hasTemplate ? 'configured' : 'not-configured'}" data-tipo="${tipo.id}">
+        <div class="estatuto-row-main">
+          <div class="estatuto-row-name">
+            <span class="estatuto-name">${tipo.nombre}</span>
+            ${hasTemplate && template.publicado ?
+              '<span class="estatuto-status-badge published">Publicado</span>' :
+              hasTemplate ? '<span class="estatuto-status-badge draft">Borrador</span>' :
+              '<span class="estatuto-status-badge unconfigured">Sin configurar</span>'}
           </div>
-          <div class="estatuto-card-actions">
-            <button class="btn-edit-template" data-id="${template._id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ${hasTemplate ? `
+            <div class="estatuto-row-info">
+              <span class="info-item"><strong>${template.articulos?.length || 0}</strong> artículos</span>
+              <span class="info-item"><strong>${template.directorio?.cargos?.length || 0}</strong> cargos</span>
+              <span class="info-item">v${template.version || 1}</span>
+            </div>
+          ` : ''}
+        </div>
+        <div class="estatuto-row-actions">
+          ${hasTemplate ? `
+            <button class="btn-row-edit" data-id="${template._id}" title="Editar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              Editar
             </button>
-            <button class="btn-toggle-publish ${template.publicado ? 'unpublish' : 'publish'}" data-id="${template._id}">
-              ${template.publicado ? 'Despublicar' : 'Publicar'}
+            <button class="btn-row-publish ${template.publicado ? 'unpublish' : 'publish'}" data-id="${template._id}" title="${template.publicado ? 'Despublicar' : 'Publicar'}">
+              ${template.publicado ?
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' :
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'}
             </button>
-          </div>
-        ` : `
-          <p class="no-template-msg">Sin configurar</p>
-          <button class="btn-configure-template" data-tipo="${tipo.id}" data-nombre="${tipo.nombre}" data-categoria="${tipo.categoria}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Configurar
-          </button>
-        `}
+          ` : `
+            <button class="btn-row-configure" data-tipo="${tipo.id}" data-nombre="${tipo.nombre}" data-categoria="${tipo.categoria}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Configurar
+            </button>
+          `}
+        </div>
       </div>
     `;
   }
@@ -576,21 +579,21 @@ class EstatutosAdminManager {
         window.showPage('page-admin');
       }
 
-      // Editar template
-      if (e.target.closest('.btn-edit-template')) {
-        const id = e.target.closest('.btn-edit-template').dataset.id;
+      // Editar template (vista lista)
+      if (e.target.closest('.btn-row-edit')) {
+        const id = e.target.closest('.btn-row-edit').dataset.id;
         this.editTemplate(id);
       }
 
-      // Configurar nuevo template
-      if (e.target.closest('.btn-configure-template')) {
-        const btn = e.target.closest('.btn-configure-template');
+      // Configurar nuevo template (vista lista)
+      if (e.target.closest('.btn-row-configure')) {
+        const btn = e.target.closest('.btn-row-configure');
         this.createTemplate(btn.dataset.tipo, btn.dataset.nombre, btn.dataset.categoria);
       }
 
-      // Toggle publicar
-      if (e.target.closest('.btn-toggle-publish')) {
-        const id = e.target.closest('.btn-toggle-publish').dataset.id;
+      // Toggle publicar (vista lista)
+      if (e.target.closest('.btn-row-publish')) {
+        const id = e.target.closest('.btn-row-publish').dataset.id;
         this.togglePublish(id);
       }
     });
