@@ -77,12 +77,7 @@ async function loadStats() {
     const validated = stats.signaturesValidated || 0;
     const total = pending + completed;
 
-    // Update stat cards
-    document.getElementById('stat-pending').textContent = pending;
-    document.getElementById('stat-completed').textContent = completed;
-    document.getElementById('stat-validated').textContent = validated;
-
-    // Update filter chip counts
+    // Update filter chip counts in the unified panel
     const countAll = document.getElementById('count-all');
     const countPending = document.getElementById('count-pending');
     const countCompleted = document.getElementById('count-completed');
@@ -94,9 +89,6 @@ async function loadStats() {
     if (countValidated) countValidated.textContent = validated;
   } catch (error) {
     console.error('Error loading stats:', error);
-    document.getElementById('stat-pending').textContent = '0';
-    document.getElementById('stat-completed').textContent = '0';
-    document.getElementById('stat-validated').textContent = '0';
   }
 }
 
@@ -471,14 +463,20 @@ function renderAvailability() {
 // Current filter state
 let currentFilter = 'all';
 
-// Tab button switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
+// Nav button switching (Asambleas / Disponibilidad)
+document.querySelectorAll('.ministro-nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tabName = btn.dataset.tab;
 
-    // Update active state on tab buttons
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    // Update active state on nav buttons
+    document.querySelectorAll('.ministro-nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+
+    // Show/hide filters (only for assignments tab)
+    const filtersEl = document.getElementById('assignments-filters');
+    if (filtersEl) {
+      filtersEl.style.display = tabName === 'assignments' ? 'flex' : 'none';
+    }
 
     // Update content (switch tab)
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -487,12 +485,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // Filter chip switching
-document.querySelectorAll('.filter-chip').forEach(chip => {
+document.querySelectorAll('.ministro-filter-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     const filterType = chip.dataset.filter;
 
     // Update active state on filter chips
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.ministro-filter-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
 
     // Apply filter
