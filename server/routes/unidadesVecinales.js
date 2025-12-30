@@ -88,6 +88,85 @@ router.get('/macrozonas', async (req, res) => {
 });
 
 /**
+ * POST /api/unidades-vecinales
+ * Crear una nueva unidad vecinal (solo admin)
+ */
+router.post('/', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas } = req.body;
+
+    // Validar campos requeridos
+    if (!numero || !idOficial) {
+      return res.status(400).json({ error: 'El número e ID oficial son requeridos' });
+    }
+
+    // Verificar que no exista otra UV con el mismo número o idOficial
+    const existente = await UnidadVecinal.findOne({
+      $or: [{ numero }, { idOficial }]
+    });
+
+    if (existente) {
+      return res.status(400).json({
+        error: 'Ya existe una unidad vecinal con ese número o ID oficial'
+      });
+    }
+
+    const nuevaUnidad = new UnidadVecinal({
+      numero,
+      idOficial,
+      nombre: nombre || `Unidad Vecinal ${numero}`,
+      macrozona: macrozona || 1,
+      poblaciones: poblaciones || [],
+      calles: calles || [],
+      limites: limites || { norte: '', sur: '', oriente: '', poniente: '' },
+      palabrasClave: palabrasClave || [],
+      notas: notas || '',
+      activa: true
+    });
+
+    await nuevaUnidad.save();
+    res.status(201).json(nuevaUnidad);
+  } catch (error) {
+    console.error('Error al crear unidad vecinal:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Ya existe una unidad vecinal con ese número o ID' });
+    }
+    res.status(500).json({ error: 'Error al crear unidad vecinal' });
+  }
+});
+
+/**
+ * DELETE /api/unidades-vecinales/:id
+ * Eliminar una unidad vecinal (solo admin)
+ */
+router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const unidad = await UnidadVecinal.findById(req.params.id);
+
+    if (!unidad) {
+      return res.status(404).json({ error: 'Unidad vecinal no encontrada' });
+    }
+
+    // Verificar si hay organizaciones usando esta unidad vecinal
+    const Organization = (await import('../models/Organization.js')).default;
+    const orgCount = await Organization.countDocuments({ unidadVecinal: unidad.numero });
+
+    if (orgCount > 0) {
+      return res.status(400).json({
+        error: `No se puede eliminar: hay ${orgCount} organización(es) asignada(s) a esta unidad vecinal`,
+        organizacionesAsociadas: orgCount
+      });
+    }
+
+    await UnidadVecinal.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Unidad vecinal eliminada correctamente', id: req.params.id });
+  } catch (error) {
+    console.error('Error al eliminar unidad vecinal:', error);
+    res.status(500).json({ error: 'Error al eliminar unidad vecinal' });
+  }
+});
+
+/**
  * GET /api/unidades-vecinales/:id
  * Obtener una unidad vecinal por ID
  */

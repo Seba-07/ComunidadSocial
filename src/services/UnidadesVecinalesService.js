@@ -90,6 +90,19 @@ class UnidadesVecinalesService {
   }
 
   /**
+   * Crear una nueva unidad vecinal (solo admin)
+   */
+  async create(data) {
+    try {
+      this.invalidateCache();
+      return await apiService.post('/unidades-vecinales', data);
+    } catch (error) {
+      console.error('Error al crear unidad vecinal:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Actualizar una unidad vecinal (solo admin)
    */
   async update(id, data) {
@@ -98,6 +111,19 @@ class UnidadesVecinalesService {
       return await apiService.put(`/unidades-vecinales/${id}`, data);
     } catch (error) {
       console.error('Error al actualizar unidad vecinal:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Eliminar una unidad vecinal (solo admin)
+   */
+  async delete(id) {
+    try {
+      this.invalidateCache();
+      return await apiService.delete(`/unidades-vecinales/${id}`);
+    } catch (error) {
+      console.error('Error al eliminar unidad vecinal:', error);
       throw error;
     }
   }
