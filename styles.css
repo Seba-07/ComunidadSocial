@@ -18960,19 +18960,19 @@ a.header-logo:hover {
 }
 
 /* ============================================
-   PANEL MUNICIPALIDAD - DISEÑO UNIFICADO
+   PANEL MUNICIPALIDAD - DISEÑO MODERNO
    ============================================ */
 .muni-panel {
     background: white;
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
-    overflow: hidden;
+    border: 1px solid #e5e7eb;
 }
 
 .muni-panel-header {
-    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
-    padding: 20px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .muni-panel-top {
@@ -18981,24 +18981,24 @@ a.header-logo:hover {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .muni-panel-title {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: white;
+    gap: 14px;
 }
 
 .muni-icon {
-    width: 44px;
-    height: 44px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, var(--cs-primary-dark, #3d8229) 100%);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 12px rgba(74, 155, 50, 0.3);
 }
 
 .muni-icon svg {
@@ -19006,117 +19006,113 @@ a.header-logo:hover {
 }
 
 .muni-panel-title h1 {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
-    margin: 0 0 2px 0;
-    color: white;
+    margin: 0 0 4px 0;
+    color: #1f2937;
 }
 
 .muni-panel-title p {
-    font-size: 13px;
+    font-size: 14px;
     margin: 0;
-    color: rgba(255, 255, 255, 0.8);
+    color: #6b7280;
 }
 
 .muni-nav-buttons {
     display: flex;
-    gap: 6px;
+    gap: 8px;
 }
 
 .muni-nav-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: white;
-    font-size: 13px;
+    padding: 10px 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    color: #374151;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .muni-nav-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: var(--cs-primary, #4a9b32);
 }
 
 .muni-nav-btn svg {
     flex-shrink: 0;
+    color: #6b7280;
 }
 
-/* Filtros integrados en header */
+.muni-nav-btn:hover svg {
+    color: var(--cs-primary, #4a9b32);
+}
+
+/* Filtros - Diseño moderno */
 .muni-filters {
     display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    padding-bottom: 2px;
-}
-
-.muni-filters::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .muni-filter-chip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 7px 12px;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: rgba(255, 255, 255, 0.9);
-    white-space: nowrap;
-    flex-shrink: 0;
+    color: #4b5563;
 }
 
 .muni-filter-chip:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.35);
+    background: #f3f4f6;
+    border-color: var(--cs-primary, #4a9b32);
+    color: var(--cs-primary, #4a9b32);
 }
 
 .muni-filter-chip.active {
-    background: white;
-    border-color: white;
-    color: #1a3a12;
-    font-weight: 600;
+    background: var(--cs-primary, #4a9b32);
+    border-color: var(--cs-primary, #4a9b32);
+    color: white;
 }
 
 .muni-filter-chip .chip-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 9px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
     font-size: 11px;
     font-weight: 700;
 }
 
 .muni-filter-chip.active .chip-count {
-    background: var(--cs-primary, #4a9b32);
-    color: white;
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* Barra de Búsqueda */
 .muni-search-bar {
     position: relative;
-    padding: 12px 20px;
-    background: #f8faf8;
+    padding: 16px 24px;
 }
 
 .muni-search-bar .search-icon {
     position: absolute;
-    left: 32px;
+    left: 40px;
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
@@ -19125,11 +19121,11 @@ a.header-logo:hover {
 
 .muni-search-bar input {
     width: 100%;
-    padding: 10px 14px 10px 42px;
+    padding: 12px 16px 12px 46px;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 14px;
-    background: white;
+    background: #f9fafb;
     color: #1f2937;
     transition: all 0.2s ease;
 }
@@ -19137,6 +19133,7 @@ a.header-logo:hover {
 .muni-search-bar input:focus {
     outline: none;
     border-color: var(--cs-primary, #4a9b32);
+    background: white;
     box-shadow: 0 0 0 3px rgba(74, 155, 50, 0.1);
 }
 
@@ -19144,11 +19141,31 @@ a.header-logo:hover {
     color: #9ca3af;
 }
 
+/* Responsive Tablet */
+@media (max-width: 900px) {
+    .muni-panel-header {
+        padding: 16px 20px;
+    }
+
+    .muni-panel-top {
+        margin-bottom: 16px;
+    }
+
+    .muni-nav-btn span {
+        display: none;
+    }
+
+    .muni-nav-btn {
+        padding: 10px 12px;
+    }
+}
+
 /* Responsive Mobile */
 @media (max-width: 768px) {
     .muni-panel {
         border-radius: 12px;
         margin: 0 -8px 16px;
+        border: none;
     }
 
     .muni-panel-header {
@@ -19156,68 +19173,78 @@ a.header-logo:hover {
     }
 
     .muni-panel-top {
-        margin-bottom: 12px;
+        margin-bottom: 14px;
         gap: 12px;
     }
 
     .muni-panel-title {
-        gap: 10px;
+        gap: 12px;
     }
 
     .muni-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
     }
 
     .muni-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .muni-panel-title h1 {
+        font-size: 18px;
+    }
+
+    .muni-panel-title p {
+        font-size: 12px;
+    }
+
+    .muni-nav-buttons {
+        gap: 6px;
+    }
+
+    .muni-nav-btn {
+        padding: 8px 10px;
+    }
+
+    .muni-nav-btn svg {
         width: 18px;
         height: 18px;
     }
 
-    .muni-panel-title h1 {
-        font-size: 16px;
-    }
-
-    .muni-panel-title p {
-        font-size: 11px;
-    }
-
-    .muni-nav-buttons {
-        gap: 4px;
-    }
-
-    .muni-nav-btn {
-        padding: 6px 10px;
-        font-size: 12px;
-        gap: 4px;
-    }
-
-    .muni-nav-btn span {
-        display: none;
+    /* Filtros en grid para móvil */
+    .muni-filters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
     }
 
     .muni-filter-chip {
-        padding: 6px 10px;
-        font-size: 12px;
+        padding: 8px 6px;
+        font-size: 11px;
+        justify-content: center;
+        text-align: center;
+        border-radius: 6px;
     }
 
     .muni-filter-chip .chip-count {
         min-width: 16px;
         height: 16px;
+        padding: 0 4px;
         font-size: 10px;
     }
 
     .muni-search-bar {
-        padding: 10px 16px;
+        padding: 12px 16px;
     }
 
     .muni-search-bar .search-icon {
-        left: 26px;
+        left: 28px;
     }
 
     .muni-search-bar input {
-        padding: 8px 12px 8px 38px;
+        padding: 10px 14px 10px 40px;
         font-size: 13px;
     }
 }
@@ -19225,7 +19252,11 @@ a.header-logo:hover {
 @media (max-width: 480px) {
     .muni-panel-top {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+    }
+
+    .muni-panel-title {
+        justify-content: flex-start;
     }
 
     .muni-nav-buttons {
@@ -19236,5 +19267,15 @@ a.header-logo:hover {
     .muni-nav-btn {
         flex: 1;
         justify-content: center;
+    }
+
+    /* Filtros 2 columnas en pantallas muy pequeñas */
+    .muni-filters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Primera fila con "Todas" ocupando todo el ancho */
+    .muni-filter-chip:first-child {
+        grid-column: span 2;
     }
 }
