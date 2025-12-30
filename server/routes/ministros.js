@@ -5,9 +5,9 @@ import { authenticate, requireRole, generateToken } from '../middleware/auth.js'
 const router = express.Router();
 
 // Get all ministros (Admin only)
-router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const ministros = await User.find({ role: 'MINISTRO' }).sort({ createdAt: -1 });
+    const ministros = await User.find({ role: 'MINISTRO_FE' }).sort({ createdAt: -1 });
     res.json(ministros);
   } catch (error) {
     console.error('Get ministros error:', error);
@@ -18,7 +18,7 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
 // Get active ministros
 router.get('/active', authenticate, async (req, res) => {
   try {
-    const ministros = await User.find({ role: 'MINISTRO', active: true })
+    const ministros = await User.find({ role: 'MINISTRO_FE', active: true })
       .select('firstName lastName rut email phone specialty availableHours');
     res.json(ministros);
   } catch (error) {
@@ -30,7 +30,7 @@ router.get('/active', authenticate, async (req, res) => {
 // Get ministro by ID
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO' });
+    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (!ministro) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
     }
@@ -42,7 +42,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create ministro (Admin only)
-router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { rut, firstName, lastName, email, phone, address, specialty, password, availableHours } = req.body;
 
@@ -73,7 +73,7 @@ router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
       address,
       specialty,
       availableHours,
-      role: 'MINISTRO',
+      role: 'MINISTRO_FE',
       mustChangePassword: true // El ministro deberá cambiar la contraseña
     });
 
@@ -90,9 +90,9 @@ router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
 });
 
 // Update ministro (Admin only)
-router.put('/:id', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO' });
+    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (!ministro) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
     }
@@ -123,9 +123,9 @@ router.put('/:id', authenticate, requireRole('ADMIN'), async (req, res) => {
 });
 
 // Toggle active status (Admin only)
-router.post('/:id/toggle-active', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/toggle-active', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO' });
+    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (!ministro) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
     }
@@ -141,9 +141,9 @@ router.post('/:id/toggle-active', authenticate, requireRole('ADMIN'), async (req
 });
 
 // Reset password (Admin only)
-router.post('/:id/reset-password', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/reset-password', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO' });
+    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (!ministro) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
     }
@@ -164,9 +164,9 @@ router.post('/:id/reset-password', authenticate, requireRole('ADMIN'), async (re
 });
 
 // Delete ministro (Admin only)
-router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const result = await User.deleteOne({ _id: req.params.id, role: 'MINISTRO' });
+    const result = await User.deleteOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
     }
@@ -182,7 +182,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const ministro = await User.findOne({ email: email.toLowerCase(), role: 'MINISTRO' });
+    const ministro = await User.findOne({ email: email.toLowerCase(), role: 'MINISTRO_FE' });
     if (!ministro) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -210,10 +210,10 @@ router.post('/login', async (req, res) => {
 });
 
 // Get statistics
-router.get('/stats/counts', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const total = await User.countDocuments({ role: 'MINISTRO' });
-    const active = await User.countDocuments({ role: 'MINISTRO', active: true });
+    const total = await User.countDocuments({ role: 'MINISTRO_FE' });
+    const active = await User.countDocuments({ role: 'MINISTRO_FE', active: true });
 
     res.json({
       total,

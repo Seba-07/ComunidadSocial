@@ -47,8 +47,14 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['USER', 'ADMIN', 'MINISTRO'],
-    default: 'USER'
+    enum: ['ORGANIZADOR', 'MUNICIPALIDAD', 'MINISTRO_FE', 'MIEMBRO'],
+    default: 'ORGANIZADOR'
+  },
+  // Para usuarios MIEMBRO: ID de la organización a la que pertenecen
+  organizationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    default: null
   },
   active: {
     type: Boolean,

@@ -124,7 +124,7 @@ class ApiService {
     if (data.token) {
       this.setToken(data.token);
       // Solo guardar en currentUser si NO es ministro (los ministros usan currentMinistro)
-      if (data.user && data.user.role !== 'MINISTRO') {
+      if (data.user && data.user.role !== 'MINISTRO_FE') {
         localStorage.setItem('currentUser', JSON.stringify(data.user));
       }
     }
@@ -329,6 +329,24 @@ class ApiService {
 
   async deleteNotification(id) {
     return this.delete(`/notifications/${id}`);
+  }
+
+  async createNotification(notificationData) {
+    return this.post('/notifications', notificationData);
+  }
+
+  // ==================== MEMBER ACCOUNTS ====================
+
+  async createMemberAccounts(organizationId) {
+    return this.post(`/organizations/${organizationId}/create-member-accounts`);
+  }
+
+  async getMembersWithAccounts(organizationId) {
+    return this.get(`/organizations/${organizationId}/members-with-accounts`);
+  }
+
+  async getMyOrganization() {
+    return this.get('/organizations/my-organization');
   }
 
   // ==================== USERS ====================

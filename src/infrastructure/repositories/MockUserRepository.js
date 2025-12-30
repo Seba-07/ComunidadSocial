@@ -16,7 +16,7 @@ export class MockUserRepository extends IUserRepository {
       id: 'admin-1',
       email: 'admin@renca.cl',
       password: 'admin123', // En producción esto debe estar hasheado
-      role: 'ADMIN',
+      role: 'MUNICIPALIDAD',
       profile: {
         rut: '12345678-9',
         firstName: 'Admin',
@@ -34,7 +34,7 @@ export class MockUserRepository extends IUserRepository {
       id: 'user-1',
       email: 'usuario@example.cl',
       password: 'user123',
-      role: 'USER',
+      role: 'ORGANIZADOR',
       profile: {
         rut: '98765432-1',
         firstName: 'Juan',

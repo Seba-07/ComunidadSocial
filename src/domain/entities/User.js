@@ -1,20 +1,28 @@
 /**
  * User Entity
- * Representa un usuario del sistema (Ciudadano o Administrador Municipal)
+ * Representa un usuario del sistema
+ *
+ * Roles disponibles:
+ * - ORGANIZADOR: Usuario que crea y administra sus organizaciones
+ * - MUNICIPALIDAD: Administrador del sistema (municipalidad)
+ * - MIEMBRO: Miembro de una organización (solo lectura de su org)
+ * - MINISTRO_FE: Ministro de Fe para certificar asambleas
  */
 export class User {
   constructor({
     id = null,
     email,
     password,
-    role, // 'USER' | 'ADMIN'
-    profile
+    role, // 'ORGANIZADOR' | 'MUNICIPALIDAD' | 'MIEMBRO' | 'MINISTRO_FE'
+    profile,
+    organizationId = null // Para usuarios MIEMBRO: la organización a la que pertenecen
   }) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.role = role;
     this.profile = profile;
+    this.organizationId = organizationId;
     this.createdAt = new Date();
   }
 
@@ -32,12 +40,18 @@ export class User {
       errors.push('La contraseña debe tener al menos 6 caracteres');
     }
 
-    if (!['USER', 'ADMIN'].includes(this.role)) {
+    const validRoles = ['ORGANIZADOR', 'MUNICIPALIDAD', 'MIEMBRO', 'MINISTRO_FE'];
+    if (!validRoles.includes(this.role)) {
       errors.push('Rol inválido');
     }
 
     if (!this.profile) {
       errors.push('Perfil requerido');
+    }
+
+    // Los miembros deben tener organizationId
+    if (this.role === 'MIEMBRO' && !this.organizationId) {
+      errors.push('Los miembros deben estar asociados a una organización');
     }
 
     return {
@@ -47,10 +61,38 @@ export class User {
   }
 
   /**
-   * Verifica si el usuario es administrador
+   * Verifica si el usuario es de la municipalidad (administrador)
+   */
+  isMunicipalidad() {
+    return this.role === 'MUNICIPALIDAD';
+  }
+
+  /**
+   * Verifica si el usuario es organizador
+   */
+  isOrganizador() {
+    return this.role === 'ORGANIZADOR';
+  }
+
+  /**
+   * Verifica si el usuario es miembro
+   */
+  isMiembro() {
+    return this.role === 'MIEMBRO';
+  }
+
+  /**
+   * Verifica si el usuario es ministro de fe
+   */
+  isMinistroFe() {
+    return this.role === 'MINISTRO_FE';
+  }
+
+  /**
+   * Alias para compatibilidad - verifica si es municipalidad
    */
   isAdmin() {
-    return this.role === 'ADMIN';
+    return this.role === 'MUNICIPALIDAD';
   }
 
   /**

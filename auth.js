@@ -162,7 +162,7 @@ loginForm.addEventListener('submit', async (e) => {
     console.log('✅ Login successful:', user);
 
     // Redirigir según el rol del usuario
-    if (user.role === 'MINISTRO') {
+    if (user.role === 'MINISTRO_FE') {
       // Es un ministro de fe - guardar en currentMinistro y redirigir al dashboard de ministro
       localStorage.removeItem('currentUser'); // Limpiar por si acaso
       localStorage.setItem('currentMinistro', JSON.stringify(user));
@@ -179,17 +179,26 @@ loginForm.addEventListener('submit', async (e) => {
           window.location.href = '/ministro-dashboard.html';
         }, 500);
       }
-    } else if (user.role === 'ADMIN') {
-      // Es un admin - redirigir al panel de admin
+    } else if (user.role === 'MUNICIPALIDAD') {
+      // Es un usuario de la municipalidad - redirigir al panel de admin
       localStorage.setItem('isAuthenticated', 'true');
 
-      showToast(`¡Bienvenido Administrador ${user.firstName || 'Admin'}!`, 'success');
+      showToast(`¡Bienvenido ${user.firstName || 'Municipalidad'}!`, 'success');
 
       setTimeout(() => {
         window.location.href = '/?admin=true';
       }, 500);
+    } else if (user.role === 'MIEMBRO') {
+      // Es un miembro de una organización - redirigir a su panel de miembro
+      localStorage.setItem('isAuthenticated', 'true');
+
+      showToast(`¡Bienvenido ${user.firstName || 'Miembro'}!`, 'success');
+
+      setTimeout(() => {
+        window.location.href = '/?member=true';
+      }, 500);
     } else {
-      // Es un usuario normal
+      // Es un organizador (usuario que crea organizaciones)
       localStorage.setItem('isAuthenticated', 'true');
 
       showToast(`¡Bienvenido ${user.firstName || user.profile?.firstName || 'Usuario'}!`, 'success');

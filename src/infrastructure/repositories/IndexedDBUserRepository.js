@@ -34,7 +34,7 @@ export class IndexedDBUserRepository extends IUserRepository {
       id: 'admin-1',
       email: 'admin@renca.cl',
       password: 'admin123',
-      role: 'ADMIN',
+      role: 'MUNICIPALIDAD',
       profile: {
         rut: '12.345.678-9',
         firstName: 'Administrador',

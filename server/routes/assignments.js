@@ -7,7 +7,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 const router = express.Router();
 
 // Get all assignments (Admin only)
-router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const assignments = await Assignment.find()
       .populate('organizationId', 'organizationName')
@@ -23,7 +23,7 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
 router.get('/ministro/:ministroId', authenticate, async (req, res) => {
   try {
     // Verify permission: self or admin
-    if (req.params.ministroId !== req.userId.toString() && req.user.role !== 'ADMIN') {
+    if (req.params.ministroId !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
@@ -38,7 +38,7 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
 });
 
 // Get pending assignments for current ministro
-router.get('/my/pending', authenticate, requireRole('MINISTRO'), async (req, res) => {
+router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, res) => {
   try {
     const assignments = await Assignment.find({
       ministroId: req.userId,
@@ -71,7 +71,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create assignment (Admin only)
-router.post('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const {
       ministroId,
@@ -138,7 +138,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Validate signatures (Ministro)
-router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), async (req, res) => {
+router.post('/:id/validate', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 
@@ -212,7 +212,7 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
 });
 
 // Reset validation (for editing)
-router.post('/:id/reset-validation', authenticate, requireRole('MINISTRO', 'ADMIN'), async (req, res) => {
+router.post('/:id/reset-validation', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 
@@ -246,7 +246,7 @@ router.post('/:id/reset-validation', authenticate, requireRole('MINISTRO', 'ADMI
 });
 
 // Complete assignment
-router.post('/:id/complete', authenticate, requireRole('MINISTRO', 'ADMIN'), async (req, res) => {
+router.post('/:id/complete', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 
@@ -266,7 +266,7 @@ router.post('/:id/complete', authenticate, requireRole('MINISTRO', 'ADMIN'), asy
 });
 
 // Cancel assignment
-router.post('/:id/cancel', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/cancel', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 

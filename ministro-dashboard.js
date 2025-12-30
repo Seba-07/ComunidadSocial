@@ -51,7 +51,7 @@ try {
 
   currentMinistro = JSON.parse(storedMinistro);
 
-  if (currentMinistro.role !== 'MINISTRO') {
+  if (currentMinistro.role !== 'MINISTRO_FE') {
     window.location.href = '/ministro-login.html';
     throw new Error('Invalid role');
   }

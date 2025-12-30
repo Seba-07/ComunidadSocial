@@ -30,6 +30,7 @@
   "devDependencies": {
     "@vitejs/plugin-legacy": "^5.2.0",
     "eslint": "^8.55.0",
+    "jsdom": "^27.4.0",
     "puppeteer": "^24.32.1",
     "vitest": "^1.0.4"
   }

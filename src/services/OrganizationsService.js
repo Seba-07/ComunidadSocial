@@ -63,7 +63,7 @@ class OrganizationsService {
   async loadFromServer() {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-      if (currentUser?.role === 'ADMIN') {
+      if (currentUser?.role === 'MUNICIPALIDAD') {
         this.organizations = await apiService.getOrganizations();
       } else {
         this.organizations = await apiService.getMyOrganizations();

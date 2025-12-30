@@ -120,7 +120,7 @@ async function seed() {
       password: 'admin123',
       phone: '+56 2 2345 6789',
       address: 'Municipalidad de Renca, Blanco Encalada 1335',
-      role: 'ADMIN',
+      role: 'MUNICIPALIDAD',
       active: true
     });
     await admin.save();
@@ -141,7 +141,7 @@ async function seed() {
         password: 'user123',
         phone: member.phone,
         address: member.address,
-        role: 'USER',
+        role: 'ORGANIZADOR',
         active: true
       });
       await user.save();

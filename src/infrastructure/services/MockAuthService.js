@@ -76,14 +76,28 @@ export class MockAuthService {
    * Verifica si el usuario actual es admin
    */
   isAdmin() {
-    return this.currentUser?.role === 'ADMIN';
+    return this.currentUser?.role === 'MUNICIPALIDAD';
   }
 
   /**
    * Verifica si el usuario actual es ministro de fe
    */
   isMinistro() {
-    return this.currentUser?.role === 'MINISTRO';
+    return this.currentUser?.role === 'MINISTRO_FE';
+  }
+
+  /**
+   * Verifica si el usuario actual es organizador
+   */
+  isOrganizador() {
+    return this.currentUser?.role === 'ORGANIZADOR';
+  }
+
+  /**
+   * Verifica si el usuario actual es miembro
+   */
+  isMiembro() {
+    return this.currentUser?.role === 'MIEMBRO';
   }
 
   /**

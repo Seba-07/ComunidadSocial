@@ -1,6 +1,6 @@
 /**
  * Servicio de Notificaciones
- * Conecta con el backend API
+ * Conecta con el backend API con soporte de polling y toasts
  */
 
 import { apiService } from './ApiService.js';
@@ -8,8 +8,40 @@ import { apiService } from './ApiService.js';
 class NotificationService {
   constructor() {
     this.notifications = [];
+    this.unreadCount = 0;
     this.listeners = [];
     this.loaded = false;
+    this.pollInterval = null;
+    this.isPolling = false;
+    this.pollIntervalMs = 30000; // 30 segundos
+  }
+
+  /**
+   * Inicia el polling de notificaciones
+   */
+  startPolling() {
+    if (this.isPolling) return;
+
+    const token = apiService.getToken();
+    if (!token) return;
+
+    this.isPolling = true;
+    this.loadFromServer();
+
+    this.pollInterval = setInterval(() => {
+      this.loadFromServer();
+    }, this.pollIntervalMs);
+  }
+
+  /**
+   * Detiene el polling
+   */
+  stopPolling() {
+    this.isPolling = false;
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
   }
 
   /**
@@ -17,10 +49,32 @@ class NotificationService {
    */
   async loadFromServer() {
     try {
-      this.notifications = await apiService.getNotifications();
+      const token = apiService.getToken();
+      if (!token) {
+        this.stopPolling();
+        return;
+      }
+
+      const [notifications, countData] = await Promise.all([
+        apiService.getNotifications(),
+        apiService.getUnreadCount()
+      ]);
+
+      // Detectar nuevas notificaciones para mostrar toast
+      const oldIds = new Set(this.notifications.map(n => n._id));
+      const newNotifications = (notifications || []).filter(n => !oldIds.has(n._id) && !n.read);
+
+      this.notifications = notifications || [];
+      this.unreadCount = countData?.count || 0;
       this.loaded = true;
+
       localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
       this.notifyListeners();
+
+      // Mostrar toast para nuevas notificaciones
+      newNotifications.forEach(n => {
+        this.showToast(n.title, n.message, this.getToastType(n.type));
+      });
     } catch (e) {
       console.error('Error loading notifications from server:', e);
       this.loadFromStorage();
@@ -34,9 +88,11 @@ class NotificationService {
     try {
       const saved = localStorage.getItem('user_notifications');
       this.notifications = saved ? JSON.parse(saved) : [];
+      this.unreadCount = this.notifications.filter(n => !n.read).length;
     } catch (e) {
       console.error('Error loading notifications:', e);
       this.notifications = [];
+      this.unreadCount = 0;
     }
   }
 
@@ -63,7 +119,10 @@ class NotificationService {
   notifyListeners() {
     this.listeners.forEach(listener => {
       try {
-        listener(this.notifications);
+        listener({
+          notifications: this.notifications,
+          unreadCount: this.unreadCount
+        });
       } catch (e) {
         console.error('Error in notification listener:', e);
       }
@@ -93,20 +152,6 @@ class NotificationService {
   }
 
   /**
-   * Obtiene notificaciones de un usuario específico
-   */
-  getByUserId(userId) {
-    return this.notifications.filter(n => n.userId === userId);
-  }
-
-  /**
-   * Obtiene notificaciones no leídas de un usuario
-   */
-  getUnreadByUserId(userId) {
-    return this.notifications.filter(n => n.userId === userId && !n.read);
-  }
-
-  /**
    * Obtiene notificaciones no leídas
    */
   getUnread() {
@@ -128,11 +173,8 @@ class NotificationService {
   /**
    * Obtiene el conteo de no leídas
    */
-  getUnreadCount(userId) {
-    if (userId) {
-      return this.getUnreadByUserId(userId).length;
-    }
-    return this.getUnread().length;
+  getUnreadCount() {
+    return this.unreadCount;
   }
 
   /**
@@ -141,10 +183,11 @@ class NotificationService {
   async getUnreadCountAsync() {
     try {
       const result = await apiService.getUnreadCount();
+      this.unreadCount = result.count;
       return result.count;
     } catch (e) {
       console.error('Error fetching unread count:', e);
-      return this.getUnreadCount();
+      return this.unreadCount;
     }
   }
 
@@ -153,8 +196,9 @@ class NotificationService {
    */
   async create(notificationData) {
     try {
-      const notification = await apiService.post('/notifications', notificationData);
+      const notification = await apiService.createNotification(notificationData);
       this.notifications.unshift(notification);
+      this.unreadCount++;
       localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
       this.notifyListeners();
       return notification;
@@ -169,14 +213,17 @@ class NotificationService {
    */
   async markAsRead(notificationId) {
     try {
-      const updated = await apiService.markNotificationRead(notificationId);
-      const index = this.notifications.findIndex(n => n.id === notificationId || n._id === notificationId);
-      if (index !== -1) {
-        this.notifications[index] = updated;
+      await apiService.markNotificationRead(notificationId);
+
+      const notification = this.notifications.find(n => n._id === notificationId);
+      if (notification && !notification.read) {
+        notification.read = true;
+        notification.readAt = new Date().toISOString();
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
         localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
         this.notifyListeners();
       }
-      return updated;
+      return notification;
     } catch (e) {
       console.error('Error marking notification as read:', e);
       throw e;
@@ -184,9 +231,9 @@ class NotificationService {
   }
 
   /**
-   * Marca todas las notificaciones de un usuario como leídas
+   * Marca todas las notificaciones como leídas
    */
-  async markAllAsRead(userId) {
+  async markAllAsRead() {
     try {
       await apiService.markAllNotificationsRead();
       this.notifications = this.notifications.map(n => ({
@@ -194,6 +241,7 @@ class NotificationService {
         read: true,
         readAt: new Date().toISOString()
       }));
+      this.unreadCount = 0;
       localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
       this.notifyListeners();
       return this.notifications.length;
@@ -209,7 +257,13 @@ class NotificationService {
   async delete(notificationId) {
     try {
       await apiService.deleteNotification(notificationId);
-      this.notifications = this.notifications.filter(n => n.id !== notificationId && n._id !== notificationId);
+
+      const notification = this.notifications.find(n => n._id === notificationId);
+      if (notification && !notification.read) {
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
+      }
+
+      this.notifications = this.notifications.filter(n => n._id !== notificationId);
       localStorage.setItem('user_notifications', JSON.stringify(this.notifications));
       this.notifyListeners();
       return true;
@@ -220,44 +274,226 @@ class NotificationService {
   }
 
   /**
-   * Elimina todas las notificaciones de un usuario
+   * Obtiene el tipo de toast según el tipo de notificación
    */
-  async deleteAllByUserId(userId) {
-    try {
-      // This would need a backend endpoint
-      const toDelete = this.notifications.filter(n => n.userId === userId);
-      for (const n of toDelete) {
-        await this.delete(n.id || n._id);
+  getToastType(notificationType) {
+    const successTypes = ['organization_approved', 'member_accounts_created', 'welcome_member'];
+    const warningTypes = ['correction_required', 'assembly_reminder', 'election_reminder'];
+    const errorTypes = ['organization_rejected', 'member_removed', 'assignment_removed'];
+
+    if (successTypes.includes(notificationType)) return 'success';
+    if (warningTypes.includes(notificationType)) return 'warning';
+    if (errorTypes.includes(notificationType)) return 'error';
+    return 'info';
+  }
+
+  /**
+   * Muestra un toast de notificación
+   */
+  showToast(title, message, type = 'info') {
+    this.ensureToastStyles();
+
+    const toast = document.createElement('div');
+    toast.className = `notification-toast notification-toast--${type}`;
+    toast.innerHTML = `
+      <div class="notification-toast__icon">${this.getIcon(type)}</div>
+      <div class="notification-toast__content">
+        <div class="notification-toast__title">${title}</div>
+        <div class="notification-toast__message">${message}</div>
+      </div>
+      <button class="notification-toast__close">&times;</button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Animar entrada
+    requestAnimationFrame(() => {
+      toast.classList.add('notification-toast--visible');
+    });
+
+    // Botón de cerrar
+    toast.querySelector('.notification-toast__close').addEventListener('click', () => {
+      this.removeToast(toast);
+    });
+
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+      this.removeToast(toast);
+    }, 5000);
+  }
+
+  /**
+   * Remueve un toast con animación
+   */
+  removeToast(toast) {
+    toast.classList.remove('notification-toast--visible');
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
       }
-      return toDelete.length;
-    } catch (e) {
-      console.error('Error deleting all notifications:', e);
-      throw e;
-    }
+    }, 300);
   }
 
   /**
-   * Notifica cambio de horario de asamblea
-   * Nota: Las notificaciones ahora se crean en el backend
+   * Obtiene el icono SVG según el tipo
    */
-  notifyScheduleChange(userId, oldSchedule, newSchedule, organizationName) {
-    console.log('Schedule change notification will be created by backend');
+  getIcon(type) {
+    const icons = {
+      info: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+      success: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+      warning: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+      error: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>'
+    };
+    return icons[type] || icons.info;
   }
 
   /**
-   * Notifica asignación de Ministro de Fe
-   * Nota: Las notificaciones ahora se crean en el backend
+   * Inyecta los estilos de toast si no existen
    */
-  notifyMinistroAssigned(userId, ministroData, organizationName) {
-    console.log('Ministro assigned notification will be created by backend');
+  ensureToastStyles() {
+    if (document.getElementById('notification-toast-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'notification-toast-styles';
+    style.textContent = `
+      .notification-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 400px;
+        z-index: 10000;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+      }
+
+      .notification-toast--visible {
+        transform: translateX(0);
+      }
+
+      .notification-toast__icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+
+      .notification-toast__icon svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .notification-toast--info .notification-toast__icon { color: #2196F3; }
+      .notification-toast--success .notification-toast__icon { color: #4CAF50; }
+      .notification-toast--warning .notification-toast__icon { color: #FF9800; }
+      .notification-toast--error .notification-toast__icon { color: #f44336; }
+
+      .notification-toast__content {
+        flex: 1;
+      }
+
+      .notification-toast__title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #333;
+      }
+
+      .notification-toast__message {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .notification-toast__close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .notification-toast__close:hover {
+        color: #333;
+      }
+
+      @media (max-width: 480px) {
+        .notification-toast {
+          left: 10px;
+          right: 10px;
+          max-width: none;
+        }
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   /**
-   * Notifica cambio de estado de solicitud
-   * Nota: Las notificaciones ahora se crean en el backend
+   * Formatea una fecha para mostrar
    */
-  notifyStatusUpdate(userId, organizationName, oldStatus, newStatus) {
-    console.log('Status update notification will be created by backend');
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Ahora';
+    if (minutes < 60) return `Hace ${minutes} min`;
+    if (hours < 24) return `Hace ${hours}h`;
+    if (days < 7) return `Hace ${days} días`;
+
+    return date.toLocaleDateString('es-CL', {
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  /**
+   * Obtiene el icono emoji según el tipo de notificación
+   */
+  getNotificationIcon(type) {
+    const icons = {
+      // Notificaciones de organizaciones
+      ministro_assigned: '👨‍⚖️',
+      ministro_changed: '🔄',
+      schedule_change: '📅',
+      location_change: '📍',
+      schedule_location_change: '📍',
+      status_change: '📋',
+      correction_required: '⚠️',
+      organization_approved: '✅',
+      organization_rejected: '❌',
+      general: '📢',
+      // Notificaciones de asignaciones
+      new_assignment: '📋',
+      assignment_removed: '🗑️',
+      assignment_schedule_change: '📅',
+      assignment_location_change: '📍',
+      // Notificaciones de organizaciones activas
+      member_accounts_created: '👥',
+      new_assembly: '🏛️',
+      assembly_reminder: '⏰',
+      election_announced: '🗳️',
+      election_reminder: '⏰',
+      directorio_updated: '👔',
+      new_communication: '💬',
+      new_member_joined: '👋',
+      member_removed: '👤',
+      // Notificaciones de miembros
+      welcome_member: '🎉',
+      assembly_invitation: '📩',
+      election_notification: '🗳️',
+      organization_update: '📢'
+    };
+    return icons[type] || '🔔';
   }
 }
 

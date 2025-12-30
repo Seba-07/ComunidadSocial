@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentMinistro) {
     try {
       const ministro = JSON.parse(currentMinistro);
-      if (ministro.role === 'MINISTRO') {
+      if (ministro.role === 'MINISTRO_FE') {
         console.log('⚖️ Ministro detectado, redirigiendo al dashboard de ministro...');
         window.location.href = '/ministro-dashboard.html';
         return;
@@ -186,8 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           notificationService.sync()
         ]);
         console.log('✅ Datos sincronizados desde el servidor');
+        // Iniciar polling de notificaciones
+        notificationService.startPolling();
       } catch (syncError) {
         console.warn('Error sincronizando datos:', syncError);
+        // Aún así iniciar polling
+        notificationService.startPolling();
       }
 
       // Pre-cargar datos del perfil por si el usuario navega allí
@@ -212,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          if (user.role === 'ADMIN') {
+          if (user.role === 'MUNICIPALIDAD') {
             appState.navigateTo('admin');
             return;
           }
@@ -245,6 +249,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Mostrar loading screen inmediatamente para evitar flash de contenido
       const app = document.getElementById('app');
       if (app) app.classList.remove('loaded');
+
+      // Detener polling de notificaciones
+      notificationService.stopPolling();
 
       // Limpiar localStorage y token API
       apiService.logout();
@@ -750,13 +757,14 @@ function loadProfileData() {
     // Role badge
     const roleBadge = document.getElementById('profile-role-badge');
     if (roleBadge) {
-      if (user.role === 'ADMIN') {
-        roleBadge.textContent = 'Administrador';
-        roleBadge.classList.add('admin');
-      } else {
-        roleBadge.textContent = 'Usuario';
-        roleBadge.classList.remove('admin');
-      }
+      const roleLabels = {
+        'MUNICIPALIDAD': 'Municipalidad',
+        'ORGANIZADOR': 'Organizador',
+        'MIEMBRO': 'Miembro',
+        'MINISTRO_FE': 'Ministro de Fe'
+      };
+      roleBadge.textContent = roleLabels[user.role] || 'Usuario';
+      roleBadge.classList.toggle('admin', user.role === 'MUNICIPALIDAD');
     }
 
     // Get region name
@@ -818,7 +826,13 @@ function loadProfileData() {
     const displayCreated = document.getElementById('display-created');
 
     if (displayAccountType) {
-      displayAccountType.textContent = user.role === 'ADMIN' ? 'Administrador' : 'Usuario';
+      const roleLabels = {
+        'MUNICIPALIDAD': 'Municipalidad',
+        'ORGANIZADOR': 'Organizador',
+        'MIEMBRO': 'Miembro',
+        'MINISTRO_FE': 'Ministro de Fe'
+      };
+      displayAccountType.textContent = roleLabels[user.role] || 'Usuario';
     }
 
     if (user.createdAt && displayCreated) {
@@ -3271,7 +3285,7 @@ function setupUserRoleUI() {
 
   try {
     const user = JSON.parse(userData);
-    const isAdmin = user.role === 'ADMIN';
+    const isAdmin = user.role === 'MUNICIPALIDAD';
 
     if (isAdmin) {
       setupAdminUI();

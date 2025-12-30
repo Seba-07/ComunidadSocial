@@ -54,7 +54,9 @@ export const APP_CONFIG = {
 
   // Roles de usuario
   ROLES: {
-    USER: 'USER',
-    ADMIN: 'ADMIN'
+    ORGANIZADOR: 'ORGANIZADOR',      // Crea y administra organizaciones
+    MUNICIPALIDAD: 'MUNICIPALIDAD',  // Administrador del sistema
+    MIEMBRO: 'MIEMBRO',              // Miembro de una organización (solo lectura)
+    MINISTRO_FE: 'MINISTRO_FE'       // Ministro de Fe para certificar asambleas
   }
 };

@@ -14,6 +14,7 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
+      // Notificaciones de organizaciones
       'ministro_assigned',
       'ministro_changed',
       'schedule_change',
@@ -28,7 +29,22 @@ const notificationSchema = new mongoose.Schema({
       'new_assignment',
       'assignment_removed',
       'assignment_schedule_change',
-      'assignment_location_change'
+      'assignment_location_change',
+      // Nuevos tipos para gestión de organizaciones activas
+      'member_accounts_created',
+      'new_assembly',
+      'assembly_reminder',
+      'election_announced',
+      'election_reminder',
+      'directorio_updated',
+      'new_communication',
+      'new_member_joined',
+      'member_removed',
+      // Tipos para miembros
+      'welcome_member',
+      'assembly_invitation',
+      'election_notification',
+      'organization_update'
     ],
     required: true
   },

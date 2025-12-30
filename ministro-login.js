@@ -58,7 +58,7 @@ const currentMinistro = localStorage.getItem('currentMinistro');
 if (currentMinistro) {
   try {
     const ministro = JSON.parse(currentMinistro);
-    if (ministro.role === 'MINISTRO') {
+    if (ministro.role === 'MINISTRO_FE') {
       window.location.href = '/ministro-dashboard.html';
     }
   } catch (e) {

@@ -184,7 +184,11 @@ const organizationSchema = new mongoose.Schema({
   // Dissolution
   dissolvedAt: Date,
   dissolutionReason: String,
-  dissolvedBy: String
+  dissolvedBy: String,
+
+  // Members account creation
+  memberAccountsCreated: { type: Boolean, default: false },
+  memberAccountsCreatedAt: Date
 }, {
   timestamps: true
 });

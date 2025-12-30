@@ -38,7 +38,9 @@
       "Bash(git tag:*)",
       "Bash(tree:*)",
       "Bash(wc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git -C /Users/sebastianaranguizrivera/Desktop/Claude/ComunidadSocial log --oneline -15)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []

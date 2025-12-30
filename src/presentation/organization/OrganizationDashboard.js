@@ -5,7 +5,8 @@
 
 import { organizationsService, ORG_STATUS } from '../../services/OrganizationsService.js';
 import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
-import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
+// ministroAssignmentService ya no se usa - Ministro de Fe solo es para constitución
+// import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { showToast } from '../../app.js';
 
 // Importar utilidades compartidas
@@ -94,6 +95,20 @@ class OrganizationDashboard {
             </svg>
             Asambleas
           </button>
+          <button class="org-nav-btn" data-tab="elecciones">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Elecciones
+          </button>
+          <button class="org-nav-btn" data-tab="comunicaciones">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            Comunicaciones
+          </button>
           <button class="org-nav-btn" data-tab="finanzas">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="1" x2="12" y2="23"></line>
@@ -150,6 +165,10 @@ class OrganizationDashboard {
         return this.renderDirectorio();
       case 'asambleas':
         return this.renderAsambleas();
+      case 'elecciones':
+        return this.renderElecciones();
+      case 'comunicaciones':
+        return this.renderComunicaciones();
       case 'finanzas':
         return this.renderFinanzas();
       case 'proyectos':
@@ -307,7 +326,7 @@ class OrganizationDashboard {
           </div>
         </div>
 
-        ${this.renderSignatureValidationSection()}
+        <!-- Sección de Ministro de Fe removida - solo aplica durante el proceso de constitución -->
 
         <div class="org-quick-actions">
           <h4>Acciones Rápidas</h4>
@@ -351,298 +370,14 @@ class OrganizationDashboard {
   }
 
   /**
-   * Sección de validación de firmas
+   * Sección de validación de firmas - DEPRECADA
+   * Esta sección ya no se usa porque el Ministro de Fe solo es para el proceso de constitución.
+   * Una vez que la organización está aprobada, no se necesita esta validación.
    */
   renderSignatureValidationSection() {
-    const org = this.currentOrg;
-
-    // Buscar asignación de ministro para esta organización
-    const assignment = ministroAssignmentService.getByOrganizationId(org.id)[0];
-
-    // Si no hay ministro asignado, no mostrar nada
-    if (!org.ministroData) {
-      return '';
-    }
-
-    const hasMinistro = org.ministroData.ministroId;
-    const hasSchedule = org.ministroData.scheduledDate && org.ministroData.scheduledTime;
-    const isValidated = assignment?.signaturesValidated;
-
-    return `
-      <div class="org-signature-section">
-        <h4>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
-            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-            <path d="M2 2l7.586 7.586"></path>
-            <circle cx="11" cy="11" r="2"></circle>
-          </svg>
-          Validación de Firmas - Ministro de Fe
-        </h4>
-
-        ${hasMinistro ? `
-          <div class="signature-validation-card">
-            <div class="ministro-info-header">
-              <div class="ministro-icon">⚖️</div>
-              <div class="ministro-details">
-                <h5>${org.ministroData.ministroName}</h5>
-                <p style="color: #6b7280; font-size: 14px; margin: 4px 0 0;">RUT: ${org.ministroData.ministroRut}</p>
-              </div>
-              ${isValidated ? `
-                <div class="validation-badge validated">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                  Validado
-                </div>
-              ` : `
-                <div class="validation-badge pending">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  Pendiente
-                </div>
-              `}
-            </div>
-
-            ${hasSchedule ? `
-              ${(() => {
-                // Detectar cambios entre solicitud original y confirmación del admin
-                const changes = [];
-
-                // Comparar fechas
-                const originalDate = org.electionDate;
-                const confirmedDate = org.ministroData.scheduledDate;
-                if (originalDate && confirmedDate && originalDate !== confirmedDate) {
-                  changes.push({
-                    tipo: 'Fecha',
-                    original: formatDateSafe(originalDate, { day: 'numeric', month: 'long', year: 'numeric' }),
-                    nuevo: formatDateSafe(confirmedDate, { day: 'numeric', month: 'long', year: 'numeric' }),
-                    icon: '📅'
-                  });
-                }
-
-                // Comparar horas
-                const originalTime = org.electionTime;
-                const confirmedTime = org.ministroData.scheduledTime;
-                if (originalTime && confirmedTime && originalTime !== confirmedTime) {
-                  changes.push({
-                    tipo: 'Hora',
-                    original: originalTime,
-                    nuevo: confirmedTime,
-                    icon: '🕐'
-                  });
-                }
-
-                // Comparar lugar
-                const originalLocation = org.assemblyAddress;
-                const confirmedLocation = org.ministroData.location;
-                if (originalLocation && confirmedLocation && originalLocation !== confirmedLocation) {
-                  changes.push({
-                    tipo: 'Lugar',
-                    original: originalLocation,
-                    nuevo: confirmedLocation,
-                    icon: '📍'
-                  });
-                }
-
-                if (changes.length > 0) {
-                  return `
-                    <div class="schedule-changes-alert" style="
-                      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                      border: 1px solid #f59e0b;
-                      border-radius: 8px;
-                      padding: 16px;
-                      margin-bottom: 16px;
-                    ">
-                      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                        <span style="font-size: 20px;">⚠️</span>
-                        <strong style="color: #92400e;">El administrador realizó cambios en tu solicitud</strong>
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 8px;">
-                        ${changes.map(c => `
-                          <div style="
-                            background: white;
-                            border-radius: 6px;
-                            padding: 10px 12px;
-                            display: flex;
-                            align-items: center;
-                            gap: 12px;
-                          ">
-                            <span style="font-size: 18px;">${c.icon}</span>
-                            <div style="flex: 1;">
-                              <div style="font-weight: 600; color: #374151; font-size: 13px;">${c.tipo}</div>
-                              <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-                                <span style="
-                                  background: #fee2e2;
-                                  color: #991b1b;
-                                  padding: 2px 8px;
-                                  border-radius: 4px;
-                                  font-size: 12px;
-                                  text-decoration: line-through;
-                                ">Antes: ${c.original}</span>
-                                <span style="font-size: 14px;">→</span>
-                                <span style="
-                                  background: #d1fae5;
-                                  color: #065f46;
-                                  padding: 2px 8px;
-                                  border-radius: 4px;
-                                  font-size: 12px;
-                                  font-weight: 500;
-                                ">Ahora: ${c.nuevo}</span>
-                              </div>
-                            </div>
-                          </div>
-                        `).join('')}
-                      </div>
-                    </div>
-                  `;
-                }
-                return '';
-              })()}
-              <div class="schedule-info">
-                <div class="schedule-item">
-                  <span class="schedule-icon">📅</span>
-                  <div>
-                    <strong>Fecha de Asamblea</strong>
-                    <p>${formatDateSafe(org.ministroData.scheduledDate, {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}</p>
-                  </div>
-                </div>
-                <div class="schedule-item">
-                  <span class="schedule-icon">🕐</span>
-                  <div>
-                    <strong>Hora</strong>
-                    <p>${org.ministroData.scheduledTime || '-'}</p>
-                  </div>
-                </div>
-                <div class="schedule-item">
-                  <span class="schedule-icon">📍</span>
-                  <div>
-                    <strong>Lugar</strong>
-                    <p>${org.ministroData.location}</p>
-                  </div>
-                </div>
-              </div>
-            ` : `
-              <div class="no-schedule-info">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                <p>El administrador está programando la fecha y hora de la asamblea</p>
-              </div>
-            `}
-
-            ${isValidated && assignment ? `
-              <div class="validation-details">
-                <div class="validation-header">
-                  <h5>✅ Firmas Validadas</h5>
-                  <span class="validation-date">
-                    ${new Date(assignment.validatedAt).toLocaleDateString('es-CL')}
-                  </span>
-                </div>
-
-                <div class="signatures-grid">
-                  <div class="signature-card">
-                    <div class="signature-role">👤 Presidente/a</div>
-                    <div class="signature-name">${assignment.signatures?.president?.name || 'No especificado'}</div>
-                    <div class="signature-rut">RUT: ${assignment.signatures?.president?.rut || '-'}</div>
-                  </div>
-
-                  <div class="signature-card">
-                    <div class="signature-role">📝 Secretario/a</div>
-                    <div class="signature-name">${assignment.signatures?.secretary?.name || 'No especificado'}</div>
-                    <div class="signature-rut">RUT: ${assignment.signatures?.secretary?.rut || '-'}</div>
-                  </div>
-
-                  <div class="signature-card">
-                    <div class="signature-role">💰 Tesorero/a</div>
-                    <div class="signature-name">${assignment.signatures?.treasurer?.name || 'No especificado'}</div>
-                    <div class="signature-rut">RUT: ${assignment.signatures?.treasurer?.rut || '-'}</div>
-                  </div>
-                </div>
-
-                ${assignment.signatures?.notes ? `
-                  <div class="validation-notes">
-                    <strong>Observaciones:</strong>
-                    <p>${assignment.signatures.notes}</p>
-                  </div>
-                ` : ''}
-
-                <div class="validator-info">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="8.5" cy="7" r="4"></circle>
-                    <polyline points="17 11 19 13 23 9"></polyline>
-                  </svg>
-                  Validado por: ${assignment.validatorName || 'Ministro de Fe'}
-                </div>
-              </div>
-            ` : !isValidated && hasSchedule ? `
-              <div class="pending-validation-info">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <p><strong>Validación Pendiente</strong></p>
-                <p style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">
-                  El Ministro de Fe validará las firmas durante la asamblea programada.
-                  ${(() => {
-                    const assemblyDate = parseDateTimeSafe(org.ministroData.scheduledDate, org.ministroData.scheduledTime);
-                    if (!assemblyDate) return '';
-                    const now = new Date();
-                    const daysSinceAssembly = Math.floor((now - assemblyDate) / (1000 * 60 * 60 * 24));
-
-                    if (daysSinceAssembly >= 1) {
-                      return '<br><strong style="color: #f59e0b;">La asamblea ya se realizó. Puedes validar las firmas tú mismo.</strong>';
-                    }
-                    return '';
-                  })()}
-                </p>
-                ${(() => {
-                  const assemblyDate = parseDateTimeSafe(org.ministroData.scheduledDate, org.ministroData.scheduledTime);
-                  if (!assemblyDate) return '';
-                  const now = new Date();
-                  const daysSinceAssembly = Math.floor((now - assemblyDate) / (1000 * 60 * 60 * 24));
-
-                  if (daysSinceAssembly >= 1) {
-                    return `
-                      <button class="btn btn-primary btn-user-validate" data-org-id="${org.id}" style="margin-top: 12px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
-                          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                          <path d="M2 2l7.586 7.586"></path>
-                          <circle cx="11" cy="11" r="2"></circle>
-                        </svg>
-                        Validar Firmas Manualmente
-                      </button>
-                    `;
-                  }
-                  return '';
-                })()}
-              </div>
-            ` : ''}
-          </div>
-        ` : `
-          <div class="no-ministro-info">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <p>El administrador está asignando un Ministro de Fe para tu organización</p>
-          </div>
-        `}
-      </div>
-    `;
+    // Retornar vacío - esta sección ya no se muestra en organizaciones aprobadas
+    // El Ministro de Fe solo interviene durante el proceso de constitución
+    return '';
   }
 
   /**
@@ -842,6 +577,230 @@ class OrganizationDashboard {
               <span class="empty-icon">📋</span>
               <p>No hay asambleas registradas</p>
               <button class="btn-primary" id="btn-first-assembly">Crear Primera Asamblea</button>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Gestión de Elecciones para renovar directorio
+   */
+  renderElecciones() {
+    const org = this.currentOrg;
+    const directorio = org.commission?.members || [];
+    const electionDate = org.commission?.electionDate;
+    const nextElectionDate = electionDate ? new Date(new Date(electionDate).getTime() + (3 * 365 * 24 * 60 * 60 * 1000)) : null;
+    const elections = org.elections || [];
+
+    // Calcular si toca renovar
+    const today = new Date();
+    const needsRenewal = nextElectionDate && today >= nextElectionDate;
+
+    return `
+      <div class="org-elecciones-section">
+        <div class="section-header">
+          <h3>Elecciones y Renovación de Directorio</h3>
+          <button class="btn-new-election" id="btn-new-election">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Convocar Elección
+          </button>
+        </div>
+
+        <div class="elecciones-info">
+          <p>Según la Ley 19.418, el directorio dura <strong>3 años</strong> en sus funciones. La renovación se realiza mediante elección directa en asamblea ordinaria, con voto secreto e informado.</p>
+        </div>
+
+        ${needsRenewal ? `
+          <div class="alert-renewal" style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="font-size: 28px;">⚠️</span>
+              <div>
+                <strong style="color: #92400e; font-size: 16px;">Renovación Pendiente</strong>
+                <p style="margin: 4px 0 0; color: #78350f; font-size: 14px;">El período del directorio actual ha vencido. Debe convocar a elecciones.</p>
+              </div>
+            </div>
+            <button class="btn-primary" id="btn-urgent-election" style="margin-top: 8px;">Convocar Elección Ahora</button>
+          </div>
+        ` : ''}
+
+        <div class="current-term-card">
+          <h4>Directorio Actual</h4>
+          <div class="term-info">
+            <div class="term-dates">
+              <div class="term-item">
+                <span class="label">Fecha de Elección:</span>
+                <span class="value">${electionDate ? new Date(electionDate).toLocaleDateString('es-CL') : 'No registrada'}</span>
+              </div>
+              <div class="term-item">
+                <span class="label">Próxima Renovación:</span>
+                <span class="value ${needsRenewal ? 'overdue' : ''}">${nextElectionDate ? nextElectionDate.toLocaleDateString('es-CL') : 'No calculada'}</span>
+              </div>
+            </div>
+            <div class="current-directorio-mini">
+              ${directorio.map((m, i) => {
+                const roles = ['Presidente', 'Secretario', 'Tesorero'];
+                return `
+                  <div class="mini-member">
+                    <span class="role">${roles[i] || 'Director'}</span>
+                    <span class="name">${m.firstName || m.name} ${m.lastName || ''}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="elections-history">
+          <h4>Historial de Elecciones</h4>
+          ${elections.length > 0 ? `
+            <div class="elections-list">
+              ${elections.map(e => `
+                <div class="election-item">
+                  <div class="election-date">${new Date(e.date).toLocaleDateString('es-CL')}</div>
+                  <div class="election-info">
+                    <span class="election-type">${e.type === 'total' ? 'Renovación Total' : 'Renovación Parcial'}</span>
+                    <span class="election-result">${e.result || 'Sin resultado'}</span>
+                  </div>
+                  <div class="election-participation">${e.participation || 0}% participación</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="empty-state-card">
+              <span class="empty-icon">🗳️</span>
+              <p>No hay elecciones registradas en el sistema</p>
+              <p style="font-size: 12px; color: #6b7280;">La primera elección corresponde a la constitución de la organización</p>
+            </div>
+          `}
+        </div>
+
+        <div class="election-process-info">
+          <h4>Proceso Electoral</h4>
+          <div class="process-steps">
+            <div class="step">
+              <span class="step-number">1</span>
+              <div class="step-content">
+                <strong>Convocatoria</strong>
+                <p>Citar a asamblea ordinaria con 10 días de anticipación mínimo</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">2</span>
+              <div class="step-content">
+                <strong>Inscripción de Candidatos</strong>
+                <p>Los candidatos deben ser socios con al menos 1 año de antigüedad</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">3</span>
+              <div class="step-content">
+                <strong>Votación</strong>
+                <p>Voto secreto e informado. Quórum mínimo del 50% de socios</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">4</span>
+              <div class="step-content">
+                <strong>Proclamación</strong>
+                <p>Comunicar resultados y actualizar ante la municipalidad</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Comunicaciones e Información a Socios
+   */
+  renderComunicaciones() {
+    const org = this.currentOrg;
+    const communications = org.communications || [];
+    const members = org.members || [];
+
+    return `
+      <div class="org-comunicaciones-section">
+        <div class="section-header">
+          <h3>Comunicaciones a Socios</h3>
+          <button class="btn-new-communication" id="btn-new-communication">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            Nueva Comunicación
+          </button>
+        </div>
+
+        <div class="comunicaciones-info">
+          <p>Mantén informados a los socios sobre actividades, asambleas y noticias importantes de la organización. Las comunicaciones se enviarán por email a los socios registrados.</p>
+        </div>
+
+        <div class="comm-stats">
+          <div class="stat-card">
+            <span class="stat-number">${members.length}</span>
+            <span class="stat-label">Socios Registrados</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">${members.filter(m => m.email).length}</span>
+            <span class="stat-label">Con Email</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">${communications.length}</span>
+            <span class="stat-label">Comunicaciones Enviadas</span>
+          </div>
+        </div>
+
+        <div class="quick-templates">
+          <h4>Plantillas Rápidas</h4>
+          <div class="templates-grid">
+            <button class="template-btn" data-template="asamblea">
+              <span class="template-icon">📋</span>
+              <span class="template-name">Citación a Asamblea</span>
+            </button>
+            <button class="template-btn" data-template="actividad">
+              <span class="template-icon">🎉</span>
+              <span class="template-name">Invitación a Actividad</span>
+            </button>
+            <button class="template-btn" data-template="informe">
+              <span class="template-icon">📊</span>
+              <span class="template-name">Informe de Gestión</span>
+            </button>
+            <button class="template-btn" data-template="urgente">
+              <span class="template-icon">🚨</span>
+              <span class="template-name">Aviso Urgente</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="communications-history">
+          <h4>Historial de Comunicaciones</h4>
+          ${communications.length > 0 ? `
+            <div class="communications-list">
+              ${communications.map(c => `
+                <div class="communication-item">
+                  <div class="comm-date">${new Date(c.date).toLocaleDateString('es-CL')}</div>
+                  <div class="comm-info">
+                    <span class="comm-subject">${c.subject}</span>
+                    <span class="comm-recipients">${c.recipients || members.length} destinatarios</span>
+                  </div>
+                  <div class="comm-status ${c.status || 'sent'}">
+                    ${c.status === 'sent' ? '✓ Enviado' : c.status === 'draft' ? '📝 Borrador' : '✓ Enviado'}
+                  </div>
+                  <button class="btn-view-comm" data-id="${c.id}">Ver</button>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="empty-state-card">
+              <span class="empty-icon">📧</span>
+              <p>No hay comunicaciones enviadas</p>
+              <button class="btn-primary" id="btn-first-communication">Enviar Primera Comunicación</button>
             </div>
           `}
         </div>
@@ -1176,13 +1135,14 @@ class OrganizationDashboard {
    * Adjunta listeners específicos del contenido
    */
   attachContentListeners(overlay) {
-    // Botón de validación manual de firmas
-    const btnUserValidate = overlay.querySelector('.btn-user-validate');
-    if (btnUserValidate) {
-      btnUserValidate.addEventListener('click', () => {
-        this.showUserValidationModal(overlay);
-      });
-    }
+    // Botón de validación manual de firmas - DEPRECADO
+    // El Ministro de Fe solo interviene durante la constitución, no en organizaciones activas
+    // const btnUserValidate = overlay.querySelector('.btn-user-validate');
+    // if (btnUserValidate) {
+    //   btnUserValidate.addEventListener('click', () => {
+    //     this.showUserValidationModal(overlay);
+    //   });
+    // }
 
     // FASE 4: Botones de acción de alertas
     overlay.querySelectorAll('.alert-action-btn').forEach(btn => {
@@ -1809,11 +1769,18 @@ class OrganizationDashboard {
   }
 
   /**
-   * Modal para que el usuario valide firmas manualmente
+   * Modal para que el usuario valide firmas manualmente - DEPRECADO
+   * Esta función ya no se usa porque el Ministro de Fe solo interviene
+   * durante el proceso de constitución, no en organizaciones activas.
    */
   showUserValidationModal(parentOverlay) {
+    // Función deprecada - retornar sin hacer nada
+    console.warn('showUserValidationModal: Esta función está deprecada');
+    return;
+
+    // Código deprecado abajo - mantener por referencia
     const org = this.currentOrg;
-    const assignment = ministroAssignmentService.getByOrganizationId(org.id)[0];
+    // const assignment = ministroAssignmentService.getByOrganizationId(org.id)[0];
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -1979,9 +1946,9 @@ class OrganizationDashboard {
       e.preventDefault();
 
       const validationData = {
-        validatedBy: 'USER',
+        validatedBy: 'ORGANIZADOR',
         validatorId: org.userId,
-        validatorName: 'Usuario',
+        validatorName: 'Organizador',
         signatures: {
           presidente: {
             name: modal.querySelector('#user-presidente-name').value.trim(),

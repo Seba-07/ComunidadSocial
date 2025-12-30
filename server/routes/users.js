@@ -5,9 +5,9 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 const router = express.Router();
 
 // Get all users (Admin only)
-router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const users = await User.find({ role: 'USER' }).sort({ createdAt: -1 });
+    const users = await User.find({ role: 'ORGANIZADOR' }).sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
@@ -19,7 +19,7 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
 router.get('/:id', authenticate, async (req, res) => {
   try {
     // Only self or admin can view
-    if (req.params.id !== req.userId.toString() && req.user.role !== 'ADMIN') {
+    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
@@ -38,7 +38,7 @@ router.get('/:id', authenticate, async (req, res) => {
 router.put('/:id', authenticate, async (req, res) => {
   try {
     // Only self or admin can update
-    if (req.params.id !== req.userId.toString() && req.user.role !== 'ADMIN') {
+    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
@@ -48,7 +48,7 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     // Don't allow changing role unless admin
-    if (req.body.role && req.user.role !== 'ADMIN') {
+    if (req.body.role && req.user.role !== 'MUNICIPALIDAD') {
       delete req.body.role;
     }
 
@@ -66,7 +66,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Toggle user active status (Admin only)
-router.post('/:id/toggle-active', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/toggle-active', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -84,9 +84,9 @@ router.post('/:id/toggle-active', authenticate, requireRole('ADMIN'), async (req
 });
 
 // Delete user (Admin only)
-router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const result = await User.deleteOne({ _id: req.params.id, role: 'USER' });
+    const result = await User.deleteOne({ _id: req.params.id, role: 'ORGANIZADOR' });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -98,10 +98,10 @@ router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res) => {
 });
 
 // Get statistics (Admin only)
-router.get('/stats/counts', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const total = await User.countDocuments({ role: 'USER' });
-    const active = await User.countDocuments({ role: 'USER', active: true });
+    const total = await User.countDocuments({ role: 'ORGANIZADOR' });
+    const active = await User.countDocuments({ role: 'ORGANIZADOR', active: true });
 
     res.json({
       total,

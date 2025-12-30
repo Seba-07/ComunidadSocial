@@ -1,9 +1,103 @@
 import express from 'express';
 import Organization from '../models/Organization.js';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
+
+/**
+ * Genera una contraseña temporal segura
+ */
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 10; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+/**
+ * Crea cuentas de usuario para los miembros de una organización
+ */
+async function createMemberAccounts(organization) {
+  const createdAccounts = [];
+  const errors = [];
+
+  if (!organization.members || organization.members.length === 0) {
+    return { createdAccounts, errors, message: 'No hay miembros para crear cuentas' };
+  }
+
+  for (const member of organization.members) {
+    try {
+      // Verificar si ya existe un usuario con este RUT o email
+      const existingUser = await User.findOne({
+        $or: [
+          { rut: member.rut },
+          { email: member.email }
+        ].filter(condition => Object.values(condition).every(v => v)) // Solo buscar si tiene valor
+      });
+
+      if (existingUser) {
+        // Si ya existe, simplemente lo asociamos a la organización si es MIEMBRO
+        if (existingUser.role === 'MIEMBRO') {
+          existingUser.organizationId = organization._id;
+          await existingUser.save();
+          createdAccounts.push({
+            rut: member.rut,
+            email: existingUser.email,
+            status: 'already_exists',
+            message: 'Usuario ya existente, asociado a la organización'
+          });
+        } else {
+          createdAccounts.push({
+            rut: member.rut,
+            email: existingUser.email,
+            status: 'skipped',
+            message: `Usuario ya existe con rol ${existingUser.role}`
+          });
+        }
+        continue;
+      }
+
+      // Crear nuevo usuario MIEMBRO
+      const tempPassword = generateTempPassword();
+      const newUser = new User({
+        rut: member.rut,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email || `${member.rut.replace(/\./g, '').replace(/-/g, '')}@miembro.comunidadsocial.cl`,
+        password: tempPassword,
+        phone: member.phone,
+        address: member.address,
+        role: 'MIEMBRO',
+        organizationId: organization._id,
+        mustChangePassword: true,
+        active: true
+      });
+
+      await newUser.save();
+
+      createdAccounts.push({
+        rut: member.rut,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: newUser.email,
+        tempPassword: tempPassword,
+        status: 'created'
+      });
+
+    } catch (error) {
+      errors.push({
+        rut: member.rut,
+        error: error.message
+      });
+    }
+  }
+
+  return { createdAccounts, errors };
+}
 
 // PUBLIC: Get booked time slots (for calendar availability)
 // Returns only date/time pairs without sensitive organization data
@@ -42,7 +136,7 @@ router.get('/availability/booked-slots', async (req, res) => {
 });
 
 // Get all organizations (Admin only)
-router.get('/', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organizations = await Organization.find()
       .populate('userId', 'firstName lastName email')
@@ -77,7 +171,7 @@ router.get('/:id', authenticate, async (req, res) => {
     }
 
     // Check permission: owner or admin
-    if (organization.userId._id.toString() !== req.userId.toString() && req.user.role !== 'ADMIN') {
+    if (organization.userId._id.toString() !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
       return res.status(403).json({ error: 'No tienes permisos para ver esta organización' });
     }
 
@@ -160,7 +254,7 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     // Check permission
-    if (organization.userId.toString() !== req.userId.toString() && req.user.role !== 'ADMIN') {
+    if (organization.userId.toString() !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
       return res.status(403).json({ error: 'No tienes permisos para editar esta organización' });
     }
 
@@ -175,7 +269,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Schedule ministro (Admin only)
-router.post('/:id/schedule-ministro', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -244,7 +338,7 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('ADMIN'), async 
 });
 
 // Approve by ministro
-router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO', 'ADMIN'), async (req, res) => {
+router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -288,7 +382,7 @@ router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO', 'ADMI
 });
 
 // Update status (Admin only)
-router.post('/:id/status', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -324,7 +418,7 @@ router.post('/:id/status', authenticate, requireRole('ADMIN'), async (req, res) 
 });
 
 // Reject with corrections (Admin only)
-router.post('/:id/reject', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -414,7 +508,7 @@ router.post('/:id/resubmit', authenticate, async (req, res) => {
 });
 
 // Get by status (Admin)
-router.get('/status/:status', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/status/:status', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organizations = await Organization.find({ status: req.params.status })
       .populate('userId', 'firstName lastName email')
@@ -427,7 +521,7 @@ router.get('/status/:status', authenticate, requireRole('ADMIN'), async (req, re
 });
 
 // Diagnóstico de organización (Admin) - ver todos los datos incluyendo provisionalDirectorio
-router.get('/:id/debug', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/:id/debug', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) {
@@ -456,7 +550,7 @@ router.get('/:id/debug', authenticate, requireRole('ADMIN'), async (req, res) =>
 });
 
 // Migrar provisionalDirectorio desde members (Admin)
-router.post('/:id/migrate-directorio', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/migrate-directorio', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) {
@@ -509,7 +603,7 @@ router.post('/:id/migrate-directorio', authenticate, requireRole('ADMIN'), async
 });
 
 // Migrar electoralCommission desde members (Admin)
-router.post('/:id/migrate-comision', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/migrate-comision', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) {
@@ -547,7 +641,7 @@ router.post('/:id/migrate-comision', authenticate, requireRole('ADMIN'), async (
 });
 
 // Establecer electoralCommission manualmente por RUTs (Admin)
-router.post('/:id/set-comision', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/set-comision', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) {
@@ -602,7 +696,7 @@ router.post('/:id/set-comision', authenticate, requireRole('ADMIN'), async (req,
 });
 
 // Actualizar provisionalDirectorio manualmente (Admin) - por si los roles están mal
-router.post('/:id/set-directorio', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/set-directorio', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) {
@@ -664,7 +758,7 @@ router.post('/:id/set-directorio', authenticate, requireRole('ADMIN'), async (re
 });
 
 // Migrar TODAS las organizaciones - construir provisionalDirectorio y electoralCommission desde members
-router.post('/migrate-all', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.post('/migrate-all', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organizations = await Organization.find({});
     const results = [];
@@ -751,7 +845,7 @@ router.post('/migrate-all', authenticate, requireRole('ADMIN'), async (req, res)
 });
 
 // Get statistics (Admin)
-router.get('/stats/counts', authenticate, requireRole('ADMIN'), async (req, res) => {
+router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const stats = await Organization.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } }
@@ -764,6 +858,132 @@ router.get('/stats/counts', authenticate, requireRole('ADMIN'), async (req, res)
   } catch (error) {
     console.error('Get stats error:', error);
     res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
+
+// ==================== GESTIÓN DE MIEMBROS ====================
+
+// Crear cuentas de usuario para los miembros de una organización (Municipalidad)
+router.post('/:id/create-member-accounts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    if (organization.memberAccountsCreated) {
+      return res.status(400).json({
+        error: 'Las cuentas de miembros ya fueron creadas',
+        createdAt: organization.memberAccountsCreatedAt
+      });
+    }
+
+    // Solo permitir crear cuentas si la organización está aprobada
+    const allowedStatuses = ['approved', 'sent_registry'];
+    if (!allowedStatuses.includes(organization.status)) {
+      return res.status(400).json({
+        error: 'Solo se pueden crear cuentas para organizaciones aprobadas',
+        currentStatus: organization.status
+      });
+    }
+
+    const result = await createMemberAccounts(organization);
+
+    // Marcar como creadas
+    organization.memberAccountsCreated = true;
+    organization.memberAccountsCreatedAt = new Date();
+    await organization.save();
+
+    // Notificar al organizador
+    await Notification.create({
+      userId: organization.userId,
+      type: 'member_accounts_created',
+      title: 'Cuentas de miembros creadas',
+      message: `Se han creado ${result.createdAccounts.filter(a => a.status === 'created').length} cuentas para los miembros de tu organización.`,
+      organizationId: organization._id,
+      data: { summary: result }
+    });
+
+    res.json({
+      message: 'Cuentas de miembros creadas exitosamente',
+      ...result
+    });
+  } catch (error) {
+    console.error('Create member accounts error:', error);
+    res.status(500).json({ error: 'Error al crear cuentas de miembros' });
+  }
+});
+
+// Obtener miembros con sus cuentas de usuario (Municipalidad)
+router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Obtener usuarios MIEMBRO asociados a esta organización
+    const memberUsers = await User.find({
+      role: 'MIEMBRO',
+      organizationId: organization._id
+    }).select('-password');
+
+    // Combinar con datos de members
+    const membersWithAccounts = organization.members.map(member => {
+      const userAccount = memberUsers.find(u => u.rut === member.rut);
+      return {
+        ...member.toObject(),
+        hasAccount: !!userAccount,
+        accountEmail: userAccount?.email,
+        accountActive: userAccount?.active,
+        accountId: userAccount?._id
+      };
+    });
+
+    res.json({
+      organization: {
+        _id: organization._id,
+        name: organization.organizationName,
+        memberAccountsCreated: organization.memberAccountsCreated,
+        memberAccountsCreatedAt: organization.memberAccountsCreatedAt
+      },
+      members: membersWithAccounts,
+      totalMembers: organization.members.length,
+      totalWithAccounts: memberUsers.length
+    });
+  } catch (error) {
+    console.error('Get members with accounts error:', error);
+    res.status(500).json({ error: 'Error al obtener miembros' });
+  }
+});
+
+// ==================== GESTIÓN DE ORGANIZACIONES ACTIVAS ====================
+
+// Obtener la organización a la que pertenece un miembro
+router.get('/my-organization', authenticate, async (req, res) => {
+  try {
+    // Solo para usuarios MIEMBRO
+    if (req.user.role !== 'MIEMBRO') {
+      return res.status(403).json({ error: 'Esta ruta es solo para miembros' });
+    }
+
+    if (!req.user.organizationId) {
+      return res.status(404).json({ error: 'No estás asociado a ninguna organización' });
+    }
+
+    const organization = await Organization.findById(req.user.organizationId)
+      .select('-corrections -validationData -ministroSignature');
+
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    res.json(organization);
+  } catch (error) {
+    console.error('Get my organization error:', error);
+    res.status(500).json({ error: 'Error al obtener organización' });
   }
 });
 
