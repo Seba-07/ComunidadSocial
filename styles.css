@@ -80,9 +80,9 @@ body {
     left: 0;
     right: 0;
     height: var(--header-height);
-    background: linear-gradient(135deg, var(--cs-primary-dark, #3d8229) 0%, var(--cs-primary, #4a9b32) 50%, var(--cs-primary-light, #5fb842) 100%);
+    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
     color: white;
-    box-shadow: var(--cs-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1)), 0 4px 20px rgba(74, 155, 50, 0.25);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
     z-index: var(--z-fixed, 100);
 }
 
@@ -100,7 +100,7 @@ body {
 .header-logo {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     flex: 1;
     justify-content: flex-start;
     text-decoration: none;
@@ -113,20 +113,16 @@ body {
 }
 
 .logo-img {
-    height: 48px;
-    width: 48px;
+    height: 56px;
+    width: auto;
     object-fit: contain;
-    border-radius: var(--cs-radius-md, 12px);
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    padding: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
     transition: var(--cs-transition, all 0.2s ease);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .header-logo:hover .logo-img {
-    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.05);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
 .header-title {
@@ -16722,7 +16718,7 @@ a.header-logo:hover {
 @media (max-width: 768px) {
     /* Variables ajustadas */
     :root {
-        --header-height: 56px;
+        --header-height: 70px;
         --bottom-nav-height: 64px;
     }
 
@@ -16732,14 +16728,14 @@ a.header-logo:hover {
     }
 
     .header-logo {
-        gap: 8px;
+        gap: 10px;
         flex: 1;
         justify-content: flex-start;
     }
 
     .logo-img {
-        height: 36px !important;
-        width: 36px !important;
+        height: 48px !important;
+        width: auto !important;
     }
 
     .header-title {
@@ -17091,12 +17087,12 @@ a.header-logo:hover {
     }
 
     .logo-img {
-        width: 32px !important;
-        height: 32px !important;
+        height: 40px !important;
+        width: auto !important;
     }
 
     .header-logo {
-        gap: 6px !important;
+        gap: 8px !important;
     }
 
     /* Reducir aún más el padding de botones */

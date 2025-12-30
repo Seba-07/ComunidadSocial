@@ -40,7 +40,16 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(git -C /Users/sebastianaranguizrivera/Desktop/Claude/ComunidadSocial log --oneline -15)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(node scripts/clean-db.js:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTMyZDdmMjI4NGI1NmVlYWQ3Y2Q1ZTEiLCJlbWFpbCI6ImFkbWluQHJlbmNhLmNsIiwicm9sZSI6Ik1VTklDSVBBTElEQUQiLCJpYXQiOjE3NjcxMDM4MjMsImV4cCI6MTc2NzcwODYyM30.7vH6996IH8-8NOvg0BSKJ-Aq4X0MXXJBtIqAvBK8T50\")",
+      "Bash(__NEW_LINE__ echo \"=== Test: GET /organizations ===\")",
+      "Bash(echo \"[]\" echo \"\" echo \"=== Test: GET /users ===\" curl -s https://comunidadsocial-production.up.railway.app/api/users  -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(echo \"Error\" echo \"\" echo \"=== Test: GET /ministros ===\" curl -s https://comunidadsocial-production.up.railway.app/api/ministros  -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(echo \"Error\" echo \"\" echo \"=== Test: GET /notifications ===\" curl -s https://comunidadsocial-production.up.railway.app/api/notifications  -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(echo \"Error\" echo \"\" echo \"=== Test: GET /auth/me ===\" curl -s https://comunidadsocial-production.up.railway.app/api/auth/me  -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(__NEW_LINE__ echo \"=== Test: Crear Ministro de Fe ===\")"
     ],
     "deny": [],
     "ask": []
