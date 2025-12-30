@@ -18971,9 +18971,8 @@ a.header-logo:hover {
 }
 
 .muni-panel-header {
-    background: linear-gradient(135deg, #f0f7ee 0%, #e8f5e4 100%);
+    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
     padding: 20px 24px;
-    border-bottom: 1px solid #d4e8cf;
 }
 
 .muni-panel-top {
@@ -19010,13 +19009,13 @@ a.header-logo:hover {
     font-size: 22px;
     font-weight: 700;
     margin: 0 0 4px 0;
-    color: #1f2937;
+    color: white;
 }
 
 .muni-panel-title p {
     font-size: 14px;
     margin: 0;
-    color: #4b5563;
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .muni-nav-buttons {
@@ -19029,26 +19028,24 @@ a.header-logo:hover {
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: white;
-    border: 1px solid #d1d5db;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 10px;
-    color: #374151;
+    color: white;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .muni-nav-btn:hover {
-    background: var(--cs-primary, #4a9b32);
-    border-color: var(--cs-primary, #4a9b32);
-    color: white;
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .muni-nav-btn svg {
     flex-shrink: 0;
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .muni-nav-btn:hover svg {
@@ -19067,28 +19064,27 @@ a.header-logo:hover {
     align-items: center;
     gap: 5px;
     padding: 8px 12px;
-    background: white;
-    border: 1px solid #d1d5db;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #4b5563;
+    color: rgba(255, 255, 255, 0.9);
     white-space: nowrap;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .muni-filter-chip:hover {
-    border-color: var(--cs-primary, #4a9b32);
-    color: var(--cs-primary, #4a9b32);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 .muni-filter-chip.active {
-    background: var(--cs-primary, #4a9b32);
-    border-color: var(--cs-primary, #4a9b32);
-    color: white;
-    box-shadow: 0 2px 8px rgba(74, 155, 50, 0.3);
+    background: white;
+    border-color: white;
+    color: #1a3a12;
+    font-weight: 600;
 }
 
 .muni-filter-chip .chip-count {
@@ -19098,14 +19094,15 @@ a.header-logo:hover {
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 9px;
     font-size: 11px;
     font-weight: 700;
 }
 
 .muni-filter-chip.active .chip-count {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--cs-primary, #4a9b32);
+    color: white;
 }
 
 /* Barra de Búsqueda */
@@ -19240,7 +19237,6 @@ a.header-logo:hover {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 6px;
-        flex-wrap: wrap;
     }
 
     .muni-filter-chip {
@@ -19249,6 +19245,11 @@ a.header-logo:hover {
         justify-content: center;
         text-align: center;
         border-radius: 6px;
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .muni-filter-chip.active {
+        background: white;
     }
 
     .muni-filter-chip .chip-count {
