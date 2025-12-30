@@ -11,6 +11,9 @@ import assignmentsRoutes from './routes/assignments.js';
 import notificationsRoutes from './routes/notifications.js';
 import usersRoutes from './routes/users.js';
 import unidadesVecinalesRoutes from './routes/unidadesVecinales.js';
+import guiaConstitucionRoutes from './routes/guiaConstitucion.js';
+import libraryDocumentsRoutes from './routes/libraryDocuments.js';
+import newsRoutes from './routes/news.js';
 
 // Model for auto-migration
 import Organization from './models/Organization.js';
@@ -47,6 +50,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Servir archivos estáticos de uploads
+app.use('/uploads', express.static('uploads'));
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
@@ -137,6 +143,9 @@ app.use('/api/assignments', assignmentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/unidades-vecinales', unidadesVecinalesRoutes);
+app.use('/api/guia-constitucion', guiaConstitucionRoutes);
+app.use('/api/library-documents', libraryDocumentsRoutes);
+app.use('/api/news', newsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

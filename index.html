@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="/src/shared/styles/redesign.css">
     <!-- Estilos principales de la app -->
     <link rel="stylesheet" href="/styles.css">
+    <!-- Quill.js para editor de texto enriquecido -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script type="module">
         // Check authentication before loading app
         const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -148,6 +151,10 @@
             </div>
             <ul class="nav-list">
                 <li><a href="#" data-page="home" class="nav-link active">🏠 Inicio</a></li>
+                <li><a href="#" data-page="guia-constitucion" class="nav-link">📋 Guía de Constitución</a></li>
+                <li><a href="#" data-page="biblioteca" class="nav-link">📚 Biblioteca de Documentos</a></li>
+                <li><a href="#" data-page="noticias" class="nav-link">📰 Noticias</a></li>
+                <li class="nav-separator"></li>
                 <li><a href="#" data-page="consejos" class="nav-link">👥 Consejos Escolares</a></li>
                 <li><a href="#" data-page="padres" class="nav-link">👨‍👩‍👧‍👦 Centro de Padres</a></li>
                 <li><a href="#" data-page="estudiantes" class="nav-link">🎓 Centro de Estudiantes</a></li>
@@ -833,6 +840,130 @@
                     <!-- Unidades Vecinales Manager View -->
                     <div id="uv-manager-view" class="uv-manager-view" style="display: none;">
                         <!-- Se genera dinámicamente por UnidadesVecinalesManager.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guía de Constitución View -->
+            <div id="page-guia-constitucion" class="page-view">
+                <div class="guia-container">
+                    <div class="guia-header">
+                        <h1>Guía de Constitución</h1>
+                        <p>Información para crear y formalizar organizaciones comunitarias</p>
+                    </div>
+                    <div id="guia-content" class="guia-content">
+                        <!-- Se carga dinámicamente -->
+                        <div class="guia-loading">
+                            <div class="spinner"></div>
+                            <p>Cargando guía...</p>
+                        </div>
+                    </div>
+                    <!-- Editor solo visible para MUNICIPALIDAD -->
+                    <div id="guia-editor-container" class="guia-editor-container" style="display: none;">
+                        <div class="guia-editor-toolbar">
+                            <button id="btn-edit-guia" class="btn-edit-guia">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Editar Guía
+                            </button>
+                        </div>
+                        <div id="guia-editor" class="guia-editor" style="display: none;">
+                            <div id="guia-quill-editor"></div>
+                            <div class="guia-editor-actions">
+                                <button id="btn-cancel-guia" class="btn-secondary">Cancelar</button>
+                                <button id="btn-save-guia" class="btn-primary">Guardar Cambios</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biblioteca de Documentos View -->
+            <div id="page-biblioteca" class="page-view">
+                <div class="biblioteca-container">
+                    <div class="biblioteca-header">
+                        <div class="biblioteca-header-left">
+                            <h1>Biblioteca de Documentos</h1>
+                            <p>Formularios, leyes, guías y recursos para organizaciones</p>
+                        </div>
+                        <div class="biblioteca-header-right" id="biblioteca-admin-actions" style="display: none;">
+                            <button id="btn-upload-document" class="btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Subir Documento
+                            </button>
+                        </div>
+                    </div>
+                    <div class="biblioteca-filters">
+                        <button class="biblioteca-filter-chip active" data-category="TODOS">Todos</button>
+                        <button class="biblioteca-filter-chip" data-category="FORMULARIOS">Formularios</button>
+                        <button class="biblioteca-filter-chip" data-category="LEYES">Leyes</button>
+                        <button class="biblioteca-filter-chip" data-category="GUIAS">Guías</button>
+                        <button class="biblioteca-filter-chip" data-category="PLANTILLAS">Plantillas</button>
+                        <button class="biblioteca-filter-chip" data-category="OTROS">Otros</button>
+                    </div>
+                    <div id="biblioteca-list" class="biblioteca-list">
+                        <!-- Se genera dinámicamente -->
+                        <div class="biblioteca-loading">
+                            <div class="spinner"></div>
+                            <p>Cargando documentos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Noticias View -->
+            <div id="page-noticias" class="page-view">
+                <div class="news-container">
+                    <div class="news-header">
+                        <div class="news-header-left">
+                            <h1>Noticias e Información</h1>
+                            <p>Mantente informado sobre las novedades de la comunidad</p>
+                        </div>
+                        <div class="news-header-right" id="news-admin-actions" style="display: none;">
+                            <button id="btn-new-article" class="btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Nueva Noticia
+                            </button>
+                        </div>
+                    </div>
+                    <div class="news-filters">
+                        <button class="news-filter-chip active" data-category="TODAS">Todas</button>
+                        <button class="news-filter-chip" data-category="NOTICIAS">Noticias</button>
+                        <button class="news-filter-chip" data-category="COMUNICADOS">Comunicados</button>
+                        <button class="news-filter-chip" data-category="EVENTOS">Eventos</button>
+                        <button class="news-filter-chip" data-category="CONVOCATORIAS">Convocatorias</button>
+                    </div>
+                    <div id="news-list" class="news-list">
+                        <!-- Se genera dinámicamente -->
+                        <div class="news-loading">
+                            <div class="spinner"></div>
+                            <p>Cargando noticias...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista de Artículo Individual -->
+            <div id="page-article" class="page-view">
+                <div class="article-container">
+                    <button id="btn-back-to-news" class="btn-back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Volver a Noticias
+                    </button>
+                    <div id="article-content" class="article-content">
+                        <!-- Se genera dinámicamente -->
                     </div>
                 </div>
             </div>

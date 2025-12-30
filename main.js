@@ -17,6 +17,9 @@ import { organizationDashboard } from './src/presentation/organization/Organizat
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
+import guiaConstitucionManager from './src/presentation/guia/GuiaConstitucionManager.js';
+import bibliotecaManager from './src/presentation/biblioteca/BibliotecaManager.js';
+import newsManager from './src/presentation/news/NewsManager.js';
 
 console.log('📦 main.js cargado');
 
@@ -494,6 +497,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cargar datos del perfil si se navega a esa página
         if (page === 'profile') {
           loadProfileData();
+        } else if (page === 'guia-constitucion') {
+          guiaConstitucionManager.init();
+        } else if (page === 'biblioteca') {
+          bibliotecaManager.init();
+        } else if (page === 'noticias') {
+          newsManager.init();
         }
       }
     });
@@ -531,6 +540,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnBackHome = document.querySelector('.btn-back-home');
   if (btnBackHome) {
     btnBackHome.addEventListener('click', () => {
+      // Si es MUNICIPALIDAD, ir al panel de admin
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.role === 'MUNICIPALIDAD') {
+            appState.navigateTo('admin');
+            return;
+          }
+        } catch (err) {
+          console.error('Error parsing user data:', err);
+        }
+      }
       appState.navigateTo('home');
     });
   }
@@ -722,8 +744,9 @@ function loadProfileData() {
     const rut = user.rut || profile.rut || '';
     const phone = user.phone || profile.phone || '';
     const address = user.address || profile.address || '';
-    const region = user.region || profile.region || '';
-    const commune = user.commune || profile.commune || '';
+    // Para MUNICIPALIDAD, usar RM y Renca como valores predeterminados
+    const region = user.region || profile.region || (user.role === 'MUNICIPALIDAD' ? 'RM' : '');
+    const commune = user.commune || profile.commune || (user.role === 'MUNICIPALIDAD' ? 'Renca' : '');
     const photo = user.photo || profile.photo || '';
 
     console.log('loadProfileData: Loading profile for', user.email, { firstName, lastName, rut, phone, address });
@@ -3367,6 +3390,9 @@ function setupAdminUI() {
   if (navList) {
     navList.innerHTML = `
       <li><a href="#" data-page="admin" class="nav-link active">📊 Panel de Control</a></li>
+      <li><a href="#" data-page="guia-constitucion" class="nav-link">📋 Guía de Constitución</a></li>
+      <li><a href="#" data-page="biblioteca" class="nav-link">📚 Biblioteca de Documentos</a></li>
+      <li><a href="#" data-page="noticias" class="nav-link">📰 Noticias</a></li>
       <li><a href="#" data-page="profile" class="nav-link">👤 Mi Perfil</a></li>
     `;
 
@@ -3381,6 +3407,12 @@ function setupAdminUI() {
             adminDashboard.init();
           } else if (page === 'profile') {
             loadProfileData();
+          } else if (page === 'guia-constitucion') {
+            guiaConstitucionManager.init();
+          } else if (page === 'biblioteca') {
+            bibliotecaManager.init();
+          } else if (page === 'noticias') {
+            newsManager.init();
           }
         }
       });
