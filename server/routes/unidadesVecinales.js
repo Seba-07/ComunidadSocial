@@ -91,7 +91,7 @@ router.get('/macrozonas', async (req, res) => {
  * POST /api/unidades-vecinales
  * Crear una nueva unidad vecinal (solo admin)
  */
-router.post('/', authenticate, requireRole('admin'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas } = req.body;
 
@@ -139,7 +139,7 @@ router.post('/', authenticate, requireRole('admin'), async (req, res) => {
  * DELETE /api/unidades-vecinales/:id
  * Eliminar una unidad vecinal (solo admin)
  */
-router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const unidad = await UnidadVecinal.findById(req.params.id);
 
@@ -187,7 +187,7 @@ router.get('/:id', async (req, res) => {
  * PUT /api/unidades-vecinales/:id
  * Actualizar una unidad vecinal (solo admin)
  */
-router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre } = req.body;
 
@@ -222,7 +222,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
  * POST /api/unidades-vecinales/:id/poblaciones
  * Agregar poblaciones a una unidad vecinal (solo admin)
  */
-router.post('/:id/poblaciones', authenticate, requireRole('admin'), async (req, res) => {
+router.post('/:id/poblaciones', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { poblaciones } = req.body;
 
@@ -251,7 +251,7 @@ router.post('/:id/poblaciones', authenticate, requireRole('admin'), async (req, 
  * POST /api/unidades-vecinales/:id/calles
  * Agregar calles a una unidad vecinal (solo admin)
  */
-router.post('/:id/calles', authenticate, requireRole('admin'), async (req, res) => {
+router.post('/:id/calles', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { calles } = req.body;
 
@@ -280,7 +280,7 @@ router.post('/:id/calles', authenticate, requireRole('admin'), async (req, res) 
  * DELETE /api/unidades-vecinales/:id/poblaciones/:poblacion
  * Eliminar una población de una unidad vecinal (solo admin)
  */
-router.delete('/:id/poblaciones/:poblacion', authenticate, requireRole('admin'), async (req, res) => {
+router.delete('/:id/poblaciones/:poblacion', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const poblacion = decodeURIComponent(req.params.poblacion);
 
@@ -305,7 +305,7 @@ router.delete('/:id/poblaciones/:poblacion', authenticate, requireRole('admin'),
  * POST /api/unidades-vecinales/seed
  * Ejecutar seed de unidades vecinales (solo admin)
  */
-router.post('/seed', authenticate, requireRole('admin'), async (req, res) => {
+router.post('/seed', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { seedUnidadesVecinales } = await import('../scripts/seedUnidadesVecinales.js');
     await seedUnidadesVecinales();
