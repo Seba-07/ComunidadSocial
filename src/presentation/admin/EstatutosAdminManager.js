@@ -3,7 +3,8 @@
  * Permite a MUNICIPALIDAD editar estatutos por tipo de organización
  */
 
-import { showToast, API_URL } from '../../app.js';
+import { showToast } from '../../app.js';
+import { apiService } from '../../services/ApiService.js';
 
 class EstatutosAdminManager {
   constructor(container) {
@@ -14,6 +15,7 @@ class EstatutosAdminManager {
     this.currentView = 'list'; // 'list', 'edit'
     this.quillEditor = null;
     this.activeTab = 'articulos';
+    this.API_URL = apiService.baseUrl;
   }
 
   async init() {
@@ -35,7 +37,7 @@ class EstatutosAdminManager {
   async loadTemplates() {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -676,7 +678,7 @@ class EstatutosAdminManager {
   async editTemplate(id) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates/id/${id}`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates/id/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -695,7 +697,7 @@ class EstatutosAdminManager {
   async createTemplate(tipo, nombre, categoria) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -774,7 +776,7 @@ class EstatutosAdminManager {
       updateData.articulos = this.selectedTemplate.articulos;
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates/${this.selectedTemplate._id}`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -798,7 +800,7 @@ class EstatutosAdminManager {
   async togglePublish(id) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates/${id}/publicar`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates/${id}/publicar`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -995,7 +997,7 @@ class EstatutosAdminManager {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -1017,7 +1019,7 @@ class EstatutosAdminManager {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen/${tipo}`, {
+      const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen/${tipo}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
