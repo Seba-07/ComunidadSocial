@@ -270,8 +270,7 @@ const estatutoTemplateSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Índices
-estatutoTemplateSchema.index({ tipoOrganizacion: 1 });
+// Índices adicionales (tipoOrganizacion ya tiene índice único por 'unique: true')
 estatutoTemplateSchema.index({ activo: 1, publicado: 1 });
 estatutoTemplateSchema.index({ categoria: 1 });
 
