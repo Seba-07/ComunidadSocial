@@ -19993,70 +19993,348 @@ a.header-logo:hover {
 }
 
 /* ============================================
-   GUÍA DE CONSTITUCIÓN STYLES
+   GUÍA DE CONSTITUCIÓN STYLES - REDISEÑO
    ============================================ */
 
-.guia-container {
-    padding: 20px;
-    max-width: 900px;
+.guia-page {
+    max-width: 1000px;
     margin: 0 auto;
+    padding: 0;
 }
 
-.guia-header {
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--primary-color, #0B8A4B);
+/* Header con gradiente */
+.guia-page-header {
+    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
+    color: white;
+    padding: 32px 24px;
+    border-radius: 16px 16px 0 0;
+    margin: 16px 16px 0;
 }
 
-.guia-header h1 {
+.guia-page-header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.guia-page-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.guia-page-header h1 {
     font-size: 1.75rem;
-    color: var(--text-primary, #1a1a1a);
+    font-weight: 700;
     margin: 0 0 8px 0;
 }
 
-.guia-header p {
-    color: var(--text-secondary, #666);
+.guia-page-header p {
     margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+/* Contenido principal */
+.guia-page-content {
+    background: #f8fafc;
+    padding: 24px 16px;
+    margin: 0 16px 16px;
+    border-radius: 0 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Secciones */
+.guia-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.guia-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.guia-section-icon {
+    font-size: 1.5rem;
+}
+
+.guia-section-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    flex: 1;
+}
+
+.guia-section-body {
+    padding: 20px;
+}
+
+/* Grid de requisitos */
+.guia-requirements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.guia-requirement-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-radius: 12px;
+    border: 1px solid #bbf7d0;
+}
+
+.requirement-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #166534;
+    line-height: 1;
+}
+
+.requirement-text strong {
+    display: block;
+    font-size: 0.85rem;
+    color: #166534;
+    margin-bottom: 2px;
+}
+
+.requirement-text span {
+    font-size: 0.8rem;
+    color: #4ade80;
+}
+
+.guia-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #fef3c7;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+}
+
+.guia-note svg {
+    flex-shrink: 0;
+    color: #d97706;
+    margin-top: 2px;
+}
+
+.guia-note span {
+    font-size: 0.9rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+/* Lista de roles */
+.guia-roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.guia-role-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.guia-role-item:hover {
+    background: #f3f4f6;
+    transform: translateX(4px);
+}
+
+.role-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.role-badge.president { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+.role-badge.secretary { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.role-badge.treasurer { background: linear-gradient(135deg, #059669, #10b981); }
+.role-badge.director { background: linear-gradient(135deg, #d97706, #f59e0b); }
+
+.role-info strong {
+    display: block;
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin-bottom: 2px;
+}
+
+.role-info span {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* Comisión Electoral */
+.guia-commission-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.commission-highlight {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 16px;
+    border: 2px solid #93c5fd;
+}
+
+.commission-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #1e40af;
+    line-height: 1;
+}
+
+.commission-label {
+    font-size: 0.85rem;
+    color: #3b82f6;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.guia-check-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    min-width: 250px;
+}
+
+.guia-check-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    font-size: 0.95rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.guia-check-list li:last-child {
+    border-bottom: none;
+}
+
+.guia-check-list svg {
+    color: #10b981;
+    flex-shrink: 0;
+}
+
+/* Grid de documentos */
+.guia-documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.guia-document-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+}
+
+.guia-document-item:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.document-icon {
+    font-size: 1.5rem;
+}
+
+.guia-document-item span {
+    font-size: 0.9rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+/* Sección adicional */
+.guia-additional-section {
+    border: 2px dashed #d1d5db;
+    background: #fafafa;
+}
+
+.guia-editor-inline {
+    margin-left: auto;
+}
+
+.btn-edit-guia-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit-guia-inline:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
 }
 
 .guia-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    min-height: 80px;
 }
 
 .guia-content-inner {
     line-height: 1.7;
-    color: var(--text-primary, #333);
-}
-
-.guia-content-inner h2 {
-    font-size: 1.5rem;
-    color: var(--primary-color, #0B8A4B);
-    margin: 0 0 16px 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.guia-content-inner h3 {
-    font-size: 1.2rem;
-    color: var(--text-primary, #1a1a1a);
-    margin: 24px 0 12px 0;
+    color: #374151;
 }
 
 .guia-content-inner p {
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
 }
 
 .guia-content-inner ul,
 .guia-content-inner ol {
-    margin: 0 0 16px 0;
-    padding-left: 24px;
-}
-
-.guia-content-inner li {
-    margin-bottom: 8px;
+    margin: 0 0 12px 0;
+    padding-left: 20px;
 }
 
 .guia-loading,
@@ -20065,62 +20343,79 @@ a.header-logo:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 40px 20px;
     text-align: center;
-}
-
-/* Sección de información adicional */
-.guia-additional-content {
-    margin-top: 32px;
-    padding-top: 32px;
-    border-top: 2px solid #e5e7eb;
-}
-
-.guia-additional-content h3 {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 16px 0;
-}
-
-.guia-editor-container {
-    margin-top: 24px;
-}
-
-.guia-editor-toolbar {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.btn-edit-guia {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--primary-color, #0B8A4B);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-edit-guia:hover {
-    background: var(--primary-dark, #097a42);
+    color: #9ca3af;
 }
 
 .guia-editor {
     background: white;
-    border-radius: 12px;
-    padding: 24px;
+    border-radius: 8px;
+    padding: 16px;
     margin-top: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
 }
 
 #guia-quill-editor {
-    min-height: 400px;
+    min-height: 300px;
     background: white;
+}
+
+.guia-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .guia-page-header {
+        margin: 12px 12px 0;
+        padding: 24px 16px;
+    }
+
+    .guia-page-header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .guia-page-content {
+        margin: 0 12px 12px;
+        padding: 16px 12px;
+    }
+
+    .guia-requirements-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .guia-commission-info {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .commission-highlight {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 16px;
+        padding: 16px 20px;
+    }
+
+    .guia-documents-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .guia-requirements-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .guia-page-header h1 {
+        font-size: 1.4rem;
+    }
 }
 
 .guia-editor-actions {
