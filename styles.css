@@ -15489,6 +15489,561 @@ a.header-logo:hover {
 }
 
 /* ===============================================
+   SCHEDULE MANAGER V2 - DISEÑO REDISEÑADO
+   =============================================== */
+
+.schedule-manager-v2 {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Header */
+.sm-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
+    border-radius: 16px;
+    color: white;
+}
+
+.sm-header-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sm-header-icon svg {
+    color: white;
+}
+
+.sm-header-text h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.sm-header-text p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Layout Principal */
+.sm-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+}
+
+/* Secciones */
+.sm-calendar-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.sm-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Cards */
+.sm-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.sm-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sm-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sm-card h4 {
+    margin: 0 0 16px 0;
+    padding: 16px 20px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Navigation Buttons */
+.sm-nav-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.sm-nav-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.sm-nav-btn svg {
+    color: inherit;
+}
+
+/* Calendar Weekdays */
+.sm-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: 12px 16px;
+    background: #f8fafb;
+}
+
+.sm-calendar-weekdays div {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* Calendar Days Grid */
+.sm-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding: 16px;
+}
+
+/* Calendar Legend */
+.sm-calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    background: #f8fafb;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.legend-dot.enabled {
+    background: #10b981;
+}
+
+.legend-dot.disabled {
+    background: #e5e7eb;
+}
+
+.legend-dot.past {
+    background: #9ca3af;
+}
+
+/* Editor Panel */
+.sm-editor {
+    border: 2px solid var(--primary-color);
+}
+
+.sm-editor-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 16px 20px !important;
+    border-bottom: none !important;
+}
+
+.sm-editor-header h4 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    text-transform: capitalize;
+    flex: 1;
+}
+
+.sm-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: white;
+}
+
+.sm-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.sm-editor-body {
+    padding: 20px;
+}
+
+/* Toggle */
+.sm-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f8fafb;
+    border-radius: 10px;
+}
+
+.sm-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.sm-toggle-slider {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: #e5e7eb;
+    border-radius: 13px;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+
+.sm-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sm-toggle input:checked + .sm-toggle-slider {
+    background: var(--primary-color);
+}
+
+.sm-toggle input:checked + .sm-toggle-slider::before {
+    transform: translateX(22px);
+}
+
+.sm-toggle-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Sections */
+.sm-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sm-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.sm-section h5 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Slots List */
+.sm-slots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+/* Add Slot */
+.sm-add-slot {
+    display: flex;
+    gap: 8px;
+}
+
+.sm-add-slot input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+/* Bookings List */
+.sm-bookings-list {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+/* Quick Actions */
+.sm-quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sm-btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+/* Buttons */
+.sm-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.sm-btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sm-btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.sm-btn-secondary {
+    background: #f0f7f0;
+    color: var(--primary-dark);
+    border: 1px solid var(--primary-color);
+}
+
+.sm-btn-secondary:hover {
+    background: #e0f0e0;
+}
+
+.sm-btn-warning {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+.sm-btn-warning:hover {
+    background: #fde68a;
+}
+
+.sm-btn-block {
+    width: 100%;
+}
+
+/* Placeholder */
+.sm-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.sm-placeholder-icon {
+    width: 80px;
+    height: 80px;
+    background: #f0f7f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.sm-placeholder-icon svg {
+    color: var(--primary-color);
+}
+
+.sm-placeholder p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    max-width: 200px;
+}
+
+/* Stats Grid */
+.sm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px 16px;
+}
+
+.sm-stats-grid .stat-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+.sm-stats-grid .stat-label {
+    font-size: 12px;
+}
+
+.sm-stats-grid .stat-value {
+    font-size: 16px;
+}
+
+/* Upcoming List */
+.sm-upcoming-list {
+    padding: 0 16px 16px;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1100px) {
+    .sm-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sm-sidebar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .sm-editor,
+    .sm-placeholder {
+        grid-column: span 2;
+    }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+    .sm-header {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .sm-header-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .sm-header-text h2 {
+        font-size: 18px;
+    }
+
+    .sm-header-text p {
+        font-size: 12px;
+    }
+
+    .sm-sidebar {
+        grid-template-columns: 1fr;
+    }
+
+    .sm-editor,
+    .sm-placeholder {
+        grid-column: span 1;
+    }
+
+    .sm-calendar-weekdays,
+    .sm-calendar-days {
+        gap: 3px;
+        padding: 10px;
+    }
+
+    .sm-calendar-legend {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .sm-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .sm-btn-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+    .sm-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .sm-calendar-days {
+        gap: 2px;
+        padding: 8px;
+    }
+
+    /* Ajustar tamaño de días del calendario en móvil */
+    .sm-calendar-days .admin-calendar-day {
+        padding: 4px;
+        min-height: 50px;
+    }
+
+    .sm-calendar-days .day-number {
+        font-size: 14px;
+    }
+
+    .sm-calendar-days .day-slots-count,
+    .sm-calendar-days .day-disabled-label {
+        font-size: 8px;
+        padding: 1px 4px;
+    }
+
+    .sm-calendar-days .day-bookings-badge {
+        width: 16px;
+        height: 16px;
+        font-size: 9px;
+    }
+}
+
+/* ===============================================
    MINISTRO MANAGER STYLES
    =============================================== */
 

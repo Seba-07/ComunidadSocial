@@ -23,141 +23,131 @@ export class ScheduleManager {
 
   render() {
     this.container.innerHTML = `
-      <div class="schedule-manager">
-        <div class="schedule-manager-header">
-          <h2>Gestión de Horarios - Ministro de Fe</h2>
-          <p class="schedule-subtitle">Administra la disponibilidad de días y horas para solicitudes</p>
-        </div>
-
-        <div class="schedule-manager-body">
-          <!-- Calendario de Gestión -->
-          <div class="schedule-admin-calendar">
-            <div class="calendar-controls">
-              <button type="button" id="admin-prev-month" class="calendar-nav-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-              </button>
-              <h3 id="admin-current-month"></h3>
-              <button type="button" id="admin-next-month" class="calendar-nav-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-            </div>
-
-            <div class="calendar-weekdays">
-              <div>Dom</div>
-              <div>Lun</div>
-              <div>Mar</div>
-              <div>Mié</div>
-              <div>Jue</div>
-              <div>Vie</div>
-              <div>Sáb</div>
-            </div>
-
-            <div id="admin-calendar-days" class="admin-calendar-days"></div>
-          </div>
-
-          <!-- Panel de Edición de Día -->
-          <div class="schedule-day-editor" id="day-editor" style="display: none;">
-            <div class="day-editor-header">
-              <h3 id="editor-date-title">Fecha</h3>
-              <button type="button" id="close-editor" class="btn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            <div class="day-editor-body">
-              <!-- Toggle Día Habilitado -->
-              <div class="editor-section">
-                <label class="toggle-label">
-                  <input type="checkbox" id="day-enabled-toggle">
-                  <span class="toggle-slider"></span>
-                  <span class="toggle-text">Día Habilitado</span>
-                </label>
-              </div>
-
-              <!-- Horarios del Día -->
-              <div class="editor-section">
-                <h4>Horarios Disponibles</h4>
-                <div id="time-slots-list" class="time-slots-list"></div>
-
-                <div class="add-time-slot-form">
-                  <input type="time" id="new-time-slot" class="input-styled" value="09:00">
-                  <button type="button" id="add-time-slot-btn" class="btn btn-sm btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Agregar Horario
-                  </button>
-                </div>
-              </div>
-
-              <!-- Reservas del Día -->
-              <div class="editor-section">
-                <h4>Reservas del Día</h4>
-                <div id="day-bookings-list" class="day-bookings-list"></div>
-              </div>
-
-              <!-- Acciones Rápidas -->
-              <div class="editor-actions">
-                <button type="button" id="set-default-hours-btn" class="btn btn-secondary btn-block">
-                  Aplicar Horario Laboral (9:00 - 17:00)
-                </button>
-                <div class="block-period-buttons">
-                  <button type="button" id="block-morning-btn" class="btn btn-warning btn-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="5"></circle>
-                      <line x1="12" y1="1" x2="12" y2="3"></line>
-                      <line x1="12" y1="21" x2="12" y2="23"></line>
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                      <line x1="1" y1="12" x2="3" y2="12"></line>
-                      <line x1="21" y1="12" x2="23" y2="12"></line>
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                    Bloquear Mañana
-                  </button>
-                  <button type="button" id="block-afternoon-btn" class="btn btn-warning btn-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    Bloquear Tarde
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Estadísticas y Reservas -->
-        <div class="schedule-stats">
-          <div class="stats-card">
-            <h4>📊 Estadísticas</h4>
-            <div id="schedule-stats-content"></div>
-          </div>
-
-          <div class="stats-card">
-            <h4>📅 Próximas Reservas</h4>
-            <div id="upcoming-bookings-list"></div>
-          </div>
-        </div>
-
-        <!-- Acciones Globales -->
-        <div class="schedule-global-actions">
-          <button type="button" id="reset-schedule-btn" class="btn btn-danger-outline">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      <div class="schedule-manager-v2">
+        <!-- Header -->
+        <div class="sm-header">
+          <div class="sm-header-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            Reiniciar Calendario (Borrar todas las reservas)
-          </button>
+          </div>
+          <div class="sm-header-text">
+            <h2>Gestión de Horarios</h2>
+            <p>Administra la disponibilidad para citas con Ministro de Fe</p>
+          </div>
+        </div>
+
+        <!-- Layout Principal -->
+        <div class="sm-layout">
+          <!-- Columna Izquierda: Calendario -->
+          <div class="sm-calendar-section">
+            <div class="sm-card">
+              <div class="sm-card-header">
+                <button type="button" id="admin-prev-month" class="sm-nav-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <h3 id="admin-current-month"></h3>
+                <button type="button" id="admin-next-month" class="sm-nav-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+              <div class="sm-calendar-weekdays">
+                <div>D</div>
+                <div>L</div>
+                <div>M</div>
+                <div>M</div>
+                <div>J</div>
+                <div>V</div>
+                <div>S</div>
+              </div>
+              <div id="admin-calendar-days" class="sm-calendar-days"></div>
+              <div class="sm-calendar-legend">
+                <span class="legend-item"><span class="legend-dot enabled"></span> Disponible</span>
+                <span class="legend-item"><span class="legend-dot disabled"></span> Sin horarios</span>
+                <span class="legend-item"><span class="legend-dot past"></span> Pasado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Editor y Stats -->
+          <div class="sm-sidebar">
+            <!-- Panel de Edición de Día -->
+            <div class="sm-card sm-editor" id="day-editor" style="display: none;">
+              <div class="sm-card-header sm-editor-header">
+                <h4 id="editor-date-title">Selecciona un día</h4>
+                <button type="button" id="close-editor" class="sm-close-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="sm-editor-body">
+                <label class="sm-toggle">
+                  <input type="checkbox" id="day-enabled-toggle">
+                  <span class="sm-toggle-slider"></span>
+                  <span class="sm-toggle-text">Día Habilitado</span>
+                </label>
+
+                <div class="sm-section">
+                  <h5>Horarios Disponibles</h5>
+                  <div id="time-slots-list" class="sm-slots-list"></div>
+                  <div class="sm-add-slot">
+                    <input type="time" id="new-time-slot" value="09:00">
+                    <button type="button" id="add-time-slot-btn" class="sm-btn sm-btn-primary">+ Agregar</button>
+                  </div>
+                </div>
+
+                <div class="sm-section">
+                  <h5>Reservas del Día</h5>
+                  <div id="day-bookings-list" class="sm-bookings-list"></div>
+                </div>
+
+                <div class="sm-quick-actions">
+                  <button type="button" id="set-default-hours-btn" class="sm-btn sm-btn-secondary sm-btn-block">
+                    Horario Laboral (9:00 - 17:00)
+                  </button>
+                  <div class="sm-btn-row">
+                    <button type="button" id="block-morning-btn" class="sm-btn sm-btn-warning">Bloquear Mañana</button>
+                    <button type="button" id="block-afternoon-btn" class="sm-btn sm-btn-warning">Bloquear Tarde</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Placeholder cuando no hay día seleccionado -->
+            <div class="sm-card sm-placeholder" id="editor-placeholder">
+              <div class="sm-placeholder-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <circle cx="12" cy="15" r="2"></circle>
+                </svg>
+              </div>
+              <p>Selecciona un día del calendario para editar sus horarios</p>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="sm-card sm-stats">
+              <h4>Resumen</h4>
+              <div id="schedule-stats-content" class="sm-stats-grid"></div>
+            </div>
+
+            <!-- Próximas Reservas -->
+            <div class="sm-card sm-upcoming">
+              <h4>Próximas Reservas</h4>
+              <div id="upcoming-bookings-list" class="sm-upcoming-list"></div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -229,8 +219,10 @@ export class ScheduleManager {
     const date = this.parseDateKey(dateKey);
     const daySchedule = scheduleService.getDaySchedule(date) || { enabled: false, slots: [] };
 
-    // Mostrar editor
+    // Mostrar editor y ocultar placeholder
     document.getElementById('day-editor').style.display = 'block';
+    const placeholder = document.getElementById('editor-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
 
     // Actualizar título
     document.getElementById('editor-date-title').textContent =
@@ -413,6 +405,8 @@ export class ScheduleManager {
     // Cerrar editor
     document.getElementById('close-editor').addEventListener('click', () => {
       document.getElementById('day-editor').style.display = 'none';
+      const placeholder = document.getElementById('editor-placeholder');
+      if (placeholder) placeholder.style.display = 'block';
       this.selectedDate = null;
     });
 
@@ -482,27 +476,6 @@ export class ScheduleManager {
       const daySchedule = scheduleService.getDaySchedule(date);
       this.renderTimeSlots(daySchedule?.slots || []);
       this.renderCalendar();
-    });
-
-    // Reiniciar calendario completo
-    document.getElementById('reset-schedule-btn').addEventListener('click', () => {
-      const confirmed = confirm('⚠️ ¿Estás seguro de que deseas reiniciar el calendario?\n\nEsto eliminará TODAS las reservas y configuraciones de horarios.\nEsta acción no se puede deshacer.');
-
-      if (!confirmed) return;
-
-      scheduleService.clearAllData();
-      scheduleService.init(); // Regenerar horarios por defecto
-
-      showToast('Calendario reiniciado correctamente', 'success');
-
-      // Cerrar editor si está abierto
-      document.getElementById('day-editor').style.display = 'none';
-      this.selectedDate = null;
-
-      // Actualizar vistas
-      this.renderCalendar();
-      this.renderStats();
-      this.renderUpcomingBookings();
     });
   }
 
