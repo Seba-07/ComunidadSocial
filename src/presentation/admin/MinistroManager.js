@@ -30,30 +30,6 @@ export class MinistroManager {
           </button>
         </div>
 
-        <div class="ministro-stats-row">
-          <div class="ministro-stat-card">
-            <div class="stat-icon" style="background: #dbeafe;">📊</div>
-            <div class="stat-content">
-              <div class="stat-value" id="total-ministros">0</div>
-              <div class="stat-label">Total Ministros</div>
-            </div>
-          </div>
-          <div class="ministro-stat-card">
-            <div class="stat-icon" style="background: #d1fae5;">✅</div>
-            <div class="stat-content">
-              <div class="stat-value" id="active-ministros">0</div>
-              <div class="stat-label">Activos</div>
-            </div>
-          </div>
-          <div class="ministro-stat-card">
-            <div class="stat-icon" style="background: #fee2e2;">⏸️</div>
-            <div class="stat-content">
-              <div class="stat-value" id="inactive-ministros">0</div>
-              <div class="stat-label">Inactivos</div>
-            </div>
-          </div>
-        </div>
-
         <div class="ministro-list-container">
           <div class="ministro-list-header">
             <h3>Lista de Ministros de Fe</h3>
@@ -162,15 +138,7 @@ export class MinistroManager {
     `;
 
     this.attachEventListeners();
-    this.renderStats();
     this.renderList();
-  }
-
-  renderStats() {
-    const stats = ministroService.getStats();
-    document.getElementById('total-ministros').textContent = stats.total;
-    document.getElementById('active-ministros').textContent = stats.active;
-    document.getElementById('inactive-ministros').textContent = stats.inactive;
   }
 
   renderList(filter = 'all') {
@@ -410,7 +378,6 @@ export class MinistroManager {
         });
       }
 
-      this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
       showToast(error.message || 'Error al guardar ministro', 'error');
@@ -493,7 +460,6 @@ export class MinistroManager {
     try {
       await ministroService.toggleActive(id);
       showToast('Estado actualizado', 'success');
-      this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
       showToast(error.message || 'Error al cambiar estado', 'error');
@@ -510,7 +476,6 @@ export class MinistroManager {
     try {
       await ministroService.delete(id);
       showToast('Ministro eliminado correctamente', 'success');
-      this.renderStats();
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
       showToast(error.message || 'Error al eliminar ministro', 'error');
