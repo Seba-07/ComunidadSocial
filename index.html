@@ -747,97 +747,67 @@
                     <div class="muni-panel">
                         <!-- Header del Panel -->
                         <div class="muni-panel-header">
-                            <div class="muni-panel-title">
-                                <div class="muni-icon">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 21h18"></path>
-                                        <path d="M5 21V7l7-4 7 4v14"></path>
-                                        <path d="M9 21v-6h6v6"></path>
-                                        <path d="M10 10h4"></path>
-                                    </svg>
+                            <div class="muni-panel-top">
+                                <div class="muni-panel-title">
+                                    <div class="muni-icon">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 21h18"></path>
+                                            <path d="M5 21V7l7-4 7 4v14"></path>
+                                            <path d="M9 21v-6h6v6"></path>
+                                            <path d="M10 10h4"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h1>Panel Municipalidad</h1>
+                                        <p>Gestión de organizaciones comunitarias</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1>Panel Municipalidad</h1>
-                                    <p>Gestión de organizaciones comunitarias</p>
+                                <div class="muni-nav-buttons">
+                                    <button id="btn-schedule-manager" class="muni-nav-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                        <span>Horarios</span>
+                                    </button>
+                                    <button id="btn-ministro-manager" class="muni-nav-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                        <span>Ministros</span>
+                                    </button>
+                                    <button id="btn-uv-manager" class="muni-nav-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        <span>U. Vecinales</span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="muni-nav-buttons">
-                                <button id="btn-schedule-manager" class="muni-nav-btn">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="16" y1="2" x2="16" y2="6"></line>
-                                        <line x1="8" y1="2" x2="8" y2="6"></line>
-                                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                                    </svg>
-                                    <span>Horarios</span>
-                                </button>
-                                <button id="btn-ministro-manager" class="muni-nav-btn">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="9" cy="7" r="4"></circle>
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                    </svg>
-                                    <span>Ministros</span>
-                                </button>
-                                <button id="btn-uv-manager" class="muni-nav-btn">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                        <circle cx="12" cy="10" r="3"></circle>
-                                    </svg>
-                                    <span>Unidades Vecinales</span>
-                                </button>
+                            <!-- Filtros en el header -->
+                            <div class="muni-filters">
+                                <button class="muni-filter-chip active" data-filter="all">Todas</button>
+                                <button class="muni-filter-chip" data-filter="pending_review">Pendientes <span class="chip-count" id="admin-pending-count">0</span></button>
+                                <button class="muni-filter-chip" data-filter="waiting_ministro">Ministro Fe <span class="chip-count" id="admin-ministro-count">0</span></button>
+                                <button class="muni-filter-chip" data-filter="in_review">En Revisión <span class="chip-count" id="admin-review-count">0</span></button>
+                                <button class="muni-filter-chip" data-filter="sent_registry">Registro Civil <span class="chip-count" id="admin-registry-count">0</span></button>
+                                <button class="muni-filter-chip" data-filter="approved">Aprobadas <span class="chip-count" id="admin-approved-count">0</span></button>
+                                <button class="muni-filter-chip" data-filter="rejected">Rechazadas <span class="chip-count" id="admin-rejected-count">0</span></button>
                             </div>
                         </div>
-
                         <!-- Barra de Búsqueda -->
                         <div class="muni-search-bar">
                             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" id="admin-search" placeholder="Buscar organización por nombre...">
-                        </div>
-
-                        <!-- Filtros Integrados -->
-                        <div class="muni-filters">
-                            <span class="muni-filters-label">Filtrar por estado:</span>
-                            <div class="muni-filter-chips">
-                                <button class="muni-filter-chip active" data-filter="all">
-                                    <span class="chip-icon">📋</span>
-                                    <span class="chip-text">Todas</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="pending_review">
-                                    <span class="chip-icon">📅</span>
-                                    <span class="chip-text">Pendientes</span>
-                                    <span class="chip-count" id="admin-pending-count">0</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="waiting_ministro">
-                                    <span class="chip-icon">📝</span>
-                                    <span class="chip-text">Ministro Fe</span>
-                                    <span class="chip-count" id="admin-ministro-count">0</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="in_review">
-                                    <span class="chip-icon">🔍</span>
-                                    <span class="chip-text">En Revisión</span>
-                                    <span class="chip-count" id="admin-review-count">0</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="sent_registry">
-                                    <span class="chip-icon">📤</span>
-                                    <span class="chip-text">Registro Civil</span>
-                                    <span class="chip-count" id="admin-registry-count">0</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="approved">
-                                    <span class="chip-icon">✅</span>
-                                    <span class="chip-text">Aprobadas</span>
-                                    <span class="chip-count" id="admin-approved-count">0</span>
-                                </button>
-                                <button class="muni-filter-chip" data-filter="rejected">
-                                    <span class="chip-icon">❌</span>
-                                    <span class="chip-text">Rechazadas</span>
-                                    <span class="chip-count" id="admin-rejected-count">0</span>
-                                </button>
-                            </div>
+                            <input type="text" id="admin-search" placeholder="Buscar organización...">
                         </div>
                     </div>
 

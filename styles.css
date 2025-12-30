@@ -18964,38 +18964,41 @@ a.header-logo:hover {
    ============================================ */
 .muni-panel {
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
     overflow: hidden;
 }
 
 .muni-panel-header {
     background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
-    padding: 24px;
+    padding: 20px;
+}
+
+.muni-panel-top {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    margin-bottom: 16px;
 }
 
 .muni-panel-title {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     color: white;
 }
 
 .muni-icon {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(10px);
 }
 
 .muni-icon svg {
@@ -19003,143 +19006,87 @@ a.header-logo:hover {
 }
 
 .muni-panel-title h1 {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
     color: white;
 }
 
 .muni-panel-title p {
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
-    opacity: 0.85;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .muni-nav-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .muni-nav-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
+    gap: 6px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
     color: white;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
 }
 
 .muni-nav-btn:hover {
     background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-1px);
 }
 
 .muni-nav-btn svg {
     flex-shrink: 0;
 }
 
-/* Barra de Búsqueda */
-.muni-search-bar {
-    position: relative;
-    padding: 16px 24px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.muni-search-bar .search-icon {
-    position: absolute;
-    left: 40px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #9ca3af;
-    pointer-events: none;
-}
-
-.muni-search-bar input {
-    width: 100%;
-    padding: 14px 16px 14px 48px;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    font-size: 15px;
-    background: #f9fafb;
-    color: #1f2937;
-    transition: all 0.2s ease;
-}
-
-.muni-search-bar input:focus {
-    outline: none;
-    border-color: var(--cs-primary, #4a9b32);
-    background: white;
-    box-shadow: 0 0 0 4px rgba(74, 155, 50, 0.1);
-}
-
-.muni-search-bar input::placeholder {
-    color: #9ca3af;
-}
-
-/* Filtros */
+/* Filtros integrados en header */
 .muni-filters {
-    padding: 16px 24px 20px;
-}
-
-.muni-filters-label {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-right: 12px;
-    white-space: nowrap;
-}
-
-.muni-filter-chips {
-    display: inline-flex;
-    flex-wrap: wrap;
+    display: flex;
     gap: 6px;
-    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+}
+
+.muni-filters::-webkit-scrollbar {
+    display: none;
 }
 
 .muni-filter-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    border-radius: 8px;
+    gap: 5px;
+    padding: 7px 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #4b5563;
+    color: rgba(255, 255, 255, 0.9);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .muni-filter-chip:hover {
-    border-color: var(--cs-primary, #4a9b32);
-    background: #edf7ea;
-    color: var(--cs-primary-dark, #3d8229);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 .muni-filter-chip.active {
-    border-color: var(--cs-primary, #4a9b32);
-    background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, var(--cs-primary-dark, #3d8229) 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(74, 155, 50, 0.3);
-}
-
-.muni-filter-chip .chip-icon {
-    font-size: 14px;
+    background: white;
+    border-color: white;
+    color: #1a3a12;
+    font-weight: 600;
 }
 
 .muni-filter-chip .chip-count {
@@ -19149,108 +19096,109 @@ a.header-logo:hover {
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 9px;
     font-size: 11px;
     font-weight: 700;
 }
 
 .muni-filter-chip.active .chip-count {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--cs-primary, #4a9b32);
+    color: white;
+}
+
+/* Barra de Búsqueda */
+.muni-search-bar {
+    position: relative;
+    padding: 12px 20px;
+    background: #f8faf8;
+}
+
+.muni-search-bar .search-icon {
+    position: absolute;
+    left: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.muni-search-bar input {
+    width: 100%;
+    padding: 10px 14px 10px 42px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    color: #1f2937;
+    transition: all 0.2s ease;
+}
+
+.muni-search-bar input:focus {
+    outline: none;
+    border-color: var(--cs-primary, #4a9b32);
+    box-shadow: 0 0 0 3px rgba(74, 155, 50, 0.1);
+}
+
+.muni-search-bar input::placeholder {
+    color: #9ca3af;
 }
 
 /* Responsive Mobile */
 @media (max-width: 768px) {
     .muni-panel {
-        border-radius: 16px;
+        border-radius: 12px;
         margin: 0 -8px 16px;
     }
 
     .muni-panel-header {
-        padding: 20px 16px;
-        flex-direction: column;
-        align-items: flex-start;
+        padding: 16px;
     }
 
-    .muni-panel-title {
+    .muni-panel-top {
+        margin-bottom: 12px;
         gap: 12px;
     }
 
+    .muni-panel-title {
+        gap: 10px;
+    }
+
     .muni-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
     }
 
     .muni-icon svg {
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
     }
 
     .muni-panel-title h1 {
-        font-size: 20px;
+        font-size: 16px;
     }
 
     .muni-panel-title p {
-        font-size: 13px;
+        font-size: 11px;
     }
 
     .muni-nav-buttons {
-        width: 100%;
+        gap: 4px;
     }
 
     .muni-nav-btn {
-        flex: 1;
-        justify-content: center;
-        padding: 10px 12px;
-        font-size: 13px;
+        padding: 6px 10px;
+        font-size: 12px;
+        gap: 4px;
     }
 
     .muni-nav-btn span {
         display: none;
     }
 
-    .muni-search-bar {
-        padding: 12px 16px;
-    }
-
-    .muni-search-bar .search-icon {
-        left: 28px;
-    }
-
-    .muni-search-bar input {
-        padding: 12px 14px 12px 44px;
-        font-size: 14px;
-    }
-
-    .muni-filters {
-        padding: 12px 16px 16px;
-    }
-
-    .muni-filters-label {
-        display: block;
-        font-size: 11px;
-        margin-bottom: 8px;
-        margin-right: 0;
-    }
-
-    .muni-filter-chips {
-        display: flex;
-        gap: 5px;
-    }
-
     .muni-filter-chip {
-        padding: 5px 8px;
-        font-size: 11px;
-        border-radius: 6px;
-        gap: 3px;
-    }
-
-    .muni-filter-chip .chip-text {
-        display: none;
-    }
-
-    .muni-filter-chip .chip-icon {
+        padding: 6px 10px;
         font-size: 12px;
     }
 
@@ -19258,17 +19206,35 @@ a.header-logo:hover {
         min-width: 16px;
         height: 16px;
         font-size: 10px;
-        padding: 0 3px;
+    }
+
+    .muni-search-bar {
+        padding: 10px 16px;
+    }
+
+    .muni-search-bar .search-icon {
+        left: 26px;
+    }
+
+    .muni-search-bar input {
+        padding: 8px 12px 8px 38px;
+        font-size: 13px;
     }
 }
 
 @media (max-width: 480px) {
-    .muni-nav-btn {
-        flex: 1 1 calc(33.33% - 6px);
-        padding: 10px 8px;
+    .muni-panel-top {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
-    .muni-filter-chip {
-        padding: 8px;
+    .muni-nav-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .muni-nav-btn {
+        flex: 1;
+        justify-content: center;
     }
 }
