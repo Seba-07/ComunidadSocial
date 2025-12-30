@@ -240,7 +240,12 @@ router.post('/', authenticate, async (req, res) => {
     res.status(201).json(organization);
   } catch (error) {
     console.error('Create organization error:', error);
-    res.status(500).json({ error: 'Error al crear organización' });
+    // Devolver mensaje de error más descriptivo
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ error: 'Validación fallida: ' + messages.join(', ') });
+    }
+    res.status(500).json({ error: error.message || 'Error al crear organización' });
   }
 });
 
