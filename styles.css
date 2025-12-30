@@ -19092,34 +19092,37 @@ a.header-logo:hover {
 }
 
 .muni-filters-label {
-    display: block;
-    font-size: 13px;
+    display: inline-block;
+    font-size: 12px;
     font-weight: 600;
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 12px;
+    margin-right: 12px;
+    white-space: nowrap;
 }
 
 .muni-filter-chips {
-    display: flex;
+    display: inline-flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
 }
 
 .muni-filter-chip {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    border: 2px solid #e5e7eb;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 1.5px solid #e5e7eb;
     background: #f9fafb;
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     color: #4b5563;
+    white-space: nowrap;
 }
 
 .muni-filter-chip:hover {
@@ -19136,19 +19139,19 @@ a.header-logo:hover {
 }
 
 .muni-filter-chip .chip-icon {
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .muni-filter-chip .chip-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     background: rgba(0, 0, 0, 0.08);
-    border-radius: 20px;
-    font-size: 12px;
+    border-radius: 10px;
+    font-size: 11px;
     font-weight: 700;
 }
 
@@ -19225,29 +19228,37 @@ a.header-logo:hover {
     }
 
     .muni-filters-label {
-        font-size: 12px;
-        margin-bottom: 10px;
+        display: block;
+        font-size: 11px;
+        margin-bottom: 8px;
+        margin-right: 0;
     }
 
     .muni-filter-chips {
-        gap: 6px;
+        display: flex;
+        gap: 5px;
     }
 
     .muni-filter-chip {
-        padding: 8px 10px;
-        font-size: 12px;
-        border-radius: 8px;
+        padding: 5px 8px;
+        font-size: 11px;
+        border-radius: 6px;
+        gap: 3px;
     }
 
     .muni-filter-chip .chip-text {
         display: none;
     }
 
+    .muni-filter-chip .chip-icon {
+        font-size: 12px;
+    }
+
     .muni-filter-chip .chip-count {
-        min-width: 18px;
-        height: 18px;
-        font-size: 11px;
-        padding: 0 4px;
+        min-width: 16px;
+        height: 16px;
+        font-size: 10px;
+        padding: 0 3px;
     }
 }
 
