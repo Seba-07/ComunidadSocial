@@ -347,12 +347,29 @@ class OrganizationsService {
         role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
       }));
 
-      // Log para depuración de miembros
-      console.log('📋 Miembros mapeados:', mappedMembers.map(m => ({
+      // Log para depuración de miembros - mostrar datos originales y mapeados
+      console.log('📋 Miembros originales (primeros 3):', members.slice(0, 3).map(m => ({
         rut: m.rut,
-        firstName: m.firstName || '(vacío)',
-        lastName: m.lastName || '(vacío)'
+        primerNombre: m.primerNombre,
+        segundoNombre: m.segundoNombre,
+        apellidoPaterno: m.apellidoPaterno,
+        apellidoMaterno: m.apellidoMaterno,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        nombre: m.nombre
       })));
+      console.log('📋 Miembros mapeados (primeros 3):', mappedMembers.slice(0, 3).map(m => ({
+        rut: m.rut,
+        firstName: m.firstName || '❌ VACÍO',
+        lastName: m.lastName || '❌ VACÍO'
+      })));
+
+      // Verificar si hay miembros con nombres vacíos
+      const membrosConNombresVacios = mappedMembers.filter(m => !m.firstName || !m.lastName);
+      if (membrosConNombresVacios.length > 0) {
+        console.error('⚠️ HAY MIEMBROS CON NOMBRES VACÍOS:', membrosConNombresVacios.length);
+        console.error('⚠️ Detalle:', membrosConNombresVacios.map(m => ({ rut: m.rut, firstName: m.firstName, lastName: m.lastName })));
+      }
 
       // Mapear directorio provisorio
       const dirProv = requestData.directorioProvisorio || {};
