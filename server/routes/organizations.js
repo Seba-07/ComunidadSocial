@@ -269,10 +269,21 @@ router.post('/', authenticate, async (req, res) => {
     await organization.save();
 
     // DEBUG: Verificar que se guardó
-    console.log('✅ CREATE ORG - provisionalDirectorio guardado:', JSON.stringify(organization.provisionalDirectorio, null, 2));
-    console.log('✅ CREATE ORG - electoralCommission guardado:', JSON.stringify(organization.electoralCommission, null, 2));
+    console.log('✅ CREATE ORG - ID:', organization._id);
+    console.log('✅ CREATE ORG - Status:', organization.status);
 
-    res.status(201).json(organization);
+    // Devolver respuesta simplificada para evitar problemas de serialización
+    const response = {
+      _id: organization._id,
+      organizationName: organization.organizationName,
+      organizationType: organization.organizationType,
+      status: organization.status,
+      electionDate: organization.electionDate,
+      electionTime: organization.electionTime,
+      createdAt: organization.createdAt
+    };
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('❌ Create organization error:', error);
     console.error('❌ Error name:', error.name);
