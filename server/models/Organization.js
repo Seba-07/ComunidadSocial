@@ -88,6 +88,11 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  contactPreference: {
+    type: String,
+    enum: ['phone', 'email'],
+    default: 'phone'
+  },
 
   // Members
   members: [memberSchema],

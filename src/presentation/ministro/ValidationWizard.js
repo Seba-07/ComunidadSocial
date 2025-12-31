@@ -525,8 +525,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
   // Crear modal
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; box-sizing: border-box;';
+  modal.className = 'modal-overlay validation-wizard-overlay';
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 100%); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 16px; box-sizing: border-box; backdrop-filter: blur(8px);';
 
   // Función para renderizar el wizard
   const renderWizard = (skipSave = false) => {
@@ -539,22 +539,33 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     updateSelectedIds();
 
     modal.innerHTML = `
-      <div class="wizard-container" style="background: white; border-radius: 20px; max-width: 950px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.3); overflow: hidden;">
+      <div class="wizard-container validation-wizard-container" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border-radius: 24px; max-width: 1200px; width: 100%; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 32px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1); overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px 24px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <h2 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%); color: white; padding: 28px 32px; position: relative; overflow: hidden;">
+          <!-- Decoración de fondo -->
+          <div style="position: absolute; top: -50%; right: -10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%); pointer-events: none;"></div>
+          <div style="position: absolute; bottom: -50%; left: -10%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+              <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(59,130,246,0.4);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                 </svg>
-                Validación de Asamblea Constitutiva
-              </h2>
-              <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${orgName}</p>
+              </div>
+              <div>
+                <h2 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Validación de Asamblea Constitutiva</h2>
+                <p style="margin: 6px 0 0; opacity: 0.85; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  ${orgName}
+                </p>
+              </div>
             </div>
-            <button type="button" id="close-wizard-btn" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button type="button" id="close-wizard-btn" style="background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -562,54 +573,60 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           </div>
 
           <!-- Progress Steps -->
-          <div style="display: flex; justify-content: space-between; margin-top: 20px; position: relative;">
-            <div style="position: absolute; top: 14px; left: 20px; right: 20px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px;"></div>
-            <div style="position: absolute; top: 14px; left: 20px; height: 3px; background: white; border-radius: 2px; transition: width 0.3s; width: ${((currentStep - 1) / (totalSteps - 1)) * 100}%;"></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 28px; position: relative; padding: 0 12px;">
+            <!-- Línea de fondo -->
+            <div style="position: absolute; top: 18px; left: 50px; right: 50px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px;"></div>
+            <!-- Línea de progreso -->
+            <div style="position: absolute; top: 18px; left: 50px; height: 4px; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width 0.4s ease; width: calc(${((currentStep - 1) / (totalSteps - 1)) * 100}% * 0.85); box-shadow: 0 0 12px rgba(16,185,129,0.5);"></div>
             ${[
-              { num: 1, label: 'Directorio' },
-              { num: 2, label: 'Adicionales' },
-              { num: 3, label: 'Comisión' },
-              { num: 4, label: 'Asistentes' },
-              { num: 5, label: 'Estatutos' },
-              { num: 6, label: 'Confirmar' }
+              { num: 1, label: 'Directorio', icon: '👤' },
+              { num: 2, label: 'Adicionales', icon: '👥' },
+              { num: 3, label: 'Comisión', icon: '📋' },
+              { num: 4, label: 'Asistentes', icon: '✍️' },
+              { num: 5, label: 'Estatutos', icon: '📜' },
+              { num: 6, label: 'Confirmar', icon: '✅' }
             ].map(step => `
-              <div style="display: flex; flex-direction: column; align-items: center; z-index: 1;">
-                <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; ${
-                  currentStep >= step.num
-                    ? 'background: white; color: #1e40af;'
-                    : 'background: rgba(255,255,255,0.3); color: white;'
+              <div style="display: flex; flex-direction: column; align-items: center; z-index: 1; min-width: 70px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; transition: all 0.3s; ${
+                  currentStep > step.num
+                    ? 'background: linear-gradient(135deg, #10b981, #34d399); color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.4);'
+                    : currentStep === step.num
+                    ? 'background: white; color: #1e40af; box-shadow: 0 4px 16px rgba(255,255,255,0.4); transform: scale(1.1);'
+                    : 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7);'
                 }">
-                  ${currentStep > step.num ? '✓' : step.num}
+                  ${currentStep > step.num ? '✓' : step.icon}
                 </div>
-                <span style="font-size: 11px; margin-top: 6px; opacity: ${currentStep >= step.num ? 1 : 0.7};">${step.label}</span>
+                <span style="font-size: 11px; margin-top: 8px; font-weight: ${currentStep >= step.num ? '600' : '400'}; opacity: ${currentStep >= step.num ? 1 : 0.6}; white-space: nowrap;">${step.label}</span>
               </div>
             `).join('')}
           </div>
         </div>
 
         <!-- Content -->
-        <div style="flex: 1; overflow-y: auto; padding: 24px;" id="wizard-content">
+        <div style="flex: 1; overflow-y: auto; padding: 32px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);" id="wizard-content">
           ${renderStepContent()}
         </div>
 
         <!-- Footer -->
-        <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
-          <button type="button" id="prev-step-btn" style="padding: 12px 24px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 10px; font-weight: 600; cursor: pointer; display: ${currentStep === 1 ? 'none' : 'flex'}; align-items: center; gap: 8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div style="padding: 20px 32px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); gap: 16px;">
+          <button type="button" id="prev-step-btn" style="padding: 14px 28px; border: 2px solid #cbd5e1; background: white; color: #475569; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; display: ${currentStep === 1 ? 'none' : 'flex'}; align-items: center; gap: 10px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
             Anterior
           </button>
-          <div style="flex: 1;"></div>
-          <button type="button" id="next-step-btn" style="padding: 12px 24px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <div style="flex: 1; text-align: center;">
+            <span style="font-size: 13px; color: #64748b; font-weight: 500;">Paso ${currentStep} de ${totalSteps}</span>
+          </div>
+          <button type="button" id="next-step-btn" style="padding: 14px 32px; border: none; background: ${currentStep === totalSteps ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)'}; color: white; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: ${currentStep === totalSteps ? '0 4px 16px rgba(16,185,129,0.4)' : '0 4px 16px rgba(59,130,246,0.4)'}; transition: all 0.2s;">
             ${currentStep === totalSteps ? `
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
               Confirmar Validación
             ` : `
               Siguiente
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             `}

@@ -448,6 +448,7 @@ class OrganizationsService {
         // Datos de contacto del usuario solicitante (del paso 1)
         contactEmail: orgInfo.contactEmail || orgInfo.email || '',
         contactPhone: orgInfo.contactPhone || orgInfo.phone || '',
+        contactPreference: orgInfo.contactPreference || 'phone',
         members: mappedMembers,
         // Directorio Provisorio (paso 5)
         provisionalDirectorio: provisionalDirectorio,

@@ -725,7 +725,7 @@ class AdminDashboard {
               </div>
               <div class="preview-detail-row">
                 <span class="detail-label">Forma de Contacto Preferida</span>
-                <span class="detail-value">${org.organization?.contactPreference === 'email' ? '📧 Email' : '📞 Teléfono'}</span>
+                <span class="detail-value">${(org.organization?.contactPreference || org.contactPreference) === 'email' ? '📧 Email' : '📞 Teléfono'}</span>
               </div>
               ${org.organization?.preferredSchedule ? `
                 <div class="preview-detail-row full">
@@ -4531,6 +4531,13 @@ class AdminDashboard {
 
       scheduleForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Agregar loading al botón
+        const submitBtn = scheduleForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-small"></span> Agendando...';
+
         const formData = new FormData(scheduleForm);
 
         // ID de la organización
@@ -4542,6 +4549,8 @@ class AdminDashboard {
 
         if (!ministro) {
           showToast('Error: Ministro de Fe no encontrado. Verifica que haya ministros activos.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
           return;
         }
 
@@ -4554,6 +4563,8 @@ class AdminDashboard {
         const isAvailable = ministroAvailabilityService.isAvailable(mId, scheduledDate, scheduledTime);
         if (!isAvailable) {
           showToast('⚠️ El ministro no está disponible en esta fecha/hora. Ha bloqueado su disponibilidad.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
           return;
         }
 
@@ -4582,6 +4593,8 @@ class AdminDashboard {
           );
 
           if (!confirmed) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
             return;
           }
         }
@@ -4643,10 +4656,14 @@ class AdminDashboard {
             this.updateStats();
           } else {
             showToast('Error al agendar Ministro de Fe', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
           }
         } catch (error) {
           console.error('Error scheduling ministro:', error);
           showToast('Error al agendar Ministro de Fe: ' + (error.message || 'Error desconocido'), 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
         }
       });
     }
