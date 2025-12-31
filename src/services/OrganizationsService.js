@@ -302,11 +302,43 @@ class OrganizationsService {
       const orgInfo = requestData.organizationData?.organization || {};
       const members = requestData.organizationData?.members || [];
 
+      // Función helper para construir firstName desde campos del wizard
+      const buildFirstName = (m) => {
+        // Formato WizardController: primerNombre, segundoNombre
+        if (m.primerNombre) {
+          return [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+        }
+        // Formato estándar
+        if (m.firstName) return m.firstName;
+        // Formato alternativo: nombre completo
+        if (m.nombre) return m.nombre.split(' ')[0] || '';
+        // Formato alternativo: name
+        if (m.name) return m.name.split(' ')[0] || '';
+        return '';
+      };
+
+      // Función helper para construir lastName desde campos del wizard
+      const buildLastName = (m) => {
+        // Formato WizardController: apellidoPaterno, apellidoMaterno
+        if (m.apellidoPaterno) {
+          return [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+        }
+        // Formato estándar
+        if (m.lastName) return m.lastName;
+        // Formato alternativo
+        if (m.apellido) return m.apellido;
+        // Desde nombre completo
+        if (m.nombre) return m.nombre.split(' ').slice(1).join(' ') || '';
+        // Desde name
+        if (m.name) return m.name.split(' ').slice(1).join(' ') || '';
+        return '';
+      };
+
       // Mapear miembros al formato del backend
       const mappedMembers = members.map((m, index) => ({
         rut: m.rut,
-        firstName: m.firstName || m.nombre?.split(' ')[0] || '',
-        lastName: m.lastName || m.nombre?.split(' ').slice(1).join(' ') || m.apellido || '',
+        firstName: buildFirstName(m),
+        lastName: buildLastName(m),
         address: m.address || m.direccion || '',
         phone: m.phone || m.telefono || '',
         email: m.email || '',
@@ -319,35 +351,10 @@ class OrganizationsService {
       const dirProv = requestData.directorioProvisorio || {};
       console.log('🔍 directorioProvisorio recibido:', dirProv);
 
-      // Función helper para extraer nombre de un miembro
+      // Función helper para extraer nombre de un miembro (reutilizando helpers)
       const extractName = (member) => {
         if (!member) return { firstName: '', lastName: '' };
-
-        // Formato WizardController: primerNombre, segundoNombre, apellidoPaterno, apellidoMaterno
-        if (member.primerNombre) {
-          const firstName = [member.primerNombre, member.segundoNombre].filter(Boolean).join(' ');
-          const lastName = [member.apellidoPaterno, member.apellidoMaterno].filter(Boolean).join(' ');
-          return { firstName, lastName };
-        }
-
-        // Formato estándar: firstName, lastName
-        if (member.firstName) {
-          return { firstName: member.firstName, lastName: member.lastName || '' };
-        }
-
-        // Formato string completo: nombre
-        if (member.nombre) {
-          const parts = member.nombre.split(' ');
-          return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
-        }
-
-        // Formato alternativo: name
-        if (member.name) {
-          const parts = member.name.split(' ');
-          return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
-        }
-
-        return { firstName: '', lastName: '' };
+        return { firstName: buildFirstName(member), lastName: buildLastName(member) };
       };
 
       const provisionalDirectorio = {
