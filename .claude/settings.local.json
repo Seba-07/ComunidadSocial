@@ -49,7 +49,9 @@
       "Bash(echo \"Error\" echo \"\" echo \"=== Test: GET /notifications ===\" curl -s https://comunidadsocial-production.up.railway.app/api/notifications  -H \"Authorization: Bearer $TOKEN\")",
       "Bash(echo \"Error\" echo \"\" echo \"=== Test: GET /auth/me ===\" curl -s https://comunidadsocial-production.up.railway.app/api/auth/me  -H \"Authorization: Bearer $TOKEN\")",
       "Bash(__NEW_LINE__ echo \"\")",
-      "Bash(__NEW_LINE__ echo \"=== Test: Crear Ministro de Fe ===\")"
+      "Bash(__NEW_LINE__ echo \"=== Test: Crear Ministro de Fe ===\")",
+      "Bash(node --experimental-modules:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

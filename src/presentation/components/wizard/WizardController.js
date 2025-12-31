@@ -7479,17 +7479,36 @@ Secretaria Municipal`;
       console.log('🔍 [WizardController] formData.directorioProvisorio:', this.formData.directorioProvisorio);
       console.log('🔍 [WizardController] formData.commission:', this.formData.commission);
 
+      // Extraer todos los miembros del directorio provisorio
+      const dirProv = this.formData.directorioProvisorio || {};
+      const directorioCompleto = {
+        presidente: dirProv.presidente || null,
+        secretario: dirProv.secretario || null,
+        tesorero: dirProv.tesorero || null
+      };
+
+      // Agregar miembros adicionales (vicepresidente, directores, etc.)
+      const miembrosAdicionales = [];
+      Object.keys(dirProv).forEach(key => {
+        if (!['presidente', 'secretario', 'tesorero'].includes(key) && dirProv[key]) {
+          miembrosAdicionales.push({
+            cargo: key,
+            ...dirProv[key]
+          });
+        }
+      });
+
+      if (miembrosAdicionales.length > 0) {
+        directorioCompleto.miembrosAdicionales = miembrosAdicionales;
+      }
+
       const requestData = {
         organizationData: {
           organization: this.formData.organization,
           members: this.formData.members
         },
-        // Datos del paso 5: Directorio Provisorio
-        directorioProvisorio: {
-          presidente: this.formData.directorioProvisorio?.presidente || null,
-          secretario: this.formData.directorioProvisorio?.secretario || null,
-          tesorero: this.formData.directorioProvisorio?.tesorero || null
-        },
+        // Datos del paso 5: Directorio Provisorio (ahora incluye todos los miembros)
+        directorioProvisorio: directorioCompleto,
         // Datos del paso 5: Comisión Electoral
         comisionElectoral: this.formData.commission?.members || [],
         // Datos del paso 5: Certificados de Antecedentes
@@ -7570,14 +7589,37 @@ Secretaria Municipal`;
           </div>
         `;
 
+        // Función para cerrar y refrescar
+        const closeAndRefresh = () => {
+          this.close();
+          if (window.refreshOrganizations) {
+            window.refreshOrganizations();
+          }
+        };
+
+        // Botón "Volver al Dashboard"
         const closeBtn = document.getElementById('close-wizard-btn');
         if (closeBtn) {
-          closeBtn.addEventListener('click', () => {
-            this.close();
-            if (window.refreshOrganizations) {
-              window.refreshOrganizations();
+          closeBtn.addEventListener('click', closeAndRefresh);
+        }
+
+        // Cambiar comportamiento del botón X para cerrar directamente (sin confirmación)
+        const wizardCloseBtn = document.getElementById('wizard-close');
+        if (wizardCloseBtn) {
+          // Clonar para remover event listeners anteriores
+          const newCloseBtn = wizardCloseBtn.cloneNode(true);
+          wizardCloseBtn.parentNode.replaceChild(newCloseBtn, wizardCloseBtn);
+          newCloseBtn.addEventListener('click', closeAndRefresh);
+        }
+
+        // También cambiar el click fuera del wizard
+        const overlay = document.getElementById('wizard-overlay');
+        if (overlay) {
+          overlay.addEventListener('click', (e) => {
+            if (e.target.id === 'wizard-overlay') {
+              closeAndRefresh();
             }
-          });
+          }, { once: true });
         }
       }
 

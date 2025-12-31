@@ -381,22 +381,47 @@ class OrganizationsService {
         return { firstName: buildFirstName(member), lastName: buildLastName(member) };
       };
 
+      // Mapear miembros adicionales (vicepresidente, directores, etc.)
+      const additionalMembers = (dirProv.miembrosAdicionales || []).map(m => {
+        const names = extractName(m);
+        // Mapear nombres de cargos a labels legibles
+        const cargoLabels = {
+          'vicepresidente': 'Vicepresidente/a',
+          'director1': 'Director/a',
+          'director2': 'Director/a',
+          'director3': 'Director/a'
+        };
+        return {
+          rut: m.rut,
+          name: `${names.firstName} ${names.lastName}`.trim(),
+          firstName: names.firstName,
+          lastName: names.lastName,
+          cargo: cargoLabels[m.cargo] || m.cargo,
+          role: m.cargo
+        };
+      });
+
       const provisionalDirectorio = {
         president: dirProv.presidente ? {
           rut: dirProv.presidente.rut,
+          name: `${extractName(dirProv.presidente).firstName} ${extractName(dirProv.presidente).lastName}`.trim(),
           ...extractName(dirProv.presidente)
         } : null,
         secretary: dirProv.secretario ? {
           rut: dirProv.secretario.rut,
+          name: `${extractName(dirProv.secretario).firstName} ${extractName(dirProv.secretario).lastName}`.trim(),
           ...extractName(dirProv.secretario)
         } : null,
         treasurer: dirProv.tesorero ? {
           rut: dirProv.tesorero.rut,
+          name: `${extractName(dirProv.tesorero).firstName} ${extractName(dirProv.tesorero).lastName}`.trim(),
           ...extractName(dirProv.tesorero)
-        } : null
+        } : null,
+        additionalMembers: additionalMembers
       };
 
       console.log('📤 provisionalDirectorio mapeado:', provisionalDirectorio);
+      console.log('📤 additionalMembers:', additionalMembers);
 
       // Mapear comisión electoral
       console.log('🔍 comisionElectoral recibida:', requestData.comisionElectoral);
@@ -404,6 +429,7 @@ class OrganizationsService {
         const names = extractName(m);
         return {
           rut: m.rut,
+          name: `${names.firstName} ${names.lastName}`.trim(),
           firstName: names.firstName,
           lastName: names.lastName,
           role: 'electoral_commission'
