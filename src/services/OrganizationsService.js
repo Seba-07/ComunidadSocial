@@ -347,6 +347,13 @@ class OrganizationsService {
         role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
       }));
 
+      // Log para depuración de miembros
+      console.log('📋 Miembros mapeados:', mappedMembers.map(m => ({
+        rut: m.rut,
+        firstName: m.firstName || '(vacío)',
+        lastName: m.lastName || '(vacío)'
+      })));
+
       // Mapear directorio provisorio
       const dirProv = requestData.directorioProvisorio || {};
       console.log('🔍 directorioProvisorio recibido:', dirProv);
