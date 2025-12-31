@@ -190,14 +190,49 @@ router.post('/', authenticate, async (req, res) => {
     console.log('📥 CREATE ORG - electoralCommission recibido:', JSON.stringify(req.body.electoralCommission, null, 2));
     console.log('📥 CREATE ORG - members count:', req.body.members?.length);
 
+    // Extraer solo los campos válidos del modelo (excluir campos extras como certificatesStep5)
+    const {
+      organizationName,
+      organizationType,
+      address,
+      comuna,
+      region,
+      unidadVecinal,
+      territory,
+      contactEmail,
+      contactPhone,
+      members,
+      electoralCommission,
+      provisionalDirectorio,
+      electionDate,
+      electionTime,
+      assemblyAddress,
+      comments,
+      estatutos
+    } = req.body;
+
     const orgData = {
-      ...req.body,
+      organizationName,
+      organizationType,
+      address,
+      comuna,
+      region,
+      unidadVecinal,
+      territory,
+      contactEmail,
+      contactPhone,
+      members,
+      electionDate,
+      electionTime,
+      assemblyAddress,
+      comments,
+      estatutos,
       userId: req.userId,
       status: 'waiting_ministro',
       statusHistory: [{
         status: 'waiting_ministro',
         date: new Date(),
-        comment: `Solicitud de Ministro de Fe para fecha: ${req.body.electionDate}`
+        comment: `Solicitud de Ministro de Fe para fecha: ${electionDate}`
       }]
     };
 
@@ -239,13 +274,23 @@ router.post('/', authenticate, async (req, res) => {
 
     res.status(201).json(organization);
   } catch (error) {
-    console.error('Create organization error:', error);
+    console.error('❌ Create organization error:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+
     // Devolver mensaje de error más descriptivo
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
+      console.error('❌ Validation errors:', messages);
       return res.status(400).json({ error: 'Validación fallida: ' + messages.join(', ') });
     }
-    res.status(500).json({ error: error.message || 'Error al crear organización' });
+
+    // Para otros errores, devolver más detalles
+    res.status(500).json({
+      error: error.message || 'Error al crear organización',
+      details: error.name
+    });
   }
 });
 
