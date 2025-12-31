@@ -4355,6 +4355,7 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
    */
   renderOtherDocumentsList() {
     const container = document.getElementById('other-documents-list');
+    if (!container) return; // El elemento puede no existir en algunas vistas
 
     if (this.formData.otherDocuments.length === 0) {
       container.innerHTML = '';
