@@ -73,6 +73,36 @@ const userSchema = new mongoose.Schema({
   availableHours: {
     type: [String],
     default: []
+  },
+  // Campos específicos para Municipalidad - Timbre Virtual
+  timbreVirtual: {
+    imagen: {
+      type: String,  // Base64 de la imagen del timbre
+      default: null
+    },
+    fechaSubida: {
+      type: Date,
+      default: null
+    },
+    activo: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // Firma digital del funcionario municipal
+  firmaDigital: {
+    imagen: {
+      type: String,  // Base64 de la imagen de la firma
+      default: null
+    },
+    fechaSubida: {
+      type: Date,
+      default: null
+    },
+    activo: {
+      type: Boolean,
+      default: false
+    }
   }
 }, {
   timestamps: true

@@ -655,6 +655,7 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
     validatorId: ministroId,
     validatorName: `${ministro.firstName} ${ministro.lastName}`,
     ministroSignature: wizardData.ministroSignature,
+    groupPhoto: wizardData.groupPhoto,
     provisionalDirectorio: {
       president,
       secretary,
@@ -697,6 +698,7 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
         };
         orgsUpdated[orgIndex].assemblyAttendees = assemblyAttendees;
         orgsUpdated[orgIndex].ministroSignature = wizardData.ministroSignature;
+        orgsUpdated[orgIndex].groupPhoto = wizardData.groupPhoto;
         orgsUpdated[orgIndex].validationData = {
           validatedBy: 'MINISTRO',
           validatorId: ministro.id,
@@ -1367,9 +1369,18 @@ function viewDetails(assignmentId) {
           </div>
         `}
 
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; flex-wrap: wrap;">
           <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
             Cerrar
+          </button>
+          <button type="button" class="btn" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none;" onclick="this.closest('.modal-overlay').remove(); viewDocumentation('${assignmentId}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Ver Documentación
           </button>
           ${!assignment.signaturesValidated ? `
             <button type="button" class="btn btn-primary" onclick="this.closest('.modal-overlay').remove(); validateSignatures('${assignmentId}')">
@@ -1386,6 +1397,310 @@ function viewDetails(assignmentId) {
   `;
 
   document.body.appendChild(modal);
+}
+
+// Función para ver documentación completa de la organización
+function viewDocumentation(assignmentId) {
+  const assignment = loadedAssignments.find(a => (a._id === assignmentId || a.id === assignmentId));
+  if (!assignment) {
+    showToast('Asignación no encontrada', 'error');
+    return;
+  }
+
+  const org = assignment.organizationId;
+  const orgName = org?.organizationName || assignment.organizationName || 'Sin nombre';
+
+  // Helper para extraer nombre de miembro
+  const extractMemberName = (m) => {
+    if (!m) return 'Sin nombre';
+    if (m.primerNombre) {
+      const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+      const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+      return (fn + ' ' + ln).trim() || 'Sin nombre';
+    }
+    if (m.firstName) return ((m.firstName || '') + ' ' + (m.lastName || '')).trim();
+    return m.name || m.nombre || 'Sin nombre';
+  };
+
+  // Extraer directorio provisorio
+  const dir = org?.provisionalDirectorio || {};
+  const additionalMembers = dir.additionalMembers || [];
+
+  // Extraer comisión electoral
+  const commission = org?.electoralCommission || [];
+
+  // Extraer miembros
+  const members = org?.members || [];
+
+  // Extraer estatutos
+  const estatutos = org?.estatutos || '';
+
+  // Mapeo de cargos
+  const cargoLabels = {
+    'vicepresidente': 'Vicepresidente/a',
+    'director1': 'Director/a',
+    'director2': 'Director/a',
+    'director3': 'Director/a',
+    'secretario_actas': 'Secretario/a de Actas',
+    'pro_secretario': 'Pro-Secretario/a',
+    'pro_tesorero': 'Pro-Tesorero/a',
+    'director_finanzas': 'Director/a de Finanzas',
+    'vocal1': 'Vocal',
+    'vocal2': 'Vocal',
+    'consejero1': 'Consejero/a',
+    'consejero2': 'Consejero/a'
+  };
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 100%); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 20px; backdrop-filter: blur(8px);';
+
+  modal.innerHTML = `
+    <div style="background: white; border-radius: 20px; max-width: 1100px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.4); overflow: hidden;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; padding: 24px 28px; position: relative;">
+        <div style="position: absolute; top: -50%; right: -5%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 52px; height: 52px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Documentación para Revisar</h2>
+              <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${orgName}</p>
+            </div>
+          </div>
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div style="flex: 1; overflow-y: auto; padding: 24px;">
+        <!-- Tabs de navegación -->
+        <div style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;" id="doc-tabs">
+          <button class="doc-tab active" data-tab="directorio" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: #4f46e5; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            👤 Directorio Provisorio
+          </button>
+          <button class="doc-tab" data-tab="comision" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📋 Comisión Electoral
+          </button>
+          <button class="doc-tab" data-tab="miembros" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            👥 Miembros (${members.length})
+          </button>
+          <button class="doc-tab" data-tab="estatutos" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📜 Estatutos
+          </button>
+        </div>
+
+        <!-- Contenido de tabs -->
+        <div id="doc-content">
+          <!-- Tab: Directorio Provisorio -->
+          <div id="tab-directorio" class="tab-content" style="display: block;">
+            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+              <h3 style="margin: 0 0 20px; color: #0369a1; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Directorio Provisorio
+              </h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                ${dir.president ? `
+                  <div style="background: white; padding: 16px; border-radius: 12px; border-left: 4px solid #3b82f6;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">👤</div>
+                      <div>
+                        <p style="margin: 0; font-weight: 700; color: #1f2937; font-size: 15px;">${extractMemberName(dir.president)}</p>
+                        <p style="margin: 2px 0 0; color: #3b82f6; font-size: 13px; font-weight: 600;">Presidente/a</p>
+                        ${dir.president.rut ? `<p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">RUT: ${dir.president.rut}</p>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+                ${dir.secretary ? `
+                  <div style="background: white; padding: 16px; border-radius: 12px; border-left: 4px solid #8b5cf6;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">📝</div>
+                      <div>
+                        <p style="margin: 0; font-weight: 700; color: #1f2937; font-size: 15px;">${extractMemberName(dir.secretary)}</p>
+                        <p style="margin: 2px 0 0; color: #8b5cf6; font-size: 13px; font-weight: 600;">Secretario/a</p>
+                        ${dir.secretary.rut ? `<p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">RUT: ${dir.secretary.rut}</p>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+                ${dir.treasurer ? `
+                  <div style="background: white; padding: 16px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">💰</div>
+                      <div>
+                        <p style="margin: 0; font-weight: 700; color: #1f2937; font-size: 15px;">${extractMemberName(dir.treasurer)}</p>
+                        <p style="margin: 2px 0 0; color: #f59e0b; font-size: 13px; font-weight: 600;">Tesorero/a</p>
+                        ${dir.treasurer.rut ? `<p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">RUT: ${dir.treasurer.rut}</p>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+                ${additionalMembers.map(m => `
+                  <div style="background: white; padding: 16px; border-radius: 12px; border-left: 4px solid #10b981;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">👥</div>
+                      <div>
+                        <p style="margin: 0; font-weight: 700; color: #1f2937; font-size: 15px;">${extractMemberName(m)}</p>
+                        <p style="margin: 2px 0 0; color: #10b981; font-size: 13px; font-weight: 600;">${cargoLabels[m.cargo || m.role] || m.cargo || 'Miembro'}</p>
+                        ${m.rut ? `<p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">RUT: ${m.rut}</p>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Comisión Electoral -->
+          <div id="tab-comision" class="tab-content" style="display: none;">
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 24px;">
+              <h3 style="margin: 0 0 20px; color: #92400e; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Comisión Electoral (${commission.length} miembros)
+              </h3>
+              ${commission.length > 0 ? `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                  ${commission.map((m, i) => `
+                    <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #fcd34d;">
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: #fef3c7; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #92400e; font-weight: 700;">${i + 1}</div>
+                        <div>
+                          <p style="margin: 0; font-weight: 600; color: #1f2937;">${extractMemberName(m)}</p>
+                          ${m.rut ? `<p style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">RUT: ${m.rut}</p>` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <p style="margin: 0; color: #92400e; text-align: center; padding: 20px;">No hay miembros de comisión electoral registrados</p>
+              `}
+            </div>
+          </div>
+
+          <!-- Tab: Miembros -->
+          <div id="tab-miembros" class="tab-content" style="display: none;">
+            <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; padding: 24px;">
+              <h3 style="margin: 0 0 20px; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Lista de Miembros Fundadores (${members.length})
+              </h3>
+              ${members.length > 0 ? `
+                <div style="max-height: 400px; overflow-y: auto;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background: #e2e8f0;">
+                        <th style="padding: 12px; text-align: left; font-size: 13px; color: #475569;">#</th>
+                        <th style="padding: 12px; text-align: left; font-size: 13px; color: #475569;">Nombre</th>
+                        <th style="padding: 12px; text-align: left; font-size: 13px; color: #475569;">RUT</th>
+                        <th style="padding: 12px; text-align: left; font-size: 13px; color: #475569;">Rol</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${members.map((m, i) => `
+                        <tr style="border-bottom: 1px solid #e2e8f0; ${i % 2 === 0 ? 'background: white;' : 'background: #f8fafc;'}">
+                          <td style="padding: 12px; font-size: 13px; color: #64748b;">${i + 1}</td>
+                          <td style="padding: 12px; font-size: 14px; color: #1e293b; font-weight: 500;">${extractMemberName(m)}</td>
+                          <td style="padding: 12px; font-size: 13px; color: #64748b;">${m.rut || '-'}</td>
+                          <td style="padding: 12px; font-size: 13px; color: #64748b;">${m.role || 'Miembro'}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              ` : `
+                <p style="margin: 0; color: #64748b; text-align: center; padding: 20px;">No hay miembros registrados</p>
+              `}
+            </div>
+          </div>
+
+          <!-- Tab: Estatutos -->
+          <div id="tab-estatutos" class="tab-content" style="display: none;">
+            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 16px; padding: 24px;">
+              <h3 style="margin: 0 0 20px; color: #065f46; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Estatutos de la Organización
+              </h3>
+              ${estatutos ? `
+                <div style="background: white; border-radius: 12px; padding: 24px; max-height: 500px; overflow-y: auto; border: 1px solid #bbf7d0;">
+                  <div style="font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
+                    ${estatutos}
+                  </div>
+                </div>
+              ` : `
+                <p style="margin: 0; color: #065f46; text-align: center; padding: 40px;">No hay estatutos registrados para esta organización</p>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Event listeners para tabs
+  modal.querySelectorAll('.doc-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Desactivar todos los tabs
+      modal.querySelectorAll('.doc-tab').forEach(t => {
+        t.style.background = 'white';
+        t.style.color = '#374151';
+      });
+      // Activar el tab clickeado
+      tab.style.background = '#4f46e5';
+      tab.style.color = 'white';
+
+      // Ocultar todo el contenido
+      modal.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+      });
+      // Mostrar el contenido del tab
+      const tabName = tab.getAttribute('data-tab');
+      const tabContent = modal.querySelector('#tab-' + tabName);
+      if (tabContent) {
+        tabContent.style.display = 'block';
+      }
+    });
+  });
 }
 
 function deleteBlock(blockId) {

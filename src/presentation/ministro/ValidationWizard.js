@@ -354,7 +354,8 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     attendees: [],
     estatutos: estatutosOrg,
     ministroSignature: null,
-    notes: ''
+    notes: '',
+    groupPhoto: null
   };
 
   // Almacén de firmas (guarda las imágenes en base64)
@@ -1258,6 +1259,66 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
         </div>
       </div>
 
+      <!-- Foto Grupal de la Asamblea -->
+      <div style="background: linear-gradient(135deg, #fdf4ff 0%, #f5d0fe 100%); border: 2px solid #a855f7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 16px; color: #7e22ce; font-size: 16px; display: flex; align-items: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          📸 Foto Grupal de la Asamblea
+        </h4>
+        <p style="margin: 0 0 16px; font-size: 13px; color: #7e22ce;">
+          Toma o sube una foto del grupo como evidencia visual de que la asamblea se llevó a cabo.
+        </p>
+
+        <div id="group-photo-container" style="background: white; border: 2px dashed #d8b4fe; border-radius: 12px; padding: 24px; text-align: center; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          ${wizardData.groupPhoto ? `
+            <div style="position: relative; display: inline-block;">
+              <img src="${wizardData.groupPhoto}" alt="Foto grupal" style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <button type="button" id="remove-group-photo" style="position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; background: #ef4444; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.4);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <p style="margin: 12px 0 0; font-size: 12px; color: #10b981; font-weight: 600;">✓ Foto cargada correctamente</p>
+          ` : `
+            <div style="margin-bottom: 16px;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.5" style="opacity: 0.6;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <p style="margin: 0 0 16px; color: #9333ea; font-weight: 600;">Ninguna foto cargada</p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+              <label for="group-photo-input" style="padding: 12px 20px; background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(168,85,247,0.3);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Subir Foto
+              </label>
+              <input type="file" id="group-photo-input" accept="image/*" capture="environment" style="display: none;">
+              <button type="button" id="take-photo-btn" style="padding: 12px 20px; background: white; color: #7e22ce; border: 2px solid #a855f7; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Tomar Foto
+              </button>
+            </div>
+          `}
+        </div>
+        <p style="margin: 12px 0 0; font-size: 11px; color: #9333ea; opacity: 0.8;">
+          Esta foto servirá como evidencia visual de la realización de la asamblea constitutiva.
+        </p>
+      </div>
+
       <!-- Firma del Ministro -->
       <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
         <h4 style="margin: 0 0 16px; color: #1e40af; font-size: 16px; display: flex; align-items: center; gap: 10px;">
@@ -1532,6 +1593,160 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
       modal.querySelector('#btn-view-estatutos')?.addEventListener('click', () => {
         showEstatutosModal();
       });
+
+      // === MANEJO DE FOTO GRUPAL ===
+      const photoInput = modal.querySelector('#group-photo-input');
+      const photoContainer = modal.querySelector('#group-photo-container');
+      const takePhotoBtn = modal.querySelector('#take-photo-btn');
+      const removePhotoBtn = modal.querySelector('#remove-group-photo');
+
+      // Función para actualizar la vista previa de la foto
+      const updatePhotoPreview = (imageData) => {
+        if (!photoContainer) return;
+
+        wizardData.groupPhoto = imageData;
+
+        if (imageData) {
+          photoContainer.innerHTML = `
+            <div style="position: relative; display: inline-block;">
+              <img src="${imageData}" alt="Foto grupal" style="max-width: 100%; max-height: 300px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+              <button type="button" id="remove-group-photo" style="position: absolute; top: -10px; right: -10px; width: 32px; height: 32px; background: #ef4444; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.4); font-size: 18px;">
+                ✕
+              </button>
+            </div>
+            <p style="color: #16a34a; font-weight: 600; margin-top: 12px;">✓ Foto cargada correctamente</p>
+          `;
+
+          // Re-agregar listener al nuevo botón de eliminar
+          modal.querySelector('#remove-group-photo')?.addEventListener('click', () => {
+            updatePhotoPreview(null);
+          });
+        } else {
+          // Restaurar la vista sin foto
+          photoContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 36px;">📷</span>
+              </div>
+              <p style="color: #6b7280; margin: 0;">Captura una foto del grupo asistente a la asamblea</p>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <label for="group-photo-input" style="padding: 12px 20px; background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(168,85,247,0.3);">
+                  📁 Subir Foto
+                </label>
+                <input type="file" id="group-photo-input" accept="image/*" capture="environment" style="display: none;">
+                <button type="button" id="take-photo-btn" style="padding: 12px 20px; background: white; color: #7e22ce; border: 2px solid #a855f7; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                  📸 Tomar Foto
+                </button>
+              </div>
+            </div>
+          `;
+
+          // Re-agregar listeners
+          setupPhotoListeners();
+        }
+      };
+
+      // Configurar listeners de foto
+      const setupPhotoListeners = () => {
+        const newPhotoInput = modal.querySelector('#group-photo-input');
+        const newTakePhotoBtn = modal.querySelector('#take-photo-btn');
+
+        newPhotoInput?.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            // Validar que sea imagen
+            if (!file.type.startsWith('image/')) {
+              alert('Por favor selecciona un archivo de imagen válido');
+              return;
+            }
+
+            // Validar tamaño (máx 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+              alert('La imagen es demasiado grande. Máximo 10MB.');
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              updatePhotoPreview(event.target.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        newTakePhotoBtn?.addEventListener('click', () => {
+          // Crear input temporal para cámara
+          const cameraInput = document.createElement('input');
+          cameraInput.type = 'file';
+          cameraInput.accept = 'image/*';
+          cameraInput.capture = 'environment';
+
+          cameraInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                updatePhotoPreview(event.target.result);
+              };
+              reader.readAsDataURL(file);
+            }
+          });
+
+          cameraInput.click();
+        });
+      };
+
+      // Inicializar listeners
+      if (photoInput) {
+        photoInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            if (!file.type.startsWith('image/')) {
+              alert('Por favor selecciona un archivo de imagen válido');
+              return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+              alert('La imagen es demasiado grande. Máximo 10MB.');
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              updatePhotoPreview(event.target.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+
+      takePhotoBtn?.addEventListener('click', () => {
+        const cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment';
+
+        cameraInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              updatePhotoPreview(event.target.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        cameraInput.click();
+      });
+
+      removePhotoBtn?.addEventListener('click', () => {
+        updatePhotoPreview(null);
+      });
+
+      // Si ya hay foto guardada, mostrarla
+      if (wizardData.groupPhoto) {
+        updatePhotoPreview(wizardData.groupPhoto);
+      }
     }
   };
 

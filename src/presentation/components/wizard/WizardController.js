@@ -5774,12 +5774,18 @@ Secretaria Municipal`;
 
   /**
    * Formatea el contenido del documento para la vista previa HTML
+   * @param {boolean} highlightAutoData - Si true, resalta datos auto-generados
    */
-  formatDocumentForPreview(content) {
+  formatDocumentForPreview(content, highlightAutoData = true) {
     if (!content) return '';
 
     // Escapar HTML primero
     let html = this.escapeHtml(content);
+
+    // Si se debe resaltar datos automáticos, aplicar highlighting
+    if (highlightAutoData) {
+      html = this.highlightAutoData(html);
+    }
 
     // Convertir líneas a párrafos con estilos apropiados
     const lines = html.split('\n');
@@ -5821,7 +5827,69 @@ Secretaria Municipal`;
       formattedLines.push(`<p style="margin: 4px 0; ${indent}">${trimmedLine}</p>`);
     });
 
+    // Agregar leyenda de datos auto-generados si está habilitado
+    if (highlightAutoData) {
+      const legend = this.getAutoDataLegend();
+      return legend + formattedLines.join('');
+    }
+
     return formattedLines.join('');
+  }
+
+  /**
+   * Aplica resaltado a datos auto-generados en el contenido
+   */
+  highlightAutoData(text) {
+    // Resaltar RUTs (formato: XX.XXX.XXX-X o XXXXXXXX-X)
+    text = text.replace(/(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/gi, '<span class="auto-data auto-data-rut" title="RUT auto-generado">$1</span>');
+
+    // Resaltar fechas en formato español (ej: 15 de enero del 2025)
+    const meses = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre';
+    const dateRegex = new RegExp(`(\\d{1,2}\\s+de\\s+(${meses})\\s+(de|del)\\s+\\d{4})`, 'gi');
+    text = text.replace(dateRegex, '<span class="auto-data auto-data-date" title="Fecha auto-generada">$1</span>');
+
+    // Resaltar horas (ej: 10:30 horas, 15:00 hrs)
+    text = text.replace(/(\d{1,2}:\d{2}\s*(horas?|hrs?))/gi, '<span class="auto-data auto-data-date" title="Hora auto-generada">$1</span>');
+
+    // Resaltar cantidades de socios (ej: "45 socios")
+    text = text.replace(/(\d+)\s+(socios?|miembros?|asistentes?)/gi, '<span class="auto-data" title="Cantidad auto-generada">$1</span> $2');
+
+    return text;
+  }
+
+  /**
+   * Genera la leyenda explicativa de datos auto-generados
+   */
+  getAutoDataLegend() {
+    return `
+      <div class="auto-data-legend" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px 20px; margin: 16px 0;">
+        <div class="auto-data-legend-title" style="font-weight: 700; color: #0369a1; font-size: 14px; display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          Datos Auto-Generados
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #475569;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="auto-data-rut" style="background: linear-gradient(120deg, #d1fae5 0%, #a7f3d0 100%); padding: 2px 8px; border-radius: 4px; border-bottom: 2px solid #10b981; font-family: monospace;">12.345.678-9</span>
+            <span>RUT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="auto-data-date" style="background: linear-gradient(120deg, #ede9fe 0%, #ddd6fe 100%); padding: 2px 8px; border-radius: 4px; border-bottom: 2px solid #8b5cf6;">15 de enero</span>
+            <span>Fecha</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="auto-data" style="background: linear-gradient(120deg, #fef9c3 0%, #fef08a 100%); padding: 2px 8px; border-radius: 4px; border-bottom: 2px solid #eab308;">45</span>
+            <span>Cantidad</span>
+          </div>
+        </div>
+        <p style="margin: 10px 0 0; font-size: 11px; color: #64748b; font-style: italic;">
+          Los datos resaltados fueron completados automáticamente con la información ingresada.
+        </p>
+      </div>
+    `;
   }
 
   /**

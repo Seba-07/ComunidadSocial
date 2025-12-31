@@ -168,6 +168,7 @@ class MinistroAssignmentService {
         comisionElectoral: validatedData.comisionElectoral,
         attendees: validatedData.attendees,
         ministroSignature: validatedData.ministroSignature,
+        groupPhoto: validatedData.groupPhoto,
         validatorId: validatedData.validatorId,
         validatorName: validatedData.validatorName,
         validatedBy: validatedData.validatedBy

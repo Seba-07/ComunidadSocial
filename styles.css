@@ -22386,3 +22386,116 @@ a.header-logo:hover {
     .cargo-info { flex-direction: column; }
     .cargo-id-input { width: 100%; }
 }
+
+
+/* === ESTILOS PARA DOCUMENTOS PROVISORIOS === */
+
+/* Contenedor de documento */
+.doc-content {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #1a1a1a;
+}
+
+/* Resaltado para datos auto-generados */
+.auto-data {
+    background: linear-gradient(120deg, #fef9c3 0%, #fef08a 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border-bottom: 2px solid #eab308;
+    font-weight: 500;
+    position: relative;
+}
+
+/* Resaltado para nombres de personas */
+.auto-data-name {
+    background: linear-gradient(120deg, #dbeafe 0%, #bfdbfe 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border-bottom: 2px solid #3b82f6;
+    font-weight: 500;
+}
+
+/* Resaltado para RUTs */
+.auto-data-rut {
+    background: linear-gradient(120deg, #d1fae5 0%, #a7f3d0 100%);
+    padding: 2px 4px;
+    border-radius: 4px;
+    border-bottom: 2px solid #10b981;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+/* Resaltado para fechas */
+.auto-data-date {
+    background: linear-gradient(120deg, #ede9fe 0%, #ddd6fe 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border-bottom: 2px solid #8b5cf6;
+}
+
+/* Resaltado para direcciones */
+.auto-data-address {
+    background: linear-gradient(120deg, #fce7f3 0%, #fbcfe8 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border-bottom: 2px solid #ec4899;
+}
+
+/* Leyenda de datos auto-generados */
+.auto-data-legend {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.auto-data-legend-title {
+    font-weight: 700;
+    color: #0369a1;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.auto-data-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.auto-data-legend-sample {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+/* Tooltip para datos auto-generados */
+.auto-data[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+

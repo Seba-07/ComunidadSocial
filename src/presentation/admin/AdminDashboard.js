@@ -65,6 +65,7 @@ class AdminDashboard {
     this.setupMinistroManagerButton();
     this.setupUVManagerButton();
     this.setupEstatutosManagerButton();
+    this.setupTimbreManagerButton();
   }
 
   /**
@@ -175,6 +176,267 @@ class AdminDashboard {
     if (this.estatutosManager) {
       this.estatutosManager.show();
     }
+  }
+
+  /**
+   * Configura el botón de gestión de timbre virtual
+   */
+  setupTimbreManagerButton() {
+    const btn = document.getElementById('btn-timbre-manager');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        this.showTimbreModal();
+      });
+    }
+  }
+
+  /**
+   * Muestra el modal de gestión de timbre virtual y firma digital
+   */
+  async showTimbreModal() {
+    // Primero obtener el timbre y firma actuales
+    let timbreData = { timbreVirtual: null, firmaDigital: null };
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiService.baseUrl}/users/me/timbre-firma`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        timbreData = await response.json();
+      }
+    } catch (error) {
+      console.error('Error al cargar timbre:', error);
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'timbre-modal';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0;">
+          <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Timbre Virtual y Firma Digital
+          </h3>
+          <button class="modal-close-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px;">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px;">
+          <p style="color: #6b7280; margin-bottom: 24px; font-size: 14px;">
+            Configura tu timbre virtual y firma digital para usar en los certificados oficiales.
+          </p>
+
+          <!-- Sección Timbre Virtual -->
+          <div class="timbre-section" style="margin-bottom: 32px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e5e7eb;">
+            <h4 style="margin: 0 0 16px; display: flex; align-items: center; gap: 8px; color: #1e40af;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              Timbre Virtual (Sello Oficial)
+            </h4>
+
+            <div id="timbre-preview" style="margin-bottom: 16px;">
+              ${timbreData.timbreVirtual?.imagen ? `
+                <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #d1fae5;">
+                  <img src="${timbreData.timbreVirtual.imagen}" alt="Timbre actual" style="max-width: 120px; max-height: 120px; border-radius: 8px; border: 2px solid #10b981;">
+                  <div>
+                    <p style="margin: 0 0 4px; color: #16a34a; font-weight: 600;">✓ Timbre configurado</p>
+                    <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                      Subido: ${timbreData.timbreVirtual.fechaSubida ? new Date(timbreData.timbreVirtual.fechaSubida).toLocaleDateString('es-CL') : 'N/A'}
+                    </p>
+                    <button class="btn-delete-timbre" style="margin-top: 8px; padding: 6px 12px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ` : `
+                <div style="padding: 24px; background: white; border-radius: 8px; border: 2px dashed #d1d5db; text-align: center;">
+                  <p style="margin: 0 0 12px; color: #6b7280;">No hay timbre configurado</p>
+                  <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sube una imagen PNG o JPG de tu timbre oficial</p>
+                </div>
+              `}
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+              <label for="timbre-input" style="flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                Subir Timbre
+              </label>
+              <input type="file" id="timbre-input" accept="image/png,image/jpeg" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Sección Firma Digital -->
+          <div class="firma-section" style="padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e5e7eb;">
+            <h4 style="margin: 0 0 16px; display: flex; align-items: center; gap: 8px; color: #7c3aed;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v11.5z"/>
+                <path d="M12 18v-6"/>
+                <path d="M9 15l3 3 3-3"/>
+              </svg>
+              Firma Digital
+            </h4>
+
+            <div id="firma-preview" style="margin-bottom: 16px;">
+              ${timbreData.firmaDigital?.imagen ? `
+                <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e9d5ff;">
+                  <img src="${timbreData.firmaDigital.imagen}" alt="Firma actual" style="max-width: 150px; max-height: 80px; border-radius: 8px; border: 2px solid #8b5cf6;">
+                  <div>
+                    <p style="margin: 0 0 4px; color: #7c3aed; font-weight: 600;">✓ Firma configurada</p>
+                    <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                      Subida: ${timbreData.firmaDigital.fechaSubida ? new Date(timbreData.firmaDigital.fechaSubida).toLocaleDateString('es-CL') : 'N/A'}
+                    </p>
+                    <button class="btn-delete-firma" style="margin-top: 8px; padding: 6px 12px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ` : `
+                <div style="padding: 24px; background: white; border-radius: 8px; border: 2px dashed #d1d5db; text-align: center;">
+                  <p style="margin: 0 0 12px; color: #6b7280;">No hay firma configurada</p>
+                  <p style="margin: 0; color: #9ca3af; font-size: 12px;">Sube una imagen PNG o JPG de tu firma</p>
+                </div>
+              `}
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+              <label for="firma-input" style="flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                Subir Firma
+              </label>
+              <input type="file" id="firma-input" accept="image/png,image/jpeg" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Info de uso -->
+          <div style="margin-top: 24px; padding: 16px; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;">
+            <p style="margin: 0; color: #92400e; font-size: 13px;">
+              <strong>¿Cómo se usan?</strong><br>
+              El timbre y la firma se aplicarán automáticamente a los certificados oficiales cuando apruebes el envío a Registro Civil.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
+          <button class="btn-close-modal" style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Event listeners
+    modal.querySelector('.modal-close-btn').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-close-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Subir timbre
+    modal.querySelector('#timbre-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('La imagen es muy grande. Máximo 2MB.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const token = localStorage.getItem('auth_token');
+          const response = await fetch(`${apiService.baseUrl}/users/me/timbre-virtual`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imagen: event.target.result })
+          });
+
+          if (!response.ok) throw new Error('Error al subir');
+
+          showToast('Timbre virtual guardado correctamente', 'success');
+          modal.remove();
+          this.showTimbreModal();
+        } catch (error) {
+          showToast('Error al guardar el timbre', 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Subir firma
+    modal.querySelector('#firma-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('La imagen es muy grande. Máximo 2MB.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const token = localStorage.getItem('auth_token');
+          const response = await fetch(`${apiService.baseUrl}/users/me/firma-digital`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imagen: event.target.result })
+          });
+
+          if (!response.ok) throw new Error('Error al subir');
+
+          showToast('Firma digital guardada correctamente', 'success');
+          modal.remove();
+          this.showTimbreModal();
+        } catch (error) {
+          showToast('Error al guardar la firma', 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Eliminar timbre
+    modal.querySelector('.btn-delete-timbre')?.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar el timbre virtual?')) return;
+      try {
+        const token = localStorage.getItem('auth_token');
+        await fetch(`${apiService.baseUrl}/users/me/timbre-virtual`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        showToast('Timbre eliminado', 'success');
+        modal.remove();
+        this.showTimbreModal();
+      } catch (error) {
+        showToast('Error al eliminar', 'error');
+      }
+    });
+
+    // Eliminar firma
+    modal.querySelector('.btn-delete-firma')?.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar la firma digital?')) return;
+      try {
+        const token = localStorage.getItem('auth_token');
+        await fetch(`${apiService.baseUrl}/users/me/firma-digital`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        showToast('Firma eliminada', 'success');
+        modal.remove();
+        this.showTimbreModal();
+      } catch (error) {
+        showToast('Error al eliminar', 'error');
+      }
+    });
   }
 
   /**

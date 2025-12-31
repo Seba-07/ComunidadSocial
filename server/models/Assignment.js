@@ -72,6 +72,7 @@ const assignmentSchema = new mongoose.Schema({
     comisionElectoral: [mongoose.Schema.Types.Mixed],
     attendees: [mongoose.Schema.Types.Mixed],
     ministroSignature: String,
+    groupPhoto: String, // Foto grupal de la asamblea en Base64
     notes: String
   },
 
