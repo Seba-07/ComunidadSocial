@@ -238,10 +238,19 @@ router.post('/', authenticate, async (req, res) => {
 
     // Asegurar que provisionalDirectorio se guarde explícitamente
     if (req.body.provisionalDirectorio) {
+      // Helper para limpiar datos de miembro (remover certificados base64)
+      const cleanMember = (member) => {
+        if (!member) return null;
+        const { certificado, certificate, ...cleanData } = member;
+        return cleanData;
+      };
+
       orgData.provisionalDirectorio = {
-        president: req.body.provisionalDirectorio.president || null,
-        secretary: req.body.provisionalDirectorio.secretary || null,
-        treasurer: req.body.provisionalDirectorio.treasurer || null,
+        president: cleanMember(req.body.provisionalDirectorio.president),
+        secretary: cleanMember(req.body.provisionalDirectorio.secretary),
+        treasurer: cleanMember(req.body.provisionalDirectorio.treasurer),
+        // Incluir miembros adicionales (vicepresidente, directores, etc.)
+        additionalMembers: (req.body.provisionalDirectorio.additionalMembers || []).map(cleanMember),
         designatedAt: new Date(),
         type: 'PROVISIONAL'
       };

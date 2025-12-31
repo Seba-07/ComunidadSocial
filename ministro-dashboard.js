@@ -1149,6 +1149,27 @@ function viewDetails(assignmentId) {
                         const name = extractMemberName(dir.treasurer);
                         html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>Tesorero:</strong> ' + name + '</p>';
                       }
+                      // Agregar miembros adicionales del directorio
+                      const cargoLabels = {
+                        'vicepresidente': 'Vicepresidente',
+                        'director1': 'Director/a',
+                        'director2': 'Director/a',
+                        'director3': 'Director/a',
+                        'secretario_actas': 'Secretario de Actas',
+                        'pro_secretario': 'Pro-Secretario',
+                        'pro_tesorero': 'Pro-Tesorero',
+                        'director_finanzas': 'Director Finanzas',
+                        'vocal1': 'Vocal',
+                        'vocal2': 'Vocal',
+                        'consejero1': 'Consejero/a',
+                        'consejero2': 'Consejero/a'
+                      };
+                      const additionalMembers = dir.additionalMembers || [];
+                      additionalMembers.forEach(m => {
+                        const cargo = cargoLabels[m.cargo || m.role] || m.cargo || m.role || 'Miembro';
+                        const name = extractMemberName(m);
+                        html += '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>' + cargo + ':</strong> ' + name + '</p>';
+                      });
                       return html || '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
                     }
 
@@ -1175,6 +1196,43 @@ function viewDetails(assignmentId) {
                     }
 
                     return '<p style="margin: 0; font-size: 13px; color: #78716c;">No especificado</p>';
+                  })()}
+                  ${(() => {
+                    // Mostrar miembros adicionales del directorio (vicepresidente, directores, etc.)
+                    const additionalMembers = org?.provisionalDirectorio?.additionalMembers || [];
+                    if (additionalMembers.length === 0) return '';
+
+                    const cargoLabels = {
+                      'vicepresidente': 'Vicepresidente',
+                      'director1': 'Director/a',
+                      'director2': 'Director/a',
+                      'director3': 'Director/a',
+                      'secretario_actas': 'Secretario de Actas',
+                      'pro_secretario': 'Pro-Secretario',
+                      'pro_tesorero': 'Pro-Tesorero',
+                      'director_finanzas': 'Director Finanzas',
+                      'vocal1': 'Vocal',
+                      'vocal2': 'Vocal',
+                      'consejero1': 'Consejero/a',
+                      'consejero2': 'Consejero/a'
+                    };
+
+                    const extractMemberName = (m) => {
+                      if (!m) return '';
+                      if (m.primerNombre) {
+                        const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+                        const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+                        return (fn + ' ' + ln).trim();
+                      }
+                      if (m.firstName) return ((m.firstName || '') + ' ' + (m.lastName || '')).trim();
+                      return m.name || m.nombre || '';
+                    };
+
+                    return additionalMembers.map(m => {
+                      const cargo = cargoLabels[m.cargo || m.role] || m.cargo || m.role || 'Miembro';
+                      const name = extractMemberName(m);
+                      return '<p style="margin: 0 0 4px 0; font-size: 13px; color: #44403c;">• <strong>' + cargo + ':</strong> ' + name + '</p>';
+                    }).join('');
                   })()}
                 </div>
                 <div style="background: white; border-radius: 8px; padding: 12px;">
@@ -1211,6 +1269,96 @@ function viewDetails(assignmentId) {
               <p style="margin: 0; color: #92400e;">No hay miembros registrados aún.</p>
             </div>
           `}
+
+          <!-- Certificados de Antecedentes -->
+          ${(() => {
+            // Buscar miembros del directorio que tienen certificado
+            const dirMembers = [];
+            const dir = org?.provisionalDirectorio;
+            if (dir?.president) dirMembers.push({ ...dir.president, cargo: 'Presidente' });
+            if (dir?.secretary) dirMembers.push({ ...dir.secretary, cargo: 'Secretario' });
+            if (dir?.treasurer) dirMembers.push({ ...dir.treasurer, cargo: 'Tesorero' });
+            const additionalMembers = dir?.additionalMembers || [];
+            const cargoLabels = {
+              'vicepresidente': 'Vicepresidente',
+              'director1': 'Director/a',
+              'director2': 'Director/a',
+              'director3': 'Director/a',
+              'secretario_actas': 'Secretario de Actas',
+              'pro_secretario': 'Pro-Secretario',
+              'pro_tesorero': 'Pro-Tesorero',
+              'director_finanzas': 'Director Finanzas',
+              'vocal1': 'Vocal',
+              'vocal2': 'Vocal',
+              'consejero1': 'Consejero/a',
+              'consejero2': 'Consejero/a'
+            };
+            additionalMembers.forEach(m => {
+              if (m) dirMembers.push({ ...m, cargo: cargoLabels[m.cargo || m.role] || m.cargo || 'Miembro' });
+            });
+
+            // También revisar en members por si tienen certificado
+            const membersWithCert = members.filter(m => m.certificate);
+
+            // Combinar: certificados del directorio + miembros con certificado
+            const allWithCerts = dirMembers.filter(m => m.certificado || m.certificate);
+            membersWithCert.forEach(m => {
+              if (!allWithCerts.find(x => x.rut === m.rut)) {
+                allWithCerts.push({
+                  ...m,
+                  cargo: m.role === 'president' ? 'Presidente' : m.role === 'secretary' ? 'Secretario' : m.role === 'treasurer' ? 'Tesorero' : 'Miembro'
+                });
+              }
+            });
+
+            if (allWithCerts.length === 0) {
+              return '';
+            }
+
+            const extractName = (m) => {
+              if (m.primerNombre) {
+                const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+                const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+                return (fn + ' ' + ln).trim();
+              }
+              if (m.firstName) return ((m.firstName || '') + ' ' + (m.lastName || '')).trim();
+              return m.name || m.nombre || 'Sin nombre';
+            };
+
+            let certsHtml = '<div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 16px; padding: 24px; margin-top: 20px;">';
+            certsHtml += '<h4 style="margin: 0 0 16px; font-size: 16px; font-weight: 700; color: #065f46;">📋 Certificados de Antecedentes (' + allWithCerts.length + ')</h4>';
+            certsHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">';
+
+            allWithCerts.forEach(m => {
+              const certData = m.certificado || m.certificate;
+              certsHtml += '<div style="background: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #d1fae5;">';
+              certsHtml += '<div style="display: flex; justify-content: space-between; align-items: flex-start;">';
+              certsHtml += '<div>';
+              certsHtml += '<p style="margin: 0; font-weight: 600; color: #1f2937; font-size: 14px;">' + extractName(m) + '</p>';
+              certsHtml += '<p style="margin: 2px 0 0; font-size: 12px; color: #059669; font-weight: 600;">' + m.cargo + '</p>';
+              if (m.rut) {
+                certsHtml += '<p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">RUT: ' + m.rut + '</p>';
+              }
+              certsHtml += '</div>';
+              if (certData) {
+                certsHtml += '<button onclick="window.open(\'' + certData + '\', \'_blank\')" ';
+                certsHtml += 'style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">';
+                certsHtml += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                certsHtml += '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>';
+                certsHtml += '<polyline points="14 2 14 8 20 8"></polyline>';
+                certsHtml += '<line x1="16" y1="13" x2="8" y2="13"></line>';
+                certsHtml += '<line x1="16" y1="17" x2="8" y2="17"></line>';
+                certsHtml += '</svg>';
+                certsHtml += 'Ver</button>';
+              } else {
+                certsHtml += '<span style="font-size: 11px; color: #f59e0b; font-weight: 600;">Pendiente</span>';
+              }
+              certsHtml += '</div></div></div>';
+            });
+
+            certsHtml += '</div></div>';
+            return certsHtml;
+          })()}
         ` : `
           <div style="background: #fef3c7; padding: 20px; border-radius: 12px; text-align: center;">
             <p style="margin: 0; color: #92400e; font-weight: 600;">
