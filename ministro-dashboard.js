@@ -552,14 +552,12 @@ function applyAssignmentFilter() {
 document.getElementById('btn-change-password').addEventListener('click', showChangePasswordModal);
 
 // Logout button
-document.getElementById('btn-logout').addEventListener('click', () => {
+document.getElementById('btn-logout').addEventListener('click', async () => {
   if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-    // Limpiar todos los datos de sesión
-    localStorage.removeItem('currentMinistro');
+    // Limpiar cookies del servidor y localStorage
+    await apiService.logout();
     localStorage.removeItem('isMinistroAuthenticated');
-    localStorage.removeItem('currentUser');
     localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('ministro_assignments');
     // Redirigir directamente a auth para evitar flash de contenido
     window.location.href = '/auth.html';

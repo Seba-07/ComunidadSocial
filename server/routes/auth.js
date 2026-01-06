@@ -1,6 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
-import { generateToken, authenticate } from '../middleware/auth.js';
+import { generateToken, authenticate, COOKIE_OPTIONS } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -33,10 +33,13 @@ router.post('/register', async (req, res) => {
     await user.save();
     const token = generateToken(user);
 
+    // Enviar token en cookie HttpOnly (seguro)
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
+
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
       user,
-      token
+      token // Mantener token en respuesta durante transición
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -65,10 +68,13 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(user);
 
+    // Enviar token en cookie HttpOnly (seguro)
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
+
     res.json({
       message: 'Inicio de sesión exitoso',
       user,
-      token,
+      token, // Mantener token en respuesta durante transición
       mustChangePassword: user.mustChangePassword
     });
   } catch (error) {
@@ -107,6 +113,12 @@ router.post('/change-password', authenticate, async (req, res) => {
     console.error('Change password error:', error);
     res.status(500).json({ error: 'Error al cambiar contraseña' });
   }
+});
+
+// Logout - Eliminar cookie de autenticación
+router.post('/logout', (req, res) => {
+  res.clearCookie('auth_token', { path: '/' });
+  res.json({ message: 'Sesión cerrada exitosamente' });
 });
 
 export default router;

@@ -1,6 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
-import { authenticate, requireRole, generateToken } from '../middleware/auth.js';
+import { authenticate, requireRole, generateToken, COOKIE_OPTIONS } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -198,9 +198,12 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(ministro);
 
+    // Enviar token en cookie HttpOnly (seguro)
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
+
     res.json({
       ministro,
-      token,
+      token, // Mantener token en respuesta durante transición
       mustChangePassword: ministro.mustChangePassword
     });
   } catch (error) {

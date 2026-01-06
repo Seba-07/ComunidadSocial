@@ -256,9 +256,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Detener polling de notificaciones
       notificationService.stopPolling();
 
-      // Limpiar localStorage y token API
-      apiService.logout();
-      localStorage.removeItem('currentUser');
+      // Limpiar cookies del servidor y localStorage
+      await apiService.logout();
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('user_organizations');
       localStorage.removeItem('ministros_fe');
@@ -1132,7 +1131,8 @@ function initProfile() {
   const btnLogoutProfile = document.getElementById('btn-logout-profile');
   if (btnLogoutProfile) {
     btnLogoutProfile.addEventListener('click', async () => {
-      localStorage.removeItem('currentUser');
+      // Limpiar cookies del servidor y localStorage
+      await apiService.logout();
       localStorage.removeItem('isAuthenticated');
 
       await handleLogout();

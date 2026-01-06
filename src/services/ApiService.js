@@ -31,34 +31,39 @@ class ApiService {
   }
 
   /**
-   * Get auth token from storage
+   * Get auth token from storage (DEPRECATED - se usa cookies HttpOnly)
+   * Mantenido para compatibilidad durante transición
    */
   getToken() {
     return localStorage.getItem('auth_token');
   }
 
   /**
-   * Set auth token
+   * Set auth token (DEPRECATED - se usa cookies HttpOnly)
+   * Mantenido para compatibilidad durante transición
    */
   setToken(token) {
     localStorage.setItem('auth_token', token);
   }
 
   /**
-   * Remove auth token
+   * Remove auth token (DEPRECATED - se usa cookies HttpOnly)
+   * Mantenido para compatibilidad durante transición
    */
   removeToken() {
     localStorage.removeItem('auth_token');
   }
 
   /**
-   * Build headers with auth token
+   * Build headers for request
+   * Nota: Ya no enviamos Authorization header, usamos cookies HttpOnly
    */
   getHeaders() {
     const headers = {
       'Content-Type': 'application/json'
     };
 
+    // Durante transición: Mantener header si hay token local
     const token = this.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -69,12 +74,14 @@ class ApiService {
 
   /**
    * Make HTTP request
+   * Usa credentials: 'include' para enviar cookies HttpOnly automáticamente
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
 
     const config = {
       headers: this.getHeaders(),
+      credentials: 'include', // IMPORTANTE: Incluir cookies en la petición
       ...options
     };
 
@@ -148,9 +155,19 @@ class ApiService {
     return this.post('/auth/change-password', { currentPassword, newPassword });
   }
 
-  logout() {
+  /**
+   * Logout - Elimina cookie del servidor y limpia localStorage
+   */
+  async logout() {
+    try {
+      await this.post('/auth/logout');
+    } catch (error) {
+      console.warn('Logout endpoint error:', error);
+    }
+    // Limpiar localStorage (compatibilidad durante transición)
     this.removeToken();
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('currentMinistro');
   }
 
   // ==================== ORGANIZATIONS ====================
