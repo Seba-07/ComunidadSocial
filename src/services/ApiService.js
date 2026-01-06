@@ -392,6 +392,117 @@ class ApiService {
     return this.get('/users/stats/counts');
   }
 
+  // ==================== ORGANIZATION TYPES ====================
+
+  /**
+   * Obtener todos los tipos de organización
+   */
+  async getOrganizationTypes() {
+    return this.get('/organization-types');
+  }
+
+  /**
+   * Obtener tipos agrupados por categoría
+   */
+  async getOrganizationTypesGrouped() {
+    return this.get('/organization-types/grouped');
+  }
+
+  /**
+   * Obtener categorías disponibles
+   */
+  async getOrganizationCategories() {
+    return this.get('/organization-types/categories');
+  }
+
+  /**
+   * Obtener información de un tipo específico
+   */
+  async getOrganizationType(tipo) {
+    return this.get(`/organization-types/${tipo}`);
+  }
+
+  // ==================== DOCUMENTS (PDF GENERATION) ====================
+
+  /**
+   * Descarga el PDF del Acta Constitutiva
+   * @param {string} orgId - ID de la organización
+   */
+  async downloadActaPDF(orgId) {
+    const url = `${this.baseUrl}/documents/${orgId}/generate-acta`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.getHeaders(),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al generar PDF');
+    }
+
+    // Descargar el blob
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `Acta_Constitutiva_${orgId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  /**
+   * Descarga el PDF de la Lista de Socios
+   * @param {string} orgId - ID de la organización
+   */
+  async downloadMembersPDF(orgId) {
+    const url = `${this.baseUrl}/documents/${orgId}/generate-members`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.getHeaders(),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al generar PDF');
+    }
+
+    // Descargar el blob
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `Lista_Socios_${orgId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  /**
+   * Obtiene el preview HTML del Acta Constitutiva
+   * @param {string} orgId - ID de la organización
+   * @returns {string} HTML del acta
+   */
+  async getActaPreview(orgId) {
+    const url = `${this.baseUrl}/documents/${orgId}/preview-acta`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.getHeaders(),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al obtener preview');
+    }
+
+    return response.text();
+  }
+
   // ==================== HEALTH CHECK ====================
 
   async healthCheck() {

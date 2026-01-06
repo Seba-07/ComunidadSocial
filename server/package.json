@@ -8,7 +8,10 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "seed": "node scripts/seed.js",
-    "seed:uv": "node scripts/seedUnidadesVecinales.js"
+    "seed:uv": "node scripts/seedUnidadesVecinales.js",
+    "migrate:normalize": "node scripts/migrate-to-normalized.js",
+    "migrate:normalize:dry": "node scripts/migrate-to-normalized.js --dry-run",
+    "migrate:rollback": "node scripts/migrate-to-normalized.js --rollback"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,6 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
+    "puppeteer": "^22.0.0",
     "uuid": "^13.0.0"
   },
   "engines": {

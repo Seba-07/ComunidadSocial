@@ -219,7 +219,36 @@ const organizationSchema = new mongoose.Schema({
 
   // Members account creation
   memberAccountsCreated: { type: Boolean, default: false },
-  memberAccountsCreatedAt: Date
+  memberAccountsCreatedAt: Date,
+
+  // ============ CAMPOS NORMALIZADOS (v2) ============
+  // Estos campos se usan para la nueva estructura normalizada
+  // Coexisten con los campos embebidos durante la transición
+
+  // Referencias a miembros normalizados
+  memberIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Member'
+  }],
+
+  // Referencias a documentos normalizados (firmas, certificados)
+  documentIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Document'
+  }],
+
+  // Flag para indicar si la organización fue migrada al nuevo formato
+  isNormalized: {
+    type: Boolean,
+    default: false
+  },
+  normalizedAt: Date,
+
+  // Versión del esquema de datos
+  schemaVersion: {
+    type: Number,
+    default: 1 // 1 = formato embebido, 2 = formato normalizado
+  }
 }, {
   timestamps: true
 });

@@ -5,6 +5,7 @@
 
 import { container, getAuthService } from './infrastructure/config/container.js';
 import { APP_CONFIG } from './infrastructure/config/app.config.js';
+import { initOrganizationTypes } from './shared/utils/index.js';
 
 // Flag para saber si ya se inicializó
 let isInitialized = false;
@@ -17,6 +18,9 @@ export async function initializeApp() {
 
   console.log('🚀 Inicializando aplicación...');
   await container.init();
+
+  // Precargar tipos de organización desde API (background)
+  initOrganizationTypes();
 
   // Actualizar UI inicial
   appState.updateUI();

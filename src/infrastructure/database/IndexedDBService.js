@@ -7,7 +7,7 @@
 export class IndexedDBService {
   constructor() {
     this.dbName = 'ComunidadRencaDB';
-    this.version = 2; // Incrementado para añadir store de certificados wizard
+    this.version = 3; // Incrementado para añadir stores de validation wizard y offline queue
     this.db = null;
   }
 
@@ -64,6 +64,20 @@ export class IndexedDBService {
         // Store para certificados del wizard (base64 grandes)
         if (!db.objectStoreNames.contains('wizard_certificates')) {
           db.createObjectStore('wizard_certificates', { keyPath: 'key' });
+        }
+
+        // Store para estado del validation wizard de ministros (persistencia offline)
+        if (!db.objectStoreNames.contains('validation_wizard_state')) {
+          const wizardStore = db.createObjectStore('validation_wizard_state', { keyPath: 'assignmentId' });
+          wizardStore.createIndex('lastUpdated', 'lastUpdated', { unique: false });
+        }
+
+        // Store para cola de peticiones offline (background sync)
+        if (!db.objectStoreNames.contains('offline_queue')) {
+          const offlineStore = db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
+          offlineStore.createIndex('status', 'status', { unique: false });
+          offlineStore.createIndex('createdAt', 'createdAt', { unique: false });
+          offlineStore.createIndex('type', 'type', { unique: false });
         }
 
         console.log('📦 Stores creadas en IndexedDB');
@@ -292,6 +306,209 @@ export class IndexedDBService {
       request.onsuccess = () => resolve(true);
       request.onerror = () => reject(new Error('Error al limpiar certificados'));
     });
+  }
+
+  // ============ MÉTODOS PARA VALIDATION WIZARD STATE (MINISTROS) ============
+
+  /**
+   * Guarda el estado del validation wizard
+   * @param {string} assignmentId - ID del assignment
+   * @param {Object} state - Estado a guardar (currentStep, wizardData, etc.)
+   */
+  async saveValidationWizardState(assignmentId, state) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['validation_wizard_state'], 'readwrite');
+      const store = transaction.objectStore('validation_wizard_state');
+      const request = store.put({
+        assignmentId,
+        ...state,
+        lastUpdated: new Date().toISOString()
+      });
+
+      request.onsuccess = () => {
+        console.log('💾 Estado del wizard guardado:', assignmentId);
+        resolve(true);
+      };
+      request.onerror = () => reject(new Error('Error al guardar estado del wizard'));
+    });
+  }
+
+  /**
+   * Obtiene el estado guardado del validation wizard
+   * @param {string} assignmentId - ID del assignment
+   * @returns {Object|null} Estado guardado o null si no existe
+   */
+  async getValidationWizardState(assignmentId) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['validation_wizard_state'], 'readonly');
+      const store = transaction.objectStore('validation_wizard_state');
+      const request = store.get(assignmentId);
+
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(new Error('Error al obtener estado del wizard'));
+    });
+  }
+
+  /**
+   * Elimina el estado guardado del validation wizard
+   * @param {string} assignmentId - ID del assignment
+   */
+  async deleteValidationWizardState(assignmentId) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['validation_wizard_state'], 'readwrite');
+      const store = transaction.objectStore('validation_wizard_state');
+      const request = store.delete(assignmentId);
+
+      request.onsuccess = () => {
+        console.log('🗑️ Estado del wizard eliminado:', assignmentId);
+        resolve(true);
+      };
+      request.onerror = () => reject(new Error('Error al eliminar estado del wizard'));
+    });
+  }
+
+  /**
+   * Obtiene todos los estados de wizard guardados
+   * @returns {Array} Lista de estados guardados
+   */
+  async getAllValidationWizardStates() {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['validation_wizard_state'], 'readonly');
+      const store = transaction.objectStore('validation_wizard_state');
+      const request = store.getAll();
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(new Error('Error al obtener estados del wizard'));
+    });
+  }
+
+  // ============ MÉTODOS PARA OFFLINE QUEUE ============
+
+  /**
+   * Agrega una petición a la cola offline
+   * @param {Object} request - Petición a encolar
+   * @returns {number} ID de la petición encolada
+   */
+  async addToOfflineQueue(request) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['offline_queue'], 'readwrite');
+      const store = transaction.objectStore('offline_queue');
+      const data = {
+        ...request,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        attempts: 0
+      };
+      const req = store.add(data);
+
+      req.onsuccess = () => {
+        console.log('📤 Petición agregada a cola offline:', req.result);
+        resolve(req.result);
+      };
+      req.onerror = () => reject(new Error('Error al agregar a cola offline'));
+    });
+  }
+
+  /**
+   * Obtiene todas las peticiones pendientes de la cola offline
+   * @returns {Array} Lista de peticiones pendientes
+   */
+  async getPendingOfflineRequests() {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['offline_queue'], 'readonly');
+      const store = transaction.objectStore('offline_queue');
+      const index = store.index('status');
+      const request = index.getAll('pending');
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(new Error('Error al obtener peticiones pendientes'));
+    });
+  }
+
+  /**
+   * Actualiza el estado de una petición offline
+   * @param {number} id - ID de la petición
+   * @param {string} status - Nuevo estado ('pending', 'processing', 'completed', 'failed')
+   * @param {Object} extra - Datos adicionales (error, result, etc.)
+   */
+  async updateOfflineRequestStatus(id, status, extra = {}) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['offline_queue'], 'readwrite');
+      const store = transaction.objectStore('offline_queue');
+      const getReq = store.get(id);
+
+      getReq.onsuccess = () => {
+        const data = getReq.result;
+        if (!data) {
+          reject(new Error('Petición no encontrada'));
+          return;
+        }
+
+        const updated = {
+          ...data,
+          status,
+          ...extra,
+          lastUpdated: new Date().toISOString()
+        };
+
+        const putReq = store.put(updated);
+        putReq.onsuccess = () => resolve(updated);
+        putReq.onerror = () => reject(new Error('Error al actualizar petición'));
+      };
+
+      getReq.onerror = () => reject(new Error('Error al obtener petición'));
+    });
+  }
+
+  /**
+   * Elimina una petición de la cola offline
+   * @param {number} id - ID de la petición
+   */
+  async removeFromOfflineQueue(id) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['offline_queue'], 'readwrite');
+      const store = transaction.objectStore('offline_queue');
+      const request = store.delete(id);
+
+      request.onsuccess = () => {
+        console.log('🗑️ Petición eliminada de cola offline:', id);
+        resolve(true);
+      };
+      request.onerror = () => reject(new Error('Error al eliminar de cola offline'));
+    });
+  }
+
+  /**
+   * Limpia peticiones completadas o fallidas de la cola offline
+   */
+  async cleanOfflineQueue() {
+    if (!this.db) await this.init();
+
+    const requests = await this.getAll('offline_queue');
+    const toDelete = requests.filter(r => r.status === 'completed' || r.status === 'failed');
+
+    for (const req of toDelete) {
+      await this.removeFromOfflineQueue(req.id);
+    }
+
+    console.log('🧹 Cola offline limpiada:', toDelete.length, 'peticiones eliminadas');
+    return toDelete.length;
   }
 }
 

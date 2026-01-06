@@ -16,6 +16,8 @@ import guiaConstitucionRoutes from './routes/guiaConstitucion.js';
 import libraryDocumentsRoutes from './routes/libraryDocuments.js';
 import newsRoutes from './routes/news.js';
 import estatutoTemplatesRoutes from './routes/estatutoTemplates.js';
+import organizationTypesRoutes from './routes/organizationTypes.js';
+import documentsRoutes from './routes/documents.js';
 
 // Model for auto-migration
 import Organization from './models/Organization.js';
@@ -154,6 +156,8 @@ app.use('/api/guia-constitucion', guiaConstitucionRoutes);
 app.use('/api/library-documents', libraryDocumentsRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/estatuto-templates', estatutoTemplatesRoutes);
+app.use('/api/organization-types', organizationTypesRoutes);
+app.use('/api/documents', documentsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

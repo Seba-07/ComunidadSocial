@@ -10,18 +10,23 @@ import { CHILE_REGIONS } from '../../../data/chile-regions.js';
 import { ESTATUTOS_TIPO, generarEstatutos, mapearTipoOrganizacion } from '../../../data/estatutosTipo.js';
 import unidadesVecinalesService from '../../../services/UnidadesVecinalesService.js';
 import { jsPDF } from 'jspdf';
+import { apiService } from '../../../services/ApiService.js';
 
 // Importar utilidades compartidas
 import { getOrgType as getOrgTypeFromUtils } from '../../../shared/utils/index.js';
 
-// Tipos de organizaciones territoriales
-const TERRITORIAL_TYPES = {
+// ============================================================================
+// TIPOS DE ORGANIZACIÓN DINÁMICOS (con fallback a constantes locales)
+// ============================================================================
+
+// Tipos de organizaciones territoriales (FALLBACK)
+const TERRITORIAL_TYPES_FALLBACK = {
   'JUNTA_VECINOS': 'Junta de Vecinos',
   'COMITE_VECINOS': 'Comité de Vecinos'
 };
 
-// Tipos de organizaciones funcionales (según formulario oficial)
-const FUNCIONAL_TYPES = {
+// Tipos de organizaciones funcionales (FALLBACK)
+const FUNCIONAL_TYPES_FALLBACK = {
   'CLUB_ADULTO_MAYOR': 'Club de Adulto Mayor',
   'CENTRO_PADRES': 'Centro de Padres y Apoderados',
   'COMITE_ADELANTO': 'Comité de Adelanto',
@@ -38,6 +43,91 @@ const FUNCIONAL_TYPES = {
   'COMITE_VIVIENDA': 'Comité de Vivienda',
   'OTRA_FUNCIONAL': 'Otra'
 };
+
+// Cache de tipos desde API
+let cachedOrganizationTypes = null;
+let typesLoadPromise = null;
+
+/**
+ * Carga tipos de organización desde la API (con cache)
+ * @returns {Promise<{territorial: Object, funcional: Object, all: Object}>}
+ */
+async function loadOrganizationTypes() {
+  // Si ya está en cache, retornar
+  if (cachedOrganizationTypes) {
+    return cachedOrganizationTypes;
+  }
+
+  // Si ya hay una carga en progreso, esperar
+  if (typesLoadPromise) {
+    return typesLoadPromise;
+  }
+
+  // Iniciar carga
+  typesLoadPromise = (async () => {
+    try {
+      const grouped = await apiService.getOrganizationTypesGrouped();
+
+      // Procesar tipos territoriales
+      const territorial = {};
+      if (grouped.TERRITORIAL) {
+        grouped.TERRITORIAL.forEach(t => { territorial[t.value] = t.label; });
+      }
+
+      // Procesar tipos funcionales (combinar todas las categorías no-territoriales)
+      const funcional = {};
+      Object.entries(grouped).forEach(([category, types]) => {
+        if (category !== 'TERRITORIAL') {
+          types.forEach(t => { funcional[t.value] = t.label; });
+        }
+      });
+
+      // Crear mapa de todos los tipos
+      const all = { ...territorial, ...funcional };
+
+      cachedOrganizationTypes = { territorial, funcional, all, grouped };
+      console.log('✅ Tipos de organización cargados desde API:', Object.keys(all).length, 'tipos');
+      return cachedOrganizationTypes;
+    } catch (error) {
+      console.warn('⚠️ Error cargando tipos desde API, usando fallback:', error.message);
+      // Usar fallback
+      cachedOrganizationTypes = {
+        territorial: TERRITORIAL_TYPES_FALLBACK,
+        funcional: FUNCIONAL_TYPES_FALLBACK,
+        all: { ...TERRITORIAL_TYPES_FALLBACK, ...FUNCIONAL_TYPES_FALLBACK },
+        grouped: null
+      };
+      return cachedOrganizationTypes;
+    } finally {
+      typesLoadPromise = null;
+    }
+  })();
+
+  return typesLoadPromise;
+}
+
+/**
+ * Obtiene el label de un tipo de organización (sincrónico, usa cache)
+ * @param {string} typeKey - Key del tipo (ej: 'JUNTA_VECINOS')
+ * @returns {string} Label del tipo o el key si no se encuentra
+ */
+function getOrganizationTypeLabel(typeKey) {
+  if (!typeKey) return '';
+
+  // Si hay cache, usar
+  if (cachedOrganizationTypes?.all) {
+    return cachedOrganizationTypes.all[typeKey] || typeKey;
+  }
+
+  // Fallback a constantes locales
+  return TERRITORIAL_TYPES_FALLBACK[typeKey] ||
+         FUNCIONAL_TYPES_FALLBACK[typeKey] ||
+         typeKey;
+}
+
+// Aliases para compatibilidad (mantenidos para código existente)
+const TERRITORIAL_TYPES = TERRITORIAL_TYPES_FALLBACK;
+const FUNCIONAL_TYPES = FUNCIONAL_TYPES_FALLBACK;
 
 // Configuración de Directorio por tipo de organización (FALLBACK)
 // Se usa solo cuando la API no está disponible
@@ -783,15 +873,19 @@ export class WizardController {
     const typeHelp = document.getElementById('org-type-help');
     const neighborhoodRow = document.getElementById('neighborhood-row');
 
-    categorySelect.addEventListener('change', (e) => {
+    categorySelect.addEventListener('change', async (e) => {
       const category = e.target.value;
 
       // Limpiar select de tipo
       typeSelect.innerHTML = '<option value="">Seleccione...</option>';
 
+      // Cargar tipos dinámicos (usa cache si disponible)
+      const orgTypes = await loadOrganizationTypes();
+
       if (category === 'TERRITORIAL') {
-        // Poblar con tipos territoriales
-        Object.entries(TERRITORIAL_TYPES).forEach(([key, label]) => {
+        // Poblar con tipos territoriales desde API (o fallback)
+        const territorialTypes = orgTypes.territorial || TERRITORIAL_TYPES_FALLBACK;
+        Object.entries(territorialTypes).forEach(([key, label]) => {
           const option = document.createElement('option');
           option.value = key;
           option.textContent = label;
@@ -801,8 +895,9 @@ export class WizardController {
         typeRow.style.display = 'flex';
 
       } else if (category === 'FUNCIONAL') {
-        // Poblar con tipos funcionales
-        Object.entries(FUNCIONAL_TYPES).forEach(([key, label]) => {
+        // Poblar con tipos funcionales desde API (o fallback)
+        const funcionalTypes = orgTypes.funcional || FUNCIONAL_TYPES_FALLBACK;
+        Object.entries(funcionalTypes).forEach(([key, label]) => {
           const option = document.createElement('option');
           option.value = key;
           option.textContent = label;
@@ -4980,8 +5075,8 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
    * Formato base del documento legal con campos dinámicos
    */
   generateActaConstitutiva(org, members, commission, today) {
-    // Formatear tipo de organización
-    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || org.type;
+    // Formatear tipo de organización (usa tipos dinámicos desde API)
+    const tipoOrg = getOrganizationTypeLabel(org.type) || org.type;
 
     // Obtener datos del directorio provisorio
     const directorio = this.formData.directorioProvisorio || {};
@@ -5649,7 +5744,8 @@ una vez completado el proceso de constitución el día de la Asamblea.
    * Genera el Depósito de Antecedentes
    */
   generateDepositoAntecedentes(org, today) {
-    const tipoOrg = TERRITORIAL_TYPES[org.type] || FUNCIONAL_TYPES[org.type] || '___________________________________________';
+    // Usar tipos dinámicos desde API
+    const tipoOrg = getOrganizationTypeLabel(org.type) || '___________________________________________';
     const unidadVecinal = org.neighborhood || '___________';
 
     return `DEPOSITO DE ANTECEDENTES N° __________/

@@ -4,6 +4,50 @@
  * @module shared/utils
  */
 
+import { apiService } from '../../services/ApiService.js';
+
+// ============================================
+// TIPOS DE ORGANIZACIÓN DINÁMICOS
+// ============================================
+
+// Cache de tipos desde API
+let cachedOrgTypes = null;
+let orgTypesLoadPromise = null;
+
+/**
+ * Carga tipos de organización desde la API (con cache)
+ * @returns {Promise<Object>} Mapa de tipo -> label
+ */
+export async function loadOrganizationTypes() {
+  if (cachedOrgTypes) return cachedOrgTypes;
+  if (orgTypesLoadPromise) return orgTypesLoadPromise;
+
+  orgTypesLoadPromise = (async () => {
+    try {
+      const types = await apiService.getOrganizationTypes();
+      cachedOrgTypes = {};
+      types.forEach(t => { cachedOrgTypes[t.value] = t.label; });
+      console.log('✅ [shared/utils] Tipos cargados desde API:', Object.keys(cachedOrgTypes).length);
+      return cachedOrgTypes;
+    } catch (error) {
+      console.warn('⚠️ [shared/utils] Error cargando tipos, usando fallback:', error.message);
+      return null;
+    } finally {
+      orgTypesLoadPromise = null;
+    }
+  })();
+
+  return orgTypesLoadPromise;
+}
+
+/**
+ * Inicializa los tipos de organización (precargar en cache)
+ * Llamar esto al inicio de la aplicación para mejor rendimiento
+ */
+export function initOrganizationTypes() {
+  loadOrganizationTypes().catch(() => {});
+}
+
 // ============================================
 // FORMATEO DE FECHAS
 // ============================================
@@ -137,13 +181,20 @@ export function getOrgName(org) {
 
 /**
  * Obtiene el tipo de organización formateado
+ * Usa cache de API si está disponible, con fallback a tipos locales
  * @param {Object|string} org - Organización o tipo directo
  * @returns {string} Tipo legible
  */
 export function getOrgType(org) {
   const type = typeof org === 'string' ? org : (org?.organizationType || org?.type || org?.tipo);
 
-  const TIPOS = {
+  // Primero intentar con cache de API
+  if (cachedOrgTypes && cachedOrgTypes[type]) {
+    return cachedOrgTypes[type];
+  }
+
+  // Fallback a tipos locales
+  const TIPOS_FALLBACK = {
     'JUNTA_VECINOS': 'Junta de Vecinos',
     'COMITE_VECINOS': 'Comité de Vecinos',
     'CLUB_DEPORTIVO': 'Club Deportivo',
@@ -178,7 +229,7 @@ export function getOrgType(org) {
     'OTRA_FUNCIONAL': 'Otra Organización Funcional'
   };
 
-  return TIPOS[type] || type || 'Organización Comunitaria';
+  return TIPOS_FALLBACK[type] || type || 'Organización Comunitaria';
 }
 
 /**
@@ -615,7 +666,9 @@ export const orgUtils = {
   getOrgUnidadVecinal,
   getOrgIcon,
   getStatusInfo,
-  getStatusBadge
+  getStatusBadge,
+  loadOrganizationTypes,
+  initOrganizationTypes
 };
 
 export const validationUtils = {

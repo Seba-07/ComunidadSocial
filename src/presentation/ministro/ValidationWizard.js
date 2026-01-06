@@ -3,6 +3,8 @@
  * Flujo paso a paso para validar la asamblea constitutiva
  */
 
+import { indexedDBService } from '../../infrastructure/database/IndexedDBService.js';
+
 export function openValidationWizard(assignment, org, currentMinistro, callbacks) {
   console.log('🚨🚨🚨 INICIO ValidationWizard - Datos recibidos:');
   console.log('  assignment:', assignment);
@@ -371,6 +373,154 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   preloadedComision.forEach(cm => {
     if (cm?.id) selectedIds.add(cm.id);
   });
+
+  // ============ PERSISTENCIA OFFLINE (IndexedDB) ============
+  const assignmentId = assignment._id || assignment.id;
+
+  /**
+   * Guarda el estado actual del wizard en IndexedDB
+   * Se llama automáticamente al navegar entre pasos
+   */
+  const persistWizardState = async () => {
+    if (!assignmentId) return;
+
+    try {
+      const stateToSave = {
+        currentStep,
+        wizardData: { ...wizardData },
+        signatureData: { ...signatureData },
+        selectedIds: Array.from(selectedIds),
+        orgName,
+        orgType
+      };
+      await indexedDBService.saveValidationWizardState(assignmentId, stateToSave);
+    } catch (error) {
+      console.warn('⚠️ Error guardando estado del wizard:', error);
+    }
+  };
+
+  /**
+   * Restaura el estado del wizard desde IndexedDB
+   * @returns {Object|null} Estado guardado o null si no existe
+   */
+  const loadWizardState = async () => {
+    if (!assignmentId) return null;
+
+    try {
+      const savedState = await indexedDBService.getValidationWizardState(assignmentId);
+      return savedState;
+    } catch (error) {
+      console.warn('⚠️ Error cargando estado del wizard:', error);
+      return null;
+    }
+  };
+
+  /**
+   * Aplica un estado guardado al wizard actual
+   */
+  const applyRestoredState = (savedState) => {
+    if (!savedState) return;
+
+    console.log('🔄 Restaurando estado del wizard:', savedState);
+
+    // Restaurar paso actual
+    currentStep = savedState.currentStep || 1;
+
+    // Restaurar wizardData
+    if (savedState.wizardData) {
+      Object.assign(wizardData, savedState.wizardData);
+    }
+
+    // Restaurar signatureData
+    if (savedState.signatureData) {
+      Object.assign(signatureData, savedState.signatureData);
+    }
+
+    // Restaurar selectedIds
+    if (savedState.selectedIds) {
+      selectedIds.clear();
+      savedState.selectedIds.forEach(id => selectedIds.add(id));
+    }
+
+    console.log('✅ Estado restaurado exitosamente');
+  };
+
+  /**
+   * Elimina el estado guardado (llamar al completar o cancelar)
+   */
+  const clearWizardState = async () => {
+    if (!assignmentId) return;
+
+    try {
+      await indexedDBService.deleteValidationWizardState(assignmentId);
+      console.log('🗑️ Estado del wizard eliminado');
+    } catch (error) {
+      console.warn('⚠️ Error eliminando estado del wizard:', error);
+    }
+  };
+
+  /**
+   * Muestra modal de recuperación si hay estado guardado
+   */
+  const showRecoveryModal = (savedState) => {
+    return new Promise((resolve) => {
+      const lastUpdated = savedState.lastUpdated ? new Date(savedState.lastUpdated).toLocaleString('es-CL') : 'fecha desconocida';
+      const stepName = ['', 'Directorio Provisorio', 'Comisión Electoral', 'Miembros Adicionales', 'Asistentes', 'Estatutos y Foto', 'Confirmación'][savedState.currentStep] || 'Desconocido';
+
+      const recoveryModal = document.createElement('div');
+      recoveryModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 20px;';
+      recoveryModal.innerHTML = `
+        <div style="background: white; border-radius: 20px; max-width: 450px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.4);">
+          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px;">
+            <h3 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 12px;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              Sesión Anterior Detectada
+            </h3>
+          </div>
+          <div style="padding: 24px;">
+            <p style="margin: 0 0 12px; color: #374151; line-height: 1.6;">
+              Se encontró una sesión de validación anterior para esta asamblea.
+            </p>
+            <div style="background: #f3f4f6; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px;">
+                <strong>Último guardado:</strong> ${lastUpdated}
+              </p>
+              <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                <strong>Paso:</strong> ${savedState.currentStep}/${6} - ${stepName}
+              </p>
+            </div>
+            <p style="margin: 0 0 20px; color: #374151; font-size: 14px;">
+              ¿Deseas continuar desde donde lo dejaste?
+            </p>
+            <div style="display: flex; gap: 12px;">
+              <button type="button" id="recovery-no" style="flex: 1; padding: 14px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                Empezar de Nuevo
+              </button>
+              <button type="button" id="recovery-yes" style="flex: 1; padding: 14px 20px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(recoveryModal);
+
+      recoveryModal.querySelector('#recovery-yes').addEventListener('click', () => {
+        recoveryModal.remove();
+        resolve(true);
+      });
+
+      recoveryModal.querySelector('#recovery-no').addEventListener('click', async () => {
+        recoveryModal.remove();
+        await clearWizardState();
+        resolve(false);
+      });
+    });
+  };
 
   // Función para abrir modal de firma grande
   const openSignatureModal = (signatureKey, title, onSave) => {
@@ -1352,26 +1502,33 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
   // Configurar event listeners
   const setupEventListeners = () => {
     // Cerrar wizard
-    modal.querySelector('#close-wizard-btn')?.addEventListener('click', () => {
-      if (confirm('¿Estás seguro de que deseas cerrar? Se perderán los datos no guardados.')) {
+    modal.querySelector('#close-wizard-btn')?.addEventListener('click', async () => {
+      // Guardar estado antes de cerrar (para recuperar después)
+      saveCurrentStepData();
+      await persistWizardState();
+
+      if (confirm('¿Estás seguro de que deseas cerrar?\n\nTu progreso ha sido guardado y podrás continuar después.')) {
         modal.remove();
       }
     });
 
-    // Navegación
-    modal.querySelector('#prev-step-btn')?.addEventListener('click', () => {
+    // Navegación - Paso anterior
+    modal.querySelector('#prev-step-btn')?.addEventListener('click', async () => {
       if (currentStep > 1) {
         saveCurrentStepData();
         currentStep--;
+        await persistWizardState();
         renderWizard();
       }
     });
 
-    modal.querySelector('#next-step-btn')?.addEventListener('click', () => {
+    // Navegación - Paso siguiente
+    modal.querySelector('#next-step-btn')?.addEventListener('click', async () => {
       if (validateCurrentStep()) {
         saveCurrentStepData();
         if (currentStep < totalSteps) {
           currentStep++;
+          await persistWizardState();
           renderWizard();
         } else {
           submitValidation();
@@ -2202,8 +2359,11 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     document.body.appendChild(confirmModal);
 
     confirmModal.querySelector('#cancel-submit').addEventListener('click', () => confirmModal.remove());
-    confirmModal.querySelector('#confirm-submit').addEventListener('click', () => {
+    confirmModal.querySelector('#confirm-submit').addEventListener('click', async () => {
       confirmModal.remove();
+
+      // Limpiar estado guardado ya que la validación se completó exitosamente
+      await clearWizardState();
 
       // Llamar al callback con los datos
       if (callbacks.onComplete) {
@@ -2228,9 +2388,24 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     setTimeout(() => toast.remove(), 3000);
   };
 
-  // Iniciar
+  // Iniciar con verificación de estado guardado
   document.body.appendChild(modal);
-  renderWizard();
+
+  // Verificar si hay estado guardado y ofrecer recuperación
+  (async () => {
+    try {
+      const savedState = await loadWizardState();
+      if (savedState && savedState.currentStep > 1) {
+        const shouldRestore = await showRecoveryModal(savedState);
+        if (shouldRestore) {
+          applyRestoredState(savedState);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Error verificando estado guardado:', error);
+    }
+    renderWizard();
+  })();
 
   return modal;
 }

@@ -2257,4 +2257,56 @@ loadMinistroNotifications();
 // Refresh notifications every 60 seconds
 setInterval(loadMinistroNotifications, 60000);
 
+// ============ SERVICE WORKER SYNC MESSAGES ============
+// Escuchar mensajes del Service Worker para sincronización offline
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    const { type, requestId, error, success } = event.data || {};
+
+    switch (type) {
+      case 'SYNC_COMPLETED':
+        console.log('✅ [SW Sync] Petición sincronizada:', requestId);
+        showToast('Datos sincronizados correctamente', 'success');
+        // Recargar datos si es necesario
+        loadAssignments();
+        break;
+
+      case 'SYNC_FAILED':
+        console.error('❌ [SW Sync] Error al sincronizar:', requestId, error);
+        showToast(`Error al sincronizar: ${error}`, 'error');
+        break;
+
+      case 'SYNC_COMPLETE':
+        console.log('✅ [SW Sync] Sincronización completa');
+        break;
+
+      default:
+        console.log('[SW Message]', event.data);
+    }
+  });
+
+  // Registrar para background sync cuando hay conexión
+  navigator.serviceWorker.ready.then((registration) => {
+    // Intentar sincronizar cuando recuperamos conexión
+    window.addEventListener('online', async () => {
+      console.log('🌐 Conexión restaurada, iniciando sincronización...');
+      showToast('Conexión restaurada. Sincronizando datos...', 'info');
+
+      try {
+        if ('sync' in registration) {
+          await registration.sync.register('sync-offline-queue');
+        }
+      } catch (error) {
+        console.warn('Background sync no disponible:', error);
+      }
+    });
+
+    // Notificar cuando perdemos conexión
+    window.addEventListener('offline', () => {
+      console.log('📴 Sin conexión');
+      showToast('Sin conexión. Los cambios se guardarán localmente.', 'error');
+    });
+  });
+}
+
 console.log('✅ Dashboard initialized');
