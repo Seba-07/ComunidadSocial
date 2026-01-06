@@ -279,16 +279,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (menuBtn && sideNav) {
     menuBtn.addEventListener('click', () => {
-      sideNav.classList.add('open');
-      const overlay = document.createElement('div');
-      overlay.id = 'overlay';
-      overlay.className = 'overlay active';
-      document.body.appendChild(overlay);
+      // Verificar si el menú ya está abierto
+      const isOpen = sideNav.classList.contains('open');
+      const existingOverlay = document.getElementById('overlay');
 
-      overlay.addEventListener('click', () => {
+      if (isOpen) {
+        // Si está abierto, cerrarlo
         sideNav.classList.remove('open');
-        overlay.remove();
-      });
+        if (existingOverlay) existingOverlay.remove();
+      } else {
+        // Si está cerrado, abrirlo
+        sideNav.classList.add('open');
+
+        // Solo crear overlay si no existe
+        if (!existingOverlay) {
+          const overlay = document.createElement('div');
+          overlay.id = 'overlay';
+          overlay.className = 'overlay active';
+          document.body.appendChild(overlay);
+
+          overlay.addEventListener('click', () => {
+            sideNav.classList.remove('open');
+            overlay.remove();
+          });
+        }
+      }
     });
   }
 

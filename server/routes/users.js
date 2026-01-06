@@ -15,107 +15,8 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
   }
 });
 
-// Get user by ID
-router.get('/:id', authenticate, async (req, res) => {
-  try {
-    // Only self or admin can view
-    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
-      return res.status(403).json({ error: 'No tienes permisos' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ error: 'Error al obtener usuario' });
-  }
-});
-
-// Update user profile
-router.put('/:id', authenticate, async (req, res) => {
-  try {
-    // Only self or admin can update
-    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
-      return res.status(403).json({ error: 'No tienes permisos' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    // Don't allow changing role unless admin
-    if (req.body.role && req.user.role !== 'MUNICIPALIDAD') {
-      delete req.body.role;
-    }
-
-    // Don't update password through this endpoint
-    delete req.body.password;
-
-    Object.assign(user, req.body);
-    await user.save();
-
-    res.json(user);
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ error: 'Error al actualizar usuario' });
-  }
-});
-
-// Toggle user active status (Admin only)
-router.post('/:id/toggle-active', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    user.active = !user.active;
-    await user.save();
-
-    res.json(user);
-  } catch (error) {
-    console.error('Toggle active error:', error);
-    res.status(500).json({ error: 'Error al cambiar estado' });
-  }
-});
-
-// Delete user (Admin only)
-router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const result = await User.deleteOne({ _id: req.params.id, role: 'ORGANIZADOR' });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-    res.json({ message: 'Usuario eliminado' });
-  } catch (error) {
-    console.error('Delete user error:', error);
-    res.status(500).json({ error: 'Error al eliminar usuario' });
-  }
-});
-
-// Get statistics (Admin only)
-router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const total = await User.countDocuments({ role: 'ORGANIZADOR' });
-    const active = await User.countDocuments({ role: 'ORGANIZADOR', active: true });
-
-    res.json({
-      total,
-      active,
-      inactive: total - active
-    });
-  } catch (error) {
-    console.error('Get stats error:', error);
-    res.status(500).json({ error: 'Error al obtener estadísticas' });
-  }
-});
-
 // ============================================
-// RUTAS PARA TIMBRE VIRTUAL Y FIRMA DIGITAL
+// RUTAS /me/* - DEBEN IR ANTES DE /:id
 // ============================================
 
 // Obtener timbre y firma del usuario actual
@@ -277,6 +178,109 @@ router.post('/me/timbre-virtual/toggle', authenticate, requireRole('MUNICIPALIDA
   } catch (error) {
     console.error('Toggle timbre error:', error);
     res.status(500).json({ error: 'Error al cambiar estado del timbre' });
+  }
+});
+
+// ============================================
+// RUTAS CON /:id - DESPUÉS DE /me/*
+// ============================================
+
+// Get user by ID
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    // Only self or admin can view
+    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
+      return res.status(403).json({ error: 'No tienes permisos' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Error al obtener usuario' });
+  }
+});
+
+// Update user profile
+router.put('/:id', authenticate, async (req, res) => {
+  try {
+    // Only self or admin can update
+    if (req.params.id !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
+      return res.status(403).json({ error: 'No tienes permisos' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Don't allow changing role unless admin
+    if (req.body.role && req.user.role !== 'MUNICIPALIDAD') {
+      delete req.body.role;
+    }
+
+    // Don't update password through this endpoint
+    delete req.body.password;
+
+    Object.assign(user, req.body);
+    await user.save();
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
+// Toggle user active status (Admin only)
+router.post('/:id/toggle-active', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    user.active = !user.active;
+    await user.save();
+
+    res.json(user);
+  } catch (error) {
+    console.error('Toggle active error:', error);
+    res.status(500).json({ error: 'Error al cambiar estado' });
+  }
+});
+
+// Delete user (Admin only)
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const result = await User.deleteOne({ _id: req.params.id, role: 'ORGANIZADOR' });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json({ message: 'Usuario eliminado' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
+// Get statistics (Admin only)
+router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const total = await User.countDocuments({ role: 'ORGANIZADOR' });
+    const active = await User.countDocuments({ role: 'ORGANIZADOR', active: true });
+
+    res.json({
+      total,
+      active,
+      inactive: total - active
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
   }
 });
 

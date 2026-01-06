@@ -66,6 +66,7 @@ class AdminDashboard {
     this.setupUVManagerButton();
     this.setupEstatutosManagerButton();
     this.setupTimbreManagerButton();
+    this.setupDocumentosManagerButton();
   }
 
   /**
@@ -436,6 +437,215 @@ class AdminDashboard {
       } catch (error) {
         showToast('Error al eliminar', 'error');
       }
+    });
+  }
+
+  /**
+   * Configura el botón de gestión de documentos
+   */
+  setupDocumentosManagerButton() {
+    const btn = document.getElementById('btn-documentos-manager');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        this.showDocumentosModal();
+      });
+    }
+  }
+
+  /**
+   * Muestra el modal de gestión de documentos/plantillas
+   */
+  showDocumentosModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'documentos-modal';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #047857 0%, #10b981 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0;">
+          <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.342a2 2 0 0 0-.602-1.43l-4.44-4.342A2 2 0 0 0 13.56 2H6a2 2 0 0 0-2 2z"></path>
+              <path d="M9 13h6"></path>
+              <path d="M9 17h3"></path>
+              <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+            </svg>
+            Documentos Oficiales
+          </h3>
+          <button class="modal-close-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px;">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px;">
+          <p style="color: #6b7280; margin-bottom: 24px; font-size: 14px;">
+            Documentos y plantillas disponibles para las organizaciones. Estos documentos se generan automáticamente según el tipo de organización.
+          </p>
+
+          <div class="documentos-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+
+            <!-- Estatutos -->
+            <div class="documento-card" style="padding: 20px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0; cursor: pointer; transition: all 0.2s;" data-doc="estatutos">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #065f46; font-weight: 600;">Estatutos</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Estatutos tipo por organización</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #059669; background: #d1fae5; padding: 4px 8px; border-radius: 4px;">Configurar en Editor</span>
+            </div>
+
+            <!-- Acta de Constitución -->
+            <div class="documento-card" style="padding: 20px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s;" data-doc="acta">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #1e40af; font-weight: 600;">Acta de Constitución</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Generada automáticamente</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #1d4ed8; background: #dbeafe; padding: 4px 8px; border-radius: 4px;">Auto-generado</span>
+            </div>
+
+            <!-- Registro de Socios -->
+            <div class="documento-card" style="padding: 20px; background: #fef3c7; border-radius: 12px; border: 1px solid #fde68a; cursor: pointer; transition: all 0.2s;" data-doc="registro">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #f59e0b; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #92400e; font-weight: 600;">Registro de Socios</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Lista de miembros fundadores</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #b45309; background: #fef3c7; padding: 4px 8px; border-radius: 4px;">Auto-generado</span>
+            </div>
+
+            <!-- Certificado de Vigencia -->
+            <div class="documento-card" style="padding: 20px; background: #fdf4ff; border-radius: 12px; border: 1px solid #f5d0fe; cursor: pointer; transition: all 0.2s;" data-doc="vigencia">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #a855f7; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="8" r="7"></circle>
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #7e22ce; font-weight: 600;">Cert. de Vigencia</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Certificado oficial</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #9333ea; background: #f3e8ff; padding: 4px 8px; border-radius: 4px;">Con timbre digital</span>
+            </div>
+
+            <!-- Certificado de Directorio -->
+            <div class="documento-card" style="padding: 20px; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca; cursor: pointer; transition: all 0.2s;" data-doc="directorio">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #ef4444; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #b91c1c; font-weight: 600;">Cert. de Directorio</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Miembros directiva</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #dc2626; background: #fee2e2; padding: 4px 8px; border-radius: 4px;">Con timbre digital</span>
+            </div>
+
+            <!-- Comprobante de Solicitud -->
+            <div class="documento-card" style="padding: 20px; background: #f0fdfa; border-radius: 12px; border: 1px solid #99f6e4; cursor: pointer; transition: all 0.2s;" data-doc="comprobante">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; background: #14b8a6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; color: #0f766e; font-weight: 600;">Comprobante</h4>
+                  <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Solicitud de inscripción</p>
+                </div>
+              </div>
+              <span style="font-size: 11px; color: #0d9488; background: #ccfbf1; padding: 4px 8px; border-radius: 4px;">Auto-generado</span>
+            </div>
+
+          </div>
+
+          <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h5 style="margin: 0 0 8px; color: #475569; font-size: 13px; font-weight: 600;">ℹ️ Información</h5>
+            <p style="margin: 0; color: #64748b; font-size: 12px; line-height: 1.6;">
+              Los documentos se generan automáticamente según los datos de cada organización.
+              Para modificar las plantillas de estatutos por tipo de organización,
+              utiliza el <strong>Editor de Estatutos</strong> disponible en el panel de administración.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
+          <button class="btn-close-modal" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Cerrar modal
+    const closeBtn = modal.querySelector('.modal-close-btn');
+    const closeFooterBtn = modal.querySelector('.btn-close-modal');
+
+    const closeModal = () => modal.remove();
+
+    closeBtn.addEventListener('click', closeModal);
+    closeFooterBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Hover effects para las tarjetas
+    const cards = modal.querySelectorAll('.documento-card');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        card.style.transform = 'translateY(-2px)';
+        card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+      });
+
+      // Click en tarjeta de estatutos abre el editor
+      card.addEventListener('click', () => {
+        const docType = card.dataset.doc;
+        if (docType === 'estatutos') {
+          modal.remove();
+          this.showEstatutosManager();
+        }
+      });
     });
   }
 
