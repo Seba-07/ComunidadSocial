@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   ministroId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Ministro',
+    ref: 'User',  // Ministros son Users con role: 'MINISTRO_FE'
     required: false
   },
   type: {

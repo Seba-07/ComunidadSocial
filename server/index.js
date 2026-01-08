@@ -4,6 +4,13 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
+// Security middleware
+import {
+  generalLimiter,
+  securityHeaders,
+  sanitizeInput
+} from './middleware/security.js';
+
 // Routes
 import authRoutes from './routes/auth.js';
 import organizationsRoutes from './routes/organizations.js';
@@ -39,14 +46,15 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
+    // Allow requests with no origin (mobile apps, curl, Postman, etc)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
-      callback(null, true); // Allow all for now to debug
+      // SEGURIDAD: Rechazar orígenes no permitidos
+      console.warn('CORS blocked origin:', origin);
+      callback(new Error('No permitido por CORS'));
     }
   },
   credentials: true,
@@ -56,6 +64,15 @@ app.use(cors({
 
 // Cookie parser para JWT HttpOnly cookies
 app.use(cookieParser());
+
+// Headers de seguridad (Helmet)
+app.use(securityHeaders);
+
+// Rate limiting global
+app.use('/api/', generalLimiter);
+
+// Sanitización de inputs
+app.use(sanitizeInput);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));

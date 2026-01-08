@@ -256,6 +256,11 @@ const organizationSchema = new mongoose.Schema({
 // Index for efficient queries
 organizationSchema.index({ userId: 1 });
 organizationSchema.index({ status: 1 });
+organizationSchema.index({ status: 1, createdAt: -1 }); // Para filtrar por status y ordenar
 organizationSchema.index({ 'ministroData.ministroId': 1 });
+organizationSchema.index({ electionDate: 1 }); // Para buscar por fecha de elección
+organizationSchema.index({ createdAt: -1 });
+organizationSchema.index({ organizationType: 1 }); // Para filtrar por tipo
+organizationSchema.index({ comuna: 1, status: 1 }); // Para filtrar por comuna
 
 export default mongoose.model('Organization', organizationSchema);

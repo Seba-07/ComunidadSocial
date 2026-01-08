@@ -702,3 +702,20 @@ export const storageUtils = {
   getStorage,
   removeStorage
 };
+
+// ============================================
+// RE-EXPORTAR SANITIZACIÓN
+// ============================================
+
+export {
+  sanitizeText,
+  sanitizeRichText,
+  sanitizeStrict,
+  escapeHtml,
+  sanitizeObject,
+  createSafeElement,
+  renderSafeHtml
+} from './sanitize.js';
+
+import sanitizeModule from './sanitize.js';
+export const sanitizeUtils = sanitizeModule;

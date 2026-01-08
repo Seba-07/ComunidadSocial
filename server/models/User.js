@@ -127,4 +127,10 @@ userSchema.methods.toJSON = function() {
   return obj;
 };
 
+// Indexes para queries eficientes
+userSchema.index({ role: 1 });
+userSchema.index({ role: 1, active: 1 });
+userSchema.index({ organizationId: 1 }); // Para buscar miembros de una org
+userSchema.index({ createdAt: -1 });
+
 export default mongoose.model('User', userSchema);

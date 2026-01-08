@@ -1,19 +1,23 @@
 import express from 'express';
+import crypto from 'crypto';
 import Organization from '../models/Organization.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
 /**
- * Genera una contraseña temporal segura
+ * Genera una contraseña temporal segura usando crypto
  */
 function generateTempPassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  const randomBytes = crypto.randomBytes(12);
   let password = '';
-  for (let i = 0; i < 10; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(randomBytes[i] % chars.length);
   }
   return password;
 }
@@ -127,7 +131,7 @@ router.get('/availability/booked-slots', async (req, res) => {
       })
       .filter(Boolean);
 
-    console.log('📅 [API] Booked slots:', bookedSlots.length);
+    logger.debug('Booked slots:', bookedSlots.length);
     res.json(bookedSlots);
   } catch (error) {
     console.error('Get booked slots error:', error);
@@ -185,10 +189,10 @@ router.get('/:id', authenticate, async (req, res) => {
 // Create organization (request ministro)
 router.post('/', authenticate, async (req, res) => {
   try {
-    // DEBUG: Log incoming data
-    console.log('📥 CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
-    console.log('📥 CREATE ORG - electoralCommission recibido:', JSON.stringify(req.body.electoralCommission, null, 2));
-    console.log('📥 CREATE ORG - members count:', req.body.members?.length);
+    // DEBUG: Log incoming data (solo en desarrollo)
+    logger.debug('CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
+    logger.debug('CREATE ORG - electoralCommission recibido:', JSON.stringify(req.body.electoralCommission, null, 2));
+    logger.debug('CREATE ORG - members count:', req.body.members?.length);
 
     // Extraer solo los campos válidos del modelo (excluir campos extras como certificatesStep5)
     const {
@@ -256,7 +260,7 @@ router.post('/', authenticate, async (req, res) => {
         designatedAt: new Date(),
         type: 'PROVISIONAL'
       };
-      console.log('📤 CREATE ORG - provisionalDirectorio a guardar:', JSON.stringify(orgData.provisionalDirectorio, null, 2));
+      logger.debug('CREATE ORG - provisionalDirectorio a guardar:', JSON.stringify(orgData.provisionalDirectorio, null, 2));
     }
 
     // Asegurar que electoralCommission se guarde explícitamente
@@ -267,21 +271,21 @@ router.post('/', authenticate, async (req, res) => {
         lastName: m.lastName || '',
         role: 'electoral_commission'
       }));
-      console.log('📤 CREATE ORG - electoralCommission a guardar:', JSON.stringify(orgData.electoralCommission, null, 2));
+      logger.debug('CREATE ORG - electoralCommission a guardar:', JSON.stringify(orgData.electoralCommission, null, 2));
     }
 
     // Asegurar que estatutos se guarde explícitamente
     if (req.body.estatutos) {
       orgData.estatutos = req.body.estatutos;
-      console.log('📤 CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
+      logger.debug('CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
     }
 
     const organization = new Organization(orgData);
     await organization.save();
 
-    // DEBUG: Verificar que se guardó
-    console.log('✅ CREATE ORG - ID:', organization._id);
-    console.log('✅ CREATE ORG - Status:', organization.status);
+    // DEBUG: Verificar que se guardó (solo en desarrollo)
+    logger.debug('CREATE ORG - ID:', organization._id);
+    logger.debug('CREATE ORG - Status:', organization.status);
 
     // Devolver respuesta simplificada para evitar problemas de serialización
     const response = {
@@ -296,15 +300,13 @@ router.post('/', authenticate, async (req, res) => {
 
     res.status(201).json(response);
   } catch (error) {
-    console.error('❌ Create organization error:', error);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
+    logger.error('Create organization error:', error.message);
+    logger.debug('Error details:', { name: error.name, stack: error.stack });
 
     // Devolver mensaje de error más descriptivo
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
-      console.error('❌ Validation errors:', messages);
+      logger.debug('Validation errors:', messages);
       return res.status(400).json({ error: 'Validación fallida: ' + messages.join(', ') });
     }
 
@@ -316,7 +318,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-// Update organization
+// Update organization - Protegido contra mass assignment
 router.put('/:id', authenticate, async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
@@ -326,11 +328,25 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     // Check permission
-    if (organization.userId.toString() !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'No tienes permisos para editar esta organización' });
     }
 
-    Object.assign(organization, req.body);
+    // Filtrar campos según rol - protección contra mass assignment
+    const allowedForOrganizer = ALLOWED_FIELDS.organization;
+    const allowedForAdmin = [...ALLOWED_FIELDS.organization, ...ALLOWED_FIELDS.organizationAdmin];
+    const allowedFields = isAdmin ? allowedForAdmin : allowedForOrganizer;
+
+    // Solo copiar campos permitidos
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        organization[field] = req.body[field];
+      }
+    }
+
     await organization.save();
 
     res.json(organization);

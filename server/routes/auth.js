@@ -1,11 +1,13 @@
 import express from 'express';
 import User from '../models/User.js';
 import { generateToken, authenticate, COOKIE_OPTIONS } from '../middleware/auth.js';
+import { authLimiter, registerLimiter, sensitiveLimiter } from '../middleware/security.js';
+import { validate, registerSchema, loginSchema, changePasswordSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
-// Register
-router.post('/register', async (req, res) => {
+// Register - Rate limited: 3 registros por hora por IP + validación Zod
+router.post('/register', registerLimiter, validate(registerSchema), async (req, res) => {
   try {
     const { rut, firstName, lastName, email, password, phone, address } = req.body;
 
@@ -47,8 +49,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Login - Rate limited: 5 intentos por 15 minutos (previene fuerza bruta) + validación Zod
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -88,8 +90,8 @@ router.get('/me', authenticate, async (req, res) => {
   res.json({ user: req.user });
 });
 
-// Change password
-router.post('/change-password', authenticate, async (req, res) => {
+// Change password - Rate limited: 3 intentos por hora (operación sensible) + validación Zod
+router.post('/change-password', authenticate, sensitiveLimiter, validate(changePasswordSchema), async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 

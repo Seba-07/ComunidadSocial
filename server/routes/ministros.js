@@ -1,6 +1,9 @@
 import express from 'express';
 import User from '../models/User.js';
 import { authenticate, requireRole, generateToken, COOKIE_OPTIONS } from '../middleware/auth.js';
+import { authLimiter, sensitiveLimiter, allowFields, ALLOWED_FIELDS } from '../middleware/security.js';
+import { validate, createMinistroSchema, loginSchema } from '../middleware/validation.js';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -41,8 +44,8 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Create ministro (Admin only)
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+// Create ministro (Admin only) + validación Zod
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createMinistroSchema), async (req, res) => {
   try {
     const { rut, firstName, lastName, email, phone, address, specialty, password, availableHours } = req.body;
 
@@ -89,8 +92,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
   }
 });
 
-// Update ministro (Admin only)
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+// Update ministro (Admin only) - Protegido contra mass assignment
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), allowFields(ALLOWED_FIELDS.userAdmin), async (req, res) => {
   try {
     const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
     if (!ministro) {
@@ -112,6 +115,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
       }
     }
 
+    // Solo campos permitidos (filtrados por allowFields middleware)
     Object.assign(ministro, req.body);
     await ministro.save();
 
@@ -177,8 +181,8 @@ router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, re
   }
 });
 
-// Ministro login (specific endpoint)
-router.post('/login', async (req, res) => {
+// Ministro login - Rate limited: 5 intentos por 15 minutos + validación Zod
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -229,12 +233,13 @@ router.get('/stats/counts', authenticate, requireRole('MUNICIPALIDAD'), async (r
   }
 });
 
-// Helper function
+// Helper function - Usa crypto.randomBytes para seguridad
 function generateTempPassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  const randomBytes = crypto.randomBytes(12);
   let password = '';
-  for (let i = 0; i < 10; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(randomBytes[i] % chars.length);
   }
   return password;
 }

@@ -1,7 +1,17 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// SEGURIDAD: JWT_SECRET es OBLIGATORIO - no hay fallback
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET no está configurado en variables de entorno');
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  } else {
+    console.warn('ADVERTENCIA: Usando secret temporal solo para desarrollo');
+  }
+}
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
 
 // Opciones para cookies HttpOnly
 export const COOKIE_OPTIONS = {
@@ -29,7 +39,7 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Token de acceso requerido' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET);
 
     const user = await User.findById(decoded.userId);
     if (!user || !user.active) {
@@ -71,7 +81,7 @@ export const generateToken = (user) => {
       email: user.email,
       role: user.role
     },
-    JWT_SECRET,
+    EFFECTIVE_JWT_SECRET,
     { expiresIn: '7d' }
   );
 };

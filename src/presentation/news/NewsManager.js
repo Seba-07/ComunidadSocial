@@ -3,6 +3,7 @@
  */
 
 import newsService from '../../services/NewsService.js';
+import { sanitizeRichText, sanitizeText, escapeHtml } from '../../shared/utils/sanitize.js';
 
 class NewsManager {
   constructor() {
@@ -233,31 +234,37 @@ class NewsManager {
       const date = newsService.formatDate(article.publishedAt || article.createdAt);
       const categoryLabel = newsService.getCategoryLabel(article.category);
 
+      // Sanitizar contenido para prevenir XSS
+      const safeTitle = sanitizeText(article.title);
+      const safeContentHTML = sanitizeRichText(article.contentHTML);
+      const safeAuthorFirst = article.author ? sanitizeText(article.author.firstName) : '';
+      const safeAuthorLast = article.author ? sanitizeText(article.author.lastName) : '';
+
       this.articleContent.innerHTML = `
         ${article.featuredImage ? `
           <div class="article-featured-image">
-            <img src="${article.featuredImage}" alt="${article.title}">
+            <img src="${escapeHtml(article.featuredImage)}" alt="${safeTitle}">
           </div>
         ` : ''}
         <div class="article-header">
           <div class="article-meta">
-            <span class="meta-category">${categoryLabel}</span>
-            <span class="meta-date">${date}</span>
+            <span class="meta-category">${escapeHtml(categoryLabel)}</span>
+            <span class="meta-date">${escapeHtml(date)}</span>
             ${article.viewCount ? `<span class="meta-views">${article.viewCount} vistas</span>` : ''}
           </div>
-          <h1 class="article-title">${article.title}</h1>
+          <h1 class="article-title">${safeTitle}</h1>
           ${article.author ? `
             <div class="article-author">
-              Por ${article.author.firstName} ${article.author.lastName}
+              Por ${safeAuthorFirst} ${safeAuthorLast}
             </div>
           ` : ''}
         </div>
         <div class="article-body">
-          ${article.contentHTML}
+          ${safeContentHTML}
         </div>
         ${article.tags && article.tags.length > 0 ? `
           <div class="article-tags">
-            ${article.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+            ${article.tags.map(tag => `<span class="tag">#${sanitizeText(tag)}</span>`).join('')}
           </div>
         ` : ''}
       `;
