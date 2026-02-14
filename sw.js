@@ -1,10 +1,41 @@
-const CACHE_NAME = 'comunidad-renca-v2';
+const CACHE_NAME = 'comunidad-renca-v3';
 const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// Install event - skip waiting immediately
+// ============ PRECACHE ASSETS ============
+// Assets críticos que se cachean durante la instalación
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/auth.html',
+  '/ministro-dashboard.html',
+  '/ministro-login.html',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
+];
+
+// Install event - precache assets críticos
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing... (v2)');
-  self.skipWaiting();
+  console.log('[Service Worker] Installing... (v3 with precaching)');
+
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[Service Worker] Precaching assets...');
+        // Usar addAll con fallback para assets que puedan no existir
+        return Promise.allSettled(
+          PRECACHE_ASSETS.map(url =>
+            cache.add(url).catch(err => {
+              console.warn(`[Service Worker] Failed to precache: ${url}`, err);
+            })
+          )
+        );
+      })
+      .then(() => {
+        console.log('[Service Worker] Precaching complete');
+        return self.skipWaiting();
+      })
+  );
 });
 
 // Activate event - clean up old caches and take control

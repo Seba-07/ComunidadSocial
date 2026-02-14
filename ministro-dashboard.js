@@ -9,7 +9,36 @@ import { ministroAvailabilityService } from './src/services/MinistroAvailability
 import { openValidationWizard } from './src/presentation/ministro/ValidationWizard.js';
 import { apiService } from './src/services/ApiService.js';
 
+// Componente de estado de conexión (se auto-inicializa)
+import './src/shared/components/ConnectionStatus.js';
+
 console.log('⚖️ Ministro dashboard loaded');
+
+// ============ MANEJO DE SINCRONIZACIÓN OFFLINE ============
+// Escuchar cuando la cola offline se sincronice
+window.addEventListener('offline-queue-synced', async () => {
+  console.log('🔄 Cola offline sincronizada, recargando asignaciones...');
+  showToast('Datos sincronizados exitosamente', 'success');
+  // Recargar asignaciones
+  if (typeof loadAssignments === 'function') {
+    await loadAssignments();
+  }
+});
+
+// Escuchar sincronización individual completada
+window.addEventListener('offline-sync-completed', (e) => {
+  const { requestId, success } = e.detail;
+  if (success) {
+    console.log('✅ Petición sincronizada:', requestId);
+  }
+});
+
+// Escuchar errores de sincronización
+window.addEventListener('offline-sync-failed', (e) => {
+  const { error } = e.detail;
+  console.error('❌ Error de sincronización:', error);
+  showToast('Error al sincronizar: ' + error, 'error');
+});
 
 // Toast notification
 function showToast(message, type = 'info') {
@@ -690,11 +719,12 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
           type: 'PROVISIONAL',
           expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
         };
-        orgsUpdated[orgIndex].comisionElectoral = {
-          members: commissionMembers,
-          designatedAt: new Date().toISOString()
-        };
-        orgsUpdated[orgIndex].assemblyAttendees = assemblyAttendees;
+        // FIX: comisionElectoral debe ser array, no objeto envuelto
+        // Backend Organization.js espera: comisionElectoral: [mongoose.Schema.Types.Mixed]
+        orgsUpdated[orgIndex].comisionElectoral = commissionMembers;
+        // FIX: Usar validatedAttendees (nombre correcto del backend)
+        // Backend Organization.js espera: validatedAttendees: [mongoose.Schema.Types.Mixed]
+        orgsUpdated[orgIndex].validatedAttendees = assemblyAttendees;
         orgsUpdated[orgIndex].ministroSignature = wizardData.ministroSignature;
         orgsUpdated[orgIndex].groupPhoto = wizardData.groupPhoto;
         orgsUpdated[orgIndex].validationData = {

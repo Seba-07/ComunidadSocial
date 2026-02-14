@@ -124,14 +124,11 @@ class NewsService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const token = localStorage.getItem('authToken');
       const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
 
       const response = await fetch(`${baseUrl}/news/upload-image`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
         body: formData
       });
 

@@ -386,20 +386,81 @@ export function Modal({
   `;
 }
 
+// Store para guardar el elemento que tenía foco antes de abrir el modal
+const modalFocusStore = new Map();
+
 /**
- * Abre un modal
+ * Trap de foco para accesibilidad - mantiene el foco dentro del modal
+ * @param {HTMLElement} modal - El elemento modal
  */
-export function openModal(id) {
-  const modal = $(`#${id}`);
-  if (modal) {
-    modal.classList.add('ui-modal-overlay--visible');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('modal-open');
+function setupFocusTrap(modal) {
+  const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  const focusableElements = modal.querySelectorAll(focusableSelectors);
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements[focusableElements.length - 1];
+
+  // Handler para trap de teclado
+  const trapHandler = (e) => {
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
+        }
+      }
+    }
+    // Cerrar con Escape
+    if (e.key === 'Escape') {
+      const closeBtn = modal.querySelector('[data-close-modal]');
+      if (closeBtn) closeBtn.click();
+    }
+  };
+
+  modal.addEventListener('keydown', trapHandler);
+  modal._focusTrapHandler = trapHandler;
+
+  // Enfocar el primer elemento focusable
+  setTimeout(() => firstFocusable?.focus(), 50);
+}
+
+/**
+ * Remover trap de foco
+ * @param {HTMLElement} modal - El elemento modal
+ */
+function removeFocusTrap(modal) {
+  if (modal._focusTrapHandler) {
+    modal.removeEventListener('keydown', modal._focusTrapHandler);
+    delete modal._focusTrapHandler;
   }
 }
 
 /**
- * Cierra un modal
+ * Abre un modal con trap de foco para accesibilidad
+ */
+export function openModal(id) {
+  const modal = $(`#${id}`);
+  if (modal) {
+    // Guardar elemento con foco actual
+    modalFocusStore.set(id, document.activeElement);
+
+    modal.classList.add('ui-modal-overlay--visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+
+    // Configurar trap de foco
+    setupFocusTrap(modal);
+  }
+}
+
+/**
+ * Cierra un modal y restaura el foco
  */
 export function closeModal(id) {
   const modal = $(`#${id}`);
@@ -407,6 +468,16 @@ export function closeModal(id) {
     modal.classList.remove('ui-modal-overlay--visible');
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
+
+    // Remover trap de foco
+    removeFocusTrap(modal);
+
+    // Restaurar foco al elemento anterior
+    const previousFocus = modalFocusStore.get(id);
+    if (previousFocus && typeof previousFocus.focus === 'function') {
+      previousFocus.focus();
+    }
+    modalFocusStore.delete(id);
   }
 }
 

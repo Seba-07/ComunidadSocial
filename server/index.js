@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -65,20 +66,38 @@ app.use(cors({
 // Cookie parser para JWT HttpOnly cookies
 app.use(cookieParser());
 
+// ============ COMPRESSION (reduce ~70% network traffic) ============
+app.use(compression({
+  level: 6, // Balance entre velocidad y compresión
+  threshold: 1024, // Solo comprimir respuestas > 1KB
+  filter: (req, res) => {
+    // No comprimir si el cliente no soporta
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
+
 // Headers de seguridad (Helmet)
 app.use(securityHeaders);
 
 // Rate limiting global
 app.use('/api/', generalLimiter);
 
-// Sanitización de inputs
+// Body parsing con límites reducidos (previene DDoS)
+// NOTA: 10MB es suficiente para la mayoría de operaciones
+// Para uploads de archivos grandes, usar rutas específicas con multer
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Sanitización de inputs (DESPUÉS de body parsing para que req.body exista)
 app.use(sanitizeInput);
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Servir archivos estáticos de uploads
-app.use('/uploads', express.static('uploads'));
+// Servir archivos estáticos de uploads con cache headers
+app.use('/uploads', express.static('uploads', {
+  maxAge: '1d', // Cache por 1 día
+  etag: true,
+  lastModified: true
+}));
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
@@ -194,8 +213,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// ============ TIMEOUTS DE CONEXIÓN ============
+// Timeout para requests que tardan demasiado (30s)
+server.setTimeout(30000);
+
+// Keep-alive timeout (65s - mayor que el timeout de AWS/proxies que suele ser 60s)
+server.keepAliveTimeout = 65000;
+
+// Headers timeout (debe ser mayor que keepAliveTimeout)
+server.headersTimeout = 66000;
 
 export default app;

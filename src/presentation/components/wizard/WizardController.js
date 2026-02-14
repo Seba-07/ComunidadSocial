@@ -14,6 +14,8 @@ import { apiService } from '../../../services/ApiService.js';
 
 // Importar utilidades compartidas
 import { getOrgType as getOrgTypeFromUtils } from '../../../shared/utils/index.js';
+// SEGURIDAD: Importar funciones de sanitización para prevenir XSS
+import { sanitizeText, escapeHtml } from '../../../shared/utils/sanitize.js';
 
 // ============================================================================
 // TIPOS DE ORGANIZACIÓN DINÁMICOS (con fallback a constantes locales)
@@ -1725,7 +1727,12 @@ export class WizardController {
     }
 
     listContainer.innerHTML = this.formData.members.map((member, index) => {
-      const fullName = `${member.primerNombre || member.firstName || ''} ${member.segundoNombre || ''} ${member.apellidoPaterno || member.lastName?.split(' ')[0] || ''} ${member.apellidoMaterno || member.lastName?.split(' ')[1] || ''}`.replace(/\s+/g, ' ').trim();
+      // SEGURIDAD: Sanitizar todos los datos del usuario para prevenir XSS
+      const rawFullName = `${member.primerNombre || member.firstName || ''} ${member.segundoNombre || ''} ${member.apellidoPaterno || member.lastName?.split(' ')[0] || ''} ${member.apellidoMaterno || member.lastName?.split(' ')[1] || ''}`.replace(/\s+/g, ' ').trim();
+      const fullName = escapeHtml(rawFullName);
+      const safeRut = escapeHtml(member.rut || '');
+      const safeEmail = escapeHtml(member.email || '');
+      const safePhone = escapeHtml(member.phone || '');
 
       // Calcular edad
       const age = this.calculateAge(member.birthDate);
@@ -1746,20 +1753,20 @@ export class WizardController {
                 <rect x="3" y="4" width="18" height="16" rx="2"></rect>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
-              ${member.rut}
+              ${safeRut}
             </span>
             <span class="member-detail-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                 <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
-              ${member.email}
+              ${safeEmail}
             </span>
             <span class="member-detail-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
               </svg>
-              ${member.phone}
+              ${safePhone}
             </span>
           </div>
         </div>
@@ -2812,22 +2819,29 @@ export class WizardController {
     const roles = ['Presidente', 'Secretario', 'Vocal'];
     const roleIcons = ['👤', '📝', '🗳️'];
 
-    listContainer.innerHTML = commission.map((member, index) => `
-      <div class="commission-member-display-card">
-        <div class="member-role-icon">${roleIcons[index]}</div>
-        <div class="member-display-info">
-          <div class="member-role-badge ${index === 0 ? 'president' : index === 1 ? 'secretary' : 'vocal'}">${roles[index]}</div>
-          <div class="member-name">${member.firstName} ${member.lastName}</div>
-          <div class="member-rut">${member.rut || 'RUT no registrado'}</div>
+    // SEGURIDAD: Sanitizar datos de miembros para prevenir XSS
+    listContainer.innerHTML = commission.map((member, index) => {
+      const safeFirstName = escapeHtml(member.firstName || '');
+      const safeLastName = escapeHtml(member.lastName || '');
+      const safeRut = escapeHtml(member.rut || 'RUT no registrado');
+
+      return `
+        <div class="commission-member-display-card">
+          <div class="member-role-icon">${roleIcons[index]}</div>
+          <div class="member-display-info">
+            <div class="member-role-badge ${index === 0 ? 'president' : index === 1 ? 'secretary' : 'vocal'}">${roles[index]}</div>
+            <div class="member-name">${safeFirstName} ${safeLastName}</div>
+            <div class="member-rut">${safeRut}</div>
+          </div>
+          <div class="member-verified-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
         </div>
-        <div class="member-verified-badge">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   /**
@@ -2889,14 +2903,20 @@ export class WizardController {
       return;
     }
 
-    listContainer.innerHTML = this.formData.commission.members.map((member, index) => `
-      <div class="commission-member-card">
-        <div class="member-info">
-          <div class="member-name">${member.firstName} ${member.lastName}</div>
-          <div class="member-role">${index === 0 ? 'Presidente' : index === 1 ? 'Secretario' : 'Vocal'}</div>
+    // SEGURIDAD: Sanitizar datos de miembros para prevenir XSS
+    listContainer.innerHTML = this.formData.commission.members.map((member, index) => {
+      const safeFirstName = escapeHtml(member.firstName || '');
+      const safeLastName = escapeHtml(member.lastName || '');
+
+      return `
+        <div class="commission-member-card">
+          <div class="member-info">
+            <div class="member-name">${safeFirstName} ${safeLastName}</div>
+            <div class="member-role">${index === 0 ? 'Presidente' : index === 1 ? 'Secretario' : 'Vocal'}</div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   /**
@@ -3841,21 +3861,33 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const roleIcons = ['👤', '📝', '🗳️'];
     const signatures = this.formData.signatures || {};
 
-    // Simular que todas las firmas están completadas (fueron hechas en asamblea)
+    // SEGURIDAD: Sanitizar datos de miembros y validar firmas para prevenir XSS
     container.innerHTML = commission.map((member, index) => {
       const signatureData = signatures[member.id];
+      const safeFirstName = escapeHtml(member.firstName || '');
+      const safeLastName = escapeHtml(member.lastName || '');
+      const safeRut = escapeHtml(member.rut || 'RUT no registrado');
+
+      // Validar que la firma sea un data URL válido (base64 image)
+      let signatureImgSrc = '';
+      if (signatureData && signatureData.type === 'drawn' && signatureData.data) {
+        // Solo permitir data URLs de imágenes
+        if (/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(signatureData.data)) {
+          signatureImgSrc = signatureData.data;
+        }
+      }
 
       return `
         <div class="signature-member-display-card signed">
           <div class="signature-member-icon">${roleIcons[index]}</div>
           <div class="signature-member-display-info">
             <div class="member-role-badge ${index === 0 ? 'president' : index === 1 ? 'secretary' : 'vocal'}">${roles[index]}</div>
-            <div class="member-name">${member.firstName} ${member.lastName}</div>
-            <div class="member-rut">${member.rut || 'RUT no registrado'}</div>
+            <div class="member-name">${safeFirstName} ${safeLastName}</div>
+            <div class="member-rut">${safeRut}</div>
           </div>
           <div class="signature-preview-display">
-            ${signatureData && signatureData.type === 'drawn' && signatureData.data ? `
-              <img src="${signatureData.data}" alt="Firma" class="signature-preview-img">
+            ${signatureImgSrc ? `
+              <img src="${signatureImgSrc}" alt="Firma" class="signature-preview-img">
             ` : `
               <div class="signature-placeholder-display">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3904,24 +3936,40 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const roles = ['Presidente', 'Secretario', 'Vocal'];
     const signatures = this.formData.signatures || {};
 
+    // SEGURIDAD: Sanitizar datos de miembros y validar firmas para prevenir XSS
     container.innerHTML = commission.map((member, index) => {
       const hasSigned = signatures[member.id];
       const signatureData = hasSigned ? signatures[member.id] : null;
 
+      // Sanitizar datos del miembro
+      const safeFirstName = escapeHtml(member.firstName || '');
+      const safeLastName = escapeHtml(member.lastName || '');
+      const safeRut = escapeHtml(member.rut || '');
+      const safeMemberId = escapeHtml(member.id || '');
+      const safeFullName = `${safeFirstName} ${safeLastName}`;
+
+      // Validar firma como data URL de imagen
+      let signatureImgSrc = '';
+      if (signatureData && signatureData.type === 'drawn' && signatureData.data) {
+        if (/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(signatureData.data)) {
+          signatureImgSrc = signatureData.data;
+        }
+      }
+
       return `
-        <div class="signature-member-card ${hasSigned ? 'signed' : ''}" data-member-id="${member.id}">
+        <div class="signature-member-card ${hasSigned ? 'signed' : ''}" data-member-id="${safeMemberId}">
           <div class="signature-member-info">
             <span class="member-role-badge">${roles[index]}</span>
             <div class="member-details">
-              <span class="member-name">${member.firstName} ${member.lastName}</span>
-              <span class="member-rut">${member.rut}</span>
+              <span class="member-name">${safeFullName}</span>
+              <span class="member-rut">${safeRut}</span>
             </div>
           </div>
 
           ${hasSigned ? `
             <div class="signature-member-preview">
-              ${signatureData.type === 'drawn' ? `
-                <img src="${signatureData.data}" alt="Firma de ${member.firstName}" class="signature-thumb">
+              ${signatureData.type === 'drawn' && signatureImgSrc ? `
+                <img src="${signatureImgSrc}" alt="Firma de ${safeFirstName}" class="signature-thumb">
               ` : signatureData.type === 'digital' ? `
                 <div class="signature-digital-badge">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3938,10 +3986,10 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
                   Firmado manual
                 </div>
               `}
-              <button class="btn-change-signature" data-member-id="${member.id}">Cambiar</button>
+              <button class="btn-change-signature" data-member-id="${safeMemberId}">Cambiar</button>
             </div>
           ` : `
-            <button class="btn-sign-member" data-member-id="${member.id}" data-member-name="${member.firstName} ${member.lastName}">
+            <button class="btn-sign-member" data-member-id="${safeMemberId}" data-member-name="${safeFullName}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                 <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
@@ -4067,40 +4115,50 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
       </div>
     `;
 
-    html += commission.map((member, index) => `
-      <div class="certificate-item ${this.formData.certificates[member.id] ? 'completed' : ''}" data-member-id="${member.id}">
-        <div class="certificate-info">
-          <div class="certificate-member">
-            <span class="member-role-badge">${roles[index]}</span>
-            <span class="member-name">${member.firstName} ${member.lastName}</span>
-            <span class="badge-required">Requerido</span>
+    // SEGURIDAD: Sanitizar datos de miembros y certificados para prevenir XSS
+    html += commission.map((member, index) => {
+      const safeMemberId = escapeHtml(member.id || '');
+      const safeFirstName = escapeHtml(member.firstName || '');
+      const safeLastName = escapeHtml(member.lastName || '');
+      const safeRut = escapeHtml(member.rut || '');
+      const cert = this.formData.certificates[member.id];
+      const safeFileName = cert ? escapeHtml(cert.fileName || '') : '';
+
+      return `
+        <div class="certificate-item ${cert ? 'completed' : ''}" data-member-id="${safeMemberId}">
+          <div class="certificate-info">
+            <div class="certificate-member">
+              <span class="member-role-badge">${roles[index]}</span>
+              <span class="member-name">${safeFirstName} ${safeLastName}</span>
+              <span class="badge-required">Requerido</span>
+            </div>
+            <span class="member-rut">${safeRut}</span>
+            <div class="certificate-status ${cert ? 'uploaded' : ''}">
+              ${cert
+                ? `<span class="status-uploaded">✓ ${safeFileName}</span>`
+                : '<span class="status-pending-cert">⚠ Pendiente de subir</span>'}
+            </div>
           </div>
-          <span class="member-rut">${member.rut}</span>
-          <div class="certificate-status ${this.formData.certificates[member.id] ? 'uploaded' : ''}">
-            ${this.formData.certificates[member.id]
-              ? `<span class="status-uploaded">✓ ${this.formData.certificates[member.id].fileName}</span>`
-              : '<span class="status-pending-cert">⚠ Pendiente de subir</span>'}
+          <div class="certificate-actions">
+            <input type="file" class="certificate-file-input" data-member-id="${safeMemberId}" accept=".pdf" style="display: none;">
+            <button class="btn-upload-cert" data-member-id="${safeMemberId}" ${cert ? 'style="display:none;"' : ''}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Subir PDF
+            </button>
+            <button class="btn-remove-cert" data-member-id="${safeMemberId}" ${cert ? '' : 'style="display:none;"'}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
           </div>
         </div>
-        <div class="certificate-actions">
-          <input type="file" class="certificate-file-input" data-member-id="${member.id}" accept=".pdf" style="display: none;">
-          <button class="btn-upload-cert" data-member-id="${member.id}" ${this.formData.certificates[member.id] ? 'style="display:none;"' : ''}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Subir PDF
-          </button>
-          <button class="btn-remove-cert" data-member-id="${member.id}" ${this.formData.certificates[member.id] ? '' : 'style="display:none;"'}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     container.innerHTML = html;
 

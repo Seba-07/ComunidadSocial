@@ -35,13 +35,20 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
     await user.save();
     const token = generateToken(user);
 
-    // Enviar token en cookie HttpOnly (seguro)
+    // Enviar token SOLO en cookie HttpOnly (seguro)
+    // SEGURIDAD: NO enviar token en body para prevenir exposición
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
+    // Respuesta sin token - solo datos de usuario necesarios para UI
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      user,
-      token // Mantener token en respuesta durante transición
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -70,13 +77,21 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 
     const token = generateToken(user);
 
-    // Enviar token en cookie HttpOnly (seguro)
+    // Enviar token SOLO en cookie HttpOnly (seguro)
+    // SEGURIDAD: NO enviar token en body para prevenir exposición
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
+    // Respuesta sin token - solo datos de usuario necesarios para UI
     res.json({
       message: 'Inicio de sesión exitoso',
-      user,
-      token, // Mantener token en respuesta durante transición
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        mustChangePassword: user.mustChangePassword
+      },
       mustChangePassword: user.mustChangePassword
     });
   } catch (error) {
@@ -102,8 +117,18 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
       return res.status(400).json({ error: 'Contraseña actual incorrecta' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    // Validar nueva contraseña (mínimo 12 caracteres con complejidad)
+    if (newPassword.length < 12) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 12 caracteres' });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe contener al menos una mayúscula' });
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe contener al menos una minúscula' });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe contener al menos un número' });
     }
 
     user.password = newPassword;

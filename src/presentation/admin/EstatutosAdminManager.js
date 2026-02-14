@@ -36,9 +36,8 @@ class EstatutosAdminManager {
 
   async loadTemplates() {
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error('Error al cargar plantillas');
@@ -680,9 +679,8 @@ class EstatutosAdminManager {
 
   async editTemplate(id) {
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates/id/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error('Error al cargar plantilla');
@@ -699,13 +697,10 @@ class EstatutosAdminManager {
 
   async createTemplate(tipo, nombre, categoria) {
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tipoOrganizacion: tipo,
           nombreTipo: nombre,
@@ -778,13 +773,10 @@ class EstatutosAdminManager {
       // Artículos (ya están en selectedTemplate)
       updateData.articulos = this.selectedTemplate.articulos;
 
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
       });
 
@@ -802,10 +794,9 @@ class EstatutosAdminManager {
 
   async togglePublish(id) {
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates/${id}/publicar`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error('Error al cambiar estado');
@@ -999,10 +990,9 @@ class EstatutosAdminManager {
     formData.append('alignment', 'center');
 
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
         body: formData
       });
 
@@ -1021,10 +1011,9 @@ class EstatutosAdminManager {
     if (!confirm('¿Estás seguro de eliminar esta imagen?')) return;
 
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${this.API_URL}/estatuto-templates/${this.selectedTemplate._id}/imagen/${tipo}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error('Error al eliminar imagen');

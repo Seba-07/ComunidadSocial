@@ -4,6 +4,7 @@
  */
 
 import { organizationsService, ORG_STATUS, ORG_STATUS_LABELS, ORG_STATUS_COLORS } from '../../services/OrganizationsService.js';
+import { apiService } from '../../services/ApiService.js';
 import { alertsService } from '../../services/AlertsService.js';
 import { showToast } from '../../app.js';
 import { initScheduleManager } from './ScheduleManager.js';
@@ -25,6 +26,9 @@ import {
   getOrgComuna,
   getOrgIcon
 } from '../../shared/utils/index.js';
+
+// SEGURIDAD: Importar funciones de sanitización para prevenir XSS
+import { escapeHtml, sanitizeText } from '../../shared/utils/sanitize.js';
 
 // Wrapper para compatibilidad - formatDateSafe usa formatDate
 const formatDateSafe = (dateStr) => formatDate(dateStr, { fallback: '-' });
@@ -198,9 +202,8 @@ class AdminDashboard {
     // Primero obtener el timbre y firma actuales
     let timbreData = { timbreVirtual: null, firmaDigital: null };
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiService.baseUrl}/users/me/timbre-firma`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (response.ok) {
         timbreData = await response.json();
@@ -348,13 +351,10 @@ class AdminDashboard {
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
-          const token = localStorage.getItem('auth_token');
           const response = await fetch(`${apiService.baseUrl}/users/me/timbre-virtual`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imagen: event.target.result })
           });
 
@@ -383,13 +383,10 @@ class AdminDashboard {
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
-          const token = localStorage.getItem('auth_token');
           const response = await fetch(`${apiService.baseUrl}/users/me/firma-digital`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imagen: event.target.result })
           });
 
@@ -409,10 +406,9 @@ class AdminDashboard {
     modal.querySelector('.btn-delete-timbre')?.addEventListener('click', async () => {
       if (!confirm('¿Eliminar el timbre virtual?')) return;
       try {
-        const token = localStorage.getItem('auth_token');
         await fetch(`${apiService.baseUrl}/users/me/timbre-virtual`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
         showToast('Timbre eliminado', 'success');
         modal.remove();
@@ -426,10 +422,9 @@ class AdminDashboard {
     modal.querySelector('.btn-delete-firma')?.addEventListener('click', async () => {
       if (!confirm('¿Eliminar la firma digital?')) return;
       try {
-        const token = localStorage.getItem('auth_token');
         await fetch(`${apiService.baseUrl}/users/me/firma-digital`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
         showToast('Firma eliminada', 'success');
         modal.remove();
@@ -1038,6 +1033,10 @@ class AdminDashboard {
     // Usar _id o id para el identificador de MongoDB
     const orgId = org._id || org.id;
 
+    // SEGURIDAD: Sanitizar datos de usuario para prevenir XSS
+    const safeOrgId = escapeHtml(orgId || '');
+    const safeOrgName = escapeHtml(getOrgName(org));
+
     // FASE 5: Verificar si es organización fantasma
     let ghostBadge = '';
     if (org.status === ORG_STATUS.APPROVED) {
@@ -1064,11 +1063,11 @@ class AdminDashboard {
     }
 
     return `
-      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''}" data-org-id="${orgId}">
+      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''}" data-org-id="${safeOrgId}">
         <div class="app-row-main">
           <div class="app-row-icon">${typeIcon}</div>
           <div class="app-row-info">
-            <span class="app-row-name">${getOrgName(org)}</span>
+            <span class="app-row-name">${safeOrgName}</span>
             <span class="app-row-meta">${createdDate} • ${membersCount} miembros</span>
           </div>
           <div class="app-row-status" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30">
@@ -1128,6 +1127,15 @@ class AdminDashboard {
       year: 'numeric'
     });
 
+    // SEGURIDAD: Sanitizar todos los datos de usuario para prevenir XSS
+    const safeOrgName = escapeHtml(getOrgName(org));
+    const safeCommune = escapeHtml(org.organization?.commune || 'Sin ubicación');
+    const safeAddress = escapeHtml(org.organization?.address || '-');
+    const safePhone = escapeHtml(org.organization?.phone || '-');
+    const safeEmail = escapeHtml(org.organization?.email || '-');
+    const safeSchedule = escapeHtml(org.organization?.preferredSchedule || '');
+    const safeDescription = escapeHtml(org.organization?.description || '');
+
     const modal = document.createElement('div');
     modal.className = 'admin-review-modal-overlay';
     modal.innerHTML = `
@@ -1135,9 +1143,9 @@ class AdminDashboard {
         <div class="review-modal-header">
           <div class="review-header-left">
             <span class="review-type-badge">${typeIcon} ${typeName}</span>
-            <h2>${getOrgName(org)}</h2>
+            <h2>${safeOrgName}</h2>
             <div class="review-header-meta">
-              <span>📍 ${org.organization?.commune || 'Sin ubicación'}</span>
+              <span>📍 ${safeCommune}</span>
               <span>📅 ${createdDate}</span>
             </div>
           </div>
@@ -1185,30 +1193,30 @@ class AdminDashboard {
             <div class="preview-details">
               <div class="preview-detail-row">
                 <span class="detail-label">Dirección</span>
-                <span class="detail-value">${org.organization?.address || '-'}</span>
+                <span class="detail-value">${safeAddress}</span>
               </div>
               <div class="preview-detail-row">
                 <span class="detail-label">Teléfono</span>
-                <span class="detail-value">${org.organization?.phone || '-'}</span>
+                <span class="detail-value">${safePhone}</span>
               </div>
               <div class="preview-detail-row">
                 <span class="detail-label">Email</span>
-                <span class="detail-value">${org.organization?.email || '-'}</span>
+                <span class="detail-value">${safeEmail}</span>
               </div>
               <div class="preview-detail-row">
                 <span class="detail-label">Forma de Contacto Preferida</span>
                 <span class="detail-value">${(org.organization?.contactPreference || org.contactPreference) === 'email' ? '📧 Email' : '📞 Teléfono'}</span>
               </div>
-              ${org.organization?.preferredSchedule ? `
+              ${safeSchedule ? `
                 <div class="preview-detail-row full">
                   <span class="detail-label">Días y Horarios de Preferencia</span>
-                  <span class="detail-value">${org.organization.preferredSchedule}</span>
+                  <span class="detail-value">${safeSchedule}</span>
                 </div>
               ` : ''}
-              ${org.organization?.description ? `
+              ${safeDescription ? `
                 <div class="preview-detail-row full">
                   <span class="detail-label">Objetivos</span>
-                  <span class="detail-value">${org.organization.description}</span>
+                  <span class="detail-value">${safeDescription}</span>
                 </div>
               ` : ''}
             </div>
@@ -1220,7 +1228,7 @@ class AdminDashboard {
                   ${org.commission.members.map((m, i) => `
                     <div class="preview-commission-member">
                       <span class="role">${['Presidente', 'Secretario', 'Vocal'][i]}</span>
-                      <span class="name">${m.firstName} ${m.lastName}</span>
+                      <span class="name">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</span>
                     </div>
                   `).join('')}
                 </div>

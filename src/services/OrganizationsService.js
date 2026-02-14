@@ -337,13 +337,16 @@ class OrganizationsService {
       // Mapear miembros al formato del backend
       const mappedMembers = members.map((m, index) => ({
         rut: m.rut,
-        firstName: buildFirstName(m),
-        lastName: buildLastName(m),
+        firstName: m.primerNombre || m.firstName || (m.nombre ? m.nombre.split(' ')[0] : ''),
+        segundoNombre: m.segundoNombre || '', // Segundo nombre (opcional)
+        lastName: m.apellidoPaterno || m.lastName || m.apellido || '',
+        apellidoMaterno: m.apellidoMaterno || '', // Apellido materno (opcional)
         address: m.address || m.direccion || '',
         phone: m.phone || m.telefono || '',
         email: m.email || '',
         birthDate: m.birthDate || m.fechaNacimiento || '',
         occupation: m.occupation || m.profesion || '',
+        genero: m.genero || m.sexo || '', // Género (opcional)
         role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
       }));
 
@@ -354,6 +357,7 @@ class OrganizationsService {
         segundoNombre: m.segundoNombre,
         apellidoPaterno: m.apellidoPaterno,
         apellidoMaterno: m.apellidoMaterno,
+        genero: m.genero,
         firstName: m.firstName,
         lastName: m.lastName,
         nombre: m.nombre
@@ -361,7 +365,10 @@ class OrganizationsService {
       console.log('📋 Miembros mapeados (primeros 3):', mappedMembers.slice(0, 3).map(m => ({
         rut: m.rut,
         firstName: m.firstName || '❌ VACÍO',
-        lastName: m.lastName || '❌ VACÍO'
+        segundoNombre: m.segundoNombre,
+        lastName: m.lastName || '❌ VACÍO',
+        apellidoMaterno: m.apellidoMaterno,
+        genero: m.genero
       })));
 
       // Verificar si hay miembros con nombres vacíos

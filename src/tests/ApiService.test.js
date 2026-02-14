@@ -3,6 +3,16 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock IndexedDBService antes de importar ApiService
+vi.mock('../infrastructure/database/IndexedDBService.js', () => ({
+  indexedDBService: {
+    addToOfflineQueue: vi.fn().mockResolvedValue('mock-request-id'),
+    getPendingOfflineRequests: vi.fn().mockResolvedValue([]),
+    updateOfflineRequestStatus: vi.fn().mockResolvedValue({}),
+    removeFromOfflineQueue: vi.fn().mockResolvedValue({})
+  }
+}));
+
 // Create a fresh mock for each test
 let apiService;
 
@@ -22,10 +32,37 @@ describe('ApiService', () => {
       clear: vi.fn()
     };
 
-    // Mock window.location
+    // Mock window completo con addEventListener
+    const eventListeners = {};
     global.window = {
-      location: { hostname: 'localhost' }
+      location: { hostname: 'localhost' },
+      addEventListener: vi.fn((event, handler) => {
+        if (!eventListeners[event]) eventListeners[event] = [];
+        eventListeners[event].push(handler);
+      }),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn()
     };
+
+    // Mock navigator.onLine
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      writable: true,
+      configurable: true
+    });
+
+    // Mock navigator.serviceWorker
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        ready: Promise.resolve({ sync: { register: vi.fn() } }),
+        addEventListener: vi.fn()
+      },
+      writable: true,
+      configurable: true
+    });
+
+    // Mock SyncManager
+    global.SyncManager = vi.fn();
 
     // Import fresh instance
     const module = await import('../services/ApiService.js');
@@ -38,45 +75,41 @@ describe('ApiService', () => {
     });
   });
 
-  describe('token management', () => {
-    it('should get token from localStorage', () => {
-      localStorage.getItem.mockReturnValue('test-token');
+  describe('authentication (HttpOnly cookies)', () => {
+    // Nota: Tokens ahora se manejan via HttpOnly cookies
+    // No hay setToken/removeToken - el servidor maneja las cookies
 
-      const token = apiService.getToken();
-
-      expect(localStorage.getItem).toHaveBeenCalledWith('auth_token');
-      expect(token).toBe('test-token');
+    it('should check online status', () => {
+      expect(apiService.isOnline()).toBe(true);
     });
 
-    it('should set token in localStorage', () => {
-      apiService.setToken('new-token');
-
-      expect(localStorage.setItem).toHaveBeenCalledWith('auth_token', 'new-token');
-    });
-
-    it('should remove token from localStorage', () => {
-      apiService.removeToken();
-
-      expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
+    it('should get pending requests count', async () => {
+      const count = await apiService.getPendingRequestsCount();
+      expect(count).toBe(0);
     });
   });
 
   describe('getHeaders', () => {
     it('should return headers with Content-Type', () => {
-      localStorage.getItem.mockReturnValue(null);
-
       const headers = apiService.getHeaders();
 
       expect(headers['Content-Type']).toBe('application/json');
-      expect(headers['Authorization']).toBeUndefined();
+      // Authorization ya no se usa - autenticación via cookies HttpOnly
     });
 
-    it('should include Authorization header when token exists', () => {
-      localStorage.getItem.mockReturnValue('test-token');
+    it('should use credentials include for cookie auth', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: 'test' })
+      });
 
-      const headers = apiService.getHeaders();
+      await apiService.request('/test');
 
-      expect(headers['Authorization']).toBe('Bearer test-token');
+      // Verifica que se use credentials: include para enviar cookies
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ credentials: 'include' })
+      );
     });
   });
 
@@ -176,31 +209,32 @@ describe('ApiService', () => {
   });
 
   describe('login', () => {
-    it('should store token and user on successful login', async () => {
+    it('should store user on successful login (token via HttpOnly cookie)', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          token: 'jwt-token',
-          user: { id: '1', email: 'test@example.com', role: 'ORGANIZADOR' }
+          message: 'Inicio de sesión exitoso',
+          user: { _id: '1', email: 'test@example.com', role: 'ORGANIZADOR' }
         })
       });
 
       const result = await apiService.login('test@example.com', 'password');
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('auth_token', 'jwt-token');
+      // Token ahora se maneja via HttpOnly cookie, no localStorage
+      // Solo se guarda el usuario para la UI
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'currentUser',
         expect.stringContaining('test@example.com')
       );
-      expect(result.token).toBe('jwt-token');
+      expect(result.user.email).toBe('test@example.com');
     });
 
     it('should not store MINISTRO_FE users in currentUser', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          token: 'jwt-token',
-          user: { id: '1', email: 'ministro@example.com', role: 'MINISTRO_FE' }
+          message: 'Inicio de sesión exitoso',
+          user: { _id: '1', email: 'ministro@example.com', role: 'MINISTRO_FE' }
         })
       });
 
@@ -213,11 +247,21 @@ describe('ApiService', () => {
   });
 
   describe('logout', () => {
-    it('should remove token and user from localStorage', () => {
-      apiService.logout();
+    it('should remove user from localStorage and call server logout', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ message: 'Sesión cerrada' })
+      });
 
-      expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
+      await apiService.logout();
+
+      // Verifica que se elimina el usuario de localStorage
       expect(localStorage.removeItem).toHaveBeenCalledWith('currentUser');
+      // Verifica que se llama al endpoint de logout
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/auth/logout',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
   });
 
@@ -343,21 +387,22 @@ describe('ApiService', () => {
       );
     });
 
-    it('should login ministro and store data', async () => {
+    it('should login ministro and store data (token via HttpOnly cookie)', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          token: 'ministro-token',
-          ministro: { id: '1', name: 'Test Ministro' }
+          message: 'Inicio de sesión exitoso',
+          ministro: { _id: '1', firstName: 'Test', lastName: 'Ministro' }
         })
       });
 
       await apiService.loginMinistro('ministro@example.com', 'password');
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('auth_token', 'ministro-token');
+      // Token ahora se maneja via HttpOnly cookie, no localStorage
+      // Solo se guarda el ministro para la UI
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'currentMinistro',
-        expect.stringContaining('Test Ministro')
+        expect.stringContaining('Test')
       );
     });
   });

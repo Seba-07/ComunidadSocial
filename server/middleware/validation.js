@@ -4,16 +4,57 @@
  */
 
 import { z } from 'zod';
+import { validateRut, cleanRut, formatRut } from '../utils/rutValidator.js';
+
+// ============================================
+// CONSTANTES LEY 19.418
+// ============================================
+
+// Mínimo de miembros según tipo de organización (Ley 19.418)
+const MINIMUM_MEMBERS_BY_TYPE = {
+  'JUNTA_VECINOS': 200,  // Art. 40 Ley 19.418
+  'COMITE_VECINOS': 15,  // Organizaciones funcionales
+  // Todas las demás organizaciones funcionales
+  DEFAULT: 15
+};
+
+/**
+ * Calcula la edad a partir de una fecha de nacimiento
+ * @param {string} birthDate - Fecha en formato ISO
+ * @returns {number|null} Edad en años o null si no es válida
+ */
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  if (isNaN(birth.getTime())) return null;
+
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 // ============================================
 // ESQUEMAS DE VALIDACIÓN
 // ============================================
 
-// RUT chileno (formato: XX.XXX.XXX-X o XXXXXXXX-X)
+// RUT chileno con validación de dígito verificador
 const rutSchema = z.string()
   .min(8, 'RUT debe tener al menos 8 caracteres')
   .max(12, 'RUT no puede tener más de 12 caracteres')
-  .regex(/^[\d.]{7,10}-[\dkK]$/, 'Formato de RUT inválido');
+  .refine((val) => {
+    // Permitir formato con o sin puntos/guion
+    const cleaned = cleanRut(val);
+    return /^\d{7,8}[\dkK]$/i.test(cleaned);
+  }, { message: 'Formato de RUT inválido' })
+  .refine((val) => {
+    const result = validateRut(val);
+    return result.valid;
+  }, { message: 'Dígito verificador de RUT inválido' })
+  .transform((val) => formatRut(val)); // Normalizar formato
 
 // Email
 const emailSchema = z.string()
@@ -21,10 +62,13 @@ const emailSchema = z.string()
   .max(100, 'Email no puede tener más de 100 caracteres')
   .toLowerCase();
 
-// Password
+// Password - OWASP recomienda mínimo 12 caracteres
 const passwordSchema = z.string()
-  .min(6, 'La contraseña debe tener al menos 6 caracteres')
-  .max(100, 'La contraseña no puede tener más de 100 caracteres');
+  .min(12, 'La contraseña debe tener al menos 12 caracteres')
+  .max(100, 'La contraseña no puede tener más de 100 caracteres')
+  .refine((val) => /[A-Z]/.test(val), { message: 'Debe contener al menos una mayúscula' })
+  .refine((val) => /[a-z]/.test(val), { message: 'Debe contener al menos una minúscula' })
+  .refine((val) => /[0-9]/.test(val), { message: 'Debe contener al menos un número' });
 
 // Nombre
 const nameSchema = z.string()
@@ -92,12 +136,15 @@ export const createMinistroSchema = z.object({
 const memberSchema = z.object({
   rut: rutSchema,
   firstName: nameSchema,
-  lastName: nameSchema,
+  segundoNombre: z.string().max(50).optional().or(z.literal('')), // Segundo nombre (opcional)
+  lastName: nameSchema, // Apellido paterno
+  apellidoMaterno: z.string().max(50).optional().or(z.literal('')), // Apellido materno (opcional)
   address: z.string().max(200).optional(),
   phone: phoneSchema,
   email: z.string().email().optional().or(z.literal('')),
   birthDate: z.string().optional(),
   occupation: z.string().max(100).optional(),
+  genero: z.enum(['masculino', 'femenino', 'otro', 'no_especifica', '']).optional(),
   role: z.enum(['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission']).optional(),
   signature: z.string().optional(), // Base64
   certificate: z.string().optional() // Base64
@@ -106,6 +153,18 @@ const memberSchema = z.object({
 /**
  * Esquema para crear organización
  */
+/**
+ * Esquema para certificado de miembro (Paso 5 del wizard)
+ */
+const certificateStep5Schema = z.object({
+  memberId: z.string().optional(),
+  memberName: z.string().optional(),
+  rut: z.string().optional(),
+  name: z.string().optional(),
+  certificate: z.string().optional(), // Base64
+  data: z.string().optional() // Alias para certificate
+});
+
 export const createOrganizationSchema = z.object({
   organizationName: z.string()
     .min(3, 'Nombre de organización debe tener al menos 3 caracteres')
@@ -143,7 +202,75 @@ export const createOrganizationSchema = z.object({
   electionTime: z.string().optional(),
   assemblyAddress: z.string().max(200).optional(),
   comments: z.string().max(1000).optional(),
-  estatutos: z.string().optional()
+  estatutos: z.string().optional(),
+  certificatesStep5: z.array(certificateStep5Schema).optional() // Certificados del Paso 5
+})
+// ============================================
+// VALIDACIONES LEY 19.418
+// ============================================
+.refine((data) => {
+  // Validar mínimo de miembros según tipo de organización
+  const minMembers = MINIMUM_MEMBERS_BY_TYPE[data.organizationType] || MINIMUM_MEMBERS_BY_TYPE.DEFAULT;
+  return data.members.length >= minMembers;
+}, {
+  message: 'Cantidad de miembros insuficiente según Ley 19.418',
+  path: ['members']
+})
+.refine((data) => {
+  // Validar que todos los miembros tengan al menos 14 años
+  for (const member of data.members) {
+    if (member.birthDate) {
+      const age = calculateAge(member.birthDate);
+      if (age !== null && age < 14) {
+        return false;
+      }
+    }
+  }
+  return true;
+}, {
+  message: 'Todos los miembros deben tener al menos 14 años según Ley 19.418',
+  path: ['members']
+})
+.refine((data) => {
+  // Validar que los directivos (presidente, secretario, tesorero) tengan 18+ años
+  const directorio = data.provisionalDirectorio;
+  if (!directorio) return true; // Si no hay directorio, no validar
+
+  const directivos = [
+    directorio.president,
+    directorio.secretary,
+    directorio.treasurer,
+    ...(directorio.additionalMembers || [])
+  ].filter(Boolean);
+
+  for (const directivo of directivos) {
+    if (directivo.birthDate) {
+      const age = calculateAge(directivo.birthDate);
+      if (age !== null && age < 18) {
+        return false;
+      }
+    }
+  }
+  return true;
+}, {
+  message: 'Los miembros del Directorio deben tener al menos 18 años según Ley 19.418',
+  path: ['provisionalDirectorio']
+})
+.refine((data) => {
+  // Validar que la comisión electoral tenga miembros mayores de 18 años
+  const comision = data.electoralCommission || [];
+  for (const miembro of comision) {
+    if (miembro.birthDate) {
+      const age = calculateAge(miembro.birthDate);
+      if (age !== null && age < 18) {
+        return false;
+      }
+    }
+  }
+  return true;
+}, {
+  message: 'Los miembros de la Comisión Electoral deben tener al menos 18 años según Ley 19.418',
+  path: ['electoralCommission']
 });
 
 /**
@@ -164,7 +291,9 @@ export const scheduleMinistroSchema = z.object({
 export const statusChangeSchema = z.object({
   status: z.enum([
     'draft', 'waiting_ministro', 'ministro_scheduled', 'ministro_approved',
-    'pending_review', 'in_review', 'rejected', 'sent_registry', 'approved', 'dissolved'
+    'pending_review', 'in_review', 'rejected', 'sent_registry',
+    'registry_observations', // Estado cuando Registro Civil tiene observaciones
+    'approved', 'dissolved'
   ]),
   comment: z.string().max(500).optional()
 });
@@ -213,8 +342,9 @@ export const validate = (schema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Formatear errores de validación
-        const errors = error.errors.map(err => ({
+        // Formatear errores de validación (Zod v4 usa .issues en vez de .errors)
+        const zodErrors = error.issues || error.errors || [];
+        const errors = zodErrors.map(err => ({
           field: err.path.join('.'),
           message: err.message
         }));

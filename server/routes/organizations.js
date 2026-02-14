@@ -1,10 +1,12 @@
 import express from 'express';
 import crypto from 'crypto';
 import Organization from '../models/Organization.js';
+import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
+import { validate, createOrganizationSchema, statusChangeSchema } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
@@ -114,7 +116,9 @@ router.get('/availability/booked-slots', async (req, res) => {
         { electionDate: { $exists: true, $ne: null } },
         { 'ministroData.scheduledDate': { $exists: true, $ne: null } }
       ]
-    }).select('electionDate electionTime ministroData.scheduledDate ministroData.scheduledTime');
+    })
+      .select('electionDate electionTime ministroData.scheduledDate ministroData.scheduledTime')
+      .lean();
 
     // Extract only date/time pairs
     const bookedSlots = organizations
@@ -144,7 +148,8 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
   try {
     const organizations = await Organization.find()
       .populate('userId', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(organizations);
   } catch (error) {
     console.error('Get organizations error:', error);
@@ -156,7 +161,8 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 router.get('/my', authenticate, async (req, res) => {
   try {
     const organizations = await Organization.find({ userId: req.userId })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(organizations);
   } catch (error) {
     console.error('Get my organizations error:', error);
@@ -168,7 +174,8 @@ router.get('/my', authenticate, async (req, res) => {
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id)
-      .populate('userId', 'firstName lastName email');
+      .populate('userId', 'firstName lastName email')
+      .lean();
 
     if (!organization) {
       return res.status(404).json({ error: 'Organización no encontrada' });
@@ -186,15 +193,15 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Create organization (request ministro)
-router.post('/', authenticate, async (req, res) => {
+// Create organization (request ministro) - Con validación Zod
+router.post('/', authenticate, validate(createOrganizationSchema), async (req, res) => {
   try {
     // DEBUG: Log incoming data (solo en desarrollo)
     logger.debug('CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
     logger.debug('CREATE ORG - electoralCommission recibido:', JSON.stringify(req.body.electoralCommission, null, 2));
     logger.debug('CREATE ORG - members count:', req.body.members?.length);
 
-    // Extraer solo los campos válidos del modelo (excluir campos extras como certificatesStep5)
+    // Extraer campos válidos del modelo
     const {
       organizationName,
       organizationType,
@@ -213,7 +220,8 @@ router.post('/', authenticate, async (req, res) => {
       electionTime,
       assemblyAddress,
       comments,
-      estatutos
+      estatutos,
+      certificatesStep5
     } = req.body;
 
     const orgData = {
@@ -238,7 +246,9 @@ router.post('/', authenticate, async (req, res) => {
       statusHistory: [{
         status: 'waiting_ministro',
         date: new Date(),
-        comment: `Solicitud de Ministro de Fe para fecha: ${electionDate}`
+        comment: electionDate
+          ? `Solicitud de Ministro de Fe para fecha: ${electionDate}`
+          : 'Solicitud de constitución enviada, pendiente asignación de Ministro de Fe'
       }]
     };
 
@@ -278,6 +288,17 @@ router.post('/', authenticate, async (req, res) => {
     if (req.body.estatutos) {
       orgData.estatutos = req.body.estatutos;
       logger.debug('CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
+    }
+
+    // Guardar certificados del Paso 5 (certificados de socios)
+    if (certificatesStep5 && Array.isArray(certificatesStep5) && certificatesStep5.length > 0) {
+      orgData.certificatesStep5 = certificatesStep5.map(cert => ({
+        memberId: cert.memberId || cert.rut || '',
+        memberName: cert.memberName || cert.name || '',
+        certificate: cert.certificate || cert.data || '',
+        uploadedAt: new Date()
+      }));
+      logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
     }
 
     const organization = new Organization(orgData);
@@ -405,6 +426,36 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
 
     await organization.save();
 
+    // Create or update Assignment document for the ministro
+    const existingAssignment = await Assignment.findOne({
+      organizationId: organization._id,
+      status: 'pending'
+    });
+
+    if (existingAssignment) {
+      // Update existing pending assignment
+      existingAssignment.ministroId = ministroId;
+      existingAssignment.ministroName = ministroName;
+      existingAssignment.ministroRut = ministroRut || existingAssignment.ministroRut;
+      existingAssignment.scheduledDate = new Date(scheduledDate);
+      existingAssignment.scheduledTime = scheduledTime;
+      existingAssignment.location = location || '';
+      await existingAssignment.save();
+    } else {
+      // Create new assignment
+      await Assignment.create({
+        ministroId,
+        ministroName,
+        ministroRut: ministroRut || '',
+        organizationId: organization._id,
+        organizationName: organization.organizationName,
+        scheduledDate: new Date(scheduledDate),
+        scheduledTime,
+        location: location || organization.assemblyAddress || '',
+        status: 'pending'
+      });
+    }
+
     // Create notification
     const notificationType = hadPreviousSchedule ? 'schedule_change' : 'ministro_assigned';
     await Notification.create({
@@ -469,8 +520,40 @@ router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'M
   }
 });
 
-// Update status (Admin only)
-router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+// ============ VALIDACIÓN DE TRANSICIONES DE ESTADO ============
+const VALID_STATUS_TRANSITIONS = {
+  'draft': ['waiting_ministro', 'rejected'],
+  'waiting_ministro': ['ministro_scheduled', 'rejected', 'draft'],
+  'ministro_scheduled': ['ministro_approved', 'waiting_ministro', 'rejected'],
+  'ministro_approved': ['pending_review', 'in_review', 'sent_registry', 'rejected'],
+  'pending_review': ['in_review', 'rejected', 'approved'],
+  'in_review': ['approved', 'rejected', 'sent_registry'],
+  'rejected': ['pending_review', 'draft'], // Solo puede ir a pending_review o volver a draft
+  'sent_registry': ['approved', 'registry_observations', 'rejected'],
+  'registry_observations': ['sent_registry', 'approved', 'rejected'],
+  'approved': ['dissolved'], // Estado final, solo puede disolverse
+  'dissolved': [] // Estado terminal
+};
+
+/**
+ * Valida si una transición de estado es permitida
+ * @param {string} fromStatus - Estado actual
+ * @param {string} toStatus - Estado destino
+ * @returns {boolean}
+ */
+function isValidStatusTransition(fromStatus, toStatus) {
+  // MUNICIPALIDAD puede forzar cualquier transición en casos excepcionales
+  // pero la validación normal aplica
+  const allowedTransitions = VALID_STATUS_TRANSITIONS[fromStatus];
+  if (!allowedTransitions) {
+    console.warn(`Estado desconocido: ${fromStatus}`);
+    return false;
+  }
+  return allowedTransitions.includes(toStatus);
+}
+
+// Update status (Admin only) - Con validación Zod
+router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validate(statusChangeSchema), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -478,7 +561,17 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), async (re
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    const { status, comment } = req.body;
+    const { status, comment, forceTransition } = req.body;
+    const currentStatus = organization.status;
+
+    // Validar transición de estado (a menos que se fuerce)
+    if (!forceTransition && !isValidStatusTransition(currentStatus, status)) {
+      return res.status(400).json({
+        error: `Transición de estado no permitida: ${currentStatus} → ${status}`,
+        allowedTransitions: VALID_STATUS_TRANSITIONS[currentStatus] || [],
+        hint: 'Use forceTransition: true para forzar (solo casos excepcionales)'
+      });
+    }
 
     organization.status = status;
     organization.statusHistory.push({
@@ -600,7 +693,8 @@ router.get('/status/:status', authenticate, requireRole('MUNICIPALIDAD'), async 
   try {
     const organizations = await Organization.find({ status: req.params.status })
       .populate('userId', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(organizations);
   } catch (error) {
     console.error('Get by status error:', error);
@@ -611,7 +705,7 @@ router.get('/status/:status', authenticate, requireRole('MUNICIPALIDAD'), async 
 // Diagnóstico de organización (Admin) - ver todos los datos incluyendo provisionalDirectorio
 router.get('/:id/debug', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const org = await Organization.findById(req.params.id);
+    const org = await Organization.findById(req.params.id).lean();
     if (!org) {
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
@@ -1006,7 +1100,7 @@ router.post('/:id/create-member-accounts', authenticate, requireRole('MUNICIPALI
 // Obtener miembros con sus cuentas de usuario (Municipalidad)
 router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const organization = await Organization.findById(req.params.id);
+    const organization = await Organization.findById(req.params.id).lean();
 
     if (!organization) {
       return res.status(404).json({ error: 'Organización no encontrada' });
@@ -1016,13 +1110,13 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
     const memberUsers = await User.find({
       role: 'MIEMBRO',
       organizationId: organization._id
-    }).select('-password');
+    }).select('-password').lean();
 
-    // Combinar con datos de members
+    // Combinar con datos de members (ya son objetos planos por .lean())
     const membersWithAccounts = organization.members.map(member => {
       const userAccount = memberUsers.find(u => u.rut === member.rut);
       return {
-        ...member.toObject(),
+        ...member,
         hasAccount: !!userAccount,
         accountEmail: userAccount?.email,
         accountActive: userAccount?.active,
@@ -1062,7 +1156,8 @@ router.get('/my-organization', authenticate, async (req, res) => {
     }
 
     const organization = await Organization.findById(req.user.organizationId)
-      .select('-corrections -validationData -ministroSignature');
+      .select('-corrections -validationData -ministroSignature')
+      .lean();
 
     if (!organization) {
       return res.status(404).json({ error: 'Organización no encontrada' });

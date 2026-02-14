@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 import User from '../models/User.js';
+
+// Asegurar que las variables de entorno estén cargadas (ESM hoists imports antes de dotenv.config())
+dotenv.config();
 
 // SEGURIDAD: JWT_SECRET es OBLIGATORIO - no hay fallback
 const JWT_SECRET = process.env.JWT_SECRET;

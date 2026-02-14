@@ -3,7 +3,7 @@
  * Incluye: Rate Limiting, Headers de Seguridad, Validación de Input
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import helmet from 'helmet';
 
 // ============================================
@@ -25,8 +25,7 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator: (req) => {
-    // Usar X-Forwarded-For si está detrás de proxy (Railway, Vercel)
-    return req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+    return ipKeyGenerator(req);
   }
 });
 
@@ -46,8 +45,7 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Solo contar intentos fallidos
   keyGenerator: (req) => {
-    // Combinar IP + email para ser más específico
-    const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+    const ip = ipKeyGenerator(req);
     const email = req.body?.email || '';
     return `${ip}-${email}`;
   }
@@ -67,7 +65,7 @@ export const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+    return ipKeyGenerator(req);
   }
 });
 

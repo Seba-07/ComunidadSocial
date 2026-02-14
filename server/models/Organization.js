@@ -3,12 +3,19 @@ import mongoose from 'mongoose';
 const memberSchema = new mongoose.Schema({
   rut: { type: String, required: true },
   firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
+  segundoNombre: { type: String, default: '' }, // Segundo nombre (opcional)
+  lastName: { type: String, required: true },   // Apellido paterno
+  apellidoMaterno: { type: String, default: '' }, // Apellido materno (opcional)
   address: String,
   phone: String,
   email: String,
   birthDate: String,
   occupation: String,
+  genero: {
+    type: String,
+    enum: ['masculino', 'femenino', 'otro', 'no_especifica', ''],
+    default: ''
+  },
   role: {
     type: String,
     enum: ['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission'],
@@ -124,6 +131,7 @@ const organizationSchema = new mongoose.Schema({
       'in_review',
       'rejected',
       'sent_registry',
+      'registry_observations', // Estado cuando Registro Civil tiene observaciones
       'approved',
       'dissolved'
     ],
@@ -145,7 +153,19 @@ const organizationSchema = new mongoose.Schema({
     location: String,
     assignedAt: Date
   },
-  ministroSignature: String, // Base64
+  // DEPRECADO: Usar validationData.ministroSignature en su lugar
+  // Este campo se mantiene por compatibilidad con datos existentes
+  // Nueva lógica debe leer/escribir en validationData.ministroSignature
+  ministroSignature: {
+    type: String,
+    // Getter que advierte sobre deprecación en desarrollo
+    get: function(v) {
+      if (process.env.NODE_ENV === 'development' && v) {
+        console.warn('DEPRECATION: ministroSignature está deprecado, usar validationData.ministroSignature');
+      }
+      return v;
+    }
+  },
 
   // Comision Electoral (from validation wizard - flexible schema)
   comisionElectoral: [mongoose.Schema.Types.Mixed],
@@ -155,6 +175,14 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+
+  // Certificados del Paso 5 del Wizard (certificados de socios)
+  certificatesStep5: [{
+    memberId: String,        // ID o RUT del miembro
+    memberName: String,      // Nombre completo para referencia
+    certificate: String,     // Base64 del certificado
+    uploadedAt: { type: Date, default: Date.now }
+  }],
 
   // Snapshot del estatuto al momento de crear la organización
   // Esto permite que cambios futuros en las plantillas NO afecten a organizaciones ya creadas
@@ -262,5 +290,96 @@ organizationSchema.index({ electionDate: 1 }); // Para buscar por fecha de elecc
 organizationSchema.index({ createdAt: -1 });
 organizationSchema.index({ organizationType: 1 }); // Para filtrar por tipo
 organizationSchema.index({ comuna: 1, status: 1 }); // Para filtrar por comuna
+// Índices compuestos adicionales para queries frecuentes
+organizationSchema.index({ organizationType: 1, status: 1, createdAt: -1 }); // Filtrar por tipo + status
+organizationSchema.index({ isNormalized: 1, schemaVersion: 1 }); // Para migración
+
+// ============ MIDDLEWARE PARA LIMITAR ARRAYS Y VALIDAR DATOS ============
+const MAX_STATUS_HISTORY = 100;
+const MAX_VALIDATED_ATTENDEES = 500; // Máximo razonable de asistentes
+const MAX_APPOINTMENT_CHANGES = 50;
+
+organizationSchema.pre('save', function(next) {
+  // 1. Limitar statusHistory
+  if (this.statusHistory && this.statusHistory.length > MAX_STATUS_HISTORY) {
+    this.statusHistory = this.statusHistory.slice(-MAX_STATUS_HISTORY);
+  }
+
+  // 2. Limitar validatedAttendees
+  if (this.validatedAttendees && this.validatedAttendees.length > MAX_VALIDATED_ATTENDEES) {
+    console.warn(`Organization ${this._id}: validatedAttendees excede ${MAX_VALIDATED_ATTENDEES}, truncando`);
+    this.validatedAttendees = this.validatedAttendees.slice(0, MAX_VALIDATED_ATTENDEES);
+  }
+
+  // 3. Limitar appointmentChanges
+  if (this.appointmentChanges && this.appointmentChanges.length > MAX_APPOINTMENT_CHANGES) {
+    this.appointmentChanges = this.appointmentChanges.slice(-MAX_APPOINTMENT_CHANGES);
+  }
+
+  // 4. Sincronizar ministroSignature deprecado con validationData.ministroSignature
+  if (this.isModified('ministroSignature') && this.ministroSignature) {
+    if (!this.validationData) {
+      this.validationData = {};
+    }
+    this.validationData.ministroSignature = this.ministroSignature;
+  }
+
+  // 5. Validar que validationData.signatures tenga estructura esperada (si existe)
+  if (this.validationData?.signatures) {
+    // Asegurar que signatures sea un objeto o array, no un string malformado
+    if (typeof this.validationData.signatures === 'string') {
+      try {
+        this.validationData.signatures = JSON.parse(this.validationData.signatures);
+      } catch (e) {
+        console.warn(`Organization ${this._id}: validationData.signatures es string inválido, limpiando`);
+        this.validationData.signatures = {};
+      }
+    }
+  }
+
+  // 6. Validar estructura de corrections
+  if (this.corrections) {
+    // Asegurar que los campos de corrections sean objetos
+    if (this.corrections.fields && typeof this.corrections.fields !== 'object') {
+      this.corrections.fields = {};
+    }
+    if (this.corrections.documents && typeof this.corrections.documents !== 'object') {
+      this.corrections.documents = {};
+    }
+    if (this.corrections.certificates && typeof this.corrections.certificates !== 'object') {
+      this.corrections.certificates = {};
+    }
+  }
+
+  next();
+});
+
+// Método estático para obtener la firma del ministro (usa el campo correcto)
+organizationSchema.methods.getMinistroSignature = function() {
+  return this.validationData?.ministroSignature || this.ministroSignature || null;
+};
+
+// Método para limpiar datos duplicados de certificados
+organizationSchema.methods.cleanDuplicateCertificates = function() {
+  if (!this.certificatesStep5 || this.certificatesStep5.length === 0) return;
+
+  // Si un miembro tiene certificado en members[] Y en certificatesStep5[],
+  // marcar el de certificatesStep5 como la fuente principal y limpiar de members[]
+  const certifiedMemberIds = new Set(
+    this.certificatesStep5.map(c => c.memberId || c.memberName)
+  );
+
+  if (this.members) {
+    this.members.forEach(member => {
+      const memberId = member.rut || `${member.firstName} ${member.lastName}`;
+      if (certifiedMemberIds.has(memberId) && member.certificate) {
+        // El certificado ya existe en certificatesStep5, limpiar de member
+        member.certificate = undefined;
+      }
+    });
+  }
+
+  return this;
+};
 
 export default mongoose.model('Organization', organizationSchema);

@@ -202,12 +202,21 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 
     const token = generateToken(ministro);
 
-    // Enviar token en cookie HttpOnly (seguro)
+    // Enviar token SOLO en cookie HttpOnly (seguro)
+    // SEGURIDAD: NO enviar token en body para prevenir exposición
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
+    // Respuesta sin token - solo datos de ministro necesarios para UI
     res.json({
-      ministro,
-      token, // Mantener token en respuesta durante transición
+      ministro: {
+        _id: ministro._id,
+        firstName: ministro.firstName,
+        lastName: ministro.lastName,
+        email: ministro.email,
+        rut: ministro.rut,
+        role: ministro.role,
+        mustChangePassword: ministro.mustChangePassword
+      },
       mustChangePassword: ministro.mustChangePassword
     });
   } catch (error) {

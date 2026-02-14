@@ -21,6 +21,9 @@ import guiaConstitucionManager from './src/presentation/guia/GuiaConstitucionMan
 import bibliotecaManager from './src/presentation/biblioteca/BibliotecaManager.js';
 import newsManager from './src/presentation/news/NewsManager.js';
 
+// Componente de estado de conexión (se auto-inicializa)
+import './src/shared/components/ConnectionStatus.js';
+
 console.log('📦 main.js cargado');
 
 // Función global para abrir wizard con progreso guardado (accesible desde onclick)
@@ -147,10 +150,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initializeApp();
 
   // Cargar usuario desde localStorage
+  // Nota: auth_token está en HttpOnly cookie (no accesible via JS)
+  // Usamos isAuthenticated flag + currentUser para verificar sesión
   const currentUserData = localStorage.getItem('currentUser');
-  const authToken = localStorage.getItem('auth_token');
+  const isAuthenticated = localStorage.getItem('isAuthenticated');
 
-  if (currentUserData && authToken) {
+  if (currentUserData && isAuthenticated) {
     try {
       const user = JSON.parse(currentUserData);
       appState.setCurrentUser(user);
@@ -202,9 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Error al cargar usuario:', error);
     }
-  } else if (currentUserData && !authToken) {
-    // Usuario en localStorage pero sin token - limpiar y redirigir
-    console.log('Token expirado o no encontrado, redirigiendo a login...');
+  } else if (currentUserData && !isAuthenticated) {
+    // Usuario en localStorage pero sin flag de autenticación - limpiar
+    console.log('Sesión no válida, limpiando datos...');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isAuthenticated');
   }

@@ -9,6 +9,9 @@
  * - Manejo de errores de validación
  */
 
+// SEGURIDAD: Importar función de sanitización para prevenir XSS
+import { escapeHtml } from './sanitize.js';
+
 /**
  * Validadores comunes
  */
@@ -450,7 +453,8 @@ export function showFormErrors(container, errors) {
 
     const errorEl = document.createElement('div');
     errorEl.className = 'field-error';
-    errorEl.innerHTML = messages.map(m => `<span>${m}</span>`).join('');
+    // SEGURIDAD: Sanitizar mensajes de error para prevenir XSS
+    errorEl.innerHTML = messages.map(m => `<span>${escapeHtml(m)}</span>`).join('');
 
     // Insertar después del input o su contenedor
     const parent = input.closest('.form-group') || input.parentElement;

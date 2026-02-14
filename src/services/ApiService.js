@@ -1,6 +1,9 @@
 /**
  * API Service - Centralized HTTP client for backend communication
+ * Con soporte offline mediante IndexedDB y Background Sync
  */
+
+import { indexedDBService } from '../infrastructure/database/IndexedDBService.js';
 
 // Determine API URL based on environment
 function getApiUrl() {
@@ -28,56 +31,158 @@ console.log('🔗 API URL:', API_URL);
 class ApiService {
   constructor() {
     this.baseUrl = API_URL;
+    this._offlineListenersSetup = false;
+    this._setupOfflineListeners();
   }
 
   /**
-   * Get auth token from storage (DEPRECATED - se usa cookies HttpOnly)
-   * Mantenido para compatibilidad durante transición
+   * Configura listeners para cambios de estado de conexión
    */
-  getToken() {
-    return localStorage.getItem('auth_token');
+  _setupOfflineListeners() {
+    if (this._offlineListenersSetup || typeof window === 'undefined') return;
+
+    window.addEventListener('online', () => {
+      console.log('🌐 Conexión restaurada');
+      this._triggerBackgroundSync();
+      this._notifyConnectionChange(true);
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('📴 Sin conexión');
+      this._notifyConnectionChange(false);
+    });
+
+    // Escuchar mensajes del Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.type === 'SYNC_COMPLETED') {
+          console.log('✅ Sincronización completada:', event.data.requestId);
+          window.dispatchEvent(new CustomEvent('offline-sync-completed', { detail: event.data }));
+        }
+        if (event.data.type === 'SYNC_FAILED') {
+          console.log('❌ Sincronización fallida:', event.data.error);
+          window.dispatchEvent(new CustomEvent('offline-sync-failed', { detail: event.data }));
+        }
+        if (event.data.type === 'SYNC_COMPLETE') {
+          console.log('🔄 Cola offline sincronizada');
+          window.dispatchEvent(new CustomEvent('offline-queue-synced'));
+        }
+      });
+    }
+
+    this._offlineListenersSetup = true;
   }
 
   /**
-   * Set auth token (DEPRECATED - se usa cookies HttpOnly)
-   * Mantenido para compatibilidad durante transición
+   * Notifica cambios de conexión a la UI
    */
-  setToken(token) {
-    localStorage.setItem('auth_token', token);
+  _notifyConnectionChange(isOnline) {
+    window.dispatchEvent(new CustomEvent('connection-change', {
+      detail: { isOnline }
+    }));
   }
 
   /**
-   * Remove auth token (DEPRECATED - se usa cookies HttpOnly)
-   * Mantenido para compatibilidad durante transición
+   * Registra background sync para procesar cola offline
    */
-  removeToken() {
-    localStorage.removeItem('auth_token');
+  async _triggerBackgroundSync() {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.sync.register('sync-offline-queue');
+        console.log('📤 Background sync registrado');
+      } catch (error) {
+        console.warn('⚠️ No se pudo registrar background sync:', error);
+        // Fallback: intentar sincronizar manualmente
+        this._manualSync();
+      }
+    } else {
+      // Fallback para navegadores sin Background Sync
+      this._manualSync();
+    }
+  }
+
+  /**
+   * Sincronización manual cuando Background Sync no está disponible
+   */
+  async _manualSync() {
+    try {
+      const pendingRequests = await indexedDBService.getPendingOfflineRequests();
+      if (pendingRequests.length === 0) return;
+
+      console.log(`🔄 Sincronización manual: ${pendingRequests.length} peticiones pendientes`);
+
+      for (const req of pendingRequests) {
+        try {
+          const response = await fetch(req.url, {
+            method: req.method,
+            headers: JSON.parse(req.headers || '{}'),
+            body: req.body,
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            await indexedDBService.updateOfflineRequestStatus(req.id, 'completed');
+            window.dispatchEvent(new CustomEvent('offline-sync-completed', {
+              detail: { requestId: req.id, success: true }
+            }));
+          } else {
+            const attempts = (req.attempts || 0) + 1;
+            if (attempts >= 3) {
+              await indexedDBService.updateOfflineRequestStatus(req.id, 'failed', { attempts });
+            } else {
+              await indexedDBService.updateOfflineRequestStatus(req.id, 'pending', { attempts });
+            }
+          }
+        } catch (error) {
+          console.error('Error sincronizando petición:', req.id, error);
+        }
+      }
+
+      window.dispatchEvent(new CustomEvent('offline-queue-synced'));
+    } catch (error) {
+      console.error('Error en sincronización manual:', error);
+    }
+  }
+
+  /**
+   * Verifica si estamos online
+   */
+  isOnline() {
+    return navigator.onLine;
+  }
+
+  /**
+   * Obtiene el conteo de peticiones pendientes en la cola offline
+   */
+  async getPendingRequestsCount() {
+    try {
+      const pending = await indexedDBService.getPendingOfflineRequests();
+      return pending.length;
+    } catch {
+      return 0;
+    }
   }
 
   /**
    * Build headers for request
-   * Nota: Ya no enviamos Authorization header, usamos cookies HttpOnly
+   * SEGURIDAD: No enviamos Authorization header, usamos cookies HttpOnly exclusivamente
+   * El token se envía automáticamente con credentials: 'include'
    */
   getHeaders() {
-    const headers = {
+    return {
       'Content-Type': 'application/json'
     };
-
-    // Durante transición: Mantener header si hay token local
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return headers;
   }
 
   /**
    * Make HTTP request
    * Usa credentials: 'include' para enviar cookies HttpOnly automáticamente
+   * Soporta modo offline para operaciones POST/PUT/DELETE
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    const method = options.method || 'GET';
 
     const config = {
       headers: this.getHeaders(),
@@ -85,8 +190,18 @@ class ApiService {
       ...options
     };
 
+    // Serializar body si es objeto
+    let bodyString = null;
     if (config.body && typeof config.body === 'object') {
-      config.body = JSON.stringify(config.body);
+      bodyString = JSON.stringify(config.body);
+      config.body = bodyString;
+    } else if (config.body) {
+      bodyString = config.body;
+    }
+
+    // Si estamos offline y es una operación modificadora, encolar
+    if (!navigator.onLine && ['POST', 'PUT', 'DELETE'].includes(method)) {
+      return this._queueOfflineRequest(url, method, config.headers, bodyString, endpoint);
     }
 
     try {
@@ -99,8 +214,52 @@ class ApiService {
 
       return data;
     } catch (error) {
+      // Si el error es de red y es operación modificadora, encolar
+      if (error.name === 'TypeError' && ['POST', 'PUT', 'DELETE'].includes(method)) {
+        console.log('📴 Error de red detectado, encolando petición...');
+        return this._queueOfflineRequest(url, method, config.headers, bodyString, endpoint);
+      }
+
       console.error('API Error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Encola una petición para enviar cuando vuelva la conexión
+   */
+  async _queueOfflineRequest(url, method, headers, body, endpoint) {
+    try {
+      // Determinar tipo de petición para priorización
+      let type = 'general';
+      if (endpoint.includes('validate')) type = 'validation';
+      else if (endpoint.includes('assignment')) type = 'assignment';
+      else if (endpoint.includes('organization')) type = 'organization';
+
+      const requestId = await indexedDBService.addToOfflineQueue({
+        url,
+        method,
+        headers: JSON.stringify(headers),
+        body,
+        type,
+        endpoint
+      });
+
+      console.log('📤 Petición encolada:', requestId, type);
+
+      // Intentar registrar background sync
+      this._triggerBackgroundSync();
+
+      // Retornar respuesta indicando que está encolado
+      return {
+        _queued: true,
+        _requestId: requestId,
+        _message: 'Petición guardada. Se enviará cuando vuelva la conexión.',
+        _type: type
+      };
+    } catch (error) {
+      console.error('Error encolando petición:', error);
+      throw new Error('Sin conexión y no se pudo guardar la petición localmente');
     }
   }
 
@@ -126,23 +285,45 @@ class ApiService {
 
   // ==================== AUTH ====================
 
+  /**
+   * Login de usuario
+   * SEGURIDAD: El token se maneja exclusivamente via cookies HttpOnly
+   * Solo guardamos datos de usuario (sin token) para UI
+   */
   async login(email, password) {
     const data = await this.post('/auth/login', { email, password });
-    if (data.token) {
-      this.setToken(data.token);
-      // Solo guardar en currentUser si NO es ministro (los ministros usan currentMinistro)
-      if (data.user && data.user.role !== 'MINISTRO_FE') {
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
-      }
+    // Guardar datos de usuario para UI (sin información sensible)
+    if (data.user && data.user.role !== 'MINISTRO_FE') {
+      // Crear copia sin datos sensibles
+      const safeUser = {
+        _id: data.user._id,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+        role: data.user.role,
+        mustChangePassword: data.user.mustChangePassword
+      };
+      localStorage.setItem('currentUser', JSON.stringify(safeUser));
     }
     return data;
   }
 
+  /**
+   * Registro de usuario
+   * SEGURIDAD: El token se maneja exclusivamente via cookies HttpOnly
+   */
   async register(userData) {
     const data = await this.post('/auth/register', userData);
-    if (data.token) {
-      this.setToken(data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.user));
+    // Guardar datos de usuario para UI (sin información sensible)
+    if (data.user) {
+      const safeUser = {
+        _id: data.user._id,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+        role: data.user.role
+      };
+      localStorage.setItem('currentUser', JSON.stringify(safeUser));
     }
     return data;
   }
@@ -156,7 +337,8 @@ class ApiService {
   }
 
   /**
-   * Logout - Elimina cookie del servidor y limpia localStorage
+   * Logout - Elimina cookie del servidor y limpia TODOS los datos de localStorage
+   * SEGURIDAD: Limpieza completa para evitar datos residuales
    */
   async logout() {
     try {
@@ -164,10 +346,19 @@ class ApiService {
     } catch (error) {
       console.warn('Logout endpoint error:', error);
     }
-    // Limpiar localStorage (compatibilidad durante transición)
-    this.removeToken();
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('currentMinistro');
+    // Limpiar TODOS los datos de sesión de localStorage
+    const keysToRemove = [
+      'auth_token',           // Legacy - ya no debería existir
+      'currentUser',
+      'currentMinistro',
+      'isAuthenticated',
+      'isMinistroAuthenticated',
+      'user_organizations',
+      'ministros_fe',
+      'ministro_assignments',
+      'user_notifications'
+    ];
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   }
 
   // ==================== ORGANIZATIONS ====================
@@ -259,11 +450,24 @@ class ApiService {
     return this.delete(`/ministros/${id}`);
   }
 
+  /**
+   * Login de Ministro de Fe
+   * SEGURIDAD: El token se maneja exclusivamente via cookies HttpOnly
+   */
   async loginMinistro(email, password) {
     const data = await this.post('/ministros/login', { email, password });
-    if (data.token) {
-      this.setToken(data.token);
-      localStorage.setItem('currentMinistro', JSON.stringify(data.ministro));
+    // Guardar datos de ministro para UI (sin información sensible)
+    if (data.ministro) {
+      const safeMinistro = {
+        _id: data.ministro._id,
+        firstName: data.ministro.firstName,
+        lastName: data.ministro.lastName,
+        email: data.ministro.email,
+        rut: data.ministro.rut,
+        role: data.ministro.role,
+        mustChangePassword: data.ministro.mustChangePassword
+      };
+      localStorage.setItem('currentMinistro', JSON.stringify(safeMinistro));
     }
     return data;
   }

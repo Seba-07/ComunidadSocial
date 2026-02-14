@@ -68,7 +68,7 @@ newsSchema.pre('save', function(next) {
 });
 
 // Índices
-newsSchema.index({ slug: 1 });
+// slug ya tiene unique: true que crea el índice automáticamente
 newsSchema.index({ category: 1 });
 newsSchema.index({ isPublished: 1 });
 newsSchema.index({ publishedAt: -1 });

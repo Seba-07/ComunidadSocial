@@ -64,14 +64,11 @@ class LibraryDocumentService {
       formData.append('isPublished', data.isPublished !== false ? 'true' : 'false');
 
       // Usar fetch directamente para FormData
-      const token = localStorage.getItem('authToken');
       const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
 
       const response = await fetch(`${baseUrl}/library-documents`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
         body: formData
       });
 
