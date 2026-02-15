@@ -23,7 +23,7 @@ const STATUS_LABELS = {
 const STATUS_COLORS = {
   'draft': '#94a3b8',
   'waiting_ministro': '#f59e0b',
-  'ministro_scheduled': '#3b82f6',
+  'ministro_scheduled': '#2563eb',
   'ministro_approved': '#10b981',
   'pending_review': '#8b5cf6',
   'in_review': '#06b6d4',
@@ -254,7 +254,7 @@ export class MetricsDashboardManager {
               ${timeline.length > 0
                 ? `
                   <div class="mdm-timeline-legend">
-                    <span class="mdm-legend-item"><span class="mdm-legend-dot" style="background:#3b82f6;"></span> Creadas</span>
+                    <span class="mdm-legend-item"><span class="mdm-legend-dot" style="background:#2563eb;"></span> Creadas</span>
                     <span class="mdm-legend-item"><span class="mdm-legend-dot" style="background:#22c55e;"></span> Aprobadas</span>
                     <span class="mdm-legend-item"><span class="mdm-legend-dot" style="background:#ef4444;"></span> Rechazadas</span>
                   </div>
@@ -464,7 +464,7 @@ export class MetricsDashboardManager {
         width: 40px;
         height: 40px;
         border: 4px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #2563eb;
         border-radius: 50%;
         animation: mdm-spin 0.8s linear infinite;
       }
@@ -473,7 +473,7 @@ export class MetricsDashboardManager {
         width: 16px;
         height: 16px;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #2563eb;
         border-radius: 50%;
         animation: mdm-spin 0.8s linear infinite;
         display: inline-block;
@@ -521,7 +521,7 @@ export class MetricsDashboardManager {
       }
 
       .mdm-header-left svg {
-        color: #3b82f6;
+        color: #2563eb;
       }
 
       .mdm-header-left h2 {
@@ -551,7 +551,7 @@ export class MetricsDashboardManager {
       }
 
       .mdm-btn-primary {
-        background: #3b82f6;
+        background: #2563eb;
         color: white;
       }
 
@@ -599,7 +599,7 @@ export class MetricsDashboardManager {
 
       .mdm-kpi-icon-blue {
         background: #dbeafe;
-        color: #3b82f6;
+        color: #2563eb;
       }
 
       .mdm-kpi-icon-green {
@@ -797,7 +797,7 @@ export class MetricsDashboardManager {
       }
 
       .mdm-tbar-created {
-        background: #3b82f6;
+        background: #2563eb;
       }
 
       .mdm-tbar-approved {

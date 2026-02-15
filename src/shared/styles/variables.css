@@ -8,17 +8,17 @@
   /* ============================================
      COLORES PRIMARIOS - Blue
      ============================================ */
-  --color-primary: #3b82f6;
-  --color-primary-light: #60a5fa;
-  --color-primary-dark: #2563eb;
+  --color-primary: #2563eb;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1d4ed8;
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
   --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
+  --color-primary-400: #3b82f6;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
 
@@ -49,9 +49,9 @@
   --color-error-light: #fee2e2;
   --color-error-dark: #dc2626;
 
-  --color-info: #3b82f6;
+  --color-info: #2563eb;
   --color-info-light: #dbeafe;
-  --color-info-dark: #2563eb;
+  --color-info-dark: #1d4ed8;
 
   /* ============================================
      COLORES NEUTRALES - Slate scale
@@ -162,25 +162,25 @@
   --shadow-inner: inset 0 2px 4px 0 rgba(15, 23, 42, 0.05);
 
   /* Sombras con color */
-  --shadow-primary: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+  --shadow-primary: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
   --shadow-success: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
   --shadow-error: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
-  --shadow-info: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
-  --shadow-header: 0 4px 20px rgba(59, 130, 246, 0.15);
+  --shadow-info: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
+  --shadow-header: 0 4px 20px rgba(37, 99, 235, 0.15);
 
   /* ============================================
      GRADIENTES
      ============================================ */
-  --gradient-primary: linear-gradient(135deg, #3b82f6, #2563eb);
-  --gradient-primary-light: linear-gradient(135deg, #60a5fa, #3b82f6);
-  --gradient-header: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  --gradient-primary: linear-gradient(135deg, #2563eb, #1d4ed8);
+  --gradient-primary-light: linear-gradient(135deg, #3b82f6, #2563eb);
+  --gradient-header: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
   --gradient-header-light: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   --gradient-secondary: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-success-dark));
   --gradient-error: linear-gradient(135deg, var(--color-error), var(--color-error-dark));
   --gradient-info: linear-gradient(135deg, var(--color-info), var(--color-info-dark));
   --gradient-warning: linear-gradient(135deg, var(--color-warning), var(--color-warning-dark));
-  --gradient-auth: linear-gradient(135deg, #1e3a8a, #1d4ed8, #3b82f6);
+  --gradient-auth: linear-gradient(135deg, #1e3a8a, #1d4ed8, #2563eb);
 
   /* ============================================
      TRANSICIONES

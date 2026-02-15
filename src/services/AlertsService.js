@@ -190,7 +190,7 @@ class AlertsService {
       [ALERT_PRIORITY.CRITICAL]: '#dc2626',  // Rojo
       [ALERT_PRIORITY.HIGH]: '#ea580c',      // Naranja
       [ALERT_PRIORITY.MEDIUM]: '#f59e0b',    // Amarillo
-      [ALERT_PRIORITY.LOW]: '#3b82f6'        // Azul
+      [ALERT_PRIORITY.LOW]: '#2563eb'        // Azul
     };
     return colors[priority] || '#6b7280';
   }

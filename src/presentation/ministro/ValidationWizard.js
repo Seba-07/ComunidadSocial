@@ -528,7 +528,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     sigModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; box-sizing: border-box;';
     sigModal.innerHTML = `
       <div style="background: white; border-radius: 20px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.4);">
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px 24px;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 20px 24px;">
           <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
@@ -539,7 +539,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           <p style="margin: 8px 0 0; opacity: 0.9; font-size: 13px;">Dibuja tu firma en el área de abajo</p>
         </div>
         <div style="padding: 24px;">
-          <div style="border: 3px solid #3b82f6; border-radius: 12px; background: #f8fafc; margin-bottom: 16px;">
+          <div style="border: 3px solid #2563eb; border-radius: 12px; background: #f8fafc; margin-bottom: 16px;">
             <canvas id="sig-modal-canvas" width="552" height="200" style="width: 100%; height: 200px; display: block; cursor: crosshair; touch-action: none;"></canvas>
           </div>
           <div style="display: flex; gap: 12px; justify-content: space-between;">
@@ -663,12 +663,12 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
     return `
       <div class="signature-area" data-key="${signatureKey}" style="cursor: pointer;">
         <label style="display: block; font-weight: 600; font-size: 12px; color: #374151; margin-bottom: 6px;">${label}</label>
-        <div style="border: 2px dashed #3b82f6; border-radius: 8px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; text-align: center; transition: all 0.3s;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="margin-bottom: 8px;">
+        <div style="border: 2px dashed #2563eb; border-radius: 8px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; text-align: center; transition: all 0.3s;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="margin-bottom: 8px;">
             <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
           </svg>
-          <p style="margin: 0; font-size: 13px; font-weight: 600; color: #3b82f6;">Toca aquí para firmar</p>
+          <p style="margin: 0; font-size: 13px; font-weight: 600; color: #2563eb;">Toca aquí para firmar</p>
         </div>
       </div>
     `;
@@ -699,7 +699,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
 
           <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
             <div style="display: flex; align-items: center; gap: 20px;">
-              <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(59,130,246,0.4);">
+              <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(59,130,246,0.4);">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
@@ -769,7 +769,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
           <div style="flex: 1; text-align: center;">
             <span style="font-size: 13px; color: #64748b; font-weight: 500;">Paso ${currentStep} de ${totalSteps}</span>
           </div>
-          <button type="button" id="next-step-btn" style="padding: 14px 32px; border: none; background: ${currentStep === totalSteps ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)'}; color: white; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: ${currentStep === totalSteps ? '0 4px 16px rgba(16,185,129,0.4)' : '0 4px 16px rgba(59,130,246,0.4)'}; transition: all 0.2s;">
+          <button type="button" id="next-step-btn" style="padding: 14px 32px; border: none; background: ${currentStep === totalSteps ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)'}; color: white; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: ${currentStep === totalSteps ? '0 4px 16px rgba(16,185,129,0.4)' : '0 4px 16px rgba(59,130,246,0.4)'}; transition: all 0.2s;">
             ${currentStep === totalSteps ? `
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -806,7 +806,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
   // PASO 1: Directorio Provisorio
   const renderStep1_Directorio = () => {
     const roles = [
-      { key: 'president', label: 'Presidente/a', icon: '👤', color: '#3b82f6', desc: 'Cargo principal del directorio' },
+      { key: 'president', label: 'Presidente/a', icon: '👤', color: '#2563eb', desc: 'Cargo principal del directorio' },
       { key: 'secretary', label: 'Secretario/a', icon: '📝', color: '#8b5cf6', desc: 'Encargado de actas y documentos' },
       { key: 'treasurer', label: 'Tesorero/a', icon: '💰', color: '#f59e0b', desc: 'Encargado de finanzas' }
     ];
@@ -885,7 +885,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
               <p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">Directores, vocales u otros cargos</p>
             </div>
           </div>
-          <button type="button" id="btn-add-additional" style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <button type="button" id="btn-add-additional" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -903,7 +903,7 @@ export function openValidationWizard(assignment, org, currentMinistro, callbacks
         </div>
       </div>
 
-      <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #3b82f6;">
+      <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #2563eb;">
         <p style="margin: 0; font-size: 13px; color: #1e40af;">
           ℹ️ Puedes agregar directores adicionales, vocales u otros cargos según los estatutos de la organización. Cada miembro adicional debe firmar y verificar su identidad.
         </p>
@@ -1376,7 +1376,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
       <!-- Resumen -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <!-- Directorio -->
-        <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 16px;">
+        <div style="background: #eff6ff; border: 2px solid #2563eb; border-radius: 12px; padding: 16px;">
           <h4 style="margin: 0 0 12px; color: #1e40af; font-size: 14px; display: flex; align-items: center; gap: 8px;">
             <span>🏛️</span> Directorio Provisorio
           </h4>
@@ -1470,7 +1470,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
       </div>
 
       <!-- Firma del Ministro -->
-      <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+      <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
         <h4 style="margin: 0 0 16px; color: #1e40af; font-size: 16px; display: flex; align-items: center; gap: 10px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
@@ -2379,7 +2379,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
     const toast = document.createElement('div');
     toast.style.cssText = `
       position: fixed; top: 24px; right: 24px; z-index: 1080;
-      background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+      background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#2563eb'};
       color: white; padding: 16px 24px; border-radius: 12px;
       font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     `;

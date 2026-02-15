@@ -93,40 +93,6 @@ if ('serviceWorker' in navigator && !isDevelopment) {
   });
 }
 
-// PWA Install Prompt
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallPromotion();
-});
-
-function showInstallPromotion() {
-  const installPrompt = document.createElement('div');
-  installPrompt.className = 'install-prompt show';
-  installPrompt.innerHTML = `
-    <p>Instala la aplicación para un acceso más rápido</p>
-    <button id="install-btn">Instalar</button>
-    <button id="dismiss-btn" style="background: transparent; color: var(--text-secondary);">Más tarde</button>
-  `;
-  document.body.appendChild(installPrompt);
-
-  document.getElementById('install-btn').addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response: ${outcome}`);
-      deferredPrompt = null;
-      installPrompt.remove();
-    }
-  });
-
-  document.getElementById('dismiss-btn').addEventListener('click', () => {
-    installPrompt.remove();
-  });
-}
-
 // Event Listeners
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🎯 DOM Content Loaded - Inicializando eventos...');
@@ -280,22 +246,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   const menuBtn = document.getElementById('menu-btn');
   const sideNav = document.getElementById('side-nav');
   const closeNavBtn = document.getElementById('close-nav-btn');
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+  const mainContent = document.getElementById('main-content');
+  const isDesktop = () => window.innerWidth >= 1024;
 
+  // Restore sidebar collapsed state from localStorage on desktop
+  if (isDesktop() && sideNav && mainContent) {
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (savedCollapsed) {
+      sideNav.classList.add('collapsed');
+      mainContent.classList.add('sidebar-collapsed');
+    }
+  }
+
+  // Mobile menu button - only for mobile overlay behavior
   if (menuBtn && sideNav) {
     menuBtn.addEventListener('click', () => {
-      // Verificar si el menú ya está abierto
       const isOpen = sideNav.classList.contains('open');
       const existingOverlay = document.getElementById('overlay');
 
       if (isOpen) {
-        // Si está abierto, cerrarlo
         sideNav.classList.remove('open');
         if (existingOverlay) existingOverlay.remove();
       } else {
-        // Si está cerrado, abrirlo
         sideNav.classList.add('open');
 
-        // Solo crear overlay si no existe
         if (!existingOverlay) {
           const overlay = document.createElement('div');
           overlay.id = 'overlay';
@@ -316,6 +291,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       sideNav.classList.remove('open');
       const overlay = document.getElementById('overlay');
       if (overlay) overlay.remove();
+    });
+  }
+
+  // Desktop sidebar toggle (collapse/expand)
+  if (sidebarToggleBtn && sideNav && mainContent) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      sideNav.classList.toggle('collapsed');
+      mainContent.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', sideNav.classList.contains('collapsed'));
     });
   }
 
@@ -1450,7 +1434,7 @@ function renderOrganizationCard(org) {
         })()}
 
         ${isMinistroApproved ? `
-          <div class="org-waiting-registry-notice" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 14px; margin-top: 12px;">
+          <div class="org-waiting-registry-notice" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #2563eb; border-radius: 12px; padding: 14px; margin-top: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 24px;">✅</span>
               <div style="flex: 1;">
@@ -2107,9 +2091,9 @@ async function viewOrganization(orgId) {
   // Si la asamblea fue validada por el ministro - esperando envío a RC
   else if (org.status === ORG_STATUS.MINISTRO_APPROVED) {
     appointmentHTML = `
-      <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #3b82f6;">
+      <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid #2563eb;">
         <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
-          <div style="width: 48px; height: 48px; background: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 48px; height: 48px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
@@ -2124,7 +2108,7 @@ async function viewOrganization(orgId) {
           <span style="font-size: 24px;">⏳</span>
           <div>
             <p style="margin: 0; font-weight: 600; color: #1e40af; font-size: 14px;">Esperando envío al Registro Civil</p>
-            <p style="margin: 4px 0 0; font-size: 12px; color: #3b82f6;">La municipalidad preparará la documentación y la enviará al Registro Civil. Te notificaremos cuando esto ocurra.</p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #2563eb;">La municipalidad preparará la documentación y la enviará al Registro Civil. Te notificaremos cuando esto ocurra.</p>
           </div>
         </div>
       </div>
@@ -3180,12 +3164,12 @@ window.showAppointmentHistory = function(orgId) {
       : '-';
 
     originalHTML = `
-      <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-          <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">📌</div>
+          <div style="width: 40px; height: 40px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">📌</div>
           <div>
             <h4 style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 700;">Cita Original</h4>
-            <p style="margin: 2px 0 0; color: #3b82f6; font-size: 13px;">Asignada el ${originalDateFormatted}</p>
+            <p style="margin: 2px 0 0; color: #2563eb; font-size: 13px;">Asignada el ${originalDateFormatted}</p>
           </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
@@ -3255,7 +3239,7 @@ window.showAppointmentHistory = function(orgId) {
   modal.innerHTML = `
     <div style="background: white; border-radius: 20px; max-width: 800px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 24px; color: white;">
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 24px; color: white;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 16px;">
             <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
@@ -3298,7 +3282,7 @@ window.showAppointmentHistory = function(orgId) {
 
       <!-- Footer -->
       <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
-        <button id="close-history-btn" style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+        <button id="close-history-btn" style="background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
           Cerrar
         </button>
       </div>

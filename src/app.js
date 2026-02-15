@@ -203,7 +203,7 @@ export function showToast(message, type = 'info') {
     bottom: calc(var(--bottom-nav-height, 60px) + 20px);
     left: 50%;
     transform: translateX(-50%);
-    background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+    background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#2563eb'};
     color: white;
     padding: 12px 24px;
     border-radius: 8px;

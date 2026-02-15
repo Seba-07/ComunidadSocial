@@ -137,7 +137,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   // Organizaciones Territoriales - 5 miembros
   'JUNTA_VECINOS': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
@@ -147,7 +147,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   },
   'COMITE_VECINOS': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
@@ -158,7 +158,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   // Comité de Vivienda - 5 miembros
   'COMITE_VIVIENDA': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
       { id: 'director1', nombre: 'Director/a 1', color: '#6366f1', required: true },
@@ -169,7 +169,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   // Centro de Padres - 4 miembros (mínimo según estatutos)
   'CENTRO_PADRES': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'secretario', nombre: 'Secretario General', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
       { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true }
@@ -179,7 +179,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   // CVPCC - 6 miembros
   'COMITE_CONVIVENCIA': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
@@ -191,7 +191,7 @@ const DIRECTORIO_CONFIG_FALLBACK = {
   // Organizaciones Funcionales genéricas - 5 miembros
   'DEFAULT': {
     cargos: [
-      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true },
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb', required: true },
       { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true },
       { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true },
@@ -5870,7 +5870,7 @@ Secretaria Municipal`;
     const modalHTML = `
       <div class="modal-overlay" id="preview-document-modal">
         <div class="modal-content modal-document-preview" style="max-width: 900px; width: 95%; max-height: 95vh; display: flex; flex-direction: column;">
-          <div class="modal-document-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0;">
+          <div class="modal-document-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0;">
             <h3 style="margin: 0; font-size: 18px;">${docNames[docType] || docType}</h3>
             <button class="modal-close-btn" id="close-preview-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
           </div>
@@ -6648,7 +6648,7 @@ Secretaria Municipal`;
         <div style="display: flex; gap: 8px; flex-shrink: 0;">
           <button type="button" class="btn-preview" data-doc-type="${type}" style="
             padding: 8px 14px;
-            background: #3b82f6;
+            background: #2563eb;
             color: white;
             border: none;
             border-radius: 6px;
@@ -7178,7 +7178,7 @@ Secretaria Municipal`;
         <!-- Info box -->
         <div class="ministro-info-box">
           <h3>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="16" x2="12" y2="12"></line>
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -7268,7 +7268,7 @@ Secretaria Municipal`;
                 </svg>
                 Fecha y Hora de Preferencia <span class="required">*</span>
               </h4>
-              <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
+              <div style="background: #dbeafe; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
                 <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
                   <strong>📌 Nota:</strong> La fecha y hora es una preferencia. La Municipalidad confirmará según disponibilidad.
                 </p>
@@ -7779,9 +7779,9 @@ Secretaria Municipal`;
               Tu solicitud de Ministro de Fe ha sido enviada a la municipalidad.
             </p>
 
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; max-width: 500px; margin: 24px auto;">
+            <div style="background: #eff6ff; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; max-width: 500px; margin: 24px auto;">
               <h3 style="color: #1e40af; margin: 0 0 12px 0;">¿Qué sigue?</h3>
-              <ol style="text-align: left; color: #3b82f6; margin: 0; padding-left: 20px;">
+              <ol style="text-align: left; color: #2563eb; margin: 0; padding-left: 20px;">
                 <li style="margin-bottom: 8px;">La municipalidad revisará tu solicitud</li>
                 <li style="margin-bottom: 8px;">Te asignarán un Ministro de Fe y confirmarán la fecha</li>
                 <li style="margin-bottom: 8px;">El Ministro de Fe presidirá la asamblea y designará el Directorio Provisorio</li>
@@ -7955,7 +7955,7 @@ Secretaria Municipal`;
       });
       const selectedOption = selectedRadio.closest('.address-option');
       if (selectedOption) {
-        selectedOption.style.borderColor = '#3b82f6';
+        selectedOption.style.borderColor = '#2563eb';
         selectedOption.style.background = '#eff6ff';
       }
 

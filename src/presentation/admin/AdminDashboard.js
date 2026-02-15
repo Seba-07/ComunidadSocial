@@ -234,7 +234,7 @@ class AdminDashboard {
     modal.id = 'timbre-modal';
     modal.innerHTML = `
       <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 16px 16px 0 0;">
           <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="6" width="20" height="12" rx="2"></rect>
@@ -283,7 +283,7 @@ class AdminDashboard {
             </div>
 
             <div style="display: flex; gap: 12px;">
-              <label for="timbre-input" style="flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <label for="timbre-input" style="flex: 1; padding: 12px 16px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 Subir Timbre
               </label>
               <input type="file" id="timbre-input" accept="image/png,image/jpeg" style="display: none;">
@@ -516,7 +516,7 @@ class AdminDashboard {
             <!-- Acta de Constitución -->
             <div class="documento-card" style="padding: 20px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe; cursor: pointer; transition: all 0.2s;" data-doc="acta">
               <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <div style="width: 44px; height: 44px; background: #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 44px; height: 44px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -1522,7 +1522,7 @@ class AdminDashboard {
 
         <div class="review-modal-tabs">
           ${(org.status === ORG_STATUS.MINISTRO_APPROVED || org.status === ORG_STATUS.SENT_TO_REGISTRY) ? `
-            <button class="review-tab active" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
+            <button class="review-tab active" data-tab="registro-civil" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; border: none;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
@@ -3542,8 +3542,8 @@ class AdminDashboard {
         title = 'Esperando Validacion del Ministro de Fe';
         message = 'Ministro de Fe agendado. Se espera que asista a la asamblea constitutiva y valide las firmas de los miembros fundadores.';
         bgColor = '#dbeafe';
-        borderColor = '#3b82f6';
-        iconBg = '#3b82f6';
+        borderColor = '#2563eb';
+        iconBg = '#2563eb';
         break;
 
       case ORG_STATUS.MINISTRO_APPROVED:
@@ -3556,8 +3556,8 @@ class AdminDashboard {
         title = 'Listo para Enviar al Registro Civil';
         message = 'El Ministro de Fe validó la asamblea constitutiva. Revise la información y documentos que serán enviados al Registro Civil para la inscripción oficial de la organización.';
         bgColor = '#dbeafe';
-        borderColor = '#3b82f6';
-        iconBg = '#3b82f6';
+        borderColor = '#2563eb';
+        iconBg = '#2563eb';
         break;
 
       case ORG_STATUS.PENDING_REVIEW:
@@ -3726,7 +3726,7 @@ class AdminDashboard {
 
     return `
       <div class="registro-civil-tab">
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 50%;">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3806,14 +3806,14 @@ class AdminDashboard {
             </button>
             <button class="btn-goto-docs-section" data-section="certificados" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; width: 100%; transition: all 0.2s;">
               <span style="color: #374151; display: flex; align-items: center; gap: 8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
                 Certificados de Antecedentes
               </span>
               <span style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.certificados}</span>
+                <span style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${docsCount.certificados}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </span>
             </button>
@@ -3822,9 +3822,9 @@ class AdminDashboard {
 
         ${org.status === ORG_STATUS.SENT_TO_REGISTRY ? `
           <!-- Estado: Enviada al Registro Civil - Esperando respuesta -->
-          <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-              <div style="background: #3b82f6; padding: 10px; border-radius: 50%;">
+              <div style="background: #2563eb; padding: 10px; border-radius: 50%;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
@@ -3832,7 +3832,7 @@ class AdminDashboard {
               </div>
               <div>
                 <h4 style="margin: 0; color: #1e40af; font-size: 16px;">Esperando Respuesta del Registro Civil</h4>
-                <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;">La solicitud fue enviada. Cuando reciba respuesta, seleccione una opcion:</p>
+                <p style="margin: 4px 0 0; color: #2563eb; font-size: 13px;">La solicitud fue enviada. Cuando reciba respuesta, seleccione una opcion:</p>
               </div>
             </div>
 

@@ -677,7 +677,7 @@ class OrganizationDashboard {
                   </div>
                   <div class="election-participation">${e.participation || 0}% participación</div>
                   <div class="election-actions" style="display: flex; gap: 6px; margin-left: auto;">
-                    <button class="btn-edit-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #60a5fa;">Editar</button>
+                    <button class="btn-edit-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #3b82f6;">Editar</button>
                     <button class="btn-delete-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white; cursor: pointer; color: #ef4444;">Eliminar</button>
                   </div>
                 </div>
@@ -1048,7 +1048,7 @@ class OrganizationDashboard {
             <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">Documentos Subidos</h3>
             <button class="btn-upload-org-doc" id="btn-upload-org-doc" style="
               display: inline-flex; align-items: center; gap: 8px;
-              padding: 10px 20px; background: #3b82f6; color: white;
+              padding: 10px 20px; background: #2563eb; color: white;
               border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
               cursor: pointer; transition: background 0.2s;
             ">
@@ -1142,7 +1142,7 @@ class OrganizationDashboard {
    */
   get DOC_CATEGORIES() {
     return {
-      ACTA_ASAMBLEA: { label: 'Acta de Asamblea', color: '#3b82f6' },
+      ACTA_ASAMBLEA: { label: 'Acta de Asamblea', color: '#2563eb' },
       BALANCE: { label: 'Balance Financiero', color: '#10b981' },
       INFORME: { label: 'Informe', color: '#8b5cf6' },
       CERTIFICADO: { label: 'Certificado', color: '#f59e0b' },
@@ -1291,7 +1291,7 @@ class OrganizationDashboard {
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                <p style="margin: 0; color: #6b7280; font-size: 14px;">Arrastra un archivo aqui o <strong style="color: #3b82f6;">haz clic para seleccionar</strong></p>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">Arrastra un archivo aqui o <strong style="color: #2563eb;">haz clic para seleccionar</strong></p>
                 <p style="margin: 8px 0 0; color: #9ca3af; font-size: 12px;">PDF, Word, Excel, imagenes. Max 10 MB</p>
                 <input type="file" id="upload-file-input" style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" required>
               </div>
@@ -1355,7 +1355,7 @@ class OrganizationDashboard {
     // Drag and drop
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dropZone.style.borderColor = '#3b82f6';
+      dropZone.style.borderColor = '#2563eb';
       dropZone.style.background = '#eff6ff';
     });
     dropZone.addEventListener('dragleave', () => {
@@ -2412,7 +2412,7 @@ class OrganizationDashboard {
     modal.style.display = 'flex';
     modal.innerHTML = `
       <div class="modal-content" style="max-width: 700px;">
-        <div class="modal-header" style="padding: 24px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border-bottom: none;">
+        <div class="modal-header" style="padding: 24px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; border-bottom: none;">
           <h3 style="margin: 0; display: flex; align-items: center; gap: 12px;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
@@ -2481,7 +2481,7 @@ class OrganizationDashboard {
                       height: 20px;
                       margin-top: 4px;
                       cursor: pointer;
-                      accent-color: #3b82f6;
+                      accent-color: #2563eb;
                     ">
                     <div style="flex: 1;">
                       <label for="validate-user-${index}" style="cursor: pointer; display: block; font-weight: 600; font-size: 15px; color: #1f2937; margin-bottom: 4px;">
@@ -2695,7 +2695,7 @@ class OrganizationDashboard {
           }).join('')}
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -2774,7 +2774,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
             </div>
           </form>
         </div>
@@ -2853,7 +2853,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
             </div>
           </form>
         </div>
@@ -2933,7 +2933,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
           </form>
         </div>
@@ -3006,7 +3006,7 @@ class OrganizationDashboard {
     modal.className = 'org-modal-overlay';
     modal.innerHTML = `
       <div class="org-modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white;">
+        <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white;">
           <h3>Resumen de Validacion - Asamblea Constitutiva</h3>
           <button class="modal-close" style="color: white;">&times;</button>
         </div>
@@ -3051,7 +3051,7 @@ class OrganizationDashboard {
           ` : ''}
 
           <div style="text-align: right; margin-top: 24px;">
-            <button class="btn-close-summary" style="padding: 10px 24px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Cerrar</button>
+            <button class="btn-close-summary" style="padding: 10px 24px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Cerrar</button>
           </div>
         </div>
       </div>
@@ -3108,7 +3108,7 @@ class OrganizationDashboard {
           </div>
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
-            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
+            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
           </div>
         </div>
       </div>
@@ -3183,7 +3183,7 @@ class OrganizationDashboard {
           </div>
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
-            <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -3306,7 +3306,7 @@ ${comm.message || 'Sin contenido'}
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
           </form>
         </div>
@@ -3517,7 +3517,7 @@ ${comm.message || 'Sin contenido'}
             </div>
             <div style="text-align: center; padding: 16px; background: #eff6ff; border-radius: 10px;">
               <div style="font-size: 20px; font-weight: 700; color: #1e40af;">$${(finances.balance || 0).toLocaleString('es-CL')}</div>
-              <div style="font-size: 12px; color: #60a5fa; margin-top: 4px;">Saldo Actual</div>
+              <div style="font-size: 12px; color: #3b82f6; margin-top: 4px;">Saldo Actual</div>
             </div>
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -3762,7 +3762,7 @@ ${comm.message || 'Sin contenido'}
 
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
+            <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
           </div>
         </div>
       </div>
@@ -4043,7 +4043,7 @@ ${comm.message || 'Sin contenido'}
             <label style="font-weight: 600; display: block; margin-bottom: 6px;">Participación (%)</label>
             <div style="display: flex; align-items: center; gap: 12px;">
               <input type="range" id="election-participation-edit" min="0" max="100" value="${election.participation || 0}" style="flex: 1;">
-              <span id="participation-display" style="min-width: 40px; font-weight: 700; color: #60a5fa;">${election.participation || 0}%</span>
+              <span id="participation-display" style="min-width: 40px; font-weight: 700; color: #3b82f6;">${election.participation || 0}%</span>
             </div>
           </div>
 
@@ -4054,7 +4054,7 @@ ${comm.message || 'Sin contenido'}
 
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>

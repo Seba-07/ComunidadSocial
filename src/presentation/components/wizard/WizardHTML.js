@@ -87,7 +87,7 @@ function getStep1HTML() {
       <p class="step-description">Complete la información fundamental de su organización comunitaria.</p>
 
       <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #2563eb; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
         <div style="display: flex; gap: 12px; align-items: flex-start;">
           <span style="font-size: 24px;">📋</span>
           <div>
@@ -96,7 +96,7 @@ function getStep1HTML() {
               Aquí ingresará los datos básicos de su organización: nombre, tipo, dirección y contacto.
               Esta información será usada en todos los documentos oficiales y en la solicitud al Registro Civil.
             </p>
-            <p style="margin: 8px 0 0; color: #3b82f6; font-size: 12px;">
+            <p style="margin: 8px 0 0; color: #2563eb; font-size: 12px;">
               💡 <strong>Tip:</strong> El nombre debe ser único y representar claramente a su comunidad.
             </p>
           </div>
@@ -597,12 +597,12 @@ export function getStep5HTML_Comision() {
 
       <!-- SECCIÓN 1: DIRECTORIO PROVISORIO (Dinámico según tipo de organización) -->
       <div class="commission-section mb-4">
-        <div class="commission-section-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 1px solid #3b82f6; border-radius: 12px 12px 0 0; padding: 16px;">
+        <div class="commission-section-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 1px solid #2563eb; border-radius: 12px 12px 0 0; padding: 16px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 28px;">👔</span>
             <div>
               <h4 style="margin: 0; color: #1e40af; font-size: 16px;">Directorio Provisorio</h4>
-              <p style="margin: 4px 0 0; color: #3b82f6; font-size: 13px;" id="directorio-info-text">
+              <p style="margin: 4px 0 0; color: #2563eb; font-size: 13px;" id="directorio-info-text">
                 Estos cargos son solo para constituir la organización. El directorio definitivo se elegirá después.
               </p>
               <p style="margin: 4px 0 0; color: #1e40af; font-size: 12px; font-weight: 600;" id="directorio-required-count">
@@ -612,7 +612,7 @@ export function getStep5HTML_Comision() {
           </div>
         </div>
 
-        <div style="border: 1px solid #3b82f6; border-top: none; border-radius: 0 0 12px 12px; padding: 20px; background: #fff;">
+        <div style="border: 1px solid #2563eb; border-top: none; border-radius: 0 0 12px 12px; padding: 20px; background: #fff;">
           <form id="form-directorio-provisorio">
             <!-- Los cargos del directorio se generan dinámicamente según el tipo de organización -->
             <div id="directorio-cargos-container">
@@ -927,7 +927,7 @@ function getAutoDocumentItemHTML(type, name, description, required) {
       <div style="display: flex; gap: 8px; flex-shrink: 0;">
         <button type="button" class="btn-preview" data-doc-type="${type}" onclick="window.wizardController && window.wizardController.showDocumentPreview('${type}')" style="
           padding: 8px 14px;
-          background: #3b82f6;
+          background: #2563eb;
           color: white;
           border: none;
           border-radius: 6px;
@@ -1025,13 +1025,13 @@ export function getStep6HTML_Documentos() {
         <div style="
           width: 64px;
           height: 64px;
-          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin: 0 auto 16px;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         ">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -1089,7 +1089,7 @@ export function getStep6HTML_Documentos() {
         <span style="font-size: 20px;">📄</span>
         <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #374151;">Documentos Generados</h4>
         <span id="documents-count-badge" style="
-          background: #3b82f6;
+          background: #2563eb;
           color: white;
           padding: 4px 10px;
           border-radius: 20px;

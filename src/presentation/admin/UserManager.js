@@ -8,7 +8,7 @@ import { showToast } from '../../app.js';
 
 // Colores por rol
 const ROLE_COLORS = {
-  ORGANIZADOR: '#3b82f6',
+  ORGANIZADOR: '#2563eb',
   MUNICIPALIDAD: '#8b5cf6',
   MINISTRO_FE: '#f59e0b',
   MIEMBRO: '#22c55e'
@@ -45,7 +45,7 @@ export class UserManager {
           </div>
           <button type="button" id="um-new-user-btn" style="
             display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px; background: #3b82f6; color: white;
+            padding: 10px 20px; background: #2563eb; color: white;
             border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
             cursor: pointer; transition: background 0.2s;
           ">
@@ -220,7 +220,7 @@ export class UserManager {
                 cursor: pointer; transition: background 0.2s;
               ">Cancelar</button>
               <button type="submit" id="um-save-btn" style="
-                padding: 10px 20px; background: #3b82f6; color: white;
+                padding: 10px 20px; background: #2563eb; color: white;
                 border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
                 cursor: pointer; transition: background 0.2s;
               ">Guardar</button>
@@ -460,7 +460,7 @@ export class UserManager {
             </button>
             <button type="button" class="um-edit-btn" data-id="${id}" title="Editar" style="
               padding: 6px; background: #eff6ff; border: none; border-radius: 6px;
-              cursor: pointer; color: #3b82f6; transition: opacity 0.2s;
+              cursor: pointer; color: #2563eb; transition: opacity 0.2s;
             ">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -748,7 +748,7 @@ export class UserManager {
     // Hover effect on new user button
     if (newBtn) {
       newBtn.addEventListener('mouseover', () => { newBtn.style.background = '#2563eb'; });
-      newBtn.addEventListener('mouseout', () => { newBtn.style.background = '#3b82f6'; });
+      newBtn.addEventListener('mouseout', () => { newBtn.style.background = '#2563eb'; });
     }
   }
 }

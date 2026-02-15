@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#1e3a8a">
     <meta name="description" content="Plataforma de Participación Ciudadana y Formación Educativa - Municipalidad de Renca">
     <title>Comunidad Renca - Participación Ciudadana</title>
     <link rel="manifest" href="/manifest.json">
@@ -48,7 +48,7 @@
             width: 40px;
             height: 40px;
             border: 3px solid #e2e8f0;
-            border-top-color: #3b82f6;
+            border-top-color: #2563eb;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -153,11 +153,43 @@
                 </button>
             </div>
             <ul class="nav-list">
-                <li><a href="#" data-page="home" class="nav-link active">🏠 Inicio</a></li>
-                <li><a href="#" data-page="guia-constitucion" class="nav-link">📋 Guía de Constitución</a></li>
-                <li><a href="#" data-page="biblioteca" class="nav-link">📚 Biblioteca de Documentos</a></li>
-                <li><a href="#" data-page="noticias" class="nav-link">📰 Noticias</a></li>
+                <li><a href="#" data-page="home" class="nav-link active">
+                    <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span class="nav-text">Inicio</span>
+                </a></li>
+                <li><a href="#" data-page="guia-constitucion" class="nav-link">
+                    <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span class="nav-text">Guia de Constitucion</span>
+                </a></li>
+                <li><a href="#" data-page="biblioteca" class="nav-link">
+                    <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span class="nav-text">Biblioteca de Documentos</span>
+                </a></li>
+                <li><a href="#" data-page="noticias" class="nav-link">
+                    <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path>
+                        <path d="M21 13v6a2 2 0 0 1-2 2"></path>
+                        <path d="M21 6h-8a2 2 0 0 0-2 2v7"></path>
+                    </svg>
+                    <span class="nav-text">Noticias</span>
+                </a></li>
             </ul>
+            <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Colapsar menú">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
         </nav>
 
         <!-- Main Content -->

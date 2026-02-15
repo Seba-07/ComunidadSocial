@@ -187,7 +187,7 @@ const DROPDOWN_STYLES = `
   }
 
   .search-global-item:hover .search-global-item-action {
-    color: #3b82f6;
+    color: #2563eb;
   }
 
   .search-global-empty {
@@ -225,7 +225,7 @@ const DROPDOWN_STYLES = `
     width: 18px;
     height: 18px;
     border: 2px solid #e2e8f0;
-    border-top: 2px solid #3b82f6;
+    border-top: 2px solid #2563eb;
     border-radius: 50%;
     animation: search-spin 0.6s linear infinite;
     margin-right: 8px;

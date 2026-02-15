@@ -7,8 +7,8 @@
     /* ============================================
        PALETA PRIMARIA - Azul Moderno
        ============================================ */
-    --renca-orange: #3b82f6;
-    --renca-orange-light: #60a5fa;
+    --renca-orange: #2563eb;
+    --renca-orange-light: #3b82f6;
     --renca-orange-dark: #2563eb;
 
     --renca-gold: #f59e0b;
@@ -23,12 +23,12 @@
     --renca-teal-light: #34d399;
     --renca-teal-dark: #059669;
 
-    --renca-sky: #60a5fa;
+    --renca-sky: #3b82f6;
     --renca-sky-light: #93c5fd;
-    --renca-sky-dark: #3b82f6;
+    --renca-sky-dark: #2563eb;
 
-    --renca-blue: #3b82f6;
-    --renca-blue-light: #60a5fa;
+    --renca-blue: #2563eb;
+    --renca-blue-light: #3b82f6;
     --renca-blue-dark: #2563eb;
 
     /* ============================================
@@ -46,7 +46,7 @@
     --color-error-light: #fee2e2;
     --color-error-dark: #dc2626;
 
-    --color-info: #3b82f6;
+    --color-info: #2563eb;
 
     /* ============================================
        ESCALA DE GRISES - Slate
@@ -119,8 +119,8 @@
     --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
 
     /* Sombras con color */
-    --shadow-blue: 0 4px 14px rgba(59, 130, 246, 0.25);
-    --shadow-orange: 0 4px 14px rgba(59, 130, 246, 0.25);
+    --shadow-blue: 0 4px 14px rgba(37, 99, 235, 0.25);
+    --shadow-orange: 0 4px 14px rgba(37, 99, 235, 0.25);
     --shadow-teal: 0 4px 14px rgba(16, 185, 129, 0.25);
     --shadow-green: 0 4px 14px rgba(16, 185, 129, 0.25);
 
@@ -274,7 +274,7 @@
 
 .btn-schedule-access:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md), 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(37, 99, 235, 0.3);
 }
 
 .btn-schedule-access.btn-uv {
@@ -346,7 +346,7 @@
 /* Primary - Azul */
 .btn-primary,
 .renca-btn--primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     box-shadow: var(--shadow-sm), var(--shadow-blue);
 }
@@ -354,7 +354,7 @@
 .btn-primary:hover:not(:disabled),
 .renca-btn--primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md), 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(37, 99, 235, 0.3);
 }
 
 /* Secondary - Emerald */
@@ -517,13 +517,13 @@
 }
 
 .card-header--blue {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     border-bottom: none;
 }
 
 .card-header--orange {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     border-bottom: none;
 }
@@ -565,11 +565,11 @@
 
 /* Stat Cards */
 .stat-card--blue {
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #2563eb;
 }
 
 .stat-card--orange {
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #2563eb;
 }
 
 .stat-card--teal {
@@ -614,7 +614,7 @@
    MODAL HEADER GRADIENT + BODY PADDED
    ============================================ */
 .modal-header-gradient {
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    background: linear-gradient(135deg, #1e40af, #2563eb);
     padding: 20px 24px;
     color: white;
     display: flex;
@@ -650,7 +650,7 @@
 .notice-card--info {
     background: #eff6ff;
     border: 1px solid #bfdbfe;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #2563eb;
     border-radius: var(--radius-md);
     padding: 16px;
 }
@@ -753,7 +753,7 @@
 
 .draft-progress .draft-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
     border-radius: var(--radius-full);
     transition: width 0.3s ease;
 }
@@ -814,7 +814,7 @@
 .modal-header,
 .renca-modal__header {
     padding: var(--space-6);
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -823,7 +823,7 @@
 }
 
 .modal-header--orange {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
 }
 
 .modal-header--teal {
@@ -919,8 +919,8 @@
 .form-input:focus,
 .form-select:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .form-group input::placeholder {
@@ -978,7 +978,7 @@
 .tab-btn.active,
 .renca-tab--active {
     background: var(--surface);
-    color: #3b82f6;
+    color: #2563eb;
     box-shadow: var(--shadow-sm);
 }
 
@@ -1000,13 +1000,13 @@
 
 .badge--blue,
 .renca-badge--blue {
-    background: rgba(59, 130, 246, 0.12);
+    background: rgba(37, 99, 235, 0.12);
     color: #2563eb;
 }
 
 .badge--orange,
 .renca-badge--orange {
-    background: rgba(59, 130, 246, 0.12);
+    background: rgba(37, 99, 235, 0.12);
     color: #2563eb;
 }
 
@@ -1067,15 +1067,15 @@
 .filter-chip:hover,
 .admin-filter-chip:hover,
 .renca-chip:hover {
-    border-color: #3b82f6;
-    color: #3b82f6;
+    border-color: #2563eb;
+    color: #2563eb;
 }
 
 .filter-chip.active,
 .admin-filter-chip.active,
 .renca-chip--active {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: #2563eb;
+    border-color: #2563eb;
     color: white;
 }
 
@@ -1094,8 +1094,8 @@
 
 .alert--info,
 .renca-alert--info {
-    background: rgba(59, 130, 246, 0.08);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.2);
     color: #1e40af;
 }
 
@@ -1211,19 +1211,19 @@
 .bottom-nav-item:hover,
 .nav-item:hover,
 .renca-bottom-nav__item:hover {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.06);
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.06);
 }
 
 .bottom-nav-item.active,
 .nav-item.active,
 .renca-bottom-nav__item--active {
-    color: #3b82f6;
+    color: #2563eb;
 }
 
 .bottom-nav-item.active .nav-icon,
 .nav-item.active .nav-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     border-radius: var(--radius-md);
     padding: var(--space-2);
@@ -1269,13 +1269,13 @@
 .progress-bar,
 .renca-progress__bar {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     border-radius: var(--radius-full);
     transition: width var(--transition-slow);
 }
 
 .progress-bar--orange {
-    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
 }
 
 .progress-bar--teal {
@@ -1294,7 +1294,7 @@
     width: 32px;
     height: 32px;
     border: 3px solid var(--gray-200);
-    border-top-color: #3b82f6;
+    border-top-color: #2563eb;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -1383,8 +1383,8 @@
 .text-xl { font-size: var(--font-size-xl); }
 
 .text-muted { color: var(--gray-500); }
-.text-blue { color: #3b82f6; }
-.text-orange { color: #3b82f6; }
+.text-blue { color: #2563eb; }
+.text-orange { color: #2563eb; }
 .text-teal { color: #10b981; }
 .text-green { color: #10b981; }
 .text-success { color: var(--color-success); }
@@ -1471,7 +1471,7 @@
    FOCUS VISIBLE - ACCESIBILIDAD MEJORADA
    ============================================ */
 :focus-visible {
-    outline: 3px solid #3b82f6;
+    outline: 3px solid #2563eb;
     outline-offset: 2px;
 }
 
@@ -1481,23 +1481,23 @@ button:focus-visible,
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
 [role="button"]:focus-visible {
-    outline: 3px solid #3b82f6;
+    outline: 3px solid #2563eb;
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
 }
 
 /* Focus para inputs */
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 3px solid #3b82f6;
+    outline: 3px solid #2563eb;
     outline-offset: 0;
-    border-color: #3b82f6;
+    border-color: #2563eb;
 }
 
 /* Focus para enlaces */
 a:focus-visible {
-    outline: 3px solid #3b82f6;
+    outline: 3px solid #2563eb;
     outline-offset: 2px;
     border-radius: 2px;
 }
@@ -1511,9 +1511,9 @@ a:focus:not(:focus-visible) {
 /* Indicador visual de foco para elementos interactivos */
 .nav-link:focus-visible,
 .nav-item:focus-visible {
-    outline: 3px solid #3b82f6;
+    outline: 3px solid #2563eb;
     outline-offset: 2px;
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(37, 99, 235, 0.08);
 }
 
 /* ============================================

@@ -10,7 +10,7 @@ import { showToast } from '../../app.js';
 
 // Event type configuration
 const EVENT_TYPES = {
-  ASSIGNMENT: { color: '#3b82f6', label: 'Asignacion Ministro', dotClass: 'assignment' },
+  ASSIGNMENT: { color: '#2563eb', label: 'Asignacion Ministro', dotClass: 'assignment' },
   DEADLINE: { color: '#ef4444', label: 'Plazo Legal', dotClass: 'deadline' },
   DEADLINE_WARNING: { color: '#f97316', label: 'Plazo Legal (Proximo)', dotClass: 'deadline-warning' },
   ASSEMBLY: { color: '#22c55e', label: 'Asamblea/Eleccion', dotClass: 'assembly' }
@@ -72,7 +72,7 @@ export class CalendarManager {
               <div style="display: flex; align-items: center; gap: 12px;">
                 <h3 id="cm-month-year" style="margin: 0; font-size: 18px; font-weight: 600; color: #1e293b;"></h3>
                 <button type="button" id="cm-today-btn" style="
-                  padding: 6px 12px; background: #3b82f6; color: white;
+                  padding: 6px 12px; background: #2563eb; color: white;
                   border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
                   cursor: pointer; transition: background 0.2s;
                 ">Hoy</button>
@@ -333,7 +333,7 @@ export class CalendarManager {
         grid.querySelectorAll('[data-date]').forEach(c => {
           c.style.outline = 'none';
         });
-        cell.style.outline = '2px solid #3b82f6';
+        cell.style.outline = '2px solid #2563eb';
         cell.style.outlineOffset = '-2px';
         this.selectedDate = date;
       });
@@ -356,9 +356,9 @@ export class CalendarManager {
     let borderStyle = 'none';
     if (isToday) {
       bgColor = '#eff6ff';
-      borderStyle = '2px solid #3b82f6';
+      borderStyle = '2px solid #2563eb';
     } else if (isSelected) {
-      borderStyle = '2px solid #3b82f6';
+      borderStyle = '2px solid #2563eb';
     }
 
     let dotsHtml = '';
@@ -392,12 +392,12 @@ export class CalendarManager {
         border: ${borderStyle};
         transition: background 0.15s;
         display: flex; flex-direction: column;
-      " onmouseover="if(!this.style.border.includes('#3b82f6'))this.style.background='#f8fafc'" onmouseout="if(!this.style.border.includes('#3b82f6'))this.style.background='${bgColor}'">
+      " onmouseover="if(!this.style.border.includes('#2563eb'))this.style.background='#f8fafc'" onmouseout="if(!this.style.border.includes('#2563eb'))this.style.background='${bgColor}'">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <span style="
             font-size: 13px; font-weight: ${isToday ? '700' : '500'};
-            color: ${isToday ? '#3b82f6' : '#374151'};
-            ${isToday ? 'background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;' : ''}
+            color: ${isToday ? '#2563eb' : '#374151'};
+            ${isToday ? 'background: #2563eb; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;' : ''}
           ">${dayNum}</span>
           ${dotsHtml}
         </div>
@@ -495,7 +495,7 @@ export class CalendarManager {
         <div style="
           display: inline-flex; align-items: center; gap: 6px;
           margin-top: 8px; padding: 4px 10px; background: #eff6ff;
-          border-radius: 20px; font-size: 12px; font-weight: 600; color: #3b82f6;
+          border-radius: 20px; font-size: 12px; font-weight: 600; color: #2563eb;
         ">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -515,7 +515,7 @@ export class CalendarManager {
   _getStatusColor(status) {
     const colors = {
       pending: '#f59e0b',
-      confirmed: '#3b82f6',
+      confirmed: '#2563eb',
       in_progress: '#8b5cf6',
       completed: '#22c55e',
       cancelled: '#ef4444',
@@ -590,7 +590,7 @@ export class CalendarManager {
     if (todayBtn) {
       todayBtn.addEventListener('click', () => this.goToday());
       todayBtn.addEventListener('mouseover', () => { todayBtn.style.background = '#2563eb'; });
-      todayBtn.addEventListener('mouseout', () => { todayBtn.style.background = '#3b82f6'; });
+      todayBtn.addEventListener('mouseout', () => { todayBtn.style.background = '#2563eb'; });
     }
   }
 }

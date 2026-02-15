@@ -163,7 +163,7 @@ class LegalReportService {
   drawHeader(doc, title, subtitle = null) {
     // Barra superior de colores (cyan, verde, azul, naranja)
     const barHeight = 8;
-    const barColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
+    const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
     const barWidth = PAGE_WIDTH / 4;
 
     barColors.forEach((color, i) => {
@@ -217,7 +217,7 @@ class LegalReportService {
 
     // Barra inferior de colores
     const barHeight = 8;
-    const barColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
+    const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
     const barWidth = PAGE_WIDTH / 4;
 
     barColors.forEach((color, i) => {
@@ -1035,7 +1035,7 @@ class LegalReportService {
       'critical': '#dc2626',
       'high': '#ea580c',
       'medium': '#f59e0b',
-      'low': '#3b82f6'
+      'low': '#2563eb'
     };
     return colors[priority] || COLORS.text;
   }
