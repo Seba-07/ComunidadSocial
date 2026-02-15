@@ -726,6 +726,16 @@ window.addEventListener('offline', () => {
 });
 
 // ========================================
+// Centralizar lógica al navegar entre páginas
+// ========================================
+window.addEventListener('page-navigate', (e) => {
+  const { page } = e.detail;
+  if (page === 'profile') {
+    loadProfileData();
+  }
+});
+
+// ========================================
 // Profile Page Functions
 // ========================================
 

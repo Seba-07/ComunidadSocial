@@ -86,6 +86,8 @@ class AppState {
   navigateTo(page) {
     this.currentPage = page;
     this.updateUI();
+    // Emitir evento para que main.js ejecute lógica específica de página
+    window.dispatchEvent(new CustomEvent('page-navigate', { detail: { page } }));
   }
 
   /**
