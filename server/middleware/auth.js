@@ -17,15 +17,23 @@ if (!JWT_SECRET) {
 }
 const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
 
+// Detectar entorno desplegado (Railway, etc.) independiente de NODE_ENV
+const isDeployed = process.env.NODE_ENV === 'production' ||
+                   !!process.env.RAILWAY_ENVIRONMENT ||
+                   !!process.env.RAILWAY_PROJECT_ID;
+
 // Opciones para cookies HttpOnly
-// sameSite: 'none' + secure: true es necesario para cross-origin (Vercel frontend + Railway backend)
+// Cross-origin (Vercel frontend + Railway backend) requiere sameSite: 'none' + secure: true
+// sameSite: 'lax' bloquea cookies en fetch() cross-origin
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: isDeployed,
+  sameSite: isDeployed ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días (mismo que JWT)
   path: '/'
 };
+
+console.log(`🍪 Cookie config: secure=${isDeployed}, sameSite=${isDeployed ? 'none' : 'lax'} (NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${!!process.env.RAILWAY_ENVIRONMENT})`);
 
 export const authenticate = async (req, res, next) => {
   try {
