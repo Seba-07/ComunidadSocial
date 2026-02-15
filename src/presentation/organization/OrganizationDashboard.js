@@ -574,7 +574,10 @@ class OrganizationDashboard {
                     <span class="asamblea-title">${asamblea.title || 'Sin título'}</span>
                   </div>
                   <div class="asamblea-attendance">${asamblea.attendance || 0} asistentes</div>
-                  <button class="btn-view-acta" data-id="${asamblea.id}">Ver Acta</button>
+                  <div style="display: flex; gap: 6px;">
+                    <button class="btn-view-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer;">Ver</button>
+                    <button class="btn-delete-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">Eliminar</button>
+                  </div>
                 </div>
               `).join('')}
             </div>
@@ -666,13 +669,17 @@ class OrganizationDashboard {
           ${elections.length > 0 ? `
             <div class="elections-list">
               ${elections.map(e => `
-                <div class="election-item">
+                <div class="election-item" data-id="${e.id}">
                   <div class="election-date">${new Date(e.date).toLocaleDateString('es-CL')}</div>
                   <div class="election-info">
                     <span class="election-type">${e.type === 'total' ? 'Renovación Total' : 'Renovación Parcial'}</span>
-                    <span class="election-result">${e.result || 'Sin resultado'}</span>
+                    <span class="election-result ${e.result === 'Pendiente' ? 'pending' : ''}">${e.result || 'Sin resultado'}</span>
                   </div>
                   <div class="election-participation">${e.participation || 0}% participación</div>
+                  <div class="election-actions" style="display: flex; gap: 6px; margin-left: auto;">
+                    <button class="btn-edit-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #2D8ECB;">Editar</button>
+                    <button class="btn-delete-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white; cursor: pointer; color: #ef4444;">Eliminar</button>
+                  </div>
                 </div>
               `).join('')}
             </div>
@@ -798,7 +805,8 @@ class OrganizationDashboard {
                   <div class="comm-status ${c.status || 'sent'}">
                     ${c.status === 'sent' ? '✓ Enviado' : c.status === 'draft' ? '📝 Borrador' : '✓ Enviado'}
                   </div>
-                  <button class="btn-view-comm" data-id="${c.id}">Ver</button>
+                  <button class="btn-view-comm" data-id="${c.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer;">Ver</button>
+                  <button class="btn-delete-comm" data-id="${c.id}" style="padding: 6px 10px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">×</button>
                 </div>
               `).join('')}
             </div>
@@ -864,6 +872,7 @@ class OrganizationDashboard {
                     <span class="tx-date">${new Date(tx.date).toLocaleDateString('es-CL')}</span>
                   </div>
                   <span class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}$${tx.amount.toLocaleString('es-CL')}</span>
+                  <button class="btn-delete-tx" data-id="${tx.id}" style="padding: 4px 8px; font-size: 11px; border: 1px solid #fecaca; border-radius: 4px; background: white; color: #ef4444; cursor: pointer; margin-left: 8px;" title="Eliminar">×</button>
                 </div>
               `).join('')}
             </div>
@@ -923,7 +932,10 @@ class OrganizationDashboard {
               </div>
               <div class="proyecto-footer">
                 <span class="proyecto-budget">$${(proyecto.budget || 0).toLocaleString('es-CL')}</span>
-                <button class="btn-view-project" data-id="${proyecto.id}">Ver detalles</button>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn-view-project" data-id="${proyecto.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer;">Ver</button>
+                  <button class="btn-delete-project" data-id="${proyecto.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">Eliminar</button>
+                </div>
               </div>
             </div>
           `).join('') : `
@@ -1089,7 +1101,7 @@ class OrganizationDashboard {
 
         <div class="actividades-grid">
           ${actividades.length > 0 ? actividades.map(act => `
-            <div class="actividad-card">
+            <div class="actividad-card" data-category="${act.category || 'general'}" data-id="${act.id}">
               <div class="actividad-date">
                 <span class="day">${new Date(act.date).getDate()}</span>
                 <span class="month">${new Date(act.date).toLocaleDateString('es-CL', { month: 'short' })}</span>
@@ -1101,6 +1113,10 @@ class OrganizationDashboard {
                 <div class="actividad-footer">
                   <span class="actividad-time">🕐 ${act.time || '--:--'}</span>
                   <span class="actividad-location">📍 ${act.location || 'Por definir'}</span>
+                </div>
+                <div class="actividad-actions" style="margin-top: 8px; display: flex; gap: 8px;">
+                  <button class="btn-edit-activity" data-id="${act.id}" style="padding: 4px 12px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer;">Editar</button>
+                  <button class="btn-delete-activity" data-id="${act.id}" style="padding: 4px 12px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">Eliminar</button>
                 </div>
               </div>
             </div>
@@ -1603,10 +1619,12 @@ class OrganizationDashboard {
           case 'new-assembly':
             this.currentTab = 'asambleas';
             this.refreshContent(overlay);
+            setTimeout(() => this.openNewAssemblyModal(overlay), 100);
             break;
           case 'new-project':
             this.currentTab = 'proyectos';
             this.refreshContent(overlay);
+            setTimeout(() => this.openNewProjectModal(overlay), 100);
             break;
           case 'certificate':
             this.currentTab = 'documentos';
@@ -1656,6 +1674,16 @@ class OrganizationDashboard {
       btnUrgentElection.addEventListener('click', () => this.openNewElectionModal(overlay));
     }
 
+    // Editar eleccion
+    overlay.querySelectorAll('.btn-edit-election').forEach(btn => {
+      btn.addEventListener('click', () => this.showElectionDetail(btn.dataset.id, overlay));
+    });
+
+    // Eliminar eleccion
+    overlay.querySelectorAll('.btn-delete-election').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItem('elections', btn.dataset.id, 'elección', overlay));
+    });
+
     // Nueva comunicacion
     const btnNewComm = overlay.querySelector('#btn-new-communication') || overlay.querySelector('#btn-first-communication');
     if (btnNewComm) {
@@ -1691,7 +1719,7 @@ class OrganizationDashboard {
         overlay.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const filter = btn.dataset.filter;
-        overlay.querySelectorAll('.activity-card').forEach(card => {
+        overlay.querySelectorAll('.actividad-card').forEach(card => {
           if (filter === 'all' || card.dataset.category === filter) {
             card.style.display = '';
           } else {
@@ -1711,6 +1739,91 @@ class OrganizationDashboard {
     const btnRequestDissolution = overlay.querySelector('#btn-request-dissolution');
     if (btnRequestDissolution) {
       btnRequestDissolution.addEventListener('click', () => this.openDissolutionModal(overlay));
+    }
+
+    // Ver detalle de asamblea
+    overlay.querySelectorAll('.btn-view-assembly').forEach(btn => {
+      btn.addEventListener('click', () => this.showAssemblyDetail(btn.dataset.id, overlay));
+    });
+
+    // Eliminar asamblea
+    overlay.querySelectorAll('.btn-delete-assembly').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItem('assemblies', btn.dataset.id, 'asamblea', overlay));
+    });
+
+    // Ver detalle de proyecto
+    overlay.querySelectorAll('.btn-view-project').forEach(btn => {
+      btn.addEventListener('click', () => this.showProjectDetail(btn.dataset.id, overlay));
+    });
+
+    // Eliminar proyecto
+    overlay.querySelectorAll('.btn-delete-project').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItem('projects', btn.dataset.id, 'proyecto', overlay));
+    });
+
+    // Ver comunicación
+    overlay.querySelectorAll('.btn-view-comm').forEach(btn => {
+      btn.addEventListener('click', () => this.showCommunicationDetail(btn.dataset.id, overlay));
+    });
+
+    // Eliminar comunicación
+    overlay.querySelectorAll('.btn-delete-comm').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItem('communications', btn.dataset.id, 'comunicación', overlay));
+    });
+
+    // Eliminar transacción
+    overlay.querySelectorAll('.btn-delete-tx').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteTransaction(btn.dataset.id, overlay));
+    });
+
+    // Editar actividad
+    overlay.querySelectorAll('.btn-edit-activity').forEach(btn => {
+      btn.addEventListener('click', () => this.showActivityDetail(btn.dataset.id, overlay));
+    });
+
+    // Eliminar actividad
+    overlay.querySelectorAll('.btn-delete-activity').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItem('activities', btn.dataset.id, 'actividad', overlay));
+    });
+
+    // Generar certificados
+    const btnCertResidencia = overlay.querySelector('#btn-cert-residencia');
+    if (btnCertResidencia) {
+      btnCertResidencia.addEventListener('click', () => this.generateCertificate('residencia'));
+    }
+    const btnCertSocio = overlay.querySelector('#btn-cert-socio');
+    if (btnCertSocio) {
+      btnCertSocio.addEventListener('click', () => this.generateCertificate('socio'));
+    }
+
+    // Ver balance anual
+    const btnAnnualBalance = overlay.querySelector('#btn-annual-balance');
+    if (btnAnnualBalance) {
+      btnAnnualBalance.addEventListener('click', () => this.showAnnualBalance(overlay));
+    }
+
+    // Exportar finanzas
+    const btnExportFinances = overlay.querySelector('#btn-export-finances');
+    if (btnExportFinances) {
+      btnExportFinances.addEventListener('click', () => this.exportFinancesCSV());
+    }
+
+    // Botón asignar en directorio (slots vacíos)
+    overlay.querySelectorAll('.btn-assign').forEach(btn => {
+      btn.addEventListener('click', () => this.openEditDirectorioModal(overlay));
+    });
+
+    // Ver documentos legales
+    overlay.querySelectorAll('.btn-view-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showToast('Los documentos legales se encuentran en la sección "Documentos Subidos" más abajo', 'info');
+      });
+    });
+
+    // Upload doc from first button too
+    const btnUploadDoc = overlay.querySelector('#btn-upload-doc');
+    if (btnUploadDoc) {
+      btnUploadDoc.addEventListener('click', () => this.showUploadModal(overlay));
     }
 
     // Subir documento de organizacion
@@ -2148,28 +2261,25 @@ class OrganizationDashboard {
 
     switch (alertType) {
       case ALERT_TYPES.DIRECTORIO_DEFINITIVO:
-        showToast('Funcionalidad en desarrollo: Registrar Directorio Definitivo', 'info');
-        // TODO: Abrir modal para registrar directorio definitivo
+        this.openDefinitiveDirectorioModal(parentOverlay);
         break;
 
       case ALERT_TYPES.REGISTRO_SOCIOS:
-        showToast('Funcionalidad en desarrollo: Actualizar Registro de Socios', 'info');
-        // TODO: Abrir modal para subir registro actualizado
+        this.openRegistroSociosModal(parentOverlay);
         break;
 
       case ALERT_TYPES.COMISION_REVISORA:
-        showToast('Funcionalidad en desarrollo: Elegir Comisión Revisora de Cuentas', 'info');
-        // TODO: Abrir modal para designar comisión revisora
+        this.openComisionRevisoraModal(parentOverlay);
         break;
 
       case ALERT_TYPES.TRICEL_DESIGNATION:
-        showToast('Funcionalidad en desarrollo: Designar TRICEL', 'info');
-        // TODO: Abrir modal para designar TRICEL
+        this.openTricelDesignationModal(parentOverlay);
         break;
 
       case ALERT_TYPES.DIRECTORIO_RENEWAL:
-        showToast('Funcionalidad en desarrollo: Renovar Directorio', 'info');
-        // TODO: Iniciar proceso electoral
+        this.currentTab = 'elecciones';
+        this.refreshContent(parentOverlay);
+        setTimeout(() => this.openNewElectionModal(parentOverlay), 100);
         break;
 
       default:
@@ -2951,6 +3061,1030 @@ class OrganizationDashboard {
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-close-summary').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  }
+
+  // ============ DETALLE Y EDICIÓN ============
+
+  /**
+   * Modal detalle de asamblea con edición de asistencia
+   */
+  showAssemblyDetail(assemblyId, parentOverlay) {
+    const assembly = (this.currentOrg.assemblies || []).find(a => a.id === assemblyId);
+    if (!assembly) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 550px;">
+        <div class="org-modal-header">
+          <h3>${assembly.title || 'Detalle de Asamblea'}</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="display: grid; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600;">Tipo</span>
+              <span>${assembly.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600;">Fecha</span>
+              <span>${new Date(assembly.date).toLocaleDateString('es-CL')}</span>
+            </div>
+            ${assembly.time ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600;">Hora</span>
+              <span>${assembly.time}</span>
+            </div>` : ''}
+            ${assembly.description ? `<div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600; display: block; margin-bottom: 4px;">Descripción</span>
+              <p style="margin: 0; color: #4b5563;">${assembly.description}</p>
+            </div>` : ''}
+          </div>
+          <div style="margin-top: 20px;">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Asistencia</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="number" id="edit-attendance" value="${assembly.attendance || 0}" min="0" style="width: 100px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+              <span style="color: #6b7280;">asistentes</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
+            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-save-attendance').addEventListener('click', async () => {
+      const attendance = parseInt(modal.querySelector('#edit-attendance').value) || 0;
+      const idx = this.currentOrg.assemblies.findIndex(a => a.id === assemblyId);
+      if (idx !== -1) {
+        this.currentOrg.assemblies[idx].attendance = attendance;
+        try {
+          await organizationsService.update(this.currentOrg.id, { assemblies: this.currentOrg.assemblies });
+          showToast('Asistencia actualizada', 'success');
+          modal.remove();
+          this.refreshContent(parentOverlay);
+        } catch (err) {
+          showToast('Error al guardar', 'error');
+        }
+      }
+    });
+  }
+
+  /**
+   * Modal detalle de proyecto con edición de progreso y estado
+   */
+  showProjectDetail(projectId, parentOverlay) {
+    const project = (this.currentOrg.projects || []).find(p => p.id === projectId);
+    if (!project) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>${project.title}</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="display: grid; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600;">Categoría</span>
+              <span>${project.category || 'General'}</span>
+            </div>
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600; display: block; margin-bottom: 4px;">Descripción</span>
+              <p style="margin: 0; color: #4b5563;">${project.description || 'Sin descripción'}</p>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600;">Presupuesto</span>
+              <span>$${(project.budget || 0).toLocaleString('es-CL')}</span>
+            </div>
+          </div>
+          <div style="margin-top: 20px; display: grid; gap: 16px;">
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Estado</label>
+              <select id="edit-project-status" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+                <option value="planning" ${project.status === 'planning' ? 'selected' : ''}>En Planificación</option>
+                <option value="in_progress" ${project.status === 'in_progress' ? 'selected' : ''}>En Ejecución</option>
+                <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>Pausado</option>
+                <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>Completado</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Progreso: <span id="progress-value">${project.progress || 0}</span>%</label>
+              <input type="range" id="edit-project-progress" min="0" max="100" value="${project.progress || 0}" style="width: 100%;">
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
+            <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    const rangeInput = modal.querySelector('#edit-project-progress');
+    const progressLabel = modal.querySelector('#progress-value');
+    rangeInput.addEventListener('input', () => { progressLabel.textContent = rangeInput.value; });
+
+    modal.querySelector('.btn-save-project').addEventListener('click', async () => {
+      const idx = this.currentOrg.projects.findIndex(p => p.id === projectId);
+      if (idx !== -1) {
+        this.currentOrg.projects[idx].status = modal.querySelector('#edit-project-status').value;
+        this.currentOrg.projects[idx].progress = parseInt(rangeInput.value);
+        try {
+          await organizationsService.update(this.currentOrg.id, { projects: this.currentOrg.projects });
+          showToast('Proyecto actualizado', 'success');
+          modal.remove();
+          this.refreshContent(parentOverlay);
+        } catch (err) {
+          showToast('Error al guardar', 'error');
+        }
+      }
+    });
+  }
+
+  /**
+   * Modal detalle de comunicación
+   */
+  showCommunicationDetail(commId, parentOverlay) {
+    const comm = (this.currentOrg.communications || []).find(c => c.id === commId);
+    if (!comm) return;
+
+    const typeLabels = { general: 'General', asamblea: 'Citación a Asamblea', actividad: 'Invitación a Actividad', informe: 'Informe de Gestión', urgente: 'Aviso Urgente' };
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>${comm.subject}</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: #6b7280;">
+            <span>${new Date(comm.date).toLocaleDateString('es-CL')}</span>
+            <span>${typeLabels[comm.type] || comm.type}</span>
+            <span>${comm.recipients || 0} destinatarios</span>
+            <span style="color: ${comm.status === 'sent' ? '#10b981' : '#f59e0b'};">${comm.status === 'sent' ? 'Enviado' : 'Borrador'}</span>
+          </div>
+          <div style="padding: 16px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; color: #1f2937; line-height: 1.6;">
+${comm.message || 'Sin contenido'}
+          </div>
+          <div style="text-align: right; margin-top: 20px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  }
+
+  /**
+   * Modal detalle de actividad con edición
+   */
+  showActivityDetail(activityId, parentOverlay) {
+    const act = (this.currentOrg.activities || []).find(a => a.id === activityId);
+    if (!act) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 550px;">
+        <div class="org-modal-header">
+          <h3>Editar Actividad</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <form id="form-edit-activity">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Nombre *</label>
+              <input type="text" id="edit-act-title" value="${act.title || ''}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Categoría</label>
+              <select id="edit-act-category" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+                <option value="deportiva" ${act.category === 'deportiva' ? 'selected' : ''}>Deportiva</option>
+                <option value="cultural" ${act.category === 'cultural' ? 'selected' : ''}>Cultural</option>
+                <option value="educativa" ${act.category === 'educativa' ? 'selected' : ''}>Educativa</option>
+                <option value="recreativa" ${act.category === 'recreativa' ? 'selected' : ''}>Recreativa</option>
+                <option value="medioambiental" ${act.category === 'medioambiental' ? 'selected' : ''}>Medioambiental</option>
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Fecha *</label>
+                <input type="date" id="edit-act-date" value="${act.date || ''}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+              </div>
+              <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Hora</label>
+                <input type="time" id="edit-act-time" value="${act.time || ''}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Lugar</label>
+              <input type="text" id="edit-act-location" value="${act.location || ''}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Descripción</label>
+              <textarea id="edit-act-desc" rows="3" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">${act.description || ''}</textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+              <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('#form-edit-activity').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const idx = this.currentOrg.activities.findIndex(a => a.id === activityId);
+      if (idx !== -1) {
+        this.currentOrg.activities[idx] = {
+          ...this.currentOrg.activities[idx],
+          title: modal.querySelector('#edit-act-title').value.trim(),
+          category: modal.querySelector('#edit-act-category').value,
+          date: modal.querySelector('#edit-act-date').value,
+          time: modal.querySelector('#edit-act-time').value,
+          location: modal.querySelector('#edit-act-location').value.trim(),
+          description: modal.querySelector('#edit-act-desc').value.trim()
+        };
+        try {
+          await organizationsService.update(this.currentOrg.id, { activities: this.currentOrg.activities });
+          showToast('Actividad actualizada', 'success');
+          modal.remove();
+          this.refreshContent(parentOverlay);
+        } catch (err) {
+          showToast('Error al guardar', 'error');
+        }
+      }
+    });
+  }
+
+  /**
+   * Eliminar un item genérico (assemblies, projects, activities, communications)
+   */
+  async deleteItem(arrayName, itemId, label, parentOverlay) {
+    if (!confirm(`¿Está seguro de eliminar esta ${label}? Esta acción no se puede deshacer.`)) return;
+
+    const arr = this.currentOrg[arrayName] || [];
+    this.currentOrg[arrayName] = arr.filter(item => item.id !== itemId);
+    try {
+      await organizationsService.update(this.currentOrg.id, { [arrayName]: this.currentOrg[arrayName] });
+      showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} eliminada`, 'success');
+      this.refreshContent(parentOverlay);
+    } catch (err) {
+      showToast(`Error al eliminar ${label}`, 'error');
+    }
+  }
+
+  /**
+   * Eliminar transacción financiera (recalcula balance)
+   */
+  async deleteTransaction(txId, parentOverlay) {
+    if (!confirm('¿Eliminar este movimiento? El saldo será recalculado.')) return;
+
+    const finances = this.currentOrg.finances || { balance: 0, transactions: [] };
+    const tx = finances.transactions.find(t => t.id === txId);
+    if (!tx) return;
+
+    // Revertir del balance
+    if (tx.type === 'income') {
+      finances.balance -= tx.amount;
+    } else {
+      finances.balance += tx.amount;
+    }
+    finances.transactions = finances.transactions.filter(t => t.id !== txId);
+    this.currentOrg.finances = finances;
+
+    try {
+      await organizationsService.update(this.currentOrg.id, { finances });
+      showToast('Movimiento eliminado', 'success');
+      this.refreshContent(parentOverlay);
+    } catch (err) {
+      showToast('Error al eliminar movimiento', 'error');
+    }
+  }
+
+  /**
+   * Genera certificado PDF (residencia o socio)
+   */
+  async generateCertificate(type) {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      const org = this.currentOrg;
+      const orgName = org.organization?.name || 'Organización';
+      const orgType = getOrgTypeName(org.organization?.type);
+      const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Header
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('MUNICIPALIDAD DE RENCA', 105, 20, { align: 'center' });
+      doc.text('Dirección de Desarrollo Comunitario', 105, 26, { align: 'center' });
+      doc.setDrawColor(41, 142, 203);
+      doc.setLineWidth(0.5);
+      doc.line(30, 32, 180, 32);
+
+      if (type === 'residencia') {
+        doc.setFontSize(16);
+        doc.setTextColor(0);
+        doc.text('CERTIFICADO DE RESIDENCIA', 105, 50, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.setTextColor(40);
+        const text = `La ${orgType} "${orgName}", con domicilio en ${org.organization?.address || 'dirección no registrada'}, comuna de ${org.organization?.commune || 'Renca'}, Región Metropolitana, certifica que la organización se encuentra constituida y vigente, con personalidad jurídica otorgada conforme a la Ley 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.`;
+        doc.text(text, 30, 70, { maxWidth: 150 });
+
+        doc.text(`Número de socios activos: ${(org.members || []).length}`, 30, 115);
+        doc.text(`Se extiende el presente certificado a petición del interesado.`, 30, 130);
+        doc.text(`Renca, ${today}`, 30, 155);
+
+        doc.setFontSize(10);
+        doc.text('_____________________________', 105, 190, { align: 'center' });
+        doc.text('Firma Presidente', 105, 197, { align: 'center' });
+        doc.text(orgName, 105, 203, { align: 'center' });
+      } else {
+        doc.setFontSize(16);
+        doc.setTextColor(0);
+        doc.text('CERTIFICADO DE SOCIO', 105, 50, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.setTextColor(40);
+        doc.text(`La ${orgType} "${orgName}" certifica que las siguientes`, 30, 70);
+        doc.text(`personas son socios activos de la organización:`, 30, 78);
+
+        let y = 95;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('N°', 30, y);
+        doc.text('Nombre', 45, y);
+        doc.text('RUT', 140, y);
+        doc.setFont(undefined, 'normal');
+        y += 8;
+
+        (org.members || []).slice(0, 25).forEach((m, i) => {
+          doc.text(`${i + 1}`, 30, y);
+          doc.text(`${m.firstName || ''} ${m.lastName || ''}`, 45, y);
+          doc.text(`${m.rut || '-'}`, 140, y);
+          y += 7;
+          if (y > 270) { doc.addPage(); y = 20; }
+        });
+
+        y += 10;
+        doc.setFontSize(11);
+        doc.text(`Renca, ${today}`, 30, y);
+        y += 25;
+        doc.setFontSize(10);
+        doc.text('_____________________________', 105, y, { align: 'center' });
+        doc.text('Firma Presidente', 105, y + 7, { align: 'center' });
+      }
+
+      doc.save(`certificado_${type}_${orgName.replace(/\s+/g, '_')}.pdf`);
+      showToast(`Certificado de ${type === 'residencia' ? 'residencia' : 'socio'} generado`, 'success');
+    } catch (err) {
+      console.error('Error generating certificate:', err);
+      showToast('Error al generar certificado. Verifique que jsPDF esté disponible.', 'error');
+    }
+  }
+
+  /**
+   * Muestra balance anual resumido
+   */
+  showAnnualBalance(parentOverlay) {
+    const finances = this.currentOrg.finances || { balance: 0, transactions: [] };
+    const txs = finances.transactions || [];
+    const currentYear = new Date().getFullYear();
+
+    // Agrupar por mes del año actual
+    const months = Array.from({ length: 12 }, (_, i) => ({
+      name: new Date(currentYear, i).toLocaleDateString('es-CL', { month: 'long' }),
+      income: 0, expense: 0
+    }));
+
+    txs.forEach(tx => {
+      const d = new Date(tx.date);
+      if (d.getFullYear() === currentYear) {
+        const m = d.getMonth();
+        if (tx.type === 'income') months[m].income += tx.amount;
+        else months[m].expense += tx.amount;
+      }
+    });
+
+    const totalIncome = months.reduce((s, m) => s + m.income, 0);
+    const totalExpense = months.reduce((s, m) => s + m.expense, 0);
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+        <div class="org-modal-header">
+          <h3>Balance Anual ${currentYear}</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 16px; background: #f0fdf4; border-radius: 10px;">
+              <div style="font-size: 20px; font-weight: 700; color: #166534;">+$${totalIncome.toLocaleString('es-CL')}</div>
+              <div style="font-size: 12px; color: #4ade80; margin-top: 4px;">Total Ingresos</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: #fef2f2; border-radius: 10px;">
+              <div style="font-size: 20px; font-weight: 700; color: #991b1b;">-$${totalExpense.toLocaleString('es-CL')}</div>
+              <div style="font-size: 12px; color: #f87171; margin-top: 4px;">Total Gastos</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: #eff6ff; border-radius: 10px;">
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">$${(finances.balance || 0).toLocaleString('es-CL')}</div>
+              <div style="font-size: 12px; color: #60a5fa; margin-top: 4px;">Saldo Actual</div>
+            </div>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid #e5e7eb;">
+                <th style="text-align: left; padding: 10px 8px; color: #374151;">Mes</th>
+                <th style="text-align: right; padding: 10px 8px; color: #166534;">Ingresos</th>
+                <th style="text-align: right; padding: 10px 8px; color: #991b1b;">Gastos</th>
+                <th style="text-align: right; padding: 10px 8px; color: #1e40af;">Neto</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${months.map(m => `
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                  <td style="padding: 8px; text-transform: capitalize;">${m.name}</td>
+                  <td style="padding: 8px; text-align: right; color: #166534;">${m.income > 0 ? '+$' + m.income.toLocaleString('es-CL') : '-'}</td>
+                  <td style="padding: 8px; text-align: right; color: #991b1b;">${m.expense > 0 ? '-$' + m.expense.toLocaleString('es-CL') : '-'}</td>
+                  <td style="padding: 8px; text-align: right; font-weight: 600; color: ${m.income - m.expense >= 0 ? '#166534' : '#991b1b'};">$${(m.income - m.expense).toLocaleString('es-CL')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="text-align: right; margin-top: 20px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  }
+
+  /**
+   * Exporta movimientos financieros a CSV
+   */
+  exportFinancesCSV() {
+    const finances = this.currentOrg.finances || { balance: 0, transactions: [] };
+    const txs = finances.transactions || [];
+
+    if (txs.length === 0) {
+      showToast('No hay movimientos para exportar', 'info');
+      return;
+    }
+
+    const orgName = this.currentOrg.organization?.name || 'Organizacion';
+    const BOM = '\uFEFF';
+    const header = 'Fecha,Tipo,Descripción,Monto\n';
+    const rows = txs.map(tx => {
+      const date = new Date(tx.date).toLocaleDateString('es-CL');
+      const type = tx.type === 'income' ? 'Ingreso' : 'Gasto';
+      const desc = `"${(tx.description || '').replace(/"/g, '""')}"`;
+      const amount = tx.type === 'income' ? tx.amount : -tx.amount;
+      return `${date},${type},${desc},${amount}`;
+    }).join('\n');
+
+    const footer = `\nSaldo actual:,,,$${finances.balance || 0}`;
+
+    const blob = new Blob([BOM + header + rows + footer], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `movimientos_${orgName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Movimientos exportados a CSV', 'success');
+  }
+
+  /**
+   * Modal para registrar directorio definitivo (post-elecciones)
+   */
+  openDefinitiveDirectorioModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const roles = ['Presidente', 'Secretario', 'Tesorero'];
+    const provisional = org.provisionalDirectorio;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 620px;">
+        <div class="org-modal-header">
+          <h3>Registrar Directorio Definitivo</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+              <strong>Ley 19.418:</strong> Tras la aprobación, el directorio provisional debe ser reemplazado por uno definitivo elegido en asamblea dentro de 60 días.
+            </p>
+          </div>
+          ${provisional ? `
+            <div style="background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #6b7280; font-size: 13px;">Directorio Provisional Actual:</p>
+              <p style="margin: 2px 0; font-size: 13px; color: #374151;">Presidente: ${provisional.president?.firstName || '-'} ${provisional.president?.lastName || ''}</p>
+              <p style="margin: 2px 0; font-size: 13px; color: #374151;">Secretario: ${provisional.secretary?.firstName || '-'} ${provisional.secretary?.lastName || ''}</p>
+              <p style="margin: 2px 0; font-size: 13px; color: #374151;">Tesorero: ${provisional.treasurer?.firstName || '-'} ${provisional.treasurer?.lastName || ''}</p>
+            </div>
+          ` : ''}
+          <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">Seleccione los miembros elegidos en asamblea para cada cargo:</p>
+          ${roles.map(role => `
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">${role} *</label>
+              <select id="def-dir-${role.toLowerCase()}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+                <option value="">-- Seleccionar socio --</option>
+                ${members.map(m => {
+                  const name = `${m.firstName || ''} ${m.lastName || ''}`.trim();
+                  return `<option value="${m.rut}">${name} (${m.rut || 'Sin RUT'})</option>`;
+                }).join('')}
+              </select>
+            </div>
+          `).join('')}
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">Fecha de Elección en Asamblea *</label>
+            <input type="date" id="def-dir-date" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-save-def-dir" style="padding: 10px 20px; border: none; border-radius: 8px; background: #059669; color: white; cursor: pointer; font-weight: 600;">Registrar Directorio Definitivo</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-save-def-dir').addEventListener('click', async () => {
+      const roles = ['Presidente', 'Secretario', 'Tesorero'];
+      const newCommission = roles.map(role => {
+        const rut = modal.querySelector(`#def-dir-${role.toLowerCase()}`).value;
+        if (!rut) return null;
+        const member = members.find(m => m.rut === rut);
+        return member ? { firstName: member.firstName, lastName: member.lastName, rut: member.rut, role: role.toLowerCase() } : null;
+      }).filter(Boolean);
+
+      if (newCommission.length < 3) {
+        showToast('Debe asignar los 3 cargos del directorio', 'error');
+        return;
+      }
+
+      const electionDate = modal.querySelector('#def-dir-date').value;
+      if (!electionDate) {
+        showToast('Debe indicar la fecha de elección', 'error');
+        return;
+      }
+
+      try {
+        const updateData = {
+          commission: { members: newCommission, electionDate },
+          provisionalDirectorio: null
+        };
+        await organizationsService.update(org.id || org._id, updateData);
+        this.currentOrg.commission = { members: newCommission, electionDate };
+        this.currentOrg.provisionalDirectorio = null;
+
+        alertsService.completeAlert(org.id || org._id, 'directorio_definitivo', {
+          directorio: { members: newCommission, electionDate }
+        });
+
+        showToast('Directorio definitivo registrado correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al registrar directorio', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para actualizar registro de socios
+   */
+  openRegistroSociosModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const activeCount = members.filter(m => m.status !== 'inactive').length;
+    const inactiveCount = members.filter(m => m.status === 'inactive').length;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 580px;">
+        <div class="org-modal-header">
+          <h3>Actualizar Registro de Socios</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+              <strong>Ley 19.418:</strong> El registro de socios debe mantenerse actualizado semestralmente ante la municipalidad.
+            </p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div style="background: #f0fdf4; border-radius: 10px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #059669;">${activeCount}</div>
+              <div style="font-size: 12px; color: #6b7280;">Socios Activos</div>
+            </div>
+            <div style="background: #fef2f2; border-radius: 10px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #dc2626;">${inactiveCount}</div>
+              <div style="font-size: 12px; color: #6b7280;">Inactivos</div>
+            </div>
+            <div style="background: #f8fafc; border-radius: 10px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #1e293b;">${members.length}</div>
+              <div style="font-size: 12px; color: #6b7280;">Total</div>
+            </div>
+          </div>
+
+          <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <th style="text-align: left; padding: 4px 8px; color: #6b7280;">Nombre</th>
+                  <th style="text-align: left; padding: 4px 8px; color: #6b7280;">RUT</th>
+                  <th style="text-align: center; padding: 4px 8px; color: #6b7280;">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${members.map(m => `
+                  <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 4px 8px;">${m.firstName || ''} ${m.lastName || ''}</td>
+                    <td style="padding: 4px 8px;">${m.rut || '-'}</td>
+                    <td style="padding: 4px 8px; text-align: center;">
+                      <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; background: ${m.status === 'inactive' ? '#fef2f2' : '#f0fdf4'}; color: ${m.status === 'inactive' ? '#dc2626' : '#059669'};">
+                        ${m.status === 'inactive' ? 'Inactivo' : 'Activo'}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">Observaciones</label>
+            <textarea id="registro-obs" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 60px;" placeholder="Notas sobre cambios en el registro..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-confirm-registro').addEventListener('click', async () => {
+      try {
+        await organizationsService.update(org.id || org._id, {
+          lastSociosUpdate: new Date().toISOString(),
+          members: org.members
+        });
+        this.currentOrg.lastSociosUpdate = new Date().toISOString();
+
+        alertsService.completeAlert(org.id || org._id, 'registro_socios', {});
+
+        showToast('Registro de socios actualizado correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al actualizar registro', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para designar Comisión Revisora de Cuentas
+   */
+  openComisionRevisoraModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const commission = org.commission?.members || [];
+    const commissionRuts = new Set(commission.map(m => m.rut));
+    const eligibleMembers = members.filter(m => !commissionRuts.has(m.rut) && m.status !== 'inactive');
+    const currentComision = org.comisionRevisora || [];
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>Designar Comisión Revisora de Cuentas</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+              <strong>Ley 19.418, Art. 25:</strong> La comisión revisora de cuentas debe ser elegida anualmente en asamblea ordinaria. No pueden ser miembros del directorio.
+            </p>
+          </div>
+
+          ${currentComision.length > 0 ? `
+            <div style="background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #6b7280; font-size: 13px;">Comisión Actual:</p>
+              ${currentComision.map(m => `
+                <p style="margin: 2px 0; font-size: 13px; color: #374151;">${m.firstName || ''} ${m.lastName || ''} (${m.rut || '-'})</p>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">Seleccione 3 socios que no pertenezcan al directorio:</p>
+          ${[1, 2, 3].map(i => `
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">Miembro ${i} ${i <= 2 ? '*' : '(Suplente)'}</label>
+              <select id="comision-rev-${i}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" ${i <= 2 ? 'required' : ''}>
+                <option value="">-- Seleccionar socio --</option>
+                ${eligibleMembers.map(m => {
+                  const name = `${m.firstName || ''} ${m.lastName || ''}`.trim();
+                  return `<option value="${m.rut}">${name} (${m.rut || 'Sin RUT'})</option>`;
+                }).join('')}
+              </select>
+            </div>
+          `).join('')}
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-save-comision" style="padding: 10px 20px; border: none; border-radius: 8px; background: #059669; color: white; cursor: pointer; font-weight: 600;">Designar Comisión</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-save-comision').addEventListener('click', async () => {
+      const selectedMembers = [1, 2, 3].map(i => {
+        const rut = modal.querySelector(`#comision-rev-${i}`).value;
+        if (!rut) return null;
+        const member = members.find(m => m.rut === rut);
+        return member ? { firstName: member.firstName, lastName: member.lastName, rut: member.rut } : null;
+      }).filter(Boolean);
+
+      if (selectedMembers.length < 2) {
+        showToast('Debe designar al menos 2 miembros para la comisión', 'error');
+        return;
+      }
+
+      const ruts = selectedMembers.map(m => m.rut);
+      if (new Set(ruts).size !== ruts.length) {
+        showToast('No puede seleccionar el mismo socio más de una vez', 'error');
+        return;
+      }
+
+      try {
+        await organizationsService.update(org.id || org._id, {
+          comisionRevisora: selectedMembers,
+          lastComisionRevisoraElection: new Date().toISOString()
+        });
+        this.currentOrg.comisionRevisora = selectedMembers;
+        this.currentOrg.lastComisionRevisoraElection = new Date().toISOString();
+
+        alertsService.completeAlert(org.id || org._id, 'comision_revisora', { comision: selectedMembers });
+
+        showToast('Comisión Revisora de Cuentas designada correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al designar comisión', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para designar TRICEL (Tribunal Calificador de Elecciones)
+   */
+  openTricelDesignationModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const commission = org.commission?.members || [];
+    const commissionRuts = new Set(commission.map(m => m.rut));
+    const eligibleMembers = members.filter(m => !commissionRuts.has(m.rut) && m.status !== 'inactive');
+    const currentTricel = org.tricelData;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>Designar TRICEL</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #92400e; font-size: 14px;">
+              <strong>Tribunal Calificador de Elecciones:</strong> Debe designarse al menos 2 meses antes del vencimiento del directorio. Sus miembros no pueden ser candidatos ni pertenecer al directorio actual.
+            </p>
+          </div>
+
+          ${currentTricel ? `
+            <div style="background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #6b7280; font-size: 13px;">TRICEL Actual (designado ${currentTricel.designatedAt ? new Date(currentTricel.designatedAt).toLocaleDateString('es-CL') : 'N/A'}):</p>
+              ${(currentTricel.members || []).map(m => `
+                <p style="margin: 2px 0; font-size: 13px; color: #374151;">${m.firstName || ''} ${m.lastName || ''} (${m.rut || '-'})</p>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">Seleccione 3 socios para integrar el TRICEL:</p>
+          ${['Presidente TRICEL', 'Secretario TRICEL', 'Vocal'].map((role, i) => `
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">${role} *</label>
+              <select id="tricel-member-${i}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+                <option value="">-- Seleccionar socio --</option>
+                ${eligibleMembers.map(m => {
+                  const name = `${m.firstName || ''} ${m.lastName || ''}`.trim();
+                  return `<option value="${m.rut}">${name} (${m.rut || 'Sin RUT'})</option>`;
+                }).join('')}
+              </select>
+            </div>
+          `).join('')}
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-save-tricel" style="padding: 10px 20px; border: none; border-radius: 8px; background: #7c3aed; color: white; cursor: pointer; font-weight: 600;">Designar TRICEL</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-save-tricel').addEventListener('click', async () => {
+      const tricelRoles = ['presidente', 'secretario', 'vocal'];
+      const tricelMembers = [0, 1, 2].map(i => {
+        const rut = modal.querySelector(`#tricel-member-${i}`).value;
+        if (!rut) return null;
+        const member = members.find(m => m.rut === rut);
+        return member ? { firstName: member.firstName, lastName: member.lastName, rut: member.rut, role: tricelRoles[i] } : null;
+      }).filter(Boolean);
+
+      if (tricelMembers.length < 3) {
+        showToast('Debe designar los 3 miembros del TRICEL', 'error');
+        return;
+      }
+
+      const ruts = tricelMembers.map(m => m.rut);
+      if (new Set(ruts).size !== ruts.length) {
+        showToast('No puede seleccionar el mismo socio más de una vez', 'error');
+        return;
+      }
+
+      try {
+        const tricelData = { members: tricelMembers };
+        await organizationsService.update(org.id || org._id, {
+          tricelDesignated: true,
+          tricelData: { ...tricelData, designatedAt: new Date().toISOString() }
+        });
+        this.currentOrg.tricelDesignated = true;
+        this.currentOrg.tricelData = { ...tricelData, designatedAt: new Date().toISOString() };
+
+        alertsService.completeAlert(org.id || org._id, 'tricel_designation', { tricel: tricelData });
+
+        showToast('TRICEL designado correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al designar TRICEL', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para editar resultados de una elección
+   */
+  showElectionDetail(electionId, parentOverlay) {
+    const elections = this.currentOrg.elections || [];
+    const election = elections.find(e => e.id === electionId);
+    if (!election) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 550px;">
+        <div class="org-modal-header">
+          <h3>Detalle de Elección</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <label style="font-size: 12px; color: #6b7280; display: block;">Fecha</label>
+              <span style="font-weight: 600;">${new Date(election.date).toLocaleDateString('es-CL')}</span>
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #6b7280; display: block;">Tipo</label>
+              <span style="font-weight: 600;">${election.type === 'total' ? 'Renovación Total' : 'Renovación Parcial'}</span>
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #6b7280; display: block;">Hora</label>
+              <span>${election.time || 'No especificada'}</span>
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #6b7280; display: block;">Lugar</label>
+              <span>${election.location || 'No especificado'}</span>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Estado / Resultado</label>
+            <select id="election-result-edit" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+              <option value="Pendiente" ${election.result === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+              <option value="Completada" ${election.result === 'Completada' ? 'selected' : ''}>Completada</option>
+              <option value="Directorio Elegido" ${election.result === 'Directorio Elegido' ? 'selected' : ''}>Directorio Elegido</option>
+              <option value="Sin quórum" ${election.result === 'Sin quórum' ? 'selected' : ''}>Sin quórum</option>
+              <option value="Suspendida" ${election.result === 'Suspendida' ? 'selected' : ''}>Suspendida</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Participación (%)</label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <input type="range" id="election-participation-edit" min="0" max="100" value="${election.participation || 0}" style="flex: 1;">
+              <span id="participation-display" style="min-width: 40px; font-weight: 700; color: #2D8ECB;">${election.participation || 0}%</span>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Observaciones</label>
+            <textarea id="election-notes-edit" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 60px;">${election.notes || ''}</textarea>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    const rangeInput = modal.querySelector('#election-participation-edit');
+    const display = modal.querySelector('#participation-display');
+    rangeInput.addEventListener('input', () => {
+      display.textContent = rangeInput.value + '%';
+    });
+
+    modal.querySelector('.btn-save-election').addEventListener('click', async () => {
+      election.result = modal.querySelector('#election-result-edit').value;
+      election.participation = parseInt(rangeInput.value);
+      election.notes = modal.querySelector('#election-notes-edit').value;
+
+      try {
+        await organizationsService.update(this.currentOrg.id || this.currentOrg._id, { elections });
+        showToast('Elección actualizada correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al actualizar elección', 'error');
+      }
+    });
   }
 }
 
