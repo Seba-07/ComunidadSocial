@@ -815,11 +815,24 @@ export class WizardController {
         const form = document.getElementById('form-step-1');
         if (form) {
           const formData = new FormData(form);
+          const street = formData.get('street') || '';
+          const streetNumber = formData.get('streetNumber') || '';
+          const postalCode = formData.get('postalCode') || '';
+          // Componer address para compatibilidad con el resto del sistema
+          const composedAddress = `${street} ${streetNumber}`.trim();
+
+          // Actualizar campo hidden
+          const addressHidden = document.getElementById('org-address');
+          if (addressHidden) addressHidden.value = composedAddress;
+
           this.formData.organization = {
             type: formData.get('type') || '',
             name: formData.get('name') || '',
             description: formData.get('description') || '',
-            address: formData.get('address') || '',
+            address: composedAddress,
+            street,
+            streetNumber,
+            postalCode,
             region: formData.get('region') || '',
             regionId: formData.get('regionId') || '',
             commune: formData.get('commune') || '',
@@ -1437,11 +1450,19 @@ export class WizardController {
     const form = document.getElementById('form-step-1');
     const formData = new FormData(form);
 
+    const street = formData.get('street') || '';
+    const streetNumber = formData.get('streetNumber') || '';
+    const postalCode = formData.get('postalCode') || '';
+    const composedAddress = `${street} ${streetNumber}`.trim();
+
     this.formData.organization = {
       type: formData.get('type'),
       name: formData.get('name'),
       description: formData.get('description'),
-      address: formData.get('address'),
+      address: composedAddress,
+      street,
+      streetNumber,
+      postalCode,
       // FORZAR REGIÓN Y COMUNA PARA MUNICIPALIDAD DE RENCA
       region: 'Región Metropolitana de Santiago',
       regionId: '13',
@@ -6781,7 +6802,7 @@ Secretaria Municipal`;
       <p><strong>Nombre:</strong> ${org.name}</p>
       <p><strong>Región:</strong> ${org.region}</p>
       <p><strong>Comuna:</strong> ${org.commune}</p>
-      <p><strong>Dirección:</strong> ${org.address}</p>
+      <p><strong>Dirección:</strong> ${org.address}${org.postalCode ? ` (CP: ${org.postalCode})` : ''}</p>
       ${org.neighborhood ? `<p><strong>Unidad Vecinal:</strong> ${org.neighborhood}</p>` : ''}
       <p><strong>Email:</strong> ${org.email}</p>
       <p><strong>Teléfono:</strong> ${org.phone}</p>

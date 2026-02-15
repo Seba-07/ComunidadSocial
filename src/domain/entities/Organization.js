@@ -74,7 +74,7 @@ export class Organization {
       errors.push('Tipo de organización inválido');
     }
 
-    if (!this.address || this.address.trim().length < 10) {
+    if (!this.address || this.address.trim().length < 5) {
       errors.push('Dirección inválida');
     }
 

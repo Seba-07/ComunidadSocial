@@ -176,18 +176,37 @@ function getStep1HTML() {
         </div>
 
         <div class="form-row">
-          <div class="form-group">
-            <label for="org-address">Dirección de la Organización <span class="required">*</span></label>
+          <div class="form-group" style="flex: 3;">
+            <label for="org-street">Calle <span class="required">*</span></label>
             <input
               type="text"
-              id="org-address"
-              name="address"
+              id="org-street"
+              name="street"
               required
-              placeholder="Calle, número (dirección de la sede de la organización)"
+              placeholder="Ej: Av. Dorsal"
             >
-            <small class="form-help">Dirección donde funcionará la organización comunitaria</small>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="org-street-number">Número <span class="required">*</span></label>
+            <input
+              type="text"
+              id="org-street-number"
+              name="streetNumber"
+              required
+              placeholder="Ej: 1234"
+            >
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="org-postal-code">Código Postal</label>
+            <input
+              type="text"
+              id="org-postal-code"
+              name="postalCode"
+              placeholder="Ej: 8420000"
+            >
           </div>
         </div>
+        <input type="hidden" id="org-address" name="address">
 
         <div class="form-row form-row-2" id="neighborhood-row" style="display: none;">
           <div class="form-group">

@@ -71,6 +71,18 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  street: {
+    type: String,
+    trim: true
+  },
+  streetNumber: {
+    type: String,
+    trim: true
+  },
+  postalCode: {
+    type: String,
+    trim: true
+  },
   comuna: {
     type: String,
     default: 'Renca'
