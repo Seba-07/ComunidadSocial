@@ -62,13 +62,11 @@ const emailSchema = z.string()
   .max(100, 'Email no puede tener más de 100 caracteres')
   .toLowerCase();
 
-// Password - OWASP recomienda mínimo 12 caracteres
+// Password - mínimo 6 caracteres + una mayúscula
 const passwordSchema = z.string()
-  .min(12, 'La contraseña debe tener al menos 12 caracteres')
+  .min(6, 'La contraseña debe tener al menos 6 caracteres')
   .max(100, 'La contraseña no puede tener más de 100 caracteres')
-  .refine((val) => /[A-Z]/.test(val), { message: 'Debe contener al menos una mayúscula' })
-  .refine((val) => /[a-z]/.test(val), { message: 'Debe contener al menos una minúscula' })
-  .refine((val) => /[0-9]/.test(val), { message: 'Debe contener al menos un número' });
+  .refine((val) => /[A-Z]/.test(val), { message: 'Debe contener al menos una mayúscula' });
 
 // Nombre
 const nameSchema = z.string()

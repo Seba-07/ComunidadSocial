@@ -272,17 +272,11 @@ registerForm.addEventListener('submit', async (e) => {
     hasErrors = true;
   }
 
-  if (password.length < 12) {
-    showError('register-password', 'La contraseña debe tener al menos 12 caracteres');
+  if (password.length < 6) {
+    showError('register-password', 'La contraseña debe tener al menos 6 caracteres');
     hasErrors = true;
   } else if (!/[A-Z]/.test(password)) {
     showError('register-password', 'Debe contener al menos una mayúscula');
-    hasErrors = true;
-  } else if (!/[a-z]/.test(password)) {
-    showError('register-password', 'Debe contener al menos una minúscula');
-    hasErrors = true;
-  } else if (!/[0-9]/.test(password)) {
-    showError('register-password', 'Debe contener al menos un número');
     hasErrors = true;
   }
 

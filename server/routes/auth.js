@@ -117,18 +117,12 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
       return res.status(400).json({ error: 'Contraseña actual incorrecta' });
     }
 
-    // Validar nueva contraseña (mínimo 12 caracteres con complejidad)
-    if (newPassword.length < 12) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 12 caracteres' });
+    // Validar nueva contraseña (mínimo 6 caracteres + una mayúscula)
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
     if (!/[A-Z]/.test(newPassword)) {
       return res.status(400).json({ error: 'La contraseña debe contener al menos una mayúscula' });
-    }
-    if (!/[a-z]/.test(newPassword)) {
-      return res.status(400).json({ error: 'La contraseña debe contener al menos una minúscula' });
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      return res.status(400).json({ error: 'La contraseña debe contener al menos un número' });
     }
 
     user.password = newPassword;
