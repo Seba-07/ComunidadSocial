@@ -8640,25 +8640,25 @@ body {
 }
 
 .profile-page {
-    max-width: 800px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 24px 16px;
 }
 
 .profile-back-nav {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .btn-back-home {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     background: var(--surface);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
+    border-radius: 8px;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -8679,49 +8679,59 @@ body {
 }
 
 .profile-header {
-    text-align: center;
-    padding: 32px 24px;
-    background: var(--gradient-primary);
-    border-radius: var(--border-radius-lg);
-    margin-bottom: 24px;
-    color: white;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    background: var(--surface);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
 .profile-avatar {
-    width: 100px;
-    height: 100px;
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 16px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
+    border: 3px solid rgba(37, 99, 235, 0.2);
 }
 
 .profile-avatar span {
-    font-size: 36px;
+    font-size: 26px;
     font-weight: 700;
     color: white;
 }
 
+.profile-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
 .profile-header h2 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    color: var(--text-primary);
 }
 
 .profile-email {
-    opacity: 0.9;
     font-size: 14px;
-    margin-bottom: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
 }
 
 .role-badge {
     display: inline-block;
-    padding: 4px 16px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    padding: 3px 12px;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color);
+    border-radius: 16px;
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
@@ -8729,75 +8739,81 @@ body {
 }
 
 .role-badge.admin {
-    background: #fbbf24;
-    color: #78350f;
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .profile-sections {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 .profile-section {
     background: var(--surface);
-    border-radius: var(--border-radius-md);
+    border-radius: 16px;
     padding: 24px;
     box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
 .section-header-profile {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .section-header-profile h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
 }
 
 .btn-edit {
-    padding: 8px 16px;
-    background: var(--background-secondary);
+    padding: 6px 14px;
+    background: rgba(37, 99, 235, 0.08);
     border: none;
     border-radius: 8px;
-    color: var(--primary-dark);
-    font-size: 14px;
-    font-weight: 500;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .btn-edit:hover {
-    background: var(--primary-light);
+    background: var(--primary-color);
     color: white;
 }
 
 .profile-display {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
 }
 
 .info-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--border-color);
 }
 
 .info-row:last-child {
     border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-row:first-child {
+    padding-top: 0;
 }
 
 .info-label {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-secondary);
 }
 
@@ -8934,28 +8950,39 @@ body {
 
 @media (max-width: 640px) {
     .profile-header {
-        padding: 24px 16px;
+        flex-direction: column;
+        text-align: center;
+        padding: 20px 16px;
+    }
+
+    .profile-header-info {
+        text-align: center;
     }
 
     .profile-avatar {
-        width: 80px;
-        height: 80px;
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
     }
 
     .profile-avatar span {
-        font-size: 28px;
+        font-size: 22px;
+    }
+
+    .profile-header h2 {
+        font-size: 20px;
     }
 
     .section-header-profile {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
     }
 
     .info-row {
         flex-direction: column;
         align-items: flex-start;
-        gap: 4px;
+        gap: 2px;
     }
 
     .form-actions {
@@ -8967,47 +8994,12 @@ body {
     }
 }
 
-/* Profile Photo Upload */
-.profile-avatar-container {
-    position: relative;
-    display: inline-block;
-    margin-bottom: 16px;
-}
-
+/* Profile Photo */
 .profile-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
-}
-
-.photo-upload-btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 32px;
-    height: 32px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s;
-}
-
-.photo-upload-btn:hover {
-    transform: scale(1.1);
-    background: var(--primary-light);
-}
-
-.photo-upload-btn svg {
-    color: var(--primary-dark);
-}
-
-.photo-upload-btn:hover svg {
-    color: white;
 }
 
 /* Select Dropdowns in Profile */

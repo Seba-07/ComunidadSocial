@@ -297,21 +297,16 @@
                         </button>
                     </div>
                     <div class="profile-header">
-                        <div class="profile-avatar-container">
-                            <div class="profile-avatar" id="profile-avatar">
-                                <img id="profile-photo" src="" alt="Foto de perfil" style="display: none;">
-                                <span id="profile-initials">US</span>
-                            </div>
-                            <label for="photo-upload" class="photo-upload-btn" title="Cambiar foto">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 5l3 3m0 0l-3 3m3-3H4"/>
-                                </svg>
-                            </label>
-                            <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+                        <div class="profile-avatar" id="profile-avatar">
+                            <img id="profile-photo" src="" alt="Foto de perfil" style="display: none; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                            <span id="profile-initials">US</span>
                         </div>
-                        <h2 id="profile-fullname">Usuario</h2>
-                        <p id="profile-email" class="profile-email">email@example.com</p>
-                        <span id="profile-role-badge" class="role-badge">Usuario</span>
+                        <div class="profile-header-info">
+                            <h2 id="profile-fullname">Usuario</h2>
+                            <p id="profile-email" class="profile-email">email@example.com</p>
+                            <span id="profile-role-badge" class="role-badge">Usuario</span>
+                        </div>
+                        <input type="file" id="photo-upload" accept="image/*" style="display: none;">
                     </div>
 
                     <div class="profile-sections">

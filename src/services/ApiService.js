@@ -301,9 +301,14 @@ class ApiService {
       // Crear copia sin datos sensibles
       const safeUser = {
         _id: data.user._id,
+        rut: data.user.rut || '',
         firstName: data.user.firstName,
         lastName: data.user.lastName,
         email: data.user.email,
+        phone: data.user.phone || '',
+        address: data.user.address || '',
+        region: data.user.region || '',
+        commune: data.user.commune || '',
         role: data.user.role,
         mustChangePassword: data.user.mustChangePassword
       };
@@ -322,9 +327,12 @@ class ApiService {
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
+        rut: data.user.rut || '',
         firstName: data.user.firstName,
         lastName: data.user.lastName,
         email: data.user.email,
+        phone: data.user.phone || '',
+        address: data.user.address || '',
         role: data.user.role
       };
       localStorage.setItem('currentUser', JSON.stringify(safeUser));

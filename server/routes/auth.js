@@ -44,9 +44,12 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       message: 'Usuario registrado exitosamente',
       user: {
         _id: user._id,
+        rut: user.rut,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        phone: user.phone || '',
+        address: user.address || '',
         role: user.role
       }
     });
@@ -86,9 +89,14 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
       message: 'Inicio de sesión exitoso',
       user: {
         _id: user._id,
+        rut: user.rut,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        phone: user.phone || '',
+        address: user.address || '',
+        region: user.region || '',
+        commune: user.commune || '',
         role: user.role,
         mustChangePassword: user.mustChangePassword
       },
