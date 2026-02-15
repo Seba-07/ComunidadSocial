@@ -20158,6 +20158,331 @@ a.header-logo:hover {
 }
 
 /* ============================================
+   ADMIN SIDEBAR - SECCIONES COLAPSABLES
+   ============================================ */
+.nav-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    padding: 16px 20px 6px;
+    user-select: none;
+}
+
+.nav-section-collapsible {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 16px 20px 6px;
+}
+
+.nav-section-collapsible span {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
+.nav-section-collapsible .chevron-icon {
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nav-section-collapsible.collapsed .chevron-icon {
+    transform: rotate(-90deg);
+}
+
+.nav-section-items {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+}
+
+.nav-section-items.collapsed {
+    max-height: 0;
+}
+
+.nav-link-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px 10px 28px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.nav-link-sub:hover {
+    background-color: var(--background);
+    color: var(--primary-color);
+}
+
+.nav-link-sub.active {
+    background-color: #eff6ff;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.nav-link-sub svg {
+    flex-shrink: 0;
+    color: #94a3b8;
+    width: 16px;
+    height: 16px;
+}
+
+.nav-link-sub.active svg,
+.nav-link-sub:hover svg {
+    color: var(--primary-color);
+}
+
+.nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: auto;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.nav-badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.nav-badge-info {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.nav-badge-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.nav-badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.nav-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 8px 16px;
+}
+
+/* ============================================
+   ADMIN DASHBOARD HEADER LIMPIO
+   ============================================ */
+.admin-dashboard-header {
+    padding: 24px 24px 16px;
+}
+
+.admin-dashboard-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+}
+
+.admin-dashboard-header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ============================================
+   ADMIN STATS GRID (4 tarjetas)
+   ============================================ */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 0 24px 16px;
+}
+
+.admin-stat-card-new {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+    transition: box-shadow 0.2s;
+}
+
+.admin-stat-card-new:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.admin-stat-card-new .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.admin-stat-card-new .stat-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.admin-stat-card-new .stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-stat-card-new .stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
+}
+
+.admin-stat-card-new .stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.stat-icon-total { background: #2563eb; }
+.stat-icon-pending { background: #f59e0b; }
+.stat-icon-process { background: #06b6d4; }
+.stat-icon-approved { background: #10b981; }
+
+/* ============================================
+   FILTROS LIMPIOS (fuera del panel azul)
+   ============================================ */
+.muni-filters-clean {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 24px 16px;
+}
+
+.muni-filter-chip-clean {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.muni-filter-chip-clean:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+.muni-filter-chip-clean.active {
+    background: var(--primary-color, #2563eb);
+    border-color: var(--primary-color, #2563eb);
+    color: white;
+    font-weight: 600;
+}
+
+.muni-filter-chip-clean .chip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.muni-filter-chip-clean.active .chip-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+/* Responsive: Admin stats & filters */
+@media (max-width: 768px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 0 16px 12px;
+    }
+
+    .admin-stat-card-new {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .admin-stat-card-new .stat-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .admin-stat-card-new .stat-number {
+        font-size: 22px;
+    }
+
+    .admin-stat-card-new .stat-label {
+        font-size: 12px;
+    }
+
+    .admin-dashboard-header {
+        padding: 16px 16px 12px;
+    }
+
+    .admin-dashboard-header h1 {
+        font-size: 20px;
+    }
+
+    .muni-filters-clean {
+        padding: 0 16px 12px;
+        gap: 6px;
+    }
+
+    .muni-filter-chip-clean {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 0 12px 10px;
+    }
+}
+
+/* ============================================
    GUÍA DE CONSTITUCIÓN STYLES - REDISEÑO
    ============================================ */
 

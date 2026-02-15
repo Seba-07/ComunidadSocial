@@ -76,18 +76,147 @@ class AdminDashboard {
     this.renderApplicationsList();
     this.updateStats();
     this.setupEventListeners();
-    this.setupScheduleManagerButton();
-    this.setupMinistroManagerButton();
-    this.setupUVManagerButton();
-    this.setupEstatutosManagerButton();
-    this.setupTimbreManagerButton();
-    this.setupDocumentosManagerButton();
-    this.setupMetricsButton();
-    this.setupAuditLogButton();
-    this.setupUserManagerButton();
-    this.setupCalendarButton();
-    this.setupExportButton();
+    this.exportManager = initExportManager();
     this.initSearchGlobal();
+  }
+
+  // ============ VIEW DISPATCH ============
+
+  /**
+   * Dispatch central para cambiar vistas desde el sidebar
+   */
+  showView(viewName) {
+    // Grouped org filters
+    const orgFilterMap = {
+      'org-all': 'all',
+      'org-pending': 'pending_review',
+      'org-process': 'in_process',
+      'org-approved': 'approved_group',
+      'org-rejected': 'rejected'
+    };
+
+    if (orgFilterMap[viewName] !== undefined) {
+      this.currentFilter = orgFilterMap[viewName];
+      // Update clean filter chips active state
+      document.querySelectorAll('.muni-filter-chip-clean').forEach(c => c.classList.remove('active'));
+      const matchingChip = document.querySelector(`.muni-filter-chip-clean[data-filter="${orgFilterMap[viewName]}"]`);
+      if (matchingChip) matchingChip.classList.add('active');
+      else {
+        // For grouped filters not in chips, deactivate all
+      }
+      this.showApplications(true); // skip reload for filter-only
+      return;
+    }
+
+    const viewMap = {
+      'applications': () => this.showApplications(),
+      'schedule': () => this.showScheduleManager(),
+      'ministro': () => this.showMinistroManager(),
+      'uv': () => this.showUVManager(),
+      'estatutos': () => this.showEstatutosManager(),
+      'timbre': () => this.showTimbreModal(),
+      'documentos': () => this.showDocumentosModal(),
+      'metrics': () => this.showMetricsManager(),
+      'audit': () => this.showAuditLog(),
+      'users': () => this.showUserManager(),
+      'calendar': () => this.showCalendarManager(),
+      'export': () => {
+        if (this.exportManager && this.organizations) {
+          this.exportManager.exportOrganizationsCSV(this.organizations);
+          showToast('Exportacion iniciada', 'success');
+        }
+      }
+    };
+
+    const handler = viewMap[viewName];
+    if (handler) handler();
+  }
+
+  // ============ DRY HELPERS ============
+
+  /**
+   * Oculta los elementos de la vista de solicitudes
+   */
+  hideApplicationElements() {
+    const header = document.querySelector('.admin-dashboard-header');
+    if (header) header.style.display = 'none';
+    const statsGrid = document.getElementById('admin-stats-grid');
+    if (statsGrid) statsGrid.style.display = 'none';
+    const filterBar = document.querySelector('.muni-filters-clean');
+    if (filterBar) filterBar.style.display = 'none';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = 'none';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = 'none';
+  }
+
+  /**
+   * Muestra los elementos de la vista de solicitudes
+   */
+  showApplicationElements() {
+    const header = document.querySelector('.admin-dashboard-header');
+    if (header) header.style.display = '';
+    const statsGrid = document.getElementById('admin-stats-grid');
+    if (statsGrid) statsGrid.style.display = '';
+    const filterBar = document.querySelector('.muni-filters-clean');
+    if (filterBar) filterBar.style.display = '';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = '';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = '';
+  }
+
+  /**
+   * Oculta todos los containers de managers
+   */
+  hideAllManagerViews() {
+    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view',
+     'metrics-manager-view', 'audit-log-view', 'user-manager-view',
+     'calendar-manager-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  /**
+   * Actualiza los badges del sidebar con conteos
+   */
+  updateSidebarBadges() {
+    const orgs = organizationsService.getAll();
+    const counts = { all: orgs.length, pending: 0, process: 0, approved: 0, rejected: 0 };
+    orgs.forEach(o => {
+      if (o.status === ORG_STATUS.PENDING_REVIEW) counts.pending++;
+      else if ([ORG_STATUS.WAITING_MINISTRO_REQUEST, ORG_STATUS.MINISTRO_SCHEDULED,
+                ORG_STATUS.MINISTRO_APPROVED, ORG_STATUS.IN_REVIEW,
+                ORG_STATUS.SENT_TO_REGISTRY, ORG_STATUS.REGISTRY_OBSERVATIONS].includes(o.status)) counts.process++;
+      else if (o.status === ORG_STATUS.APPROVED) counts.approved++;
+      else if (o.status === ORG_STATUS.REJECTED) counts.rejected++;
+    });
+
+    const badgeMap = {
+      'badge-org-all': counts.all,
+      'badge-org-pending': counts.pending,
+      'badge-org-process': counts.process,
+      'badge-org-approved': counts.approved,
+      'badge-org-rejected': counts.rejected
+    };
+    Object.entries(badgeMap).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    });
+  }
+
+  /**
+   * Actualiza el item activo del sidebar
+   */
+  updateSidebarActive(viewName) {
+    document.querySelectorAll('.nav-link-sub').forEach(link => {
+      link.classList.toggle('active', link.dataset.adminView === viewName);
+    });
+    // Also handle top-level nav-link for panel
+    document.querySelectorAll('.nav-link[data-admin-view]').forEach(link => {
+      link.classList.toggle('active', link.dataset.adminView === viewName);
+    });
   }
 
   /**
@@ -117,65 +246,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Configura el botón de gestión de horarios
-   */
-  setupScheduleManagerButton() {
-    const btn = document.getElementById('btn-schedule-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        if (this.currentView === 'schedule') {
-          this.showApplications();
-        } else {
-          this.showScheduleManager();
-        }
-      });
-    }
-  }
-
-  /**
-   * Configura el botón de gestión de ministros
-   */
-  setupMinistroManagerButton() {
-    const btn = document.getElementById('btn-ministro-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        if (this.currentView === 'ministro') {
-          this.showApplications();
-        } else {
-          this.showMinistroManager();
-        }
-      });
-    }
-  }
-
-  /**
-   * Configura el botón de gestión de unidades vecinales
-   */
-  setupUVManagerButton() {
-    const btn = document.getElementById('btn-uv-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        if (this.currentView === 'uv') {
-          this.showApplications();
-        } else {
-          this.showUVManager();
-        }
-      });
-    }
-  }
-
-  /**
-   * Configura el botón de gestión de estatutos
-   */
-  setupEstatutosManagerButton() {
-    const btn = document.getElementById('btn-estatutos-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        this.showEstatutosManager();
-      });
-    }
-  }
+  // Button setup methods removed - sidebar handles navigation now
 
   /**
    * Muestra la página de gestión de estatutos
@@ -200,17 +271,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Configura el botón de gestión de timbre virtual
-   */
-  setupTimbreManagerButton() {
-    const btn = document.getElementById('btn-timbre-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        this.showTimbreModal();
-      });
-    }
-  }
+  // setupTimbreManagerButton removed - sidebar handles navigation
 
   /**
    * Muestra el modal de gestión de timbre virtual y firma digital
@@ -452,17 +513,7 @@ class AdminDashboard {
     });
   }
 
-  /**
-   * Configura el botón de gestión de documentos
-   */
-  setupDocumentosManagerButton() {
-    const btn = document.getElementById('btn-documentos-manager');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        this.showDocumentosModal();
-      });
-    }
-  }
+  // setupDocumentosManagerButton removed - sidebar handles navigation
 
   /**
    * Muestra el modal de gestión de documentos/plantillas
@@ -661,25 +712,12 @@ class AdminDashboard {
     });
   }
 
-  // ============ NUEVOS MANAGERS ============
-
-  setupMetricsButton() {
-    const btn = document.getElementById('btn-metrics-manager');
-    if (btn) {
-      btn.addEventListener('click', () => this.showMetricsManager());
-    }
-  }
+  // ============ MANAGERS ============
 
   showMetricsManager() {
-    // Ocultar elementos de la vista de solicitudes
-    const filterBar = document.querySelector('.muni-filters');
-    if (filterBar) filterBar.style.display = 'none';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = 'none';
-    const appList = document.getElementById('admin-applications-list');
-    if (appList) appList.style.display = 'none';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
-    // Mostrar vista de metricas
     let metricsView = document.getElementById('metrics-manager-view');
     if (!metricsView) {
       metricsView = document.createElement('div');
@@ -689,34 +727,18 @@ class AdminDashboard {
     }
     metricsView.style.display = 'block';
 
-    // Ocultar otras vistas
-    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-
     if (!this.metricsManager) {
       this.metricsManager = initMetricsDashboardManager(metricsView);
     } else {
       this.metricsManager.render();
     }
     this.currentView = 'metrics';
-  }
-
-  setupAuditLogButton() {
-    const btn = document.getElementById('btn-audit-log');
-    if (btn) {
-      btn.addEventListener('click', () => this.showAuditLog());
-    }
+    this.updateSidebarActive('metrics');
   }
 
   showAuditLog() {
-    const filterBar = document.querySelector('.muni-filters');
-    if (filterBar) filterBar.style.display = 'none';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = 'none';
-    const appList = document.getElementById('admin-applications-list');
-    if (appList) appList.style.display = 'none';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
     let auditView = document.getElementById('audit-log-view');
     if (!auditView) {
@@ -727,33 +749,18 @@ class AdminDashboard {
     }
     auditView.style.display = 'block';
 
-    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-
     if (!this.auditLogManager) {
       this.auditLogManager = initAuditLogManager(auditView);
     } else {
       this.auditLogManager.render();
     }
     this.currentView = 'audit';
-  }
-
-  setupUserManagerButton() {
-    const btn = document.getElementById('btn-user-manager');
-    if (btn) {
-      btn.addEventListener('click', () => this.showUserManager());
-    }
+    this.updateSidebarActive('audit');
   }
 
   showUserManager() {
-    const filterBar = document.querySelector('.muni-filters');
-    if (filterBar) filterBar.style.display = 'none';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = 'none';
-    const appList = document.getElementById('admin-applications-list');
-    if (appList) appList.style.display = 'none';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
     let userView = document.getElementById('user-manager-view');
     if (!userView) {
@@ -764,33 +771,18 @@ class AdminDashboard {
     }
     userView.style.display = 'block';
 
-    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'audit-log-view', 'calendar-manager-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-
     if (!this.userManager) {
       this.userManager = initUserManager(userView);
     } else {
       this.userManager.render();
     }
     this.currentView = 'users';
-  }
-
-  setupCalendarButton() {
-    const btn = document.getElementById('btn-calendar-manager');
-    if (btn) {
-      btn.addEventListener('click', () => this.showCalendarManager());
-    }
+    this.updateSidebarActive('users');
   }
 
   showCalendarManager() {
-    const filterBar = document.querySelector('.muni-filters');
-    if (filterBar) filterBar.style.display = 'none';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = 'none';
-    const appList = document.getElementById('admin-applications-list');
-    if (appList) appList.style.display = 'none';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
     let calView = document.getElementById('calendar-manager-view');
     if (!calView) {
@@ -801,30 +793,13 @@ class AdminDashboard {
     }
     calView.style.display = 'block';
 
-    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'audit-log-view', 'user-manager-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
-
     if (!this.calendarManager) {
       this.calendarManager = initCalendarManager(calView);
     } else {
       this.calendarManager.render();
     }
     this.currentView = 'calendar';
-  }
-
-  setupExportButton() {
-    this.exportManager = initExportManager();
-    const btn = document.getElementById('btn-export-data');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        if (this.exportManager && this.organizations) {
-          this.exportManager.exportOrganizationsCSV(this.organizations);
-          showToast('Exportacion iniciada', 'success');
-        }
-      });
-    }
+    this.updateSidebarActive('calendar');
   }
 
   initSearchGlobal() {
@@ -840,56 +815,16 @@ class AdminDashboard {
    */
   async showScheduleManager() {
     this.currentView = 'schedule';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
-    // Ocultar elementos de la vista de solicitudes
-    const filterBar = document.querySelector('.muni-filters');
-    if (filterBar) filterBar.style.display = 'none';
-    document.querySelector('.muni-search-bar').style.display = 'none';
-    document.getElementById('admin-applications-list').style.display = 'none';
-    document.getElementById('ministro-manager-view').style.display = 'none';
-    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-    // Mostrar vista de schedule manager
     const scheduleView = document.getElementById('schedule-manager-view');
     scheduleView.style.display = 'block';
 
-    // Cambiar texto del botón actual a "Volver a Solicitudes"
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      <span>Volver</span>
-    `;
-
-    // Restaurar otros botones de manager a su estado original
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
-      <span>Ministros</span>
-    `;
-
-    const uvBtn = document.getElementById('btn-uv-manager');
-    if (uvBtn) {
-      uvBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>
-        <span>Unidades Vecinales</span>
-      `;
-    }
-
-    // Inicializar schedule manager si no existe
     if (!this.scheduleManager) {
       this.scheduleManager = await initScheduleManager(scheduleView);
     }
+    this.updateSidebarActive('schedule');
   }
 
   /**
@@ -897,57 +832,16 @@ class AdminDashboard {
    */
   showMinistroManager() {
     this.currentView = 'ministro';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
-    // Ocultar elementos de la vista de solicitudes
-    const filterBarM = document.querySelector('.muni-filters');
-    if (filterBarM) filterBarM.style.display = 'none';
-    document.querySelector('.muni-search-bar').style.display = 'none';
-    document.getElementById('admin-applications-list').style.display = 'none';
-    document.getElementById('schedule-manager-view').style.display = 'none';
-    document.getElementById('uv-manager-view').style.display = 'none';
-    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-    // Mostrar vista de ministro manager
     const ministroView = document.getElementById('ministro-manager-view');
     ministroView.style.display = 'block';
 
-    // Cambiar texto del botón actual a "Volver a Solicitudes"
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      <span>Volver</span>
-    `;
-
-    // Restaurar otros botones de manager a su estado original
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-        <line x1="3" y1="10" x2="21" y2="10"></line>
-      </svg>
-      <span>Horarios</span>
-    `;
-
-    const uvBtn = document.getElementById('btn-uv-manager');
-    if (uvBtn) {
-      uvBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>
-        <span>Unidades Vecinales</span>
-      `;
-    }
-
-    // Inicializar ministro manager si no existe
     if (!this.ministroManager) {
       this.ministroManager = initMinistroManager(ministroView);
     }
+    this.updateSidebarActive('ministro');
   }
 
   /**
@@ -955,137 +849,46 @@ class AdminDashboard {
    */
   showUVManager() {
     this.currentView = 'uv';
+    this.hideApplicationElements();
+    this.hideAllManagerViews();
 
-    // Ocultar elementos de la vista de solicitudes
-    const filterBarUV = document.querySelector('.muni-filters');
-    if (filterBarUV) filterBarUV.style.display = 'none';
-    document.querySelector('.muni-search-bar').style.display = 'none';
-    document.getElementById('admin-applications-list').style.display = 'none';
-    document.getElementById('schedule-manager-view').style.display = 'none';
-    document.getElementById('ministro-manager-view').style.display = 'none';
-    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-    // Mostrar vista de UV manager
     const uvView = document.getElementById('uv-manager-view');
     uvView.style.display = 'block';
 
-    // Cambiar texto del botón actual a "Volver a Solicitudes"
-    const uvBtn = document.getElementById('btn-uv-manager');
-    uvBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      <span>Volver</span>
-    `;
-
-    // Restaurar otros botones de manager a su estado original
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-        <line x1="3" y1="10" x2="21" y2="10"></line>
-      </svg>
-      <span>Horarios</span>
-    `;
-
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
-      <span>Ministros</span>
-    `;
-
-    // Inicializar UV manager si no existe
     if (!this.uvManager) {
       this.uvManager = initUnidadesVecinalesManager(uvView);
     }
+    this.updateSidebarActive('uv');
   }
 
   /**
    * Muestra la vista de solicitudes
    */
-  async showApplications() {
+  async showApplications(skipReload = false) {
     this.currentView = 'applications';
 
-    // Recargar organizaciones del servidor
-    await this.loadOrganizations();
+    if (!skipReload) {
+      await this.loadOrganizations();
+    }
 
-    // Mostrar elementos de la vista de solicitudes
-    const filterBarApp = document.querySelector('.muni-filters');
-    if (filterBarApp) filterBarApp.style.display = 'block';
-    document.querySelector('.muni-search-bar').style.display = 'block';
-    document.getElementById('admin-applications-list').style.display = 'block';
+    this.hideAllManagerViews();
+    this.showApplicationElements();
 
-    // Ocultar vistas de managers
-    document.getElementById('schedule-manager-view').style.display = 'none';
-    document.getElementById('ministro-manager-view').style.display = 'none';
-    document.getElementById('uv-manager-view').style.display = 'none';
-    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-    // Actualizar lista y stats
     this.renderApplicationsList();
     this.updateStats();
-
-    // Restaurar botón de horarios
-    const scheduleBtn = document.getElementById('btn-schedule-manager');
-    scheduleBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-        <line x1="3" y1="10" x2="21" y2="10"></line>
-      </svg>
-      <span>Horarios</span>
-    `;
-    scheduleBtn.disabled = false;
-    scheduleBtn.style.opacity = '1';
-
-    // Restaurar botón de ministros
-    const ministroBtn = document.getElementById('btn-ministro-manager');
-    ministroBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
-      <span>Ministros</span>
-    `;
-    ministroBtn.disabled = false;
-    ministroBtn.style.opacity = '1';
-
-    // Restaurar botón de unidades vecinales
-    const uvBtn = document.getElementById('btn-uv-manager');
-    if (uvBtn) {
-      uvBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>
-        <span>Unidades Vecinales</span>
-      `;
-      uvBtn.disabled = false;
-      uvBtn.style.opacity = '1';
-    }
+    this.updateSidebarActive('applications');
   }
 
   /**
    * Configura los event listeners
    */
   setupEventListeners() {
-    // Filtros (nueva barra unificada)
-    document.querySelectorAll('.muni-filter-chip').forEach(chip => {
+    // Filtros limpios
+    document.querySelectorAll('.muni-filter-chip-clean').forEach(chip => {
       chip.addEventListener('click', (e) => {
-        const target = e.target.closest('.muni-filter-chip');
+        const target = e.target.closest('.muni-filter-chip-clean');
         if (!target) return;
-        document.querySelectorAll('.muni-filter-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.muni-filter-chip-clean').forEach(c => c.classList.remove('active'));
         target.classList.add('active');
         this.currentFilter = target.dataset.filter;
         this.renderApplicationsList();
@@ -1107,42 +910,52 @@ class AdminDashboard {
    */
   updateStats() {
     const orgs = organizationsService.getAll();
-    // Mantener sincronizado this.organizations
     this.organizations = orgs;
-    console.log('📊 Admin Stats - Total orgs:', orgs.length, orgs);
 
     const counts = {
       pending: 0,
       ministro: 0,
       review: 0,
       registry: 0,
-      approved: 0
+      approved: 0,
+      process: 0
     };
 
-    // Contar manualmente para evitar NaN
     orgs.forEach(o => {
       if (o.status === ORG_STATUS.PENDING_REVIEW) counts.pending++;
-      else if (o.status === ORG_STATUS.WAITING_MINISTRO_REQUEST || o.status === ORG_STATUS.MINISTRO_SCHEDULED) counts.ministro++;
-      else if (o.status === ORG_STATUS.IN_REVIEW) counts.review++;
-      else if (o.status === ORG_STATUS.SENT_TO_REGISTRY) counts.registry++;
+      else if (o.status === ORG_STATUS.WAITING_MINISTRO_REQUEST || o.status === ORG_STATUS.MINISTRO_SCHEDULED) { counts.ministro++; counts.process++; }
+      else if (o.status === ORG_STATUS.IN_REVIEW) { counts.review++; counts.process++; }
+      else if (o.status === ORG_STATUS.SENT_TO_REGISTRY) { counts.registry++; counts.process++; }
+      else if (o.status === ORG_STATUS.MINISTRO_APPROVED) counts.process++;
+      else if (o.status === ORG_STATUS.REGISTRY_OBSERVATIONS) counts.process++;
       else if (o.status === ORG_STATUS.APPROVED) counts.approved++;
     });
 
-    console.log('📊 Counts:', counts);
-
+    // Filter chip counters
     const pendingEl = document.getElementById('admin-pending-count');
     const ministroEl = document.getElementById('admin-ministro-count');
     const reviewEl = document.getElementById('admin-review-count');
     const registryEl = document.getElementById('admin-registry-count');
     const approvedEl = document.getElementById('admin-approved-count');
 
-    console.log('📊 Elements found:', { pendingEl, ministroEl, reviewEl, registryEl, approvedEl });
-
     if (pendingEl) pendingEl.textContent = counts.pending;
     if (ministroEl) ministroEl.textContent = counts.ministro;
     if (reviewEl) reviewEl.textContent = counts.review;
     if (registryEl) registryEl.textContent = counts.registry;
     if (approvedEl) approvedEl.textContent = counts.approved;
+
+    // Stat cards
+    const statTotal = document.getElementById('stat-total');
+    const statPending = document.getElementById('stat-pending');
+    const statProcess = document.getElementById('stat-process');
+    const statApproved = document.getElementById('stat-approved');
+    if (statTotal) statTotal.textContent = orgs.length;
+    if (statPending) statPending.textContent = counts.pending;
+    if (statProcess) statProcess.textContent = counts.process;
+    if (statApproved) statApproved.textContent = counts.approved;
+
+    // Sidebar badges
+    this.updateSidebarBadges();
   }
 
   /**
@@ -1150,15 +963,25 @@ class AdminDashboard {
    */
   getFilteredOrganizations() {
     let orgs = organizationsService.getAll();
-    // Mantener sincronizado this.organizations
     this.organizations = orgs;
 
-    // Filtrar por estado
+    // Filtrar por estado (con soporte para filtros agrupados)
     if (this.currentFilter !== 'all') {
-      orgs = orgs.filter(o => o.status === this.currentFilter);
+      if (this.currentFilter === 'in_process') {
+        // Grupo "en proceso": todos los estados intermedios
+        const processStatuses = [
+          ORG_STATUS.WAITING_MINISTRO_REQUEST, ORG_STATUS.MINISTRO_SCHEDULED,
+          ORG_STATUS.MINISTRO_APPROVED, ORG_STATUS.IN_REVIEW,
+          ORG_STATUS.SENT_TO_REGISTRY, ORG_STATUS.REGISTRY_OBSERVATIONS
+        ];
+        orgs = orgs.filter(o => processStatuses.includes(o.status));
+      } else if (this.currentFilter === 'approved_group') {
+        orgs = orgs.filter(o => o.status === ORG_STATUS.APPROVED);
+      } else {
+        orgs = orgs.filter(o => o.status === this.currentFilter);
+      }
     }
 
-    // Filtrar por búsqueda
     if (this.searchQuery) {
       orgs = orgs.filter(o =>
         getOrgName(o)?.toLowerCase().includes(this.searchQuery) ||
