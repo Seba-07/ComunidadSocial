@@ -108,9 +108,26 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   }
 });
 
-// Get current user
+// Get current user - devuelve datos completos del perfil (sin password)
 router.get('/me', authenticate, async (req, res) => {
-  res.json({ user: req.user });
+  const user = req.user;
+  res.json({
+    user: {
+      _id: user._id,
+      rut: user.rut || '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone || '',
+      address: user.address || '',
+      region: user.region || '',
+      commune: user.commune || '',
+      role: user.role,
+      active: user.active,
+      createdAt: user.createdAt,
+      mustChangePassword: user.mustChangePassword
+    }
+  });
 });
 
 // Change password - Rate limited: 3 intentos por hora (operación sensible) + validación Zod

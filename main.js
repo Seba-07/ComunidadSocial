@@ -729,149 +729,171 @@ window.addEventListener('offline', () => {
 // Profile Page Functions
 // ========================================
 
-function loadProfileData() {
+async function loadProfileData() {
+  // Siempre consultar al servidor para datos frescos y completos
+  try {
+    const data = await apiService.getCurrentUser();
+    if (data && data.user) {
+      // Actualizar localStorage con datos completos del servidor
+      const safeUser = {
+        _id: data.user._id,
+        rut: data.user.rut || '',
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+        phone: data.user.phone || '',
+        address: data.user.address || '',
+        region: data.user.region || '',
+        commune: data.user.commune || '',
+        role: data.user.role,
+        createdAt: data.user.createdAt || '',
+        mustChangePassword: data.user.mustChangePassword
+      };
+      localStorage.setItem('currentUser', JSON.stringify(safeUser));
+      renderProfileUI(safeUser);
+      return;
+    }
+  } catch (error) {
+    console.warn('No se pudo obtener datos del servidor, usando localStorage:', error.message);
+  }
+
+  // Fallback: usar localStorage si el servidor no responde
   const userData = localStorage.getItem('currentUser');
   if (!userData) {
     console.log('loadProfileData: No user data found');
     return;
   }
-
   try {
-    const user = JSON.parse(userData);
-    const profile = user.profile || {};
-
-    // Los datos pueden venir directamente en user o dentro de user.profile
-    // Priorizar datos directos del usuario sobre los del perfil
-    const firstName = user.firstName || profile.firstName || '';
-    const lastName = user.lastName || profile.lastName || '';
-    const rut = user.rut || profile.rut || '';
-    const phone = user.phone || profile.phone || '';
-    const address = user.address || profile.address || '';
-    // Para MUNICIPALIDAD, usar RM y Renca como valores predeterminados
-    const region = user.region || profile.region || (user.role === 'MUNICIPALIDAD' ? 'RM' : '');
-    const commune = user.commune || profile.commune || (user.role === 'MUNICIPALIDAD' ? 'Renca' : '');
-    const photo = user.photo || profile.photo || '';
-
-    console.log('loadProfileData: Loading profile for', user.email, { firstName, lastName, rut, phone, address });
-
-    // Header
-    const initials = `${(firstName || 'U')[0]}${(lastName || 'S')[0]}`.toUpperCase();
-    const fullName = `${firstName} ${lastName}`.trim() || 'Usuario';
-
-    const profileInitialsEl = document.getElementById('profile-initials');
-    const profileFullnameEl = document.getElementById('profile-fullname');
-    const profileEmailEl = document.getElementById('profile-email');
-
-    if (profileInitialsEl) profileInitialsEl.textContent = initials;
-    if (profileFullnameEl) profileFullnameEl.textContent = fullName;
-    if (profileEmailEl) profileEmailEl.textContent = user.email || '';
-
-    // Profile photo
-    const photoEl = document.getElementById('profile-photo');
-    const initialsEl = document.getElementById('profile-initials');
-    if (photoEl && initialsEl) {
-      if (photo) {
-        photoEl.src = photo;
-        photoEl.style.display = 'block';
-        initialsEl.style.display = 'none';
-      } else {
-        photoEl.style.display = 'none';
-        initialsEl.style.display = 'block';
-      }
-    }
-
-    // Role badge
-    const roleBadge = document.getElementById('profile-role-badge');
-    if (roleBadge) {
-      const roleLabels = {
-        'MUNICIPALIDAD': 'Municipalidad',
-        'ORGANIZADOR': 'Organizador',
-        'MIEMBRO': 'Miembro',
-        'MINISTRO_FE': 'Ministro de Fe'
-      };
-      roleBadge.textContent = roleLabels[user.role] || 'Usuario';
-      roleBadge.classList.toggle('admin', user.role === 'MUNICIPALIDAD');
-    }
-
-    // Get region name
-    const regionObj = CHILE_REGIONS.find(r => r.id === region);
-    const regionName = regionObj ? regionObj.name : '-';
-
-    // Display values - con verificación de existencia
-    const displayFullname = document.getElementById('display-fullname');
-    const displayRut = document.getElementById('display-rut');
-    const displayPhone = document.getElementById('display-phone');
-    const displayAddress = document.getElementById('display-address');
-    const displayRegion = document.getElementById('display-region');
-    const displayCommune = document.getElementById('display-commune');
-    const displayEmail = document.getElementById('display-email');
-
-    if (displayFullname) displayFullname.textContent = fullName;
-    if (displayRut) displayRut.textContent = rut || '-';
-    if (displayPhone) displayPhone.textContent = phone || '-';
-    if (displayAddress) displayAddress.textContent = address || '-';
-    if (displayRegion) displayRegion.textContent = regionName;
-    if (displayCommune) displayCommune.textContent = commune || '-';
-    if (displayEmail) displayEmail.textContent = user.email || '-';
-
-    // Form values - con verificación de existencia
-    const profileFirstname = document.getElementById('profile-firstname');
-    const profileLastname = document.getElementById('profile-lastname');
-    const profileRut = document.getElementById('profile-rut');
-    const profilePhone = document.getElementById('profile-phone');
-    const profileAddress = document.getElementById('profile-address');
-
-    if (profileFirstname) profileFirstname.value = firstName;
-    if (profileLastname) profileLastname.value = lastName;
-    if (profileRut) profileRut.value = rut;
-    if (profilePhone) profilePhone.value = phone || '+56 ';
-    if (profileAddress) profileAddress.value = address;
-
-    // Load regions dropdown
-    const regionSelect = document.getElementById('profile-region');
-    if (regionSelect) {
-      regionSelect.innerHTML = '<option value="">Selecciona una región</option>';
-      CHILE_REGIONS.forEach(r => {
-        const option = document.createElement('option');
-        option.value = r.id;
-        option.textContent = r.name;
-        if (r.id === region) {
-          option.selected = true;
-        }
-        regionSelect.appendChild(option);
-      });
-    }
-
-    // Load comunas if region is selected
-    if (region) {
-      loadComunas(region, commune);
-    }
-
-    // Account info
-    const displayAccountType = document.getElementById('display-account-type');
-    const displayCreated = document.getElementById('display-created');
-
-    if (displayAccountType) {
-      const roleLabels = {
-        'MUNICIPALIDAD': 'Municipalidad',
-        'ORGANIZADOR': 'Organizador',
-        'MIEMBRO': 'Miembro',
-        'MINISTRO_FE': 'Ministro de Fe'
-      };
-      displayAccountType.textContent = roleLabels[user.role] || 'Usuario';
-    }
-
-    if (user.createdAt && displayCreated) {
-      const date = new Date(user.createdAt);
-      displayCreated.textContent = date.toLocaleDateString('es-CL', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-
+    renderProfileUI(JSON.parse(userData));
   } catch (error) {
     console.error('Error loading profile data:', error);
+  }
+}
+
+function renderProfileUI(user) {
+  const firstName = user.firstName || '';
+  const lastName = user.lastName || '';
+  const rut = user.rut || '';
+  const phone = user.phone || '';
+  const address = user.address || '';
+  const region = user.region || (user.role === 'MUNICIPALIDAD' ? 'RM' : '');
+  const commune = user.commune || (user.role === 'MUNICIPALIDAD' ? 'Renca' : '');
+
+  // Header
+  const initials = `${(firstName || 'U')[0]}${(lastName || 'S')[0]}`.toUpperCase();
+  const fullName = `${firstName} ${lastName}`.trim() || 'Usuario';
+
+  const profileInitialsEl = document.getElementById('profile-initials');
+  const profileFullnameEl = document.getElementById('profile-fullname');
+  const profileEmailEl = document.getElementById('profile-email');
+
+  if (profileInitialsEl) profileInitialsEl.textContent = initials;
+  if (profileFullnameEl) profileFullnameEl.textContent = fullName;
+  if (profileEmailEl) profileEmailEl.textContent = user.email || '';
+
+  // Profile photo
+  const photoEl = document.getElementById('profile-photo');
+  const initialsEl = document.getElementById('profile-initials');
+  if (photoEl && initialsEl) {
+    const photo = user.photo || '';
+    if (photo) {
+      photoEl.src = photo;
+      photoEl.style.display = 'block';
+      initialsEl.style.display = 'none';
+    } else {
+      photoEl.style.display = 'none';
+      initialsEl.style.display = 'block';
+    }
+  }
+
+  // Role badge
+  const roleBadge = document.getElementById('profile-role-badge');
+  if (roleBadge) {
+    const roleLabels = {
+      'MUNICIPALIDAD': 'Municipalidad',
+      'ORGANIZADOR': 'Organizador',
+      'MIEMBRO': 'Miembro',
+      'MINISTRO_FE': 'Ministro de Fe'
+    };
+    roleBadge.textContent = roleLabels[user.role] || 'Usuario';
+    roleBadge.classList.toggle('admin', user.role === 'MUNICIPALIDAD');
+  }
+
+  // Get region name
+  const regionObj = CHILE_REGIONS.find(r => r.id === region);
+  const regionName = regionObj ? regionObj.name : '-';
+
+  // Display values
+  const displayFullname = document.getElementById('display-fullname');
+  const displayRut = document.getElementById('display-rut');
+  const displayPhone = document.getElementById('display-phone');
+  const displayAddress = document.getElementById('display-address');
+  const displayRegion = document.getElementById('display-region');
+  const displayCommune = document.getElementById('display-commune');
+  const displayEmail = document.getElementById('display-email');
+
+  if (displayFullname) displayFullname.textContent = fullName;
+  if (displayRut) displayRut.textContent = rut || '-';
+  if (displayPhone) displayPhone.textContent = phone || '-';
+  if (displayAddress) displayAddress.textContent = address || '-';
+  if (displayRegion) displayRegion.textContent = regionName;
+  if (displayCommune) displayCommune.textContent = commune || '-';
+  if (displayEmail) displayEmail.textContent = user.email || '-';
+
+  // Form values
+  const profileFirstname = document.getElementById('profile-firstname');
+  const profileLastname = document.getElementById('profile-lastname');
+  const profileRut = document.getElementById('profile-rut');
+  const profilePhone = document.getElementById('profile-phone');
+  const profileAddress = document.getElementById('profile-address');
+
+  if (profileFirstname) profileFirstname.value = firstName;
+  if (profileLastname) profileLastname.value = lastName;
+  if (profileRut) profileRut.value = rut;
+  if (profilePhone) profilePhone.value = phone || '+56 ';
+  if (profileAddress) profileAddress.value = address;
+
+  // Load regions dropdown
+  const regionSelect = document.getElementById('profile-region');
+  if (regionSelect) {
+    regionSelect.innerHTML = '<option value="">Selecciona una región</option>';
+    CHILE_REGIONS.forEach(r => {
+      const option = document.createElement('option');
+      option.value = r.id;
+      option.textContent = r.name;
+      if (r.id === region) {
+        option.selected = true;
+      }
+      regionSelect.appendChild(option);
+    });
+  }
+
+  // Load comunas if region is selected
+  if (region) {
+    loadComunas(region, commune);
+  }
+
+  // Account info
+  const displayAccountType = document.getElementById('display-account-type');
+  const displayCreated = document.getElementById('display-created');
+
+  if (displayAccountType) {
+    const roleLabels = {
+      'MUNICIPALIDAD': 'Municipalidad',
+      'ORGANIZADOR': 'Organizador',
+      'MIEMBRO': 'Miembro',
+      'MINISTRO_FE': 'Ministro de Fe'
+    };
+    displayAccountType.textContent = roleLabels[user.role] || 'Usuario';
+  }
+
+  if (user.createdAt && displayCreated) {
+    const date = new Date(user.createdAt);
+    displayCreated.textContent = date.toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
 }
 
