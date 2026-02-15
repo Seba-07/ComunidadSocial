@@ -130,6 +130,45 @@ router.get('/me', authenticate, async (req, res) => {
   });
 });
 
+// Update profile - actualizar datos personales del usuario autenticado
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Solo permitir campos de perfil (no role, password, etc.)
+    const allowedFields = ['firstName', 'lastName', 'phone', 'address', 'region', 'commune'];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    }
+
+    await user.save();
+
+    res.json({
+      user: {
+        _id: user._id,
+        rut: user.rut || '',
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone || '',
+        address: user.address || '',
+        region: user.region || '',
+        commune: user.commune || '',
+        role: user.role,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Error al actualizar perfil' });
+  }
+});
+
 // Change password - Rate limited: 3 intentos por hora (operación sensible) + validación Zod
 router.post('/change-password', authenticate, sensitiveLimiter, validate(changePasswordSchema), async (req, res) => {
   try {

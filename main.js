@@ -1033,10 +1033,10 @@ function initProfile() {
 
       // Guardar en el servidor
       try {
-        const updatedUser = await apiService.updateUser(user._id || user.id, profileData);
+        const result = await apiService.updateProfile(profileData);
 
         // Actualizar datos locales con la respuesta del servidor
-        const mergedUser = { ...user, ...updatedUser };
+        const mergedUser = { ...user, ...(result.user || result) };
         localStorage.setItem('currentUser', JSON.stringify(mergedUser));
 
         // Update header name

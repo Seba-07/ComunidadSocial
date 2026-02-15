@@ -344,6 +344,10 @@ class ApiService {
     return this.get('/auth/me');
   }
 
+  async updateProfile(profileData) {
+    return this.put('/auth/profile', profileData);
+  }
+
   async changePassword(currentPassword, newPassword) {
     return this.post('/auth/change-password', { currentPassword, newPassword });
   }
