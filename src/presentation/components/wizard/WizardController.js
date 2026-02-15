@@ -5889,7 +5889,7 @@ Secretaria Municipal`;
     const formattedContent = this.formatDocumentForPreview(doc.content.split('========== FIRMAS ==========')[0]);
 
     const modalHTML = `
-      <div class="modal-overlay" id="preview-document-modal">
+      <div class="modal-overlay" id="preview-document-modal" style="z-index: 10001;">
         <div class="modal-content modal-document-preview" style="max-width: 900px; width: 95%; max-height: 95vh; display: flex; flex-direction: column;">
           <div class="modal-document-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0;">
             <h3 style="margin: 0; font-size: 18px;">${docNames[docType] || docType}</h3>
