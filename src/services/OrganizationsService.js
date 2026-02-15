@@ -574,6 +574,25 @@ class OrganizationsService {
   getScheduledMinistros() {
     return this.organizations.filter(org => org.status === ORG_STATUS.MINISTRO_SCHEDULED);
   }
+
+  /**
+   * Solicita la disolución de una organización
+   */
+  async dissolveOrganization(id, reason, details = '') {
+    try {
+      const comment = `Motivo: ${reason}. ${details}`.trim();
+      const updated = await apiService.updateOrgStatus(id, ORG_STATUS.DISSOLVED, comment);
+      const index = this.organizations.findIndex(org => org.id === id || org._id === id);
+      if (index !== -1) {
+        this.organizations[index] = updated;
+        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+      }
+      return updated;
+    } catch (e) {
+      console.error('Error dissolving organization:', e);
+      throw e;
+    }
+  }
 }
 
 // Instancia singleton

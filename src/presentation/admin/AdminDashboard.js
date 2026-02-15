@@ -11,6 +11,12 @@ import { initScheduleManager } from './ScheduleManager.js';
 import { initMinistroManager } from './MinistroManager.js';
 import { initUnidadesVecinalesManager } from './UnidadesVecinalesManager.js';
 import { initEstatutosAdminManager } from './EstatutosAdminManager.js';
+import { initMetricsDashboardManager } from './MetricsDashboardManager.js';
+import { initAuditLogManager } from './AuditLogManager.js';
+import { initUserManager } from './UserManager.js';
+import { initCalendarManager } from './CalendarManager.js';
+import { initSearchGlobalManager } from './SearchGlobalManager.js';
+import { initExportManager } from './ExportManager.js';
 import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
@@ -51,6 +57,11 @@ class AdminDashboard {
     this.ministroManager = null;
     this.uvManager = null;
     this.estatutosManager = null;
+    this.metricsManager = null;
+    this.auditLogManager = null;
+    this.userManager = null;
+    this.calendarManager = null;
+    this.exportManager = null;
   }
 
   /**
@@ -71,6 +82,12 @@ class AdminDashboard {
     this.setupEstatutosManagerButton();
     this.setupTimbreManagerButton();
     this.setupDocumentosManagerButton();
+    this.setupMetricsButton();
+    this.setupAuditLogButton();
+    this.setupUserManagerButton();
+    this.setupCalendarButton();
+    this.setupExportButton();
+    this.initSearchGlobal();
   }
 
   /**
@@ -644,6 +661,180 @@ class AdminDashboard {
     });
   }
 
+  // ============ NUEVOS MANAGERS ============
+
+  setupMetricsButton() {
+    const btn = document.getElementById('btn-metrics-manager');
+    if (btn) {
+      btn.addEventListener('click', () => this.showMetricsManager());
+    }
+  }
+
+  showMetricsManager() {
+    // Ocultar elementos de la vista de solicitudes
+    const filterBar = document.querySelector('.muni-filters');
+    if (filterBar) filterBar.style.display = 'none';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = 'none';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = 'none';
+
+    // Mostrar vista de metricas
+    let metricsView = document.getElementById('metrics-manager-view');
+    if (!metricsView) {
+      metricsView = document.createElement('div');
+      metricsView.id = 'metrics-manager-view';
+      metricsView.style.cssText = 'padding: 20px;';
+      document.querySelector('.admin-dashboard').appendChild(metricsView);
+    }
+    metricsView.style.display = 'block';
+
+    // Ocultar otras vistas
+    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    if (!this.metricsManager) {
+      this.metricsManager = initMetricsDashboardManager(metricsView);
+    } else {
+      this.metricsManager.render();
+    }
+    this.currentView = 'metrics';
+  }
+
+  setupAuditLogButton() {
+    const btn = document.getElementById('btn-audit-log');
+    if (btn) {
+      btn.addEventListener('click', () => this.showAuditLog());
+    }
+  }
+
+  showAuditLog() {
+    const filterBar = document.querySelector('.muni-filters');
+    if (filterBar) filterBar.style.display = 'none';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = 'none';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = 'none';
+
+    let auditView = document.getElementById('audit-log-view');
+    if (!auditView) {
+      auditView = document.createElement('div');
+      auditView.id = 'audit-log-view';
+      auditView.style.cssText = 'padding: 20px;';
+      document.querySelector('.admin-dashboard').appendChild(auditView);
+    }
+    auditView.style.display = 'block';
+
+    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    if (!this.auditLogManager) {
+      this.auditLogManager = initAuditLogManager(auditView);
+    } else {
+      this.auditLogManager.render();
+    }
+    this.currentView = 'audit';
+  }
+
+  setupUserManagerButton() {
+    const btn = document.getElementById('btn-user-manager');
+    if (btn) {
+      btn.addEventListener('click', () => this.showUserManager());
+    }
+  }
+
+  showUserManager() {
+    const filterBar = document.querySelector('.muni-filters');
+    if (filterBar) filterBar.style.display = 'none';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = 'none';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = 'none';
+
+    let userView = document.getElementById('user-manager-view');
+    if (!userView) {
+      userView = document.createElement('div');
+      userView.id = 'user-manager-view';
+      userView.style.cssText = 'padding: 20px;';
+      document.querySelector('.admin-dashboard').appendChild(userView);
+    }
+    userView.style.display = 'block';
+
+    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'audit-log-view', 'calendar-manager-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    if (!this.userManager) {
+      this.userManager = initUserManager(userView);
+    } else {
+      this.userManager.render();
+    }
+    this.currentView = 'users';
+  }
+
+  setupCalendarButton() {
+    const btn = document.getElementById('btn-calendar-manager');
+    if (btn) {
+      btn.addEventListener('click', () => this.showCalendarManager());
+    }
+  }
+
+  showCalendarManager() {
+    const filterBar = document.querySelector('.muni-filters');
+    if (filterBar) filterBar.style.display = 'none';
+    const searchBar = document.querySelector('.muni-search-bar');
+    if (searchBar) searchBar.style.display = 'none';
+    const appList = document.getElementById('admin-applications-list');
+    if (appList) appList.style.display = 'none';
+
+    let calView = document.getElementById('calendar-manager-view');
+    if (!calView) {
+      calView = document.createElement('div');
+      calView.id = 'calendar-manager-view';
+      calView.style.cssText = 'padding: 20px;';
+      document.querySelector('.admin-dashboard').appendChild(calView);
+    }
+    calView.style.display = 'block';
+
+    ['schedule-manager-view', 'ministro-manager-view', 'uv-manager-view', 'metrics-manager-view', 'audit-log-view', 'user-manager-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    if (!this.calendarManager) {
+      this.calendarManager = initCalendarManager(calView);
+    } else {
+      this.calendarManager.render();
+    }
+    this.currentView = 'calendar';
+  }
+
+  setupExportButton() {
+    this.exportManager = initExportManager();
+    const btn = document.getElementById('btn-export-data');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (this.exportManager && this.organizations) {
+          this.exportManager.exportOrganizationsCSV(this.organizations);
+          showToast('Exportacion iniciada', 'success');
+        }
+      });
+    }
+  }
+
+  initSearchGlobal() {
+    try {
+      this.searchGlobal = initSearchGlobalManager();
+    } catch (e) {
+      console.warn('SearchGlobalManager init error:', e);
+    }
+  }
+
   /**
    * Muestra la vista de gestión de horarios
    */
@@ -656,6 +847,7 @@ class AdminDashboard {
     document.querySelector('.muni-search-bar').style.display = 'none';
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
+    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     // Mostrar vista de schedule manager
     const scheduleView = document.getElementById('schedule-manager-view');
@@ -713,6 +905,7 @@ class AdminDashboard {
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('uv-manager-view').style.display = 'none';
+    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     // Mostrar vista de ministro manager
     const ministroView = document.getElementById('ministro-manager-view');
@@ -770,6 +963,7 @@ class AdminDashboard {
     document.getElementById('admin-applications-list').style.display = 'none';
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
+    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     // Mostrar vista de UV manager
     const uvView = document.getElementById('uv-manager-view');
@@ -833,6 +1027,7 @@ class AdminDashboard {
     document.getElementById('schedule-manager-view').style.display = 'none';
     document.getElementById('ministro-manager-view').style.display = 'none';
     document.getElementById('uv-manager-view').style.display = 'none';
+    ['metrics-manager-view', 'audit-log-view', 'user-manager-view', 'calendar-manager-view'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     // Actualizar lista y stats
     this.renderApplicationsList();
@@ -1872,7 +2067,7 @@ class AdminDashboard {
         });
       });
 
-      confirmModal.querySelector('.btn-confirm-reject').addEventListener('click', () => {
+      confirmModal.querySelector('.btn-confirm-reject').addEventListener('click', async () => {
         const generalComment = confirmModal.querySelector('#reject-general-observation')?.value.trim() || '';
 
         // Recolectar todas las correcciones con sus comentarios actualizados
@@ -1884,7 +2079,7 @@ class AdminDashboard {
           commission: { ...markedCorrections.commission }
         };
 
-        const result = organizationsService.rejectWithCorrections(org.id, corrections, generalComment);
+        const result = await organizationsService.rejectWithCorrections(org.id, corrections, generalComment);
         if (result) {
           // Limpiar borrador guardado
           localStorage.removeItem(`review_draft_${org.id}`);
@@ -3847,8 +4042,8 @@ class AdminDashboard {
   /**
    * Actualiza el estado de una organización
    */
-  updateOrgStatus(orgId, newStatus, comment) {
-    const org = organizationsService.updateStatus(orgId, newStatus, comment);
+  async updateOrgStatus(orgId, newStatus, comment) {
+    const org = await organizationsService.updateStatus(orgId, newStatus, comment);
     if (org) {
       showToast(`Estado actualizado: ${ORG_STATUS_LABELS[newStatus]}`, 'success');
       this.renderApplicationsList();
@@ -4241,7 +4436,7 @@ class AdminDashboard {
 
       // Actualizar estado a sent_registry
       const orgId = org._id || org.id;
-      const result = organizationsService.updateStatus(orgId, ORG_STATUS.SENT_TO_REGISTRY, comment);
+      const result = await organizationsService.updateStatus(orgId, ORG_STATUS.SENT_TO_REGISTRY, comment);
       if (result) {
         showToast('Solicitud enviada al Registro Civil', 'success');
         confirmModal.remove();
@@ -4350,7 +4545,7 @@ class AdminDashboard {
 
       // Actualizar estado a approved
       const orgId = org._id || org.id;
-      const result = organizationsService.updateStatus(orgId, ORG_STATUS.APPROVED, comment);
+      const result = await organizationsService.updateStatus(orgId, ORG_STATUS.APPROVED, comment);
       if (result) {
         showToast('¡Organización aprobada exitosamente!', 'success');
         confirmModal.remove();
@@ -4456,7 +4651,7 @@ class AdminDashboard {
 
       // Actualizar estado a registry_observations
       const orgId = org._id || org.id;
-      const result = organizationsService.updateStatus(orgId, ORG_STATUS.REGISTRY_OBSERVATIONS, comment);
+      const result = await organizationsService.updateStatus(orgId, ORG_STATUS.REGISTRY_OBSERVATIONS, comment);
       if (result) {
         showToast('Observaciones registradas. El usuario será notificado.', 'success');
         obsModal.remove();
@@ -5211,7 +5406,7 @@ class AdminDashboard {
 
         const provisionalDirectorio = { president, secretary, treasurer };
 
-        const updated = organizationsService.approveByMinistro(org.id, provisionalDirectorio, signatureData);
+        const updated = await organizationsService.approveByMinistro(org.id, provisionalDirectorio, signatureData);
         if (updated) {
           showToast('Directorio Provisorio designado. La organización puede continuar el proceso.', 'success');
           modal.remove();

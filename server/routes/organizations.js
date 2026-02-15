@@ -6,8 +6,9 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
-import { validate, createOrganizationSchema, statusChangeSchema } from '../middleware/validation.js';
+import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { emailService } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -171,7 +172,7 @@ router.get('/my', authenticate, async (req, res) => {
 });
 
 // Get organization by ID
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id)
       .populate('userId', 'firstName lastName email')
@@ -340,7 +341,7 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
 });
 
 // Update organization - Protegido contra mass assignment
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -470,6 +471,26 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
     });
 
     res.json(organization);
+
+    // Send email notification
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          await emailService.sendMinistroAssignmentNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            ministroName: req.body.ministroName || '',
+            scheduledDate: req.body.scheduledDate || '',
+            scheduledTime: req.body.scheduledTime || '',
+            location: req.body.location || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending ministro assignment email:', emailErr);
+      }
+    }
   } catch (error) {
     console.error('Schedule ministro error:', error);
     res.status(500).json({ error: 'Error al agendar Ministro de Fe' });
@@ -514,6 +535,23 @@ router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'M
     });
 
     res.json(organization);
+
+    // Send email notification
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          await emailService.sendApprovalNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            certNumber: organization.certNumber || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending approval email:', emailErr);
+      }
+    }
   } catch (error) {
     console.error('Approve ministro error:', error);
     res.status(500).json({ error: 'Error al aprobar' });
@@ -553,7 +591,7 @@ function isValidStatusTransition(fromStatus, toStatus) {
 }
 
 // Update status (Admin only) - Con validación Zod
-router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validate(statusChangeSchema), async (req, res) => {
+router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), validate(statusChangeSchema), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -561,15 +599,14 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validate(
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    const { status, comment, forceTransition } = req.body;
+    const { status, comment } = req.body;
     const currentStatus = organization.status;
 
-    // Validar transición de estado (a menos que se fuerce)
-    if (!forceTransition && !isValidStatusTransition(currentStatus, status)) {
+    // Validar transición de estado
+    if (!isValidStatusTransition(currentStatus, status)) {
       return res.status(400).json({
         error: `Transición de estado no permitida: ${currentStatus} → ${status}`,
-        allowedTransitions: VALID_STATUS_TRANSITIONS[currentStatus] || [],
-        hint: 'Use forceTransition: true para forzar (solo casos excepcionales)'
+        allowedTransitions: VALID_STATUS_TRANSITIONS[currentStatus] || []
       });
     }
 
@@ -582,24 +619,57 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validate(
 
     await organization.save();
 
-    // Notify user
+    // Notify user con labels legibles en español
+    const STATUS_LABELS = {
+      'draft': 'Borrador',
+      'waiting_ministro': 'Esperando Ministro de Fe',
+      'ministro_scheduled': 'Ministro Agendado',
+      'ministro_approved': 'Aprobado por Ministro',
+      'pending_review': 'Pendiente de Revisión',
+      'in_review': 'En Revisión',
+      'rejected': 'Requiere Correcciones',
+      'sent_registry': 'Enviado al Registro Civil',
+      'registry_observations': 'Observaciones del Registro',
+      'approved': 'Aprobada',
+      'dissolved': 'Disuelta'
+    };
+
+    const statusLabel = STATUS_LABELS[status] || status;
     await Notification.create({
       userId: organization.userId,
       type: 'status_change',
       title: 'Estado actualizado',
-      message: `El estado de tu organización ha cambiado a: ${status}`,
+      message: `El estado de tu organización ha cambiado a: ${statusLabel}`,
       organizationId: organization._id
     });
 
     res.json(organization);
+
+    // Send email notification
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          await emailService.sendStatusChangeNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            newStatus: status,
+            comment: comment || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending email notification:', emailErr);
+      }
+    }
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ error: 'Error al actualizar estado' });
   }
 });
 
-// Reject with corrections (Admin only)
-router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+// Reject with corrections (Admin only) - Con validación Zod
+router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), validate(rejectWithCorrectionsSchema), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -639,6 +709,24 @@ router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), async (re
     });
 
     res.json(organization);
+
+    // Send email notification
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          await emailService.sendRejectionNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            corrections: req.body.corrections || {},
+            comment: req.body.generalComment || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending rejection email:', emailErr);
+      }
+    }
   } catch (error) {
     console.error('Reject organization error:', error);
     res.status(500).json({ error: 'Error al rechazar' });

@@ -26,6 +26,10 @@ import newsRoutes from './routes/news.js';
 import estatutoTemplatesRoutes from './routes/estatutoTemplates.js';
 import organizationTypesRoutes from './routes/organizationTypes.js';
 import documentsRoutes from './routes/documents.js';
+import dashboardRoutes from './routes/dashboard.js';
+import auditLogRoutes from './routes/auditLog.js';
+import searchRoutes from './routes/search.js';
+import orgDocumentsRoutes from './routes/organizationDocuments.js';
 
 // Model for auto-migration
 import Organization from './models/Organization.js';
@@ -194,6 +198,10 @@ app.use('/api/news', newsRoutes);
 app.use('/api/estatuto-templates', estatutoTemplatesRoutes);
 app.use('/api/organization-types', organizationTypesRoutes);
 app.use('/api/documents', documentsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audit-log', auditLogRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/org-documents', orgDocumentsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

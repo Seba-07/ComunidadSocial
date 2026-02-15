@@ -7,6 +7,7 @@ import { organizationsService, ORG_STATUS } from '../../services/OrganizationsSe
 import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
 // ministroAssignmentService ya no se usa - Ministro de Fe solo es para constitución
 // import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
+import { orgDocumentService } from '../../services/OrgDocumentService.js';
 import { showToast } from '../../app.js';
 
 // Importar utilidades compartidas
@@ -25,6 +26,7 @@ class OrganizationDashboard {
   constructor() {
     this.currentOrg = null;
     this.currentTab = 'overview';
+    this.orgDocuments = [];
   }
 
   /**
@@ -347,6 +349,10 @@ class OrganizationDashboard {
               <span class="action-icon">📄</span>
               <span>Certificado de Residencia</span>
             </button>
+            <button class="quick-action-btn" id="btn-view-validation">
+              <span class="action-icon">✅</span>
+              <span>Ver Validación Ministro</span>
+            </button>
           </div>
         </div>
 
@@ -440,13 +446,13 @@ class OrganizationDashboard {
                     <span class="status-badge ${member.status || 'active'}">${member.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
                   </td>
                   <td class="actions-cell">
-                    <button class="btn-icon edit" data-action="edit-member" data-id="${member.id || index}" title="Editar">
+                    <button class="btn-icon btn-edit-member" data-rut="${member.rut}" title="Editar">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                       </svg>
                     </button>
-                    <button class="btn-icon delete" data-action="delete-member" data-id="${member.id || index}" title="Eliminar">
+                    <button class="btn-icon btn-delete-member" data-rut="${member.rut}" title="Eliminar">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1023,6 +1029,29 @@ class OrganizationDashboard {
             </div>
           </div>
         </div>
+
+        <!-- Documentos Subidos de la Organizacion -->
+        <div class="org-uploaded-documents-section" style="margin-top: 32px;">
+          <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">Documentos Subidos</h3>
+            <button class="btn-upload-org-doc" id="btn-upload-org-doc" style="
+              display: inline-flex; align-items: center; gap: 8px;
+              padding: 10px 20px; background: #3b82f6; color: white;
+              border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
+              cursor: pointer; transition: background 0.2s;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Subir Documento
+            </button>
+          </div>
+          <div id="org-documents-list" style="min-height: 60px;">
+            ${this.renderOrgDocuments()}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1086,6 +1115,409 @@ class OrganizationDashboard {
         </div>
       </div>
     `;
+  }
+
+  // ==========================================
+  // Documentos de la Organizacion - Metodos
+  // ==========================================
+
+  /**
+   * Categorias de documentos con labels y colores
+   */
+  get DOC_CATEGORIES() {
+    return {
+      ACTA_ASAMBLEA: { label: 'Acta de Asamblea', color: '#3b82f6' },
+      BALANCE: { label: 'Balance Financiero', color: '#10b981' },
+      INFORME: { label: 'Informe', color: '#8b5cf6' },
+      CERTIFICADO: { label: 'Certificado', color: '#f59e0b' },
+      CORRESPONDENCIA: { label: 'Correspondencia', color: '#06b6d4' },
+      OTRO: { label: 'Otro', color: '#6b7280' }
+    };
+  }
+
+  /**
+   * Carga los documentos subidos de la organizacion desde el servidor
+   */
+  async loadOrgDocuments() {
+    if (!this.currentOrg) return;
+    try {
+      const response = await orgDocumentService.getDocuments(this.currentOrg.id);
+      this.orgDocuments = response.documents || response || [];
+    } catch (error) {
+      console.error('Error al cargar documentos de la organizacion:', error);
+      this.orgDocuments = [];
+    }
+  }
+
+  /**
+   * Renderiza la lista de documentos subidos
+   */
+  renderOrgDocuments() {
+    if (!this.orgDocuments || this.orgDocuments.length === 0) {
+      return `
+        <div class="empty-state-card" style="
+          text-align: center; padding: 40px 20px;
+          background: #f9fafb; border: 2px dashed #e5e7eb;
+          border-radius: 12px;
+        ">
+          <span style="font-size: 48px; display: block; margin-bottom: 12px;">📂</span>
+          <p style="margin: 0; color: #6b7280; font-size: 15px;">No hay documentos subidos aun</p>
+          <p style="margin: 8px 0 0; color: #9ca3af; font-size: 13px;">Sube actas, balances, informes y otros documentos de tu organizacion</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="org-docs-grid" style="display: flex; flex-direction: column; gap: 12px;">
+        ${this.orgDocuments.map(doc => {
+          const catInfo = this.DOC_CATEGORIES[doc.category] || this.DOC_CATEGORIES.OTRO;
+          const uploadDate = doc.uploadDate || doc.createdAt;
+          const formattedDate = uploadDate ? new Date(uploadDate).toLocaleDateString('es-CL') : '-';
+          const fileSize = doc.size ? this.formatFileSize(doc.size) : (doc.fileSize ? this.formatFileSize(doc.fileSize) : '-');
+          return `
+            <div class="org-doc-item" style="
+              display: flex; align-items: center; gap: 16px;
+              padding: 16px; background: white;
+              border: 1px solid #e5e7eb; border-radius: 10px;
+              transition: box-shadow 0.2s;
+            ">
+              <div class="org-doc-icon" style="
+                width: 44px; height: 44px; border-radius: 10px;
+                background: ${catInfo.color}15; display: flex;
+                align-items: center; justify-content: center; flex-shrink: 0;
+              ">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${catInfo.color}" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </div>
+              <div class="org-doc-info" style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-weight: 600; color: #1f2937; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${doc.name || 'Sin nombre'}</span>
+                  <span style="
+                    display: inline-block; padding: 2px 10px; border-radius: 12px;
+                    font-size: 11px; font-weight: 600; color: white;
+                    background: ${catInfo.color};
+                  ">${catInfo.label}</span>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 4px; font-size: 12px; color: #9ca3af;">
+                  <span>${formattedDate}</span>
+                  <span>${fileSize}</span>
+                  ${doc.description ? `<span style="color: #6b7280;">${doc.description}</span>` : ''}
+                </div>
+              </div>
+              <div class="org-doc-actions" style="display: flex; gap: 8px; flex-shrink: 0;">
+                <button class="btn-download-org-doc" data-doc-id="${doc._id || doc.id}" title="Descargar" style="
+                  width: 36px; height: 36px; border: 1px solid #e5e7eb;
+                  border-radius: 8px; background: white; cursor: pointer;
+                  display: flex; align-items: center; justify-content: center;
+                  transition: background 0.2s;
+                ">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </button>
+                <button class="btn-delete-org-doc" data-doc-id="${doc._id || doc.id}" data-doc-name="${doc.name || ''}" title="Eliminar" style="
+                  width: 36px; height: 36px; border: 1px solid #fecaca;
+                  border-radius: 8px; background: white; cursor: pointer;
+                  display: flex; align-items: center; justify-content: center;
+                  transition: background 0.2s;
+                ">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  /**
+   * Formatea bytes a formato legible
+   */
+  formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+  }
+
+  /**
+   * Muestra el modal de subida de documentos
+   */
+  showUploadModal(parentOverlay) {
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal">
+        <div class="org-modal-header">
+          <h3>Subir Documento</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body">
+          <form id="form-upload-org-doc">
+            <div class="form-group">
+              <label>Archivo *</label>
+              <div id="upload-drop-zone" style="
+                border: 2px dashed #d1d5db; border-radius: 10px;
+                padding: 32px 20px; text-align: center; cursor: pointer;
+                transition: border-color 0.2s, background 0.2s;
+                background: #f9fafb;
+              ">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin: 0 auto 12px; display: block;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">Arrastra un archivo aqui o <strong style="color: #3b82f6;">haz clic para seleccionar</strong></p>
+                <p style="margin: 8px 0 0; color: #9ca3af; font-size: 12px;">PDF, Word, Excel, imagenes. Max 10 MB</p>
+                <input type="file" id="upload-file-input" style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" required>
+              </div>
+              <div id="upload-file-preview" style="display: none; margin-top: 12px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 20px;">📎</span>
+                  <div style="flex: 1; min-width: 0;">
+                    <span id="upload-file-name" style="font-weight: 600; color: #166534; font-size: 13px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <span id="upload-file-size" style="font-size: 12px; color: #4ade80;"></span>
+                  </div>
+                  <button type="button" id="upload-file-remove" style="
+                    background: none; border: none; cursor: pointer;
+                    color: #ef4444; font-size: 18px; line-height: 1;
+                  ">&times;</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nombre del Documento *</label>
+              <input type="text" id="upload-doc-name" placeholder="Ej: Acta Asamblea Enero 2026" required>
+            </div>
+            <div class="form-group">
+              <label>Descripcion</label>
+              <textarea id="upload-doc-description" rows="3" placeholder="Breve descripcion del contenido del documento..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Categoria *</label>
+              <select id="upload-doc-category" required>
+                <option value="">Seleccione una categoria</option>
+                <option value="ACTA_ASAMBLEA">Acta de Asamblea</option>
+                <option value="BALANCE">Balance Financiero</option>
+                <option value="INFORME">Informe</option>
+                <option value="CERTIFICADO">Certificado</option>
+                <option value="CORRESPONDENCIA">Correspondencia</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="org-modal-footer">
+          <button class="btn-cancel" type="button">Cancelar</button>
+          <button class="btn-save" type="submit" form="form-upload-org-doc" id="btn-submit-upload">Subir Documento</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // References
+    const dropZone = modal.querySelector('#upload-drop-zone');
+    const fileInput = modal.querySelector('#upload-file-input');
+    const filePreview = modal.querySelector('#upload-file-preview');
+    const fileName = modal.querySelector('#upload-file-name');
+    const fileSize = modal.querySelector('#upload-file-size');
+    const fileRemove = modal.querySelector('#upload-file-remove');
+    let selectedFile = null;
+
+    // Click to select file
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#3b82f6';
+      dropZone.style.background = '#eff6ff';
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = '#d1d5db';
+      dropZone.style.background = '#f9fafb';
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#d1d5db';
+      dropZone.style.background = '#f9fafb';
+      if (e.dataTransfer.files.length > 0) {
+        selectedFile = e.dataTransfer.files[0];
+        showFilePreview(selectedFile);
+      }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        selectedFile = fileInput.files[0];
+        showFilePreview(selectedFile);
+      }
+    });
+
+    const showFilePreview = (file) => {
+      fileName.textContent = file.name;
+      fileSize.textContent = this.formatFileSize(file.size);
+      dropZone.style.display = 'none';
+      filePreview.style.display = 'block';
+    };
+
+    // Remove file
+    fileRemove.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      dropZone.style.display = 'block';
+      filePreview.style.display = 'none';
+    });
+
+    // Close handlers
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Submit
+    modal.querySelector('#form-upload-org-doc').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedFile) {
+        showToast('Debe seleccionar un archivo', 'error');
+        return;
+      }
+
+      // Max 10 MB
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        showToast('El archivo no puede superar los 10 MB', 'error');
+        return;
+      }
+
+      const name = modal.querySelector('#upload-doc-name').value.trim();
+      const description = modal.querySelector('#upload-doc-description').value.trim();
+      const category = modal.querySelector('#upload-doc-category').value;
+
+      if (!name || !category) {
+        showToast('Complete todos los campos obligatorios', 'error');
+        return;
+      }
+
+      const submitBtn = modal.querySelector('#btn-submit-upload');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Subiendo...';
+
+      await this.uploadDocument(selectedFile, name, description, category, parentOverlay);
+      modal.remove();
+    });
+  }
+
+  /**
+   * Sube un documento al servidor
+   */
+  async uploadDocument(file, name, description, category, parentOverlay) {
+    try {
+      await orgDocumentService.uploadDocument(this.currentOrg.id, file, name, description, category);
+      showToast('Documento subido correctamente', 'success');
+      await this.loadOrgDocuments();
+      // Refresh the documents list in the DOM
+      const listContainer = parentOverlay?.querySelector('#org-documents-list');
+      if (listContainer) {
+        listContainer.innerHTML = this.renderOrgDocuments();
+        this.attachOrgDocumentListeners(parentOverlay);
+      }
+    } catch (error) {
+      console.error('Error al subir documento:', error);
+      showToast(error.message || 'Error al subir el documento', 'error');
+    }
+  }
+
+  /**
+   * Elimina un documento subido de la organizacion con confirmacion
+   */
+  async deleteOrgDocument(docId, parentOverlay) {
+    const docName = this.orgDocuments.find(d => (d._id || d.id) === docId)?.name || 'este documento';
+
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'org-modal-overlay';
+    confirmModal.innerHTML = `
+      <div class="org-modal" style="max-width: 440px;">
+        <div class="org-modal-header">
+          <h3>Confirmar Eliminacion</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="text-align: center; padding: 24px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🗑️</div>
+          <p style="margin: 0; color: #374151; font-size: 15px;">
+            ¿Estas seguro de que deseas eliminar <strong>"${docName}"</strong>?
+          </p>
+          <p style="margin: 8px 0 0; color: #9ca3af; font-size: 13px;">Esta accion no se puede deshacer.</p>
+        </div>
+        <div class="org-modal-footer" style="justify-content: center; gap: 12px;">
+          <button class="btn-cancel" type="button">Cancelar</button>
+          <button class="btn-danger" id="btn-confirm-delete-doc" style="
+            background: #ef4444; color: white; border: none;
+            padding: 10px 24px; border-radius: 8px; font-weight: 500;
+            cursor: pointer;
+          ">Eliminar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(confirmModal);
+
+    confirmModal.querySelector('.modal-close').addEventListener('click', () => confirmModal.remove());
+    confirmModal.querySelector('.btn-cancel').addEventListener('click', () => confirmModal.remove());
+    confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) confirmModal.remove(); });
+
+    confirmModal.querySelector('#btn-confirm-delete-doc').addEventListener('click', async () => {
+      try {
+        await orgDocumentService.deleteDocument(this.currentOrg.id, docId);
+        showToast('Documento eliminado correctamente', 'success');
+        confirmModal.remove();
+        await this.loadOrgDocuments();
+        // Refresh the documents list in the DOM
+        const listContainer = parentOverlay?.querySelector('#org-documents-list');
+        if (listContainer) {
+          listContainer.innerHTML = this.renderOrgDocuments();
+          this.attachOrgDocumentListeners(parentOverlay);
+        }
+      } catch (error) {
+        console.error('Error al eliminar documento:', error);
+        showToast(error.message || 'Error al eliminar el documento', 'error');
+        confirmModal.remove();
+      }
+    });
+  }
+
+  /**
+   * Adjunta listeners para los botones de documentos subidos (download, delete)
+   */
+  attachOrgDocumentListeners(overlay) {
+    // Download buttons
+    overlay.querySelectorAll('.btn-download-org-doc').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const docId = btn.dataset.docId;
+        try {
+          await orgDocumentService.downloadDocument(this.currentOrg.id, docId);
+        } catch (error) {
+          showToast(error.message || 'Error al descargar el documento', 'error');
+        }
+      });
+    });
+
+    // Delete buttons
+    overlay.querySelectorAll('.btn-delete-org-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        this.deleteOrgDocument(docId, overlay);
+      });
+    });
   }
 
   /**
@@ -1208,11 +1640,95 @@ class OrganizationDashboard {
       btnNewTransaction.addEventListener('click', () => this.openNewTransactionModal(overlay));
     }
 
+    // Editar directorio
+    const btnEditDirectorio = overlay.querySelector('#btn-edit-directorio');
+    if (btnEditDirectorio) {
+      btnEditDirectorio.addEventListener('click', () => this.openEditDirectorioModal(overlay));
+    }
+
+    // Nueva eleccion
+    const btnNewElection = overlay.querySelector('#btn-new-election') || overlay.querySelector('#btn-urgent-election');
+    if (btnNewElection) {
+      btnNewElection.addEventListener('click', () => this.openNewElectionModal(overlay));
+    }
+    const btnUrgentElection = overlay.querySelector('#btn-urgent-election');
+    if (btnUrgentElection && btnUrgentElection !== btnNewElection) {
+      btnUrgentElection.addEventListener('click', () => this.openNewElectionModal(overlay));
+    }
+
+    // Nueva comunicacion
+    const btnNewComm = overlay.querySelector('#btn-new-communication') || overlay.querySelector('#btn-first-communication');
+    if (btnNewComm) {
+      btnNewComm.addEventListener('click', () => this.openNewCommunicationModal(overlay));
+    }
+
+    // Templates de comunicacion
+    overlay.querySelectorAll('.template-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const template = btn.dataset.template;
+        const subjects = { asamblea: 'Citacion a Asamblea', actividad: 'Invitacion a Actividad', informe: 'Informe de Gestion', urgente: 'Aviso Urgente' };
+        this.openNewCommunicationModal(overlay);
+        setTimeout(() => {
+          const subjectInput = overlay.querySelector('#comm-subject');
+          const typeSelect = overlay.querySelector('#comm-type');
+          if (subjectInput) subjectInput.value = subjects[template] || '';
+          if (typeSelect) typeSelect.value = template || 'general';
+        }, 100);
+      });
+    });
+
+    // Editar y eliminar miembros
+    overlay.querySelectorAll('.btn-edit-member').forEach(btn => {
+      btn.addEventListener('click', () => this.openEditMemberModal(btn.dataset.rut, overlay));
+    });
+    overlay.querySelectorAll('.btn-delete-member').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteMember(btn.dataset.rut, overlay));
+    });
+
+    // Filtro de actividades
+    overlay.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        overlay.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        overlay.querySelectorAll('.activity-card').forEach(card => {
+          if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Ver resumen de validacion
+    const btnViewValidation = overlay.querySelector('#btn-view-validation');
+    if (btnViewValidation) {
+      btnViewValidation.addEventListener('click', () => this.showValidationSummary(overlay));
+    }
+
     // FASE 5: Solicitar disolución
     const btnRequestDissolution = overlay.querySelector('#btn-request-dissolution');
     if (btnRequestDissolution) {
       btnRequestDissolution.addEventListener('click', () => this.openDissolutionModal(overlay));
     }
+
+    // Subir documento de organizacion
+    const btnUploadOrgDoc = overlay.querySelector('#btn-upload-org-doc');
+    if (btnUploadOrgDoc) {
+      btnUploadOrgDoc.addEventListener('click', () => this.showUploadModal(overlay));
+      // Load documents when the tab is active
+      this.loadOrgDocuments().then(() => {
+        const listContainer = overlay.querySelector('#org-documents-list');
+        if (listContainer) {
+          listContainer.innerHTML = this.renderOrgDocuments();
+          this.attachOrgDocumentListeners(overlay);
+        }
+      });
+    }
+
+    // Attach listeners for existing org document buttons
+    this.attachOrgDocumentListeners(overlay);
   }
 
   /**
@@ -1729,7 +2245,7 @@ class OrganizationDashboard {
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Form submit
-    modal.querySelector('#form-dissolution').addEventListener('submit', (e) => {
+    modal.querySelector('#form-dissolution').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const reason = modal.querySelector('#dissolution-reason').value;
@@ -1746,23 +2262,22 @@ class OrganizationDashboard {
         return;
       }
 
-      // Confirmar disolución
-      const success = organizationsService.dissolveOrganization(
-        this.currentOrg.id,
-        reason,
-        details || 'Solicitud de disolución por parte del usuario'
-      );
+      try {
+        await organizationsService.dissolveOrganization(
+          this.currentOrg.id,
+          reason,
+          details || 'Solicitud de disolución por parte del usuario'
+        );
 
-      if (success) {
         showToast('Solicitud de disolución enviada correctamente. La organización ha sido disuelta.', 'success');
         modal.remove();
-        parentOverlay.remove(); // Cerrar dashboard
+        parentOverlay.remove();
 
-        // Recargar página para actualizar lista
         setTimeout(() => {
           window.location.reload();
         }, 1500);
-      } else {
+      } catch (err) {
+        console.error('Error dissolving:', err);
         showToast('Error al procesar la disolución', 'error');
       }
     });
@@ -2029,6 +2544,413 @@ class OrganizationDashboard {
     photoModal.addEventListener('click', (e) => {
       if (e.target === photoModal) photoModal.remove();
     });
+  }
+
+  // ============ MODALES FALTANTES ============
+
+  /**
+   * Modal para editar directorio
+   */
+  openEditDirectorioModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const commission = org.commission?.members || [];
+    const roles = ['Presidente', 'Secretario', 'Tesorero'];
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>Editar Directorio</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">Seleccione los miembros para cada cargo del directorio. Solo se pueden asignar socios registrados.</p>
+          ${roles.map((role, i) => {
+            const current = commission[i];
+            return `
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">${role}</label>
+                <select id="directorio-${role.toLowerCase()}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+                  <option value="">-- Seleccionar socio --</option>
+                  ${members.map(m => {
+                    const name = `${m.firstName || m.primerNombre || ''} ${m.lastName || m.apellidoPaterno || ''}`.trim();
+                    const selected = current && (current.rut === m.rut) ? 'selected' : '';
+                    return `<option value="${m.rut}" ${selected}>${name} (${m.rut || 'Sin RUT'})</option>`;
+                  }).join('')}
+                </select>
+              </div>
+            `;
+          }).join('')}
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+            <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('.btn-save-directorio').addEventListener('click', async () => {
+      const newCommission = roles.map(role => {
+        const rut = modal.querySelector(`#directorio-${role.toLowerCase()}`).value;
+        if (!rut) return null;
+        const member = members.find(m => m.rut === rut);
+        return member ? { firstName: member.firstName || member.primerNombre, lastName: member.lastName || member.apellidoPaterno, rut: member.rut, role: role.toLowerCase() } : null;
+      }).filter(Boolean);
+
+      if (newCommission.length < 3) {
+        showToast('Debe asignar al menos Presidente, Secretario y Tesorero', 'error');
+        return;
+      }
+
+      try {
+        await organizationsService.update(org.id || org._id, {
+          commission: { members: newCommission, electionDate: org.commission?.electionDate || new Date().toISOString() }
+        });
+        this.currentOrg.commission = { members: newCommission, electionDate: org.commission?.electionDate || new Date().toISOString() };
+        showToast('Directorio actualizado correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al actualizar directorio', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para convocar elección
+   */
+  openNewElectionModal(parentOverlay) {
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 550px;">
+        <div class="org-modal-header">
+          <h3>Convocar Eleccion de Directorio</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">Complete los datos para convocar una nueva eleccion de directorio segun la Ley 19.418.</p>
+          <form id="form-new-election">
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tipo de Eleccion *</label>
+              <select id="election-type" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+                <option value="total">Renovacion Total del Directorio</option>
+                <option value="parcial">Renovacion Parcial</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Fecha de Eleccion *</label>
+              <input type="date" id="election-date" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required min="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Hora</label>
+              <input type="time" id="election-time" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" value="10:00">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Lugar</label>
+              <input type="text" id="election-location" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" placeholder="Ej: Sede social de la organizacion">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Observaciones</label>
+              <textarea id="election-notes" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 80px;" placeholder="Notas adicionales..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+              <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('#form-new-election').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const org = this.currentOrg;
+      const elections = org.elections || [];
+      const newElection = {
+        id: Date.now().toString(),
+        type: modal.querySelector('#election-type').value,
+        date: modal.querySelector('#election-date').value,
+        time: modal.querySelector('#election-time').value,
+        location: modal.querySelector('#election-location').value,
+        notes: modal.querySelector('#election-notes').value,
+        status: 'convocada',
+        participation: 0,
+        result: 'Pendiente'
+      };
+      elections.push(newElection);
+      try {
+        await organizationsService.update(org.id || org._id, { elections });
+        this.currentOrg.elections = elections;
+        showToast('Eleccion convocada exitosamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al convocar eleccion', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para crear nueva comunicacion
+   */
+  openNewCommunicationModal(parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const membersWithEmail = members.filter(m => m.email);
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>Nueva Comunicacion</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">Enviar comunicacion a ${membersWithEmail.length} socios con email registrado.</p>
+          <form id="form-new-communication">
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Asunto *</label>
+              <input type="text" id="comm-subject" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" placeholder="Asunto de la comunicacion" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tipo</label>
+              <select id="comm-type" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+                <option value="general">General</option>
+                <option value="asamblea">Citacion a Asamblea</option>
+                <option value="actividad">Invitacion a Actividad</option>
+                <option value="informe">Informe de Gestion</option>
+                <option value="urgente">Aviso Urgente</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mensaje *</label>
+              <textarea id="comm-message" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 120px;" placeholder="Escriba el mensaje..." required></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+              <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('#form-new-communication').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const communications = org.communications || [];
+      const newComm = {
+        id: Date.now().toString(),
+        subject: modal.querySelector('#comm-subject').value,
+        type: modal.querySelector('#comm-type').value,
+        message: modal.querySelector('#comm-message').value,
+        date: new Date().toISOString(),
+        recipients: membersWithEmail.length,
+        status: 'sent'
+      };
+      communications.push(newComm);
+      try {
+        await organizationsService.update(org.id || org._id, { communications });
+        this.currentOrg.communications = communications;
+        showToast(`Comunicacion enviada a ${membersWithEmail.length} socios`, 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al enviar comunicacion', 'error');
+      }
+    });
+  }
+
+  /**
+   * Modal para editar un miembro existente
+   */
+  openEditMemberModal(memberRut, parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const member = members.find(m => m.rut === memberRut);
+    if (!member) { showToast('Miembro no encontrado', 'error'); return; }
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 500px;">
+        <div class="org-modal-header">
+          <h3>Editar Socio</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <form id="form-edit-member">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Nombre *</label>
+                <input type="text" id="edit-firstName" value="${member.firstName || member.primerNombre || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+              </div>
+              <div class="form-group">
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Apellido *</label>
+                <input type="text" id="edit-lastName" value="${member.lastName || member.apellidoPaterno || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">RUT</label>
+              <input type="text" value="${member.rut || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #f1f5f9;" disabled>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Email</label>
+              <input type="email" id="edit-email" value="${member.email || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Telefono</label>
+              <input type="tel" id="edit-phone" value="${member.phone || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+              <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('#form-edit-member').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const idx = members.findIndex(m => m.rut === memberRut);
+      if (idx === -1) return;
+      members[idx] = {
+        ...members[idx],
+        firstName: modal.querySelector('#edit-firstName').value,
+        lastName: modal.querySelector('#edit-lastName').value,
+        email: modal.querySelector('#edit-email').value,
+        phone: modal.querySelector('#edit-phone').value
+      };
+      try {
+        await organizationsService.update(org.id || org._id, { members });
+        this.currentOrg.members = members;
+        showToast('Socio actualizado correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast('Error al actualizar socio', 'error');
+      }
+    });
+  }
+
+  /**
+   * Eliminar un miembro
+   */
+  async deleteMember(memberRut, parentOverlay) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const member = members.find(m => m.rut === memberRut);
+    if (!member) return;
+
+    const name = `${member.firstName || ''} ${member.lastName || ''}`.trim();
+    if (!confirm(`¿Está seguro de eliminar al socio ${name}? Esta acción no se puede deshacer.`)) return;
+
+    const updatedMembers = members.filter(m => m.rut !== memberRut);
+    try {
+      await organizationsService.update(org.id || org._id, { members: updatedMembers });
+      this.currentOrg.members = updatedMembers;
+      showToast(`Socio ${name} eliminado`, 'success');
+      this.refreshContent(parentOverlay);
+    } catch (err) {
+      showToast('Error al eliminar socio', 'error');
+    }
+  }
+
+  /**
+   * Ver resumen de validación del Ministro de Fe
+   */
+  showValidationSummary(parentOverlay) {
+    const org = this.currentOrg;
+    const vd = org.validationData || {};
+    const pd = org.provisionalDirectorio || {};
+    const ec = org.electoralCommission || [];
+    const attendees = org.validatedAttendees || [];
+    const ministroSig = vd.ministroSignature || org.ministroSignature;
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white;">
+          <h3>Resumen de Validacion - Asamblea Constitutiva</h3>
+          <button class="modal-close" style="color: white;">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          ${vd.validatedAt ? `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">✅</span>
+                <div>
+                  <strong style="color: #166534;">Validacion Completada</strong>
+                  <p style="margin: 4px 0 0; color: #15803d; font-size: 13px;">Validado el ${new Date(vd.validatedAt).toLocaleDateString('es-CL')} por ${vd.validatorName || 'Ministro de Fe'}</p>
+                </div>
+              </div>
+            </div>
+          ` : '<div style="background: #fffbeb; padding: 16px; border-radius: 12px; margin-bottom: 20px;"><strong style="color: #92400e;">Pendiente de validacion</strong></div>'}
+
+          <h4 style="margin: 20px 0 12px; color: #1e293b;">Directorio Provisorio</h4>
+          <div style="display: grid; gap: 8px;">
+            ${pd.president ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Presidente</span><span>${pd.president.firstName || ''} ${pd.president.lastName || ''} (${pd.president.rut || '-'})</span></div>` : ''}
+            ${pd.secretary ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Secretario</span><span>${pd.secretary.firstName || ''} ${pd.secretary.lastName || ''} (${pd.secretary.rut || '-'})</span></div>` : ''}
+            ${pd.treasurer ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Tesorero</span><span>${pd.treasurer.firstName || ''} ${pd.treasurer.lastName || ''} (${pd.treasurer.rut || '-'})</span></div>` : ''}
+          </div>
+
+          <h4 style="margin: 20px 0 12px; color: #1e293b;">Comision Electoral (${ec.length} miembros)</h4>
+          <div style="display: grid; gap: 8px;">
+            ${ec.length > 0 ? ec.map((m, i) => `
+              <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                <span>Miembro ${i + 1}</span>
+                <span>${m.firstName || ''} ${m.lastName || ''} (${m.rut || '-'})</span>
+              </div>
+            `).join('') : '<p style="color: #6b7280; font-size: 14px;">Sin datos de comision electoral</p>'}
+          </div>
+
+          <h4 style="margin: 20px 0 12px; color: #1e293b;">Asistentes Validados</h4>
+          <p style="color: #6b7280; font-size: 14px;">${attendees.length > 0 ? `${attendees.length} asistentes registrados en la asamblea constitutiva` : 'Sin registro de asistentes'}</p>
+
+          ${ministroSig ? `
+            <h4 style="margin: 20px 0 12px; color: #1e293b;">Firma del Ministro de Fe</h4>
+            <div style="text-align: center; padding: 16px; background: #f8fafc; border-radius: 12px;">
+              <img src="${ministroSig}" alt="Firma Ministro" style="max-width: 300px; max-height: 150px;">
+            </div>
+          ` : ''}
+
+          <div style="text-align: right; margin-top: 24px;">
+            <button class="btn-close-summary" style="padding: 10px 24px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    parentOverlay.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-close-summary').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 }
 
