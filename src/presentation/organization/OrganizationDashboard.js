@@ -677,7 +677,7 @@ class OrganizationDashboard {
                   </div>
                   <div class="election-participation">${e.participation || 0}% participación</div>
                   <div class="election-actions" style="display: flex; gap: 6px; margin-left: auto;">
-                    <button class="btn-edit-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #2D8ECB;">Editar</button>
+                    <button class="btn-edit-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #60a5fa;">Editar</button>
                     <button class="btn-delete-election" data-id="${e.id}" style="padding: 4px 10px; font-size: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white; cursor: pointer; color: #ef4444;">Eliminar</button>
                   </div>
                 </div>
@@ -2695,7 +2695,7 @@ class OrganizationDashboard {
           }).join('')}
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -2774,7 +2774,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
             </div>
           </form>
         </div>
@@ -2853,7 +2853,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
             </div>
           </form>
         </div>
@@ -2933,7 +2933,7 @@ class OrganizationDashboard {
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
           </form>
         </div>
@@ -3051,7 +3051,7 @@ class OrganizationDashboard {
           ` : ''}
 
           <div style="text-align: right; margin-top: 24px;">
-            <button class="btn-close-summary" style="padding: 10px 24px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Cerrar</button>
+            <button class="btn-close-summary" style="padding: 10px 24px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Cerrar</button>
           </div>
         </div>
       </div>
@@ -3108,7 +3108,7 @@ class OrganizationDashboard {
           </div>
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
-            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
+            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
           </div>
         </div>
       </div>
@@ -3183,7 +3183,7 @@ class OrganizationDashboard {
           </div>
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
-            <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -3306,7 +3306,7 @@ ${comm.message || 'Sin contenido'}
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
+              <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
           </form>
         </div>
@@ -3762,7 +3762,7 @@ ${comm.message || 'Sin contenido'}
 
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
+            <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
           </div>
         </div>
       </div>
@@ -4043,7 +4043,7 @@ ${comm.message || 'Sin contenido'}
             <label style="font-weight: 600; display: block; margin-bottom: 6px;">Participación (%)</label>
             <div style="display: flex; align-items: center; gap: 12px;">
               <input type="range" id="election-participation-edit" min="0" max="100" value="${election.participation || 0}" style="flex: 1;">
-              <span id="participation-display" style="min-width: 40px; font-weight: 700; color: #2D8ECB;">${election.participation || 0}%</span>
+              <span id="participation-display" style="min-width: 40px; font-weight: 700; color: #60a5fa;">${election.participation || 0}%</span>
             </div>
           </div>
 
@@ -4054,7 +4054,7 @@ ${comm.message || 'Sin contenido'}
 
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
-            <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #2D8ECB; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
+            <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #60a5fa; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
         </div>
       </div>

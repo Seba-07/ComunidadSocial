@@ -138,7 +138,7 @@ body {
 
 .ui-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(110, 180, 63, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 .ui-btn:disabled,
@@ -774,7 +774,7 @@ body.modal-open {
 .ui-form-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(110, 180, 63, 0.2);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .ui-form-input::placeholder {

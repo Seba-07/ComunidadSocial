@@ -107,7 +107,7 @@ class PDFService {
   drawHeader(doc, title, subtitle = null) {
     // Barra superior de colores (cyan, verde, azul, naranja)
     const barHeight = 8;
-    const barColors = ['#00a0b0', '#6eb43f', '#00579b', '#f5a623'];
+    const barColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
     const barWidth = PAGE_WIDTH / 4;
 
     barColors.forEach((color, i) => {
@@ -153,7 +153,7 @@ class PDFService {
 
     // Barra inferior de colores
     const barHeight = 8;
-    const barColors = ['#00a0b0', '#6eb43f', '#00579b', '#f5a623'];
+    const barColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
     const barWidth = PAGE_WIDTH / 4;
 
     barColors.forEach((color, i) => {

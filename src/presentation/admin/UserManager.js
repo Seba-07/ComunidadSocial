@@ -45,7 +45,7 @@ export class UserManager {
           </div>
           <button type="button" id="um-new-user-btn" style="
             display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px; background: #2D8ECB; color: white;
+            padding: 10px 20px; background: #3b82f6; color: white;
             border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
             cursor: pointer; transition: background 0.2s;
           ">
@@ -220,7 +220,7 @@ export class UserManager {
                 cursor: pointer; transition: background 0.2s;
               ">Cancelar</button>
               <button type="submit" id="um-save-btn" style="
-                padding: 10px 20px; background: #2D8ECB; color: white;
+                padding: 10px 20px; background: #3b82f6; color: white;
                 border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
                 cursor: pointer; transition: background 0.2s;
               ">Guardar</button>
@@ -747,8 +747,8 @@ export class UserManager {
 
     // Hover effect on new user button
     if (newBtn) {
-      newBtn.addEventListener('mouseover', () => { newBtn.style.background = '#2477ab'; });
-      newBtn.addEventListener('mouseout', () => { newBtn.style.background = '#2D8ECB'; });
+      newBtn.addEventListener('mouseover', () => { newBtn.style.background = '#2563eb'; });
+      newBtn.addEventListener('mouseout', () => { newBtn.style.background = '#3b82f6'; });
     }
   }
 }

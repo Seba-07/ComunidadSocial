@@ -79,12 +79,12 @@ function buildEmailTemplate(title, bodyHtml) {
   <style>
     body { margin: 0; padding: 0; background-color: #f4f6f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-    .header { background: linear-gradient(135deg, #2D8ECB 0%, #1a6da0 100%); padding: 24px 32px; text-align: center; }
+    .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 24px 32px; text-align: center; }
     .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 600; }
     .header p.subtitle { color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px; }
     .logo-area { color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
     .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
-    .body h2 { color: #2D8ECB; font-size: 18px; margin-top: 0; }
+    .body h2 { color: #3b82f6; font-size: 18px; margin-top: 0; }
     .status-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; }
     .status-approved { background-color: #d4edda; color: #155724; }
     .status-rejected { background-color: #f8d7da; color: #721c24; }
@@ -95,7 +95,7 @@ function buildEmailTemplate(title, bodyHtml) {
     .info-table td:first-child { font-weight: 600; color: #555; width: 40%; }
     .corrections-list { background-color: #fff8f0; border-left: 4px solid #e67e22; padding: 12px 16px; margin: 16px 0; border-radius: 0 4px 4px 0; }
     .corrections-list li { margin-bottom: 6px; }
-    .cta-button { display: inline-block; padding: 12px 28px; background-color: #2D8ECB; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 16px; }
+    .cta-button { display: inline-block; padding: 12px 28px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 16px; }
     .footer { background-color: #f4f6f8; padding: 20px 32px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e9ecef; }
     .footer p { margin: 4px 0; }
     .divider { height: 1px; background-color: #e9ecef; margin: 20px 0; }

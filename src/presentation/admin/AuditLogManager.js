@@ -78,7 +78,7 @@ export class AuditLogManager {
         .audit-header-icon {
           width: 48px;
           height: 48px;
-          background: linear-gradient(135deg, #2D8ECB, #1a6fa0);
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
           border-radius: 12px;
           display: flex;
           align-items: center;
@@ -105,7 +105,7 @@ export class AuditLogManager {
           align-items: center;
           gap: 8px;
           padding: 10px 20px;
-          background: #2D8ECB;
+          background: #3b82f6;
           color: white;
           border: none;
           border-radius: 8px;
@@ -116,7 +116,7 @@ export class AuditLogManager {
         }
 
         .btn-export-csv:hover {
-          background: #1a6fa0;
+          background: #2563eb;
         }
 
         .btn-export-csv:disabled {
@@ -172,8 +172,8 @@ export class AuditLogManager {
         .filter-group select:focus,
         .filter-group input:focus {
           outline: none;
-          border-color: #2D8ECB;
-          box-shadow: 0 0 0 3px rgba(45, 142, 203, 0.1);
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .filter-actions {
@@ -196,12 +196,12 @@ export class AuditLogManager {
         }
 
         .btn-filter-apply {
-          background: #2D8ECB;
+          background: #3b82f6;
           color: white;
         }
 
         .btn-filter-apply:hover {
-          background: #1a6fa0;
+          background: #2563eb;
         }
 
         .btn-filter-clear {
@@ -357,7 +357,7 @@ export class AuditLogManager {
         }
 
         .audit-detail-text:hover {
-          color: #2D8ECB;
+          color: #3b82f6;
         }
 
         /* Pagination */
@@ -396,9 +396,9 @@ export class AuditLogManager {
         }
 
         .btn-page:hover:not(:disabled) {
-          background: #2D8ECB;
+          background: #3b82f6;
           color: white;
-          border-color: #2D8ECB;
+          border-color: #3b82f6;
         }
 
         .btn-page:disabled {
@@ -430,13 +430,13 @@ export class AuditLogManager {
 
         .btn-page-num:hover {
           background: #eff6ff;
-          border-color: #2D8ECB;
+          border-color: #3b82f6;
         }
 
         .btn-page-num.active {
-          background: #2D8ECB;
+          background: #3b82f6;
           color: white;
-          border-color: #2D8ECB;
+          border-color: #3b82f6;
         }
 
         /* Loading & Empty */
@@ -454,7 +454,7 @@ export class AuditLogManager {
           width: 40px;
           height: 40px;
           border: 3px solid #e5e7eb;
-          border-top-color: #2D8ECB;
+          border-top-color: #3b82f6;
           border-radius: 50%;
           animation: audit-spin 0.8s linear infinite;
         }
@@ -945,7 +945,7 @@ export class AuditLogManager {
   getActionColor(action) {
     const colors = {
       CREATE: '#10b981',
-      UPDATE: '#2D8ECB',
+      UPDATE: '#3b82f6',
       DELETE: '#ef4444',
       STATUS_CHANGE: '#8b5cf6',
       LOGIN: '#6b7280',

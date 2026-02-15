@@ -12,18 +12,18 @@ import { createElement, $ } from '../utils/index.js';
 
 export const THEME = {
   colors: {
-    primary: '#6eb43f',      // Verde Renca
-    primaryDark: '#5a9633',
-    primaryLight: '#8bc563',
-    secondary: '#00579b',    // Azul
-    accent: '#f5a623',       // Naranja
+    primary: '#3b82f6',
+    primaryDark: '#2563eb',
+    primaryLight: '#60a5fa',
+    secondary: '#10b981',
+    accent: '#8b5cf6',
     success: '#10b981',
     warning: '#f59e0b',
     error: '#ef4444',
     info: '#3b82f6',
-    dark: '#1f2937',
-    gray: '#6b7280',
-    light: '#f3f4f6',
+    dark: '#1e293b',
+    gray: '#64748b',
+    light: '#f1f5f9',
     white: '#ffffff'
   },
   spacing: {
@@ -35,17 +35,17 @@ export const THEME = {
     xxl: '3rem'
   },
   borderRadius: {
-    sm: '0.25rem',
-    md: '0.5rem',
-    lg: '0.75rem',
-    xl: '1rem',
+    sm: '6px',
+    md: '8px',
+    lg: '12px',
+    xl: '16px',
     full: '9999px'
   },
   shadows: {
-    sm: '0 1px 2px rgba(0,0,0,0.05)',
-    md: '0 4px 6px rgba(0,0,0,0.1)',
-    lg: '0 10px 15px rgba(0,0,0,0.1)',
-    xl: '0 20px 25px rgba(0,0,0,0.15)'
+    sm: '0 1px 3px rgba(15,23,42,0.06)',
+    md: '0 4px 6px rgba(15,23,42,0.07)',
+    lg: '0 10px 15px rgba(15,23,42,0.08)',
+    xl: '0 20px 25px rgba(15,23,42,0.08)'
   }
 };
 

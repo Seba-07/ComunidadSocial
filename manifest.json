@@ -4,8 +4,8 @@
   "description": "Plataforma de Participación Ciudadana y Formación Educativa - Municipalidad de Renca",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#7fa99b",
+  "background_color": "#f8fafc",
+  "theme_color": "#3b82f6",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

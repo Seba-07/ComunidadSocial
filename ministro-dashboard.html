@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2D9A8B">
+    <meta name="theme-color" content="#3b82f6">
     <title>Dashboard Ministro de Fe - Comunidad Renca</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <!-- Design System -->
@@ -31,13 +31,16 @@
 
         /* ===== HEADER - Nuevo Diseno Oscuro ===== */
         .dashboard-header {
-            background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
-            color: white;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #1e293b;
             padding: 16px 32px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
         }
 
         .header-content {
@@ -81,9 +84,9 @@
 
         .btn-header {
             padding: 12px 20px;
-            border: none;
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            border: 1px solid #e2e8f0;
+            background: rgba(241, 245, 249, 0.8);
+            color: #334155;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
@@ -96,15 +99,19 @@
         }
 
         .btn-header:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(226, 232, 240, 0.9);
+            border-color: #cbd5e1;
         }
 
         .btn-header.btn-logout {
-            background: rgba(239, 68, 68, 0.25);
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #dc2626;
         }
 
         .btn-header.btn-logout:hover {
-            background: rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
         }
 
         .btn-header.btn-notifications {
@@ -463,7 +470,7 @@
         }
 
         .ministro-panel-header {
-            background: linear-gradient(135deg, #1a3a12 0%, #234d18 50%, #2d5f1f 100%);
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
             padding: 0;
         }
 
@@ -532,7 +539,7 @@
 
         .ministro-nav-btn.active {
             background: white;
-            color: #1a3a12;
+            color: #1e40af;
             border-color: white;
             font-weight: 600;
         }
@@ -571,7 +578,7 @@
 
         .ministro-filter-chip.active {
             background: white;
-            color: #1a3a12;
+            color: #1e40af;
             border-color: white;
             font-weight: 600;
         }
@@ -585,8 +592,8 @@
         }
 
         .ministro-filter-chip.active .chip-count {
-            background: rgba(26, 58, 18, 0.15);
-            color: #1a3a12;
+            background: rgba(30, 64, 175, 0.15);
+            color: #1e40af;
         }
 
         /* ===== TAB CONTENT ===== */
@@ -609,7 +616,7 @@
         .availability-header-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-left: 4px solid #234d18;
+            border-left: 4px solid #2563eb;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
@@ -884,14 +891,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--cs-primary, #4a9b32) 0%, var(--cs-primary-dark, #3d8229) 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(74, 155, 50, 0.3);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, var(--cs-primary-light, #5fb842) 0%, var(--cs-primary, #4a9b32) 100%);
-            box-shadow: 0 4px 12px rgba(74, 155, 50, 0.4);
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
 
         .btn-secondary {

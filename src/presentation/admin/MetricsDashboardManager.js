@@ -464,7 +464,7 @@ export class MetricsDashboardManager {
         width: 40px;
         height: 40px;
         border: 4px solid #e5e7eb;
-        border-top-color: #2D8ECB;
+        border-top-color: #3b82f6;
         border-radius: 50%;
         animation: mdm-spin 0.8s linear infinite;
       }
@@ -473,7 +473,7 @@ export class MetricsDashboardManager {
         width: 16px;
         height: 16px;
         border: 2px solid #e5e7eb;
-        border-top-color: #2D8ECB;
+        border-top-color: #3b82f6;
         border-radius: 50%;
         animation: mdm-spin 0.8s linear infinite;
         display: inline-block;
@@ -521,7 +521,7 @@ export class MetricsDashboardManager {
       }
 
       .mdm-header-left svg {
-        color: #2D8ECB;
+        color: #3b82f6;
       }
 
       .mdm-header-left h2 {
@@ -551,12 +551,12 @@ export class MetricsDashboardManager {
       }
 
       .mdm-btn-primary {
-        background: #2D8ECB;
+        background: #3b82f6;
         color: white;
       }
 
       .mdm-btn-primary:hover:not(:disabled) {
-        background: #2579ad;
+        background: #2563eb;
       }
 
       .mdm-btn-secondary {
@@ -599,7 +599,7 @@ export class MetricsDashboardManager {
 
       .mdm-kpi-icon-blue {
         background: #dbeafe;
-        color: #2D8ECB;
+        color: #3b82f6;
       }
 
       .mdm-kpi-icon-green {
