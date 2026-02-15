@@ -62,6 +62,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 /* Header - Dark Blue Gradient */
@@ -105,13 +106,13 @@ body {
 }
 
 .logo-img {
-    height: 56px;
+    height: 44px;
     width: auto;
     object-fit: contain;
     transition: var(--cs-transition, all 0.2s ease);
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 10px;
-    padding: 4px;
+    background: white;
+    border-radius: 8px;
+    padding: 3px 6px;
 }
 
 .header-logo:hover .logo-img {
@@ -122,6 +123,7 @@ body {
     font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.02em;
+    color: white;
 }
 
 .header-subtitle {
@@ -609,13 +611,18 @@ body {
     align-items: center;
     justify-content: center;
     padding: 12px;
-    margin: 8px 12px;
+    margin: 8px 12px 16px;
     background: var(--background);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle-btn svg {
+    transition: transform 0.3s ease;
 }
 
 .sidebar-toggle-btn:hover {
@@ -627,7 +634,7 @@ body {
 /* Desktop sidebar - persistent */
 @media (min-width: 1024px) {
     .side-nav {
-        left: 0;
+        left: 0 !important;
         width: 260px;
         top: var(--header-height);
         height: calc(100vh - var(--header-height));
@@ -658,30 +665,32 @@ body {
     }
 
     .nav-header {
-        display: none;
+        display: none !important;
     }
 
     .menu-btn {
-        display: none;
+        display: none !important;
     }
 
     .sidebar-toggle-btn {
-        display: flex;
+        display: flex !important;
     }
 
     .main-content {
-        margin-left: 260px;
-        margin-bottom: 0;
+        margin-left: 260px !important;
+        margin-bottom: 0 !important;
         padding: 40px 48px;
         transition: margin-left 0.3s ease;
+        max-width: none;
+        overflow-x: hidden;
     }
 
     .main-content.sidebar-collapsed {
-        margin-left: 72px;
+        margin-left: 72px !important;
     }
 
     .bottom-nav {
-        display: none;
+        display: none !important;
     }
 }
 
@@ -691,9 +700,10 @@ body {
     margin-top: var(--header-height);
     margin-bottom: var(--bottom-nav-height);
     padding: 32px 24px;
-    max-width: 1400px;
     width: 100%;
     transition: margin-left 0.3s ease;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .page-view {
@@ -9055,7 +9065,7 @@ body {
 /* Make header logo clickable */
 a.header-logo {
     text-decoration: none;
-    color: inherit;
+    color: white;
     display: flex;
     align-items: center;
     gap: 12px;
