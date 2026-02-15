@@ -272,8 +272,17 @@ registerForm.addEventListener('submit', async (e) => {
     hasErrors = true;
   }
 
-  if (password.length < 6) {
-    showError('register-password', 'La contraseña debe tener al menos 6 caracteres');
+  if (password.length < 12) {
+    showError('register-password', 'La contraseña debe tener al menos 12 caracteres');
+    hasErrors = true;
+  } else if (!/[A-Z]/.test(password)) {
+    showError('register-password', 'Debe contener al menos una mayúscula');
+    hasErrors = true;
+  } else if (!/[a-z]/.test(password)) {
+    showError('register-password', 'Debe contener al menos una minúscula');
+    hasErrors = true;
+  } else if (!/[0-9]/.test(password)) {
+    showError('register-password', 'Debe contener al menos un número');
     hasErrors = true;
   }
 
@@ -313,7 +322,30 @@ registerForm.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('❌ Register error:', error);
 
-    if (error.message.includes('email') || error.message.includes('Email')) {
+    // Show detailed field-level errors from backend validation
+    if (error.details && Array.isArray(error.details)) {
+      const fieldMap = {
+        'firstName': 'register-name',
+        'lastName': 'register-lastname',
+        'rut': 'register-rut',
+        'email': 'register-email',
+        'password': 'register-password'
+      };
+
+      let shownFieldError = false;
+      for (const detail of error.details) {
+        const inputId = fieldMap[detail.field];
+        if (inputId) {
+          showError(inputId, detail.message);
+          shownFieldError = true;
+        }
+      }
+
+      if (!shownFieldError) {
+        const messages = error.details.map(d => d.message).join('. ');
+        showToast(messages || error.message, 'error');
+      }
+    } else if (error.message.includes('email') || error.message.includes('Email')) {
       showError('register-email', error.message);
     } else if (error.message.includes('RUT') || error.message.includes('rut')) {
       showError('register-rut', error.message);

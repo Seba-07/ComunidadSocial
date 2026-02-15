@@ -209,7 +209,11 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error en la solicitud');
+        const err = new Error(data.error || 'Error en la solicitud');
+        if (data.details) {
+          err.details = data.details;
+        }
+        throw err;
       }
 
       return data;
