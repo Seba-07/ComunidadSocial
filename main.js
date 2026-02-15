@@ -1064,7 +1064,7 @@ function initProfile() {
         showToast('Información actualizada correctamente', 'success');
       } catch (error) {
         console.error('Error saving profile:', error);
-        showToast('Error al guardar el perfil. Intenta de nuevo.', 'error');
+        showToast(error.message || 'Error al guardar el perfil. Intenta de nuevo.', 'error');
       }
     });
   }

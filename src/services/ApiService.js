@@ -345,7 +345,7 @@ class ApiService {
   }
 
   async updateProfile(profileData) {
-    return this.put('/auth/profile', profileData);
+    return this.post('/auth/profile', profileData);
   }
 
   async changePassword(currentPassword, newPassword) {

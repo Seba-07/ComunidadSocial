@@ -131,7 +131,7 @@ router.get('/me', authenticate, async (req, res) => {
 });
 
 // Update profile - actualizar datos personales del usuario autenticado
-router.put('/profile', authenticate, async (req, res) => {
+router.post('/profile', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) {
