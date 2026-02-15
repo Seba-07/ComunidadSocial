@@ -117,7 +117,7 @@ export class MinistroManager {
                 </button>
               </div>
               <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 4px;">
-                El ministro deberá cambiar esta contraseña en su primer inicio de sesión
+                Min. 6 caracteres, al menos una mayuscula. Se debera cambiar en el primer inicio de sesion.
               </small>
             </div>
 
@@ -380,7 +380,11 @@ export class MinistroManager {
 
       this.renderList(document.getElementById('filter-status').value);
     } catch (error) {
-      showToast(error.message || 'Error al guardar ministro', 'error');
+      let msg = error.message || 'Error al guardar ministro';
+      if (error.details && error.details.length > 0) {
+        msg = error.details.map(d => `${d.field}: ${d.message}`).join(', ');
+      }
+      showToast(msg, 'error');
     }
   }
 
