@@ -3359,6 +3359,78 @@ body {
     font-size: 15px;
 }
 
+/* Wizard Tip Toggle (colapsable) */
+.wizard-tip-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #f0f5ff;
+    border: 1px solid #c7d7f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.wizard-tip-toggle:hover {
+    background: #e0ecff;
+    border-color: #93b4e8;
+}
+
+.wizard-tip-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.wizard-tip-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e3a8a;
+}
+
+.wizard-tip-chevron {
+    color: #6b7fab;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.wizard-tip-toggle.open .wizard-tip-chevron {
+    transform: rotate(180deg);
+}
+
+.wizard-tip-body {
+    display: none;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid #c7d7f5;
+    margin-top: 4px;
+}
+
+.wizard-tip-toggle.open .wizard-tip-body {
+    display: block;
+}
+
+.wizard-tip-body p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #1e3a8a;
+}
+
+.wizard-tip-body p:last-child {
+    margin-bottom: 0;
+}
+
+.wizard-tip-hint {
+    font-size: 12px !important;
+    color: #2563eb !important;
+    margin-top: 4px !important;
+}
+
 /* Forms */
 .wizard-form {
     display: flex;

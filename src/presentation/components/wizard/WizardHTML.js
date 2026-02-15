@@ -86,20 +86,14 @@ function getStep1HTML() {
       <h3>Paso 1: Datos Básicos de la Organización</h3>
       <p class="step-description">Complete la información fundamental de su organización comunitaria.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #2563eb; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">📋</span>
-          <div>
-            <strong style="color: #1e40af; font-size: 14px;">¿Qué es este paso?</strong>
-            <p style="margin: 6px 0 0; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
-              Aquí ingresará los datos básicos de su organización: nombre, tipo, dirección y contacto.
-              Esta información será usada en todos los documentos oficiales y en la solicitud al Registro Civil.
-            </p>
-            <p style="margin: 8px 0 0; color: #2563eb; font-size: 12px;">
-              💡 <strong>Tip:</strong> El nombre debe ser único y representar claramente a su comunidad.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">📋</span>
+        <span class="wizard-tip-title">¿Qué es este paso?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Aquí ingresará los datos básicos de su organización: nombre, tipo, dirección y contacto. Esta información será usada en todos los documentos oficiales y en la solicitud al Registro Civil.</p>
+          <p class="wizard-tip-hint">💡 <strong>Tip:</strong> El nombre debe ser único y representar claramente a su comunidad.</p>
         </div>
       </div>
 
@@ -276,22 +270,15 @@ function getStep2HTML() {
       <h3>Paso 2: Miembros Fundadores</h3>
       <p class="step-description" id="step2-description">Registre a los miembros fundadores de la organización.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #22c55e; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">👥</span>
-          <div>
-            <strong style="color: #166534; font-size: 14px;">¿Qué son los Miembros Fundadores?</strong>
-            <p style="margin: 6px 0 0; color: #166534; font-size: 13px; line-height: 1.5;">
-              Son las personas que serán los <strong>primeros socios oficiales</strong> de su organización y quedarán registrados en el acta constitutiva.
-            </p>
-            <p style="margin: 8px 0 0; color: #15803d; font-size: 12px;">
-              📌 <strong>Requisitos según Ley 19.418:</strong> Mínimo 15 personas mayores de 14 años que residan en la unidad vecinal.
-            </p>
-            <p style="margin: 4px 0 0; color: #15803d; font-size: 12px;">
-              ⚠️ <strong>Importante:</strong> Para el Directorio y Comisión Electoral se requieren al menos 6 miembros <strong>mayores de 18 años</strong>.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">👥</span>
+        <span class="wizard-tip-title">¿Qué son los Miembros Fundadores?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Son las personas que serán los <strong>primeros socios oficiales</strong> de su organización y quedarán registrados en el acta constitutiva.</p>
+          <p class="wizard-tip-hint">📌 <strong>Requisitos según Ley 19.418:</strong> Mínimo 15 personas mayores de 14 años que residan en la unidad vecinal.</p>
+          <p class="wizard-tip-hint">⚠️ <strong>Importante:</strong> Para el Directorio y Comisión Electoral se requieren al menos 6 miembros <strong>mayores de 18 años</strong>.</p>
         </div>
       </div>
 
@@ -367,20 +354,14 @@ function getStep3HTML_ConfigEstatutos() {
       <h3>Paso 3: Configuración de Estatutos</h3>
       <p class="step-description">Complete los datos que serán incluidos en los estatutos de su organización. Estos valores son preliminares y serán confirmados en la Asamblea Constitutiva con el Ministro de Fe.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">⚙️</span>
-          <div>
-            <strong style="color: #92400e; font-size: 14px;">¿Qué es la Configuración de Estatutos?</strong>
-            <p style="margin: 6px 0 0; color: #92400e; font-size: 13px; line-height: 1.5;">
-              Aquí definirá las reglas internas de su organización: cuándo se realizarán las asambleas,
-              las cuotas de los socios y qué pasará con los bienes en caso de disolución.
-            </p>
-            <p style="margin: 8px 0 0; color: #b45309; font-size: 12px;">
-              💡 <strong>Importante:</strong> Estos valores serán presentados en la Asamblea Constitutiva y pueden ser modificados allí si los socios lo deciden.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">⚙️</span>
+        <span class="wizard-tip-title">¿Qué es la Configuración de Estatutos?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Aquí definirá las reglas internas de su organización: cuándo se realizarán las asambleas, las cuotas de los socios y qué pasará con los bienes en caso de disolución.</p>
+          <p class="wizard-tip-hint">💡 <strong>Importante:</strong> Estos valores serán presentados en la Asamblea Constitutiva y pueden ser modificados allí si los socios lo deciden.</p>
         </div>
       </div>
 
@@ -560,21 +541,14 @@ export function getStep5HTML_Comision() {
       <h3>Paso 5: Directorio Provisorio y Comisión Electoral</h3>
       <p class="step-description">Designe a los miembros del Directorio Provisorio y la Comisión Electoral que participarán en la Asamblea Constitutiva.</p>
 
-      <!-- Info Box explicativo principal -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); border: 1px solid #f97316; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">⚠️</span>
-          <div>
-            <strong style="color: #c2410c; font-size: 14px;">¿Por qué es "Provisorio"?</strong>
-            <p style="margin: 6px 0 0; color: #c2410c; font-size: 13px; line-height: 1.5;">
-              Según la <strong>Ley 19.418</strong>, el Directorio Provisorio que se designa ahora solo tiene la función de
-              constituir legalmente la organización. <strong>Una vez obtenida la personalidad jurídica</strong>, se debe
-              realizar una nueva elección para elegir el Directorio Definitivo.
-            </p>
-            <p style="margin: 8px 0 0; color: #ea580c; font-size: 12px;">
-              📅 <strong>Plazo:</strong> El Directorio Definitivo debe ser elegido dentro de los 90 días siguientes a la obtención de la personalidad jurídica.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">⚠️</span>
+        <span class="wizard-tip-title">¿Por qué es "Provisorio"?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Según la <strong>Ley 19.418</strong>, el Directorio Provisorio que se designa ahora solo tiene la función de constituir legalmente la organización. <strong>Una vez obtenida la personalidad jurídica</strong>, se debe realizar una nueva elección para elegir el Directorio Definitivo.</p>
+          <p class="wizard-tip-hint">📅 <strong>Plazo:</strong> El Directorio Definitivo debe ser elegido dentro de los 90 días siguientes a la obtención de la personalidad jurídica.</p>
         </div>
       </div>
 
@@ -749,20 +723,14 @@ export function getStep4HTML_Estatutos() {
       <h3>Paso 4: Estatutos de la Organización</h3>
       <p class="step-description">Revise los estatutos tipo con los datos ingresados. Estos estatutos serán presentados al Ministro de Fe en la Asamblea Constitutiva para su validación final.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%); border: 1px solid #d946ef; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">📜</span>
-          <div>
-            <strong style="color: #86198f; font-size: 14px;">¿Qué son los Estatutos?</strong>
-            <p style="margin: 6px 0 0; color: #86198f; font-size: 13px; line-height: 1.5;">
-              Los estatutos son el <strong>documento legal</strong> que define las reglas, derechos y obligaciones de su organización.
-              Este documento será inscrito en el Registro Civil junto con el acta constitutiva.
-            </p>
-            <p style="margin: 8px 0 0; color: #a21caf; font-size: 12px;">
-              📌 <strong>Recomendación:</strong> Use la plantilla predefinida que cumple con todos los requisitos legales. Puede personalizarla según sus necesidades.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">📜</span>
+        <span class="wizard-tip-title">¿Qué son los Estatutos?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Los estatutos son el <strong>documento legal</strong> que define las reglas, derechos y obligaciones de su organización. Este documento será inscrito en el Registro Civil junto con el acta constitutiva.</p>
+          <p class="wizard-tip-hint">📌 <strong>Recomendación:</strong> Use la plantilla predefinida que cumple con todos los requisitos legales. Puede personalizarla según sus necesidades.</p>
         </div>
       </div>
 
@@ -845,20 +813,14 @@ function getStep6HTML_Firmas() {
       <h3>Paso 6: Firmas del Directorio Provisorio</h3>
       <p class="step-description">Registre las firmas de los miembros del Directorio Provisorio y la Comisión Electoral.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">✍️</span>
-          <div>
-            <strong style="color: #0369a1; font-size: 14px;">¿Para qué son las firmas?</strong>
-            <p style="margin: 6px 0 0; color: #0369a1; font-size: 13px; line-height: 1.5;">
-              Las firmas de los directivos se incluirán en el <strong>Acta Constitutiva</strong> y demás documentos oficiales
-              que serán presentados al Registro Civil para obtener la personalidad jurídica.
-            </p>
-            <p style="margin: 8px 0 0; color: #0284c7; font-size: 12px;">
-              ✏️ <strong>Tip:</strong> Use un lápiz stylus o el dedo para firmar. Puede borrar y volver a firmar si no queda bien.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">✍️</span>
+        <span class="wizard-tip-title">¿Para qué son las firmas?</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Las firmas de los directivos se incluirán en el <strong>Acta Constitutiva</strong> y demás documentos oficiales que serán presentados al Registro Civil para obtener la personalidad jurídica.</p>
+          <p class="wizard-tip-hint">✏️ <strong>Tip:</strong> Use un lápiz stylus o el dedo para firmar. Puede borrar y volver a firmar si no queda bien.</p>
         </div>
       </div>
 
@@ -1157,21 +1119,14 @@ function getStep8HTML_Revision() {
       <h3>Paso 8: Revisión y Envío</h3>
       <p class="step-description">Revise toda la información antes de enviar su solicitud.</p>
 
-      <!-- Info Box explicativo -->
-      <div class="info-box info-box-primary mb-4" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 24px;">🔍</span>
-          <div>
-            <strong style="color: #92400e; font-size: 14px;">Último paso antes de enviar</strong>
-            <p style="margin: 6px 0 0; color: #92400e; font-size: 13px; line-height: 1.5;">
-              Revise cuidadosamente toda la información ingresada. Al enviar la solicitud, se creará un <strong>borrador</strong>
-              que podrá editar hasta que se agende la cita con el Ministro de Fe.
-            </p>
-            <p style="margin: 8px 0 0; color: #b45309; font-size: 12px;">
-              ⚠️ <strong>Importante:</strong> La solicitud del Ministro de Fe se realizará <strong>después</strong> de completar este paso.
-              La Municipalidad coordinará la fecha de la Asamblea Constitutiva.
-            </p>
-          </div>
+      <!-- Info Box colapsable -->
+      <div class="wizard-tip-toggle" onclick="this.classList.toggle('open')">
+        <span class="wizard-tip-icon">🔍</span>
+        <span class="wizard-tip-title">Último paso antes de enviar</span>
+        <svg class="wizard-tip-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="wizard-tip-body">
+          <p>Revise cuidadosamente toda la información ingresada. Al enviar la solicitud, se creará un <strong>borrador</strong> que podrá editar hasta que se agende la cita con el Ministro de Fe.</p>
+          <p class="wizard-tip-hint">⚠️ <strong>Importante:</strong> La solicitud del Ministro de Fe se realizará <strong>después</strong> de completar este paso. La Municipalidad coordinará la fecha de la Asamblea Constitutiva.</p>
         </div>
       </div>
 
