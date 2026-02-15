@@ -678,15 +678,17 @@ body {
 
     .main-content {
         margin-left: 260px !important;
+        width: calc(100% - 260px) !important;
         margin-bottom: 0 !important;
         padding: 40px 48px;
-        transition: margin-left 0.3s ease;
+        transition: margin-left 0.3s ease, width 0.3s ease;
         max-width: none;
         overflow-x: hidden;
     }
 
     .main-content.sidebar-collapsed {
         margin-left: 72px !important;
+        width: calc(100% - 72px) !important;
     }
 
     .bottom-nav {
@@ -16726,11 +16728,11 @@ a.header-logo:hover {
 }
 
 .step-card {
-    flex: 1;
-    min-width: 140px;
+    flex: 1 1 0;
+    min-width: 120px;
     max-width: 180px;
     text-align: center;
-    padding: 16px 12px;
+    padding: 16px 8px;
 }
 
 .step-icon-wrapper {
@@ -16805,7 +16807,8 @@ a.header-logo:hover {
 }
 
 .step-connector {
-    width: 40px;
+    width: 30px;
+    flex-shrink: 1;
     height: 2px;
     background: linear-gradient(90deg, var(--border-color) 0%, var(--primary-color) 50%, var(--border-color) 100%);
     margin-top: 48px;
