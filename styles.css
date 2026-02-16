@@ -9846,7 +9846,7 @@ a.header-logo:hover {
 }
 
 .admin-dashboard.admin-wide-view {
-    max-width: 1200px;
+    max-width: 1100px;
 }
 
 .admin-header {
@@ -15745,8 +15745,8 @@ a.header-logo:hover {
 /* Layout Principal */
 .sm-layout {
     display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
     max-width: 100%;
 }
 
@@ -15822,8 +15822,8 @@ a.header-logo:hover {
 .sm-calendar-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    padding: 12px 16px;
+    gap: 5px;
+    padding: 10px 12px;
     background: #f8fafb;
 }
 
@@ -15839,16 +15839,47 @@ a.header-logo:hover {
 .sm-calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    padding: 16px;
+    gap: 5px;
+    padding: 12px;
+}
+
+/* Celdas compactas dentro del schedule manager */
+.sm-calendar-days .admin-calendar-day {
+    aspect-ratio: auto;
+    min-height: 58px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    border-width: 1.5px;
+}
+
+.sm-calendar-days .day-number {
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.sm-calendar-days .day-slots-count,
+.sm-calendar-days .day-partial-count,
+.sm-calendar-days .day-blocked-label,
+.sm-calendar-days .day-disabled-label {
+    font-size: 9px;
+    padding: 1px 4px;
+}
+
+.sm-calendar-days .day-bookings-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: 2px;
+    right: 2px;
 }
 
 /* Calendar Legend */
 .sm-calendar-legend {
     display: flex;
     justify-content: center;
-    gap: 20px;
-    padding: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px 12px;
     border-top: 1px solid var(--border-color);
     background: #f8fafb;
 }
