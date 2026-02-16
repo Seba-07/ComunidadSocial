@@ -133,9 +133,9 @@ export const createMinistroSchema = z.object({
  */
 // Email opcional: acepta email válido, string vacío, undefined o null
 const optionalEmailField = z.preprocess(
-  (val) => (typeof val === 'string' && val.trim() === '') ? undefined : val,
+  (val) => (!val || (typeof val === 'string' && val.trim() === '')) ? undefined : val,
   z.string().email().optional()
-).optional();
+);
 
 const memberSchema = z.object({
   rut: rutSchema,
