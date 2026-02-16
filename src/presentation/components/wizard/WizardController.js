@@ -7745,10 +7745,16 @@ Secretaria Municipal`;
         directorioCompleto.miembrosAdicionales = miembrosAdicionales;
       }
 
+      // Limpiar emails inválidos de miembros guardados
+      const cleanMembers = (this.formData.members || []).map(m => ({
+        ...m,
+        email: (m.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email.trim())) ? m.email.trim() : ''
+      }));
+
       const requestData = {
         organizationData: {
           organization: this.formData.organization,
-          members: this.formData.members
+          members: cleanMembers
         },
         // Datos del paso 5: Directorio Provisorio (ahora incluye todos los miembros)
         directorioProvisorio: directorioCompleto,
