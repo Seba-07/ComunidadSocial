@@ -9845,6 +9845,10 @@ a.header-logo:hover {
     margin: 0 auto;
 }
 
+.admin-dashboard.admin-wide-view {
+    max-width: 1200px;
+}
+
 .admin-header {
     margin-bottom: 20px;
 }

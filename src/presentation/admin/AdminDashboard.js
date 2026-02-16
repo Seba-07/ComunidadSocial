@@ -174,6 +174,9 @@ class AdminDashboard {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    // Restaurar ancho normal del dashboard
+    const dashboard = document.querySelector('.admin-dashboard');
+    if (dashboard) dashboard.classList.remove('admin-wide-view');
   }
 
   /**
@@ -815,6 +818,10 @@ class AdminDashboard {
     this.currentView = 'schedule';
     this.hideApplicationElements();
     this.hideAllManagerViews();
+
+    // El schedule manager necesita más ancho por su layout de 2 columnas
+    const dashboard = document.querySelector('.admin-dashboard');
+    if (dashboard) dashboard.classList.add('admin-wide-view');
 
     const scheduleView = document.getElementById('schedule-manager-view');
     scheduleView.style.display = 'block';
