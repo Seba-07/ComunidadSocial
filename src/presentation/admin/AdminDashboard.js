@@ -106,6 +106,7 @@ class AdminDashboard {
         // For grouped filters not in chips, deactivate all
       }
       this.showApplications(true); // skip reload for filter-only
+      sessionStorage.setItem('admin_current_view', viewName);
       return;
     }
 
@@ -130,7 +131,11 @@ class AdminDashboard {
     };
 
     const handler = viewMap[viewName];
-    if (handler) handler();
+    if (handler) {
+      handler();
+      // Persistir vista actual para restaurar al recargar
+      sessionStorage.setItem('admin_current_view', viewName);
+    }
   }
 
   // ============ DRY HELPERS ============

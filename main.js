@@ -170,6 +170,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Pre-cargar datos del perfil por si el usuario navega allí
       loadProfileData();
+
+      // Restaurar página guardada al recargar (solo para usuarios no-admin)
+      // Los admin se restauran en el bloque de admin setup
+      if (user.role !== 'MUNICIPALIDAD') {
+        const savedPage = sessionStorage.getItem('app_current_page');
+        if (savedPage && savedPage !== 'admin') {
+          appState.navigateTo(savedPage);
+        }
+      }
     } catch (error) {
       console.error('Error al cargar usuario:', error);
     }
@@ -3419,6 +3428,11 @@ function setupAdminUI() {
   // Esperar a que el DOM se actualice antes de inicializar
   setTimeout(() => {
     adminDashboard.init();
+    // Restaurar vista guardada al recargar
+    const savedAdminView = sessionStorage.getItem('admin_current_view');
+    if (savedAdminView) {
+      adminDashboard.showView(savedAdminView);
+    }
   }, 100);
 
   // Chevron SVG reutilizable

@@ -15691,9 +15691,11 @@ a.header-logo:hover {
    =============================================== */
 
 .schedule-manager-v2 {
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* Header - Ficha Informativa */
@@ -15740,14 +15742,18 @@ a.header-logo:hover {
 /* Layout Principal */
 .sm-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 24px;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 /* Secciones */
 .sm-calendar-section {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .sm-sidebar {

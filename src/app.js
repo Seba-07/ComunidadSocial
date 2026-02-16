@@ -86,6 +86,8 @@ class AppState {
   navigateTo(page) {
     this.currentPage = page;
     this.updateUI();
+    // Persistir página actual para restaurar al recargar
+    sessionStorage.setItem('app_current_page', page);
     // Emitir evento para que main.js ejecute lógica específica de página
     window.dispatchEvent(new CustomEvent('page-navigate', { detail: { page } }));
   }
