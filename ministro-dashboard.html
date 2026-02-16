@@ -29,120 +29,6 @@
             flex-direction: column;
         }
 
-        /* ===== HEADER - Dark Blue Gradient ===== */
-        .dashboard-header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
-            color: white;
-            padding: 0 24px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 72px;
-            z-index: 100;
-            box-shadow: 0 2px 12px rgba(30, 58, 138, 0.3);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-        }
-
-        .header-content {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .header-logo {
-            height: 44px;
-            width: auto;
-            background: white;
-            border-radius: 8px;
-            padding: 3px 6px;
-        }
-
-        .header-info h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .header-subtitle {
-            margin: 6px 0 0;
-            opacity: 0.9;
-            font-size: 15px;
-        }
-
-        .header-right {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .btn-header {
-            padding: 12px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-header:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .btn-header.btn-logout {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.4);
-            color: #fecaca;
-        }
-
-        .btn-header.btn-logout:hover {
-            background: rgba(239, 68, 68, 0.35);
-            border-color: rgba(239, 68, 68, 0.5);
-            color: white;
-        }
-
-        .btn-header.btn-notifications {
-            position: relative;
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: white;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 10px;
-            min-width: 18px;
-            text-align: center;
-            animation: pulse-badge 2s infinite;
-        }
-
-        @keyframes pulse-badge {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
         /* ===== NOTIFICATIONS PANEL ===== */
         .notifications-overlay {
             position: fixed;
@@ -460,7 +346,7 @@
         /* ===== LAYOUT ===== */
         .dashboard-main {
             flex: 1;
-            margin-top: 72px;
+            margin-top: var(--header-height, 72px);
             padding: 24px;
             transition: margin-left 0.3s ease;
         }
@@ -500,24 +386,7 @@
             display: block;
         }
 
-        .menu-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-
-        .menu-toggle:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
+        /* menu-btn inherited from styles.css */
 
         /* ===== TOOLBAR ===== */
         .ministro-toolbar {
@@ -616,8 +485,8 @@
         @media (min-width: 1024px) {
             .ministro-sidebar {
                 left: 0;
-                top: 72px;
-                height: calc(100vh - 72px);
+                top: var(--header-height, 72px);
+                height: calc(100vh - var(--header-height, 72px));
                 width: 260px;
                 z-index: 50;
                 box-shadow: none;
@@ -627,10 +496,6 @@
             .dashboard-main {
                 margin-left: 260px;
                 padding: 24px 32px;
-            }
-
-            .menu-toggle {
-                display: none;
             }
         }
 
@@ -1048,18 +913,6 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .dashboard-header {
-                padding: 0 12px;
-            }
-
-            .header-info h1 {
-                font-size: 18px;
-            }
-
-            .btn-header .btn-text {
-                display: none;
-            }
-
             .dashboard-main {
                 padding: 16px;
             }
@@ -1103,14 +956,6 @@
         }
 
         @media (max-width: 480px) {
-            .header-info h1 {
-                font-size: 16px;
-            }
-
-            .header-subtitle {
-                display: none;
-            }
-
             .assignment-org-name {
                 font-size: 16px;
             }
@@ -1159,39 +1004,32 @@
 </head>
 <body>
     <div class="ministro-dashboard">
-        <!-- Header -->
-        <header class="dashboard-header">
+        <!-- Header (mismo que admin) -->
+        <header class="app-header" role="banner">
             <div class="header-content">
-                <div class="header-left">
-                    <button class="menu-toggle" id="menu-toggle" title="Menu">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
-                    <img src="/icons/logo_renca.png" alt="Logo Renca" class="header-logo">
+                <button id="menu-btn" class="menu-btn" aria-label="Menú">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="#" class="header-logo" id="logo-home-link">
+                    <img src="/icons/logo_renca.png" alt="Logo Renca" class="logo-img">
                     <div class="header-info">
-                        <h1>Panel de Ministro de Fe</h1>
+                        <h1 class="header-title">Comunidad Renca</h1>
                         <p class="header-subtitle" id="welcome-message">Cargando...</p>
                     </div>
-                </div>
-                <div class="header-right">
-                    <button class="btn-header btn-notifications" id="btn-notifications" title="Notificaciones">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                </a>
+                <div id="user-info" class="user-info" style="display: flex; align-items: center; gap: 12px;">
+                    <button id="btn-notifications" class="notifications-btn" aria-label="Notificaciones">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                         </svg>
                         <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
-                    <button class="btn-header btn-logout" id="btn-logout" title="Cerrar Sesión">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        <span class="btn-text">Salir</span>
-                    </button>
+                    <button id="btn-logout" class="btn-secondary-sm">Salir</button>
                 </div>
             </div>
         </header>

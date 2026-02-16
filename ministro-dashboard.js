@@ -601,13 +601,13 @@ document.querySelectorAll('.nav-section-collapsible').forEach(title => {
 });
 
 // Menu toggle (mobile)
-const menuToggle = document.getElementById('menu-toggle');
+const menuBtn = document.getElementById('menu-btn');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 const ministroSidebar = document.getElementById('ministro-sidebar');
 const closeSidebar = document.getElementById('close-sidebar');
 
-if (menuToggle) {
-  menuToggle.addEventListener('click', () => {
+if (menuBtn) {
+  menuBtn.addEventListener('click', () => {
     ministroSidebar.classList.add('open');
     sidebarOverlay.classList.add('active');
   });
