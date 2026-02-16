@@ -131,27 +131,21 @@ export const createMinistroSchema = z.object({
 /**
  * Esquema para miembro de organización
  */
-// Email opcional: acepta email válido, string vacío, undefined o null
-const optionalEmailField = z.preprocess(
-  (val) => (!val || (typeof val === 'string' && val.trim() === '')) ? undefined : val,
-  z.string().email().optional()
-);
-
 const memberSchema = z.object({
   rut: rutSchema,
   firstName: nameSchema,
-  segundoNombre: z.string().max(50).optional().or(z.literal('')), // Segundo nombre (opcional)
-  lastName: nameSchema, // Apellido paterno
-  apellidoMaterno: z.string().max(50).optional().or(z.literal('')), // Apellido materno (opcional)
+  segundoNombre: z.string().max(50).optional().or(z.literal('')),
+  lastName: nameSchema,
+  apellidoMaterno: z.string().max(50).optional().or(z.literal('')),
   address: z.string().max(200).optional().or(z.literal('')),
   phone: phoneSchema,
-  email: optionalEmailField,
+  email: z.string().optional().or(z.literal('')),
   birthDate: z.string().optional().or(z.literal('')),
   occupation: z.string().max(100).optional().or(z.literal('')),
   genero: z.enum(['masculino', 'femenino', 'otro', 'no_especifica', '']).optional(),
   role: z.enum(['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission']).optional(),
-  signature: z.string().optional(), // Base64
-  certificate: z.string().optional() // Base64
+  signature: z.string().optional(),
+  certificate: z.string().optional()
 }).passthrough();
 
 /**
