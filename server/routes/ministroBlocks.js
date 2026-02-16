@@ -237,6 +237,7 @@ router.get('/availability/month/:year/:month', async (req, res) => {
 
       let availableHoursCount = 0;
       let partialHours = 0;
+      const hourly = {};
 
       for (const hour of hours) {
         const blockedMinistroIds = new Set();
@@ -254,6 +255,8 @@ router.get('/availability/month/:year/:month', async (req, res) => {
         }
 
         const available = Math.max(0, totalMinistros - blockedMinistroIds.size);
+        hourly[hour] = available;
+
         if (available > 0) {
           availableHoursCount++;
           if (blockedMinistroIds.size > 0) {
@@ -264,7 +267,8 @@ router.get('/availability/month/:year/:month', async (req, res) => {
 
       days[dateKey] = {
         hasAvailability: availableHoursCount > 0,
-        isPartial: partialHours > 0 && availableHoursCount < hours.length
+        isPartial: partialHours > 0 && availableHoursCount < hours.length,
+        hourly
       };
     }
 

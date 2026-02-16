@@ -281,15 +281,15 @@ class ScheduleService {
       unavailable: []
     };
 
-    console.log('[ScheduleService] getMonthAvailability para:', year, month);
-
     // Intentar obtener datos de bloques del backend para el mes
     let monthBlockData = null;
     try {
       monthBlockData = await apiService.getMinistroAvailabilityForMonth(year, month);
     } catch (error) {
-      console.warn('[ScheduleService] Error obteniendo bloques mensuales, usando fallback:', error.message);
+      console.warn('[ScheduleService] Error obteniendo bloques mensuales:', error.message);
     }
+
+    const totalMinistros = monthBlockData?.totalMinistros ?? this.getActiveMinistrosCount();
 
     // Iterar todos los días del mes
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -299,25 +299,19 @@ class ScheduleService {
       const dateKey = this.getDateKey(date);
       const daySchedule = schedule[dateKey];
 
+      // Si el día no tiene horarios configurados o está deshabilitado → no disponible
       if (!daySchedule || !daySchedule.enabled || daySchedule.slots.length === 0) {
         availability.unavailable.push(dateKey);
         continue;
       }
 
-      // Si tenemos datos del backend para este día
-      if (monthBlockData && monthBlockData.days && monthBlockData.days[dateKey]) {
-        const dayInfo = monthBlockData.days[dateKey];
-        if (!dayInfo.hasAvailability) {
-          availability.unavailable.push(dateKey);
-        } else if (dayInfo.isPartial) {
-          availability.partial.push(dateKey);
-        } else {
-          availability.available.push(dateKey);
-        }
+      // Sin ministros activos → no hay disponibilidad
+      if (totalMinistros <= 0) {
+        availability.unavailable.push(dateKey);
         continue;
       }
 
-      // Fallback: calcular localmente sin bloques
+      // Contar reservas/bookings por horario para este día
       const dayBookings = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled');
       const bookingsCountByTime = {};
       dayBookings.forEach(b => {
@@ -328,20 +322,24 @@ class ScheduleService {
       let slotsPartial = 0;
       let totalAvailableSlots = 0;
 
-      const totalMinistros = this.getActiveMinistrosCount();
-
       daySchedule.slots.forEach(slot => {
-        if (slot.available) {
-          const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+        if (!slot.available) return;
 
-          if (totalMinistros > 0) {
-            totalAvailableSlots++;
-            if (bookingsAtTime < totalMinistros) {
-              slotsWithAvailability++;
-              if (bookingsAtTime > 0) {
-                slotsPartial++;
-              }
-            }
+        totalAvailableSlots++;
+        const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+
+        // Usar disponibilidad real del backend (bloques + assignments) si existe
+        // Si no, usar el total de ministros activos como fallback
+        let availableMinistros = totalMinistros;
+        if (monthBlockData?.days?.[dateKey]?.hourly?.[slot.time] !== undefined) {
+          availableMinistros = monthBlockData.days[dateKey].hourly[slot.time];
+        }
+
+        // Un slot está disponible si hay ministros libres Y no todos están reservados
+        if (availableMinistros > 0 && bookingsAtTime < availableMinistros) {
+          slotsWithAvailability++;
+          if (bookingsAtTime > 0) {
+            slotsPartial++;
           }
         }
       });
