@@ -61,12 +61,17 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
 });
 
 // POST /api/ministro-blocks - Crear bloque manual
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), async (req, res) => {
   try {
     const { ministroId, ministroName, date, time, blockType, reason } = req.body;
 
     if (!ministroId || !ministroName || !date) {
       return res.status(400).json({ error: 'ministroId, ministroName y date son requeridos' });
+    }
+
+    // MINISTRO_FE solo puede crear bloques para sí mismo
+    if (req.user.role === 'MINISTRO_FE' && ministroId !== req.userId) {
+      return res.status(403).json({ error: 'Solo puedes crear bloques para tu propia disponibilidad' });
     }
 
     const type = blockType || (time ? 'manual' : 'full_day');
@@ -91,17 +96,21 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 });
 
 // DELETE /api/ministro-blocks/:id - Desactivar bloque
-router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), async (req, res) => {
   try {
-    const block = await MinistroBlock.findByIdAndUpdate(
-      req.params.id,
-      { active: false },
-      { new: true }
-    );
+    const block = await MinistroBlock.findById(req.params.id);
 
     if (!block) {
       return res.status(404).json({ error: 'Bloqueo no encontrado' });
     }
+
+    // MINISTRO_FE solo puede eliminar sus propios bloques
+    if (req.user.role === 'MINISTRO_FE' && block.ministroId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Solo puedes eliminar tus propios bloques' });
+    }
+
+    block.active = false;
+    await block.save();
 
     res.json({ message: 'Bloqueo desactivado', block });
   } catch (error) {

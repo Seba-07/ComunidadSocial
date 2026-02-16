@@ -499,9 +499,16 @@ export class MinistroManager {
     }
   }
 
-  viewBlocks(ministroId) {
+  async viewBlocks(ministroId) {
     const ministro = ministroService.getById(ministroId);
     if (!ministro) return;
+
+    // Cargar bloques desde backend antes de mostrar
+    try {
+      await ministroAvailabilityService.loadFromBackend(ministroId);
+    } catch (error) {
+      console.warn('Error cargando bloques del backend:', error.message);
+    }
 
     const blocks = ministroAvailabilityService.getByMinistroId(ministroId).filter(b => b.active);
 

@@ -388,15 +388,17 @@ async function renderAssignments() {
 }
 
 // Render availability blocks
-function renderAvailability() {
+async function renderAvailability() {
   const ministroId = currentMinistro._id || currentMinistro.id;
-  console.log('📅 renderAvailability - ministroId:', ministroId);
 
-  const allBlocks = ministroAvailabilityService.getAll();
-  console.log('📅 Todos los bloques en localStorage:', allBlocks);
+  // Cargar bloques desde el backend (sincroniza con localStorage)
+  try {
+    await ministroAvailabilityService.loadFromBackend(ministroId);
+  } catch (error) {
+    console.warn('Error cargando bloques del backend:', error.message);
+  }
 
   const blocks = ministroAvailabilityService.getByMinistroId(ministroId);
-  console.log('📅 Bloques filtrados para este ministro:', blocks);
 
   const container = document.getElementById('availability-list');
 
@@ -1865,11 +1867,11 @@ function viewDocumentation(assignmentId) {
   });
 }
 
-function deleteBlock(blockId) {
+async function deleteBlock(blockId) {
   if (!confirm('¿Eliminar este bloqueo de disponibilidad?')) return;
 
   try {
-    ministroAvailabilityService.delete(blockId);
+    await ministroAvailabilityService.deleteBlock(blockId);
     showToast('Bloqueo eliminado', 'success');
     renderAvailability();
   } catch (error) {
@@ -2110,7 +2112,7 @@ function showAddBlockModal() {
   });
 
   const form = modal.querySelector('#add-block-form');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const date = document.getElementById('block-date').value;
@@ -2119,13 +2121,16 @@ function showAddBlockModal() {
     try {
       // Obtener el ID correcto del ministro (MongoDB usa _id)
       const ministroId = currentMinistro._id || currentMinistro.id;
+      const ministroName = `${currentMinistro.firstName} ${currentMinistro.lastName}`;
 
       // Si es día completo, crear un solo bloqueo sin hora
       if (fullDayCheckbox.checked) {
-        ministroAvailabilityService.create({
+        await ministroAvailabilityService.createBlock({
           ministroId: ministroId,
+          ministroName,
           date,
           time: null,
+          blockType: 'full_day',
           reason
         });
         showToast('Día completo bloqueado exitosamente', 'success');
@@ -2142,12 +2147,14 @@ function showAddBlockModal() {
         let created = 0;
         let errors = 0;
 
-        selectedTimes.forEach(time => {
+        for (const time of selectedTimes) {
           try {
-            ministroAvailabilityService.create({
+            await ministroAvailabilityService.createBlock({
               ministroId: ministroId,
+              ministroName,
               date,
               time,
+              blockType: 'manual',
               reason
             });
             created++;
@@ -2155,7 +2162,7 @@ function showAddBlockModal() {
             console.error(`Error bloqueando hora ${time}:`, error);
             errors++;
           }
-        });
+        }
 
         if (created > 0) {
           showToast(`${created} hora(s) bloqueada(s) exitosamente`, 'success');
