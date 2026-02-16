@@ -7543,7 +7543,7 @@ Secretaria Municipal`;
       return new Date(year, month - 1, day);
     };
 
-    const renderCalendar = (year, month) => {
+    const renderCalendar = async (year, month) => {
       const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -7554,7 +7554,7 @@ Secretaria Municipal`;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const availability = scheduleService.getMonthAvailability(year, month + 1);
+      const availability = await scheduleService.getMonthAvailability(year, month + 1);
       const calendarDays = document.getElementById('calendar-days');
       calendarDays.innerHTML = '';
 
@@ -7598,7 +7598,7 @@ Secretaria Municipal`;
       }
     };
 
-    const selectDate = (dateKey) => {
+    const selectDate = async (dateKey) => {
       selectedDateKey = dateKey;
       selectedTime = null;
 
@@ -7610,7 +7610,7 @@ Secretaria Municipal`;
 
       // Obtener y mostrar horarios disponibles
       const date = parseDateKey(dateKey);
-      const availableSlots = scheduleService.getAvailableSlots(date);
+      const availableSlots = await scheduleService.getAvailableSlots(date);
 
       const timeSlotsContainer = document.getElementById('time-slots-container');
       const timeSlotsGrid = document.getElementById('time-slots-grid');
@@ -7672,14 +7672,14 @@ Secretaria Municipal`;
     };
 
     // Navegación de meses
-    document.getElementById('prev-month-btn').addEventListener('click', () => {
+    document.getElementById('prev-month-btn').addEventListener('click', async () => {
       currentDate.setMonth(currentDate.getMonth() - 1);
-      renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+      await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
     });
 
-    document.getElementById('next-month-btn').addEventListener('click', () => {
+    document.getElementById('next-month-btn').addEventListener('click', async () => {
       currentDate.setMonth(currentDate.getMonth() + 1);
-      renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+      await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
     });
 
     // Botón de cambiar cita
@@ -7689,7 +7689,7 @@ Secretaria Municipal`;
     });
 
     // Renderizar calendario inicial
-    renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
   }
 
   /**

@@ -4,6 +4,7 @@ import { apiService } from './ApiService.js';
  * Servicio de Gestión de Horarios para Ministro de Fe
  * Maneja disponibilidad de días y horas, y reservas de citas
  * IMPORTANTE: Sincroniza reservas con el backend para que todos los usuarios vean los mismos horarios ocupados
+ * Integra bloqueos de ministros (MinistroBlock) para disponibilidad real por hora
  */
 
 class ScheduleService {
@@ -16,6 +17,8 @@ class ScheduleService {
     this.CACHE_TTL = 30000; // 30 segundos de caché
     this.activeMinistrosCount = 0; // Se actualizará desde la API (0 = no hay ministros disponibles)
     this.activeMinistrosList = []; // Lista completa de ministros activos con sus availableHours
+    this.ministroBlocksCache = {}; // { dateKey: { availability: {...}, totalMinistros } }
+    this.lastBlocksSync = 0;
     this.init();
   }
 
@@ -213,13 +216,63 @@ class ScheduleService {
     }
   }
 
+  // ============ BLOQUEOS DE MINISTROS ============
+
   /**
-   * Obtiene los días disponibles de un mes específico
+   * Sincroniza bloques de ministros desde el backend para una fecha
+   * @param {string} date - Fecha en formato YYYY-MM-DD o Date object
+   * @param {boolean} forceRefresh - Si es true, ignora el caché
+   */
+  async syncMinistroBlocks(date, forceRefresh = false) {
+    const dateKey = this.getDateKey(date);
+    const now = Date.now();
+
+    // Usar caché si no ha expirado
+    if (!forceRefresh && this.ministroBlocksCache[dateKey] &&
+        now - this.lastBlocksSync < this.CACHE_TTL) {
+      return this.ministroBlocksCache[dateKey];
+    }
+
+    try {
+      const data = await apiService.getMinistroAvailabilityForDate(dateKey);
+      this.ministroBlocksCache[dateKey] = data;
+      this.lastBlocksSync = now;
+      return data;
+    } catch (error) {
+      console.warn('[ScheduleService] Error sincronizando bloques:', error.message);
+      // Retornar caché si existe, sino datos por defecto
+      return this.ministroBlocksCache[dateKey] || {
+        date: dateKey,
+        totalMinistros: this.activeMinistrosCount,
+        availability: {}
+      };
+    }
+  }
+
+  /**
+   * Obtiene el número de ministros disponibles para una fecha y hora específica
+   * Consulta el caché de bloques del backend
+   */
+  getActiveMinistrosCountForTime(date, time) {
+    const dateKey = this.getDateKey(date);
+    const blockData = this.ministroBlocksCache[dateKey];
+
+    if (blockData && blockData.availability && blockData.availability[time]) {
+      return blockData.availability[time].available;
+    }
+
+    // Fallback: todos los ministros disponibles
+    return this.activeMinistrosCount;
+  }
+
+  /**
+   * Obtiene los días disponibles de un mes específico (ASYNC)
+   * Usa datos del backend para considerar bloques de ministros
    * @param {number} year - Año
    * @param {number} month - Mes (1-12)
    * @returns {Object} Objeto con días disponibles y ocupados
    */
-  getMonthAvailability(year, month) {
+  async getMonthAvailability(year, month) {
     const schedule = this.getSchedule();
     const bookings = this.getAllBookings();
     const availability = {
@@ -228,8 +281,15 @@ class ScheduleService {
       unavailable: []
     };
 
-    console.log('📆 [ScheduleService] getMonthAvailability para:', year, month);
-    console.log('📆 [ScheduleService] Total reservas:', bookings.length);
+    console.log('[ScheduleService] getMonthAvailability para:', year, month);
+
+    // Intentar obtener datos de bloques del backend para el mes
+    let monthBlockData = null;
+    try {
+      monthBlockData = await apiService.getMinistroAvailabilityForMonth(year, month);
+    } catch (error) {
+      console.warn('[ScheduleService] Error obteniendo bloques mensuales, usando fallback:', error.message);
+    }
 
     // Iterar todos los días del mes
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -244,26 +304,36 @@ class ScheduleService {
         continue;
       }
 
-      // Contar reservas por horario para este día
+      // Si tenemos datos del backend para este día
+      if (monthBlockData && monthBlockData.days && monthBlockData.days[dateKey]) {
+        const dayInfo = monthBlockData.days[dateKey];
+        if (!dayInfo.hasAvailability) {
+          availability.unavailable.push(dateKey);
+        } else if (dayInfo.isPartial) {
+          availability.partial.push(dateKey);
+        } else {
+          availability.available.push(dateKey);
+        }
+        continue;
+      }
+
+      // Fallback: calcular localmente sin bloques
       const dayBookings = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled');
       const bookingsCountByTime = {};
       dayBookings.forEach(b => {
         bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
       });
 
-      // Contar slots con disponibilidad (usando ministros por hora específica)
       let slotsWithAvailability = 0;
       let slotsPartial = 0;
       let totalAvailableSlots = 0;
 
-      // Obtener total de ministros activos (disponibles todo el día)
       const totalMinistros = this.getActiveMinistrosCount();
 
       daySchedule.slots.forEach(slot => {
         if (slot.available) {
           const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
 
-          // Solo contar si hay al menos un ministro activo
           if (totalMinistros > 0) {
             totalAvailableSlots++;
             if (bookingsAtTime < totalMinistros) {
@@ -285,27 +355,24 @@ class ScheduleService {
       }
     }
 
-    console.log('📆 [ScheduleService] Días parcialmente ocupados:', availability.partial);
-
     return availability;
   }
 
   /**
-   * Obtiene slots disponibles de un día específico (excluyendo reservados)
-   * Considera el número de ministros disponibles POR HORA ESPECÍFICA
+   * Obtiene slots disponibles de un día específico (ASYNC)
+   * Considera bloques de ministros del backend
    */
-  getAvailableSlots(date) {
+  async getAvailableSlots(date) {
     const daySchedule = this.getDaySchedule(date);
     if (!daySchedule || !daySchedule.enabled) {
-      console.log('📅 [ScheduleService] getAvailableSlots: día no habilitado o sin horario', date);
       return [];
     }
 
     const dateKey = this.getDateKey(date);
     const bookings = this.getAllBookings();
 
-    console.log('📅 [ScheduleService] getAvailableSlots para fecha:', dateKey);
-    console.log('📅 [ScheduleService] Total reservas en sistema:', bookings.length);
+    // Sincronizar bloques del backend para esta fecha
+    await this.syncMinistroBlocks(date);
 
     // Contar reservas por horario para esta fecha
     const bookingsForDate = bookings.filter(b => b.date === dateKey && b.status !== 'cancelled');
@@ -314,27 +381,18 @@ class ScheduleService {
       bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
     });
 
-    console.log('📅 [ScheduleService] Reservas por horario:', bookingsCountByTime);
-
-    // Obtener total de ministros activos (disponibles todo el día)
-    const totalMinistros = this.getActiveMinistrosCount();
-    console.log('📅 [ScheduleService] Total ministros activos:', totalMinistros);
-
     // Filtrar slots donde aún hay ministros disponibles
     const availableSlots = daySchedule.slots
       .filter(slot => {
         if (!slot.available) return false;
 
         const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
+        // Usar disponibilidad real por hora (considera bloques)
+        const availableMinistros = this.getActiveMinistrosCountForTime(dateKey, slot.time);
 
-        console.log(`📅 [ScheduleService] Hora ${slot.time}: ${totalMinistros} ministros, ${bookingsAtTime} reservas`);
-
-        // Solo disponible si hay ministros activos Y hay menos reservas que ministros
-        return totalMinistros > 0 && bookingsAtTime < totalMinistros;
+        return availableMinistros > 0 && bookingsAtTime < availableMinistros;
       })
       .map(slot => slot.time);
-
-    console.log('📅 [ScheduleService] Horarios disponibles (después de filtrar):', availableSlots);
 
     return availableSlots;
   }
@@ -358,33 +416,27 @@ class ScheduleService {
     // Solo usar caché si ya tenemos datos cargados (lastMinistrosSync > 0)
     if (!forceRefresh && this.lastMinistrosSync > 0 &&
         now - this.lastMinistrosSync < this.CACHE_TTL) {
-      console.log('👥 [ScheduleService] Usando caché de ministros:', this.activeMinistrosCount);
       return this.activeMinistrosCount;
     }
 
     try {
-      console.log('👥 [ScheduleService] Cargando ministros desde API...');
       const ministros = await apiService.getActiveMinistros();
       this.activeMinistrosList = Array.isArray(ministros) ? ministros : [];
       this.activeMinistrosCount = this.activeMinistrosList.length;
       this.lastMinistrosSync = now;
-      console.log('👥 [ScheduleService] Ministros activos cargados:', this.activeMinistrosCount);
       return this.activeMinistrosCount;
     } catch (e) {
-      console.warn('⚠️ [ScheduleService] Error cargando ministros:', e.message);
+      console.warn('[ScheduleService] Error cargando ministros:', e.message);
       return this.activeMinistrosCount;
     }
   }
 
   /**
-   * Obtiene el número de ministros disponibles para una hora específica
-   * NOTA: Ahora todos los ministros activos están disponibles todo el día
-   * @param {string} time - Hora en formato "HH:MM" (ej: "09:00") - ignorado
-   * @returns {number} Cantidad de ministros activos
+   * Invalida el caché de bloques (llamar después de crear/eliminar bloques)
    */
-  getActiveMinistrosCountForTime(time) {
-    // Todos los ministros activos están disponibles todo el día
-    return this.activeMinistrosCount;
+  invalidateBlocksCache() {
+    this.ministroBlocksCache = {};
+    this.lastBlocksSync = 0;
   }
 
   // ============ GESTIÓN DE RESERVAS ============
@@ -400,16 +452,15 @@ class ScheduleService {
       // Usar caché si no ha expirado y no se fuerza recarga
       if (!forceRefresh && this.lastBackendSync > 0 &&
           now - this.lastBackendSync < this.CACHE_TTL && this.backendBookingsCache.length > 0) {
-        console.log('📆 [ScheduleService] Usando caché de reservas backend');
         return this.backendBookingsCache;
       }
 
-      console.log('📆 [ScheduleService] Sincronizando reservas desde backend...');
-
       // Usar endpoint público para obtener horarios ocupados (no requiere auth)
-      const bookedSlots = await apiService.getBookedSlots();
+      const response = await apiService.getBookedSlots();
 
-      console.log('📆 [ScheduleService] Horarios ocupados desde API:', bookedSlots.length);
+      // El endpoint ahora retorna { bookedSlots, ministroBlockSlots }
+      // Pero mantener compatibilidad si retorna array plano
+      const bookedSlots = Array.isArray(response) ? response : (response.bookedSlots || []);
 
       // Convertir a formato de booking (solo necesitamos date y time para el cálculo)
       const backendBookings = (bookedSlots || []).map((slot, index) => ({
@@ -420,15 +471,12 @@ class ScheduleService {
         source: 'backend'
       })).filter(b => b.date && b.time);
 
-      console.log('📆 [ScheduleService] Reservas del backend:', backendBookings.length);
-      console.log('📆 [ScheduleService] Detalle:', backendBookings.map(b => `${b.date} ${b.time}`));
-
       this.backendBookingsCache = backendBookings;
       this.lastBackendSync = now;
 
       return backendBookings;
     } catch (error) {
-      console.error('❌ [ScheduleService] Error sincronizando backend:', error);
+      console.error('[ScheduleService] Error sincronizando backend:', error);
       return this.backendBookingsCache; // Devolver caché anterior en caso de error
     }
   }
@@ -477,9 +525,6 @@ class ScheduleService {
   createBooking(bookingData) {
     const bookings = this.getAllBookings();
 
-    console.log('🔖 [ScheduleService] createBooking - Reservas actuales:', bookings.length);
-    console.log('🔖 [ScheduleService] createBooking - Datos recibidos:', bookingData.date, bookingData.time);
-
     // Verificar si el slot está disponible
     const dateKey = this.getDateKey(bookingData.date);
     const existingBooking = bookings.find(
@@ -489,7 +534,6 @@ class ScheduleService {
     );
 
     if (existingBooking) {
-      console.log('⚠️ [ScheduleService] createBooking - Horario ya reservado:', existingBooking);
       throw new Error('Este horario ya está reservado');
     }
 
@@ -509,8 +553,6 @@ class ScheduleService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-
-    console.log('✅ [ScheduleService] createBooking - Nueva reserva creada:', newBooking.id, dateKey, bookingData.time);
 
     bookings.push(newBooking);
     this.saveBookings(bookings);
@@ -677,7 +719,7 @@ class ScheduleService {
    */
   clearAllBookings() {
     localStorage.removeItem(this.bookingsKey);
-    console.log('🗑️ Todas las reservas han sido eliminadas');
+    console.log('Todas las reservas han sido eliminadas');
   }
 
   /**
@@ -698,7 +740,6 @@ class ScheduleService {
 
     if (removedCount > 0) {
       this.saveBookings(validBookings);
-      console.log(`🧹 Se eliminaron ${removedCount} reservas huérfanas (organizaciones eliminadas)`);
     }
 
     return removedCount;

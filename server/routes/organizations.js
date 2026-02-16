@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
 import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
+import MinistroBlock from '../models/MinistroBlock.js';
 import logger from '../utils/logger.js';
 import { emailService } from '../services/emailService.js';
 
@@ -136,8 +137,51 @@ router.get('/availability/booked-slots', async (req, res) => {
       })
       .filter(Boolean);
 
-    logger.debug('Booked slots:', bookedSlots.length);
-    res.json(bookedSlots);
+    // Obtener bloques de ministros activos y expandirlos por hora
+    const ministroBlockSlots = [];
+    try {
+      const blocks = await MinistroBlock.find({ active: true }).lean();
+      const hours = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+
+      for (const block of blocks) {
+        if (!block.time) {
+          // Día completo: expandir a todas las horas
+          for (const h of hours) {
+            ministroBlockSlots.push({
+              date: block.date,
+              time: h,
+              ministroId: block.ministroId.toString()
+            });
+          }
+        } else if (block.blockType === 'duration' && block.endTime) {
+          // Bloque con duración: expandir rango
+          for (const h of hours) {
+            if (h >= block.time && h <= block.endTime) {
+              ministroBlockSlots.push({
+                date: block.date,
+                time: h,
+                ministroId: block.ministroId.toString()
+              });
+            }
+          }
+        } else {
+          // Bloque de hora específica
+          ministroBlockSlots.push({
+            date: block.date,
+            time: block.time,
+            ministroId: block.ministroId.toString()
+          });
+        }
+      }
+    } catch (blockError) {
+      logger.warn('Error loading ministro blocks for booked-slots:', blockError.message);
+    }
+
+    logger.debug('Booked slots:', bookedSlots.length, 'Block slots:', ministroBlockSlots.length);
+    res.json({
+      bookedSlots,
+      ministroBlockSlots
+    });
   } catch (error) {
     console.error('Get booked slots error:', error);
     res.status(500).json({ error: 'Error al obtener horarios ocupados' });

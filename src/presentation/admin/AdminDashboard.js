@@ -20,6 +20,7 @@ import { initExportManager } from './ExportManager.js';
 import { ministroService } from '../../services/MinistroService.js';
 import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { ministroAvailabilityService } from '../../services/MinistroAvailabilityService.js';
+import { scheduleService } from '../../services/ScheduleService.js';
 import { pdfService } from '../../services/PDFService.js';
 import JSZip from 'jszip';
 
@@ -5136,6 +5137,16 @@ class AdminDashboard {
 
             showToast('Ministro de Fe agendado correctamente. Notificados: usuario y ministro.', 'success');
             modal.remove();
+
+            // Mostrar modal de duración de bloqueo
+            this._showBlockDurationModal({
+              ministroId: mId,
+              ministroName: `${ministro.firstName} ${ministro.lastName}`,
+              date: scheduledDate,
+              time: scheduledTime,
+              orgName: getOrgName(org) || org.organizationName
+            });
+
             this.renderApplicationsList();
             this.updateStats();
           } else {
@@ -5743,11 +5754,147 @@ class AdminDashboard {
 
         showToast(successMsg, 'success');
         modal.remove();
+
+        // Si cambió la fecha/hora, mostrar modal de bloqueo
+        if (!hadPreviousData || hasScheduleChanged || hasMinistroChanged) {
+          this._showBlockDurationModal({
+            ministroId: ministroId,
+            ministroName: `${ministro.firstName} ${ministro.lastName}`,
+            date: scheduledDate,
+            time: scheduledTime,
+            orgName: getOrgName(org)
+          });
+        }
+
         this.renderApplicationsList();
         this.updateStats();
       } else {
         showToast('Error al actualizar el Ministro de Fe', 'error');
       }
+    });
+  }
+
+  /**
+   * Muestra modal para configurar duración de bloqueo de ministro
+   */
+  _showBlockDurationModal({ ministroId, ministroName, date, time, orgName }) {
+    const modal = document.createElement('div');
+    modal.className = 'admin-review-modal-overlay';
+
+    const _calcEnd = (startTime, hours) => {
+      if (!startTime || !hours) return '';
+      const [h, m] = startTime.split(':').map(Number);
+      const endH = Math.min(h + hours - 1, 23);
+      return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    const previewEnd = _calcEnd(time, 4);
+
+    modal.innerHTML = `
+      <div class="admin-review-modal" style="max-width: 480px;">
+        <div class="review-modal-header" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);">
+          <div class="review-header-left">
+            <h2 style="margin:0;color:white;font-size:18px;">Bloqueo de Disponibilidad</h2>
+            <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">${orgName} - ${date} ${time}</p>
+          </div>
+          <button class="review-close-btn block-dur-close" style="color:white;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="review-modal-body" style="padding:24px;">
+          <div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+            <p style="margin:0;font-size:14px;color:#065f46;font-weight:600;">Ministro: ${ministroName}</p>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;font-size:14px;color:#374151;">Duración del bloqueo</label>
+            <div id="admin-block-dur-options" style="display:flex;flex-direction:column;gap:8px;">
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;">
+                <input type="radio" name="adminBlockDur" value="2" style="accent-color:#7c3aed;"> <span>2 horas</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;">
+                <input type="radio" name="adminBlockDur" value="3" style="accent-color:#7c3aed;"> <span>3 horas</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #7c3aed;border-radius:10px;cursor:pointer;background:#f5f3ff;">
+                <input type="radio" name="adminBlockDur" value="4" checked style="accent-color:#7c3aed;"> <span>4 horas <span style="color:#7c3aed;font-size:12px;">(recomendado)</span></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;">
+                <input type="radio" name="adminBlockDur" value="6" style="accent-color:#7c3aed;"> <span>6 horas</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;">
+                <input type="radio" name="adminBlockDur" value="fullday" style="accent-color:#7c3aed;"> <span>Día completo</span>
+              </label>
+            </div>
+          </div>
+          <div id="admin-block-preview" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px;color:#5b21b6;">
+            Preview: ${time} - ${previewEnd} (4 horas)
+          </div>
+          <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button id="admin-block-skip" style="padding:10px 20px;border:2px solid #e5e7eb;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:500;">Omitir</button>
+            <button id="admin-block-confirm" style="padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;font-size:14px;font-weight:600;">Crear Bloqueo</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Actualizar preview
+    const updatePreview = () => {
+      const selected = modal.querySelector('input[name="adminBlockDur"]:checked');
+      const preview = modal.querySelector('#admin-block-preview');
+      if (!selected || !preview) return;
+
+      if (selected.value === 'fullday') {
+        preview.textContent = 'Preview: Día completo bloqueado';
+      } else {
+        const hours = parseInt(selected.value);
+        const end = _calcEnd(time, hours);
+        preview.textContent = `Preview: ${time} - ${end} (${hours} horas)`;
+      }
+
+      modal.querySelectorAll('#admin-block-dur-options label').forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        if (radio.checked) {
+          label.style.borderColor = '#7c3aed';
+          label.style.background = '#f5f3ff';
+        } else {
+          label.style.borderColor = '#e5e7eb';
+          label.style.background = 'white';
+        }
+      });
+    };
+
+    modal.querySelectorAll('input[name="adminBlockDur"]').forEach(r => r.addEventListener('change', updatePreview));
+
+    const close = () => modal.remove();
+    modal.querySelector('.block-dur-close').addEventListener('click', close);
+    modal.querySelector('#admin-block-skip').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    modal.querySelector('#admin-block-confirm').addEventListener('click', async () => {
+      const selected = modal.querySelector('input[name="adminBlockDur"]:checked');
+      const isFullDay = selected.value === 'fullday';
+      const durationHours = isFullDay ? null : parseInt(selected.value);
+
+      try {
+        await apiService.createBlockFromConfirmation({
+          ministroId,
+          ministroName,
+          date,
+          startTime: time,
+          durationHours,
+          fullDay: isFullDay,
+          reason: `Asamblea: ${orgName}`
+        });
+        scheduleService.invalidateBlocksCache();
+        showToast('Bloqueo de disponibilidad creado', 'success');
+      } catch (error) {
+        console.error('Error creando bloqueo:', error);
+        showToast('Error al crear bloqueo: ' + (error.message || 'Error'), 'error');
+      }
+      modal.remove();
     });
   }
 

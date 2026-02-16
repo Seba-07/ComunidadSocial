@@ -4,6 +4,7 @@
  */
 
 import { scheduleService } from '../../services/ScheduleService.js';
+import { apiService } from '../../services/ApiService.js';
 import { showToast } from '../../app.js';
 
 export class ScheduleManager {
@@ -491,9 +492,38 @@ export class ScheduleManager {
     this.renderCalendar();
   }
 
-  confirmBooking(bookingId) {
+  async confirmBooking(bookingId) {
+    const booking = scheduleService.getBookingById(bookingId);
+
+    // Mostrar modal de duración de bloqueo
+    const blockConfig = await this.showBlockDurationModal(booking);
+
+    // Si el usuario canceló el modal, no confirmar
+    if (!blockConfig) return;
+
     scheduleService.confirmBooking(bookingId);
-    showToast('Reserva confirmada', 'success');
+
+    // Crear bloque en backend si se configuró duración
+    if (blockConfig.durationHours || blockConfig.fullDay) {
+      try {
+        await apiService.createBlockFromConfirmation({
+          ministroId: blockConfig.ministroId,
+          ministroName: blockConfig.ministroName,
+          date: booking.date,
+          startTime: booking.time,
+          durationHours: blockConfig.durationHours,
+          fullDay: blockConfig.fullDay,
+          reason: `Reserva: ${booking.organizationName || 'Organización'}`
+        });
+        scheduleService.invalidateBlocksCache();
+        showToast('Reserva confirmada y bloqueo creado', 'success');
+      } catch (error) {
+        console.error('Error creando bloqueo:', error);
+        showToast('Reserva confirmada (error al crear bloqueo)', 'warning');
+      }
+    } else {
+      showToast('Reserva confirmada', 'success');
+    }
 
     if (this.selectedDate) {
       const date = this.parseDateKey(this.selectedDate);
@@ -502,6 +532,150 @@ export class ScheduleManager {
 
     this.renderStats();
     this.renderUpcomingBookings();
+  }
+
+  /**
+   * Muestra modal para seleccionar duración de bloqueo y ministro
+   */
+  showBlockDurationModal(booking) {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'admin-review-modal-overlay';
+
+      // Cargar ministros activos
+      const ministros = scheduleService.activeMinistrosList || [];
+
+      const ministroOptions = ministros.map(m => {
+        const mId = m._id || m.id;
+        return `<option value="${mId}">${m.firstName} ${m.lastName}</option>`;
+      }).join('');
+
+      const bookingDate = booking ? booking.date : '';
+      const bookingTime = booking ? booking.time : '';
+      const bookingOrg = booking ? (booking.organizationName || 'Organización') : '';
+
+      // Calcular preview de horas para la duración por defecto (4h)
+      const previewEnd = this._calculateEndTime(bookingTime, 4);
+
+      modal.innerHTML = `
+        <div class="admin-review-modal" style="max-width: 480px;">
+          <div class="review-modal-header" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);">
+            <div class="review-header-left">
+              <h2 style="margin:0;color:white;font-size:18px;">Bloqueo de Disponibilidad</h2>
+              <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">${bookingOrg} - ${bookingDate} ${bookingTime}</p>
+            </div>
+            <button class="review-close-btn block-modal-close" style="color:white;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="review-modal-body" style="padding:24px;">
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-weight:600;margin-bottom:8px;font-size:14px;color:#374151;">Seleccionar Ministro</label>
+              <select id="block-ministro-select" style="width:100%;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;">
+                ${ministroOptions || '<option value="">No hay ministros activos</option>'}
+              </select>
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-weight:600;margin-bottom:8px;font-size:14px;color:#374151;">Duración del bloqueo</label>
+              <div id="block-duration-options" style="display:flex;flex-direction:column;gap:8px;">
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;">
+                  <input type="radio" name="blockDuration" value="2" style="accent-color:#7c3aed;"> <span>2 horas</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;">
+                  <input type="radio" name="blockDuration" value="3" style="accent-color:#7c3aed;"> <span>3 horas</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #7c3aed;border-radius:10px;cursor:pointer;background:#f5f3ff;transition:all 0.2s;">
+                  <input type="radio" name="blockDuration" value="4" checked style="accent-color:#7c3aed;"> <span>4 horas <span style="color:#7c3aed;font-size:12px;">(recomendado)</span></span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;">
+                  <input type="radio" name="blockDuration" value="6" style="accent-color:#7c3aed;"> <span>6 horas</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;">
+                  <input type="radio" name="blockDuration" value="fullday" style="accent-color:#7c3aed;"> <span>Día completo</span>
+                </label>
+              </div>
+            </div>
+            <div id="block-preview" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px;color:#5b21b6;">
+              Preview: ${bookingTime} - ${previewEnd} (4 horas)
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+              <button id="block-modal-cancel" style="padding:10px 20px;border:2px solid #e5e7eb;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:500;">Cancelar</button>
+              <button id="block-modal-confirm" style="padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;font-size:14px;font-weight:600;">Confirmar y Bloquear</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Actualizar preview cuando cambia la duración
+      const updatePreview = () => {
+        const selected = modal.querySelector('input[name="blockDuration"]:checked');
+        const preview = modal.querySelector('#block-preview');
+        if (!selected || !preview) return;
+
+        if (selected.value === 'fullday') {
+          preview.textContent = 'Preview: Día completo bloqueado';
+        } else {
+          const hours = parseInt(selected.value);
+          const end = this._calculateEndTime(bookingTime, hours);
+          preview.textContent = `Preview: ${bookingTime} - ${end} (${hours} horas)`;
+        }
+
+        // Actualizar estilos de las opciones
+        modal.querySelectorAll('#block-duration-options label').forEach(label => {
+          const radio = label.querySelector('input[type="radio"]');
+          if (radio.checked) {
+            label.style.borderColor = '#7c3aed';
+            label.style.background = '#f5f3ff';
+          } else {
+            label.style.borderColor = '#e5e7eb';
+            label.style.background = 'white';
+          }
+        });
+      };
+
+      modal.querySelectorAll('input[name="blockDuration"]').forEach(radio => {
+        radio.addEventListener('change', updatePreview);
+      });
+
+      // Cerrar
+      const close = () => { modal.remove(); resolve(null); };
+      modal.querySelector('.block-modal-close').addEventListener('click', close);
+      modal.querySelector('#block-modal-cancel').addEventListener('click', close);
+      modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+      // Confirmar
+      modal.querySelector('#block-modal-confirm').addEventListener('click', () => {
+        const ministroSelect = modal.querySelector('#block-ministro-select');
+        const selected = modal.querySelector('input[name="blockDuration"]:checked');
+
+        if (!ministroSelect.value) {
+          showToast('Selecciona un ministro', 'error');
+          return;
+        }
+
+        const ministroOption = ministroSelect.options[ministroSelect.selectedIndex];
+        const result = {
+          ministroId: ministroSelect.value,
+          ministroName: ministroOption.text,
+          fullDay: selected.value === 'fullday',
+          durationHours: selected.value === 'fullday' ? null : parseInt(selected.value)
+        };
+
+        modal.remove();
+        resolve(result);
+      });
+    });
+  }
+
+  _calculateEndTime(startTime, durationHours) {
+    if (!startTime || !durationHours) return '';
+    const [h, m] = startTime.split(':').map(Number);
+    const endH = Math.min(h + durationHours - 1, 23);
+    return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   cancelBooking(bookingId) {

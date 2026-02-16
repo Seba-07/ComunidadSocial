@@ -30,6 +30,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import auditLogRoutes from './routes/auditLog.js';
 import searchRoutes from './routes/search.js';
 import orgDocumentsRoutes from './routes/organizationDocuments.js';
+import ministroBlocksRoutes from './routes/ministroBlocks.js';
 
 // Model for auto-migration
 import Organization from './models/Organization.js';
@@ -202,6 +203,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/org-documents', orgDocumentsRoutes);
+app.use('/api/ministro-blocks', ministroBlocksRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

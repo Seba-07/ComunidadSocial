@@ -1,7 +1,10 @@
 /**
  * Servicio de Disponibilidad de Ministros de Fe
  * Gestiona los bloqueos de horarios de los ministros
+ * Persiste en backend (MongoDB) con localStorage como caché
  */
+
+import { apiService } from './ApiService.js';
 
 class MinistroAvailabilityService {
   constructor() {
@@ -11,6 +14,7 @@ class MinistroAvailabilityService {
       '09:00', '10:00', '11:00', '12:00',
       '14:00', '15:00', '16:00', '17:00', '18:00'
     ];
+    this.backendLoaded = {};  // { ministroId: true } track loaded
   }
 
   /**
@@ -49,6 +53,40 @@ class MinistroAvailabilityService {
   }
 
   /**
+   * Carga bloques desde el backend para un ministro
+   */
+  async loadFromBackend(ministroId) {
+    try {
+      const blocks = await apiService.getMinistroBlocks(ministroId);
+      // Guardar en localStorage como caché
+      const allBlocks = this.getAll();
+      // Eliminar bloques anteriores de este ministro del caché local
+      const otherBlocks = allBlocks.filter(b => b.ministroId !== ministroId);
+      // Agregar bloques del backend
+      const backendBlocks = (blocks || []).map(b => ({
+        id: b._id,
+        ministroId: b.ministroId,
+        ministroName: b.ministroName,
+        date: b.date,
+        time: b.time,
+        endTime: b.endTime,
+        blockType: b.blockType,
+        type: b.blockType,
+        reason: b.reason,
+        assignmentId: b.assignmentId,
+        active: b.active,
+        createdAt: b.createdAt
+      }));
+      this.saveAll([...otherBlocks, ...backendBlocks]);
+      this.backendLoaded[ministroId] = true;
+      return backendBlocks;
+    } catch (error) {
+      console.warn('Error cargando bloques del backend:', error.message);
+      return this.getByMinistroId(ministroId);
+    }
+  }
+
+  /**
    * Obtiene todos los bloqueos
    */
   getAll() {
@@ -69,7 +107,59 @@ class MinistroAvailabilityService {
   }
 
   /**
-   * Crea un nuevo bloqueo
+   * Crea un nuevo bloqueo (persiste en backend + localStorage)
+   */
+  async createBlock(blockData) {
+    try {
+      // Persistir en backend
+      const result = await apiService.createMinistroBlock(blockData);
+
+      // Agregar al localStorage como caché
+      const blocks = this.getAll();
+      blocks.push({
+        id: result._id,
+        ministroId: result.ministroId,
+        ministroName: result.ministroName,
+        date: result.date,
+        time: result.time,
+        endTime: result.endTime,
+        blockType: result.blockType,
+        type: result.blockType,
+        reason: result.reason,
+        assignmentId: result.assignmentId,
+        active: result.active,
+        createdAt: result.createdAt
+      });
+      this.saveAll(blocks);
+
+      return result;
+    } catch (error) {
+      console.error('Error creando bloqueo en backend:', error);
+      // Fallback: crear solo localmente
+      return this.create(blockData);
+    }
+  }
+
+  /**
+   * Elimina un bloqueo (desactiva en backend + localStorage)
+   */
+  async deleteBlock(blockId) {
+    try {
+      await apiService.deleteMinistroBlock(blockId);
+      // Eliminar del localStorage
+      const blocks = this.getAll();
+      const filtered = blocks.filter(b => b.id !== blockId);
+      this.saveAll(filtered);
+      return true;
+    } catch (error) {
+      console.error('Error eliminando bloqueo del backend:', error);
+      // Fallback: eliminar solo localmente
+      return this.delete(blockId);
+    }
+  }
+
+  /**
+   * Crea un nuevo bloqueo (solo localStorage - legacy)
    */
   create(blockData) {
     const blocks = this.getAll();
@@ -92,9 +182,12 @@ class MinistroAvailabilityService {
     const newBlock = {
       id: `block-${Date.now()}`,
       ministroId: blockData.ministroId,
+      ministroName: blockData.ministroName || '',
       date: blockData.date, // YYYY-MM-DD
       time: normalizedTime, // HH:MM o null para todo el día
-      type: blockData.type || 'manual', // manual, holiday, vacation
+      endTime: blockData.endTime || null,
+      blockType: blockData.blockType || blockData.type || 'manual',
+      type: blockData.blockType || blockData.type || 'manual',
       reason: blockData.reason || '',
       active: true,
       createdAt: new Date().toISOString()
@@ -107,7 +200,7 @@ class MinistroAvailabilityService {
   }
 
   /**
-   * Elimina un bloqueo
+   * Elimina un bloqueo (solo localStorage - legacy)
    */
   delete(id) {
     const blocks = this.getAll();
@@ -123,6 +216,7 @@ class MinistroAvailabilityService {
 
   /**
    * Verifica si un ministro está disponible en una fecha/hora específica
+   * Soporta bloques de duración (endTime)
    */
   isAvailable(ministroId, date, time) {
     const blocks = this.getByMinistroId(ministroId).filter(b => b.active);
@@ -130,21 +224,26 @@ class MinistroAvailabilityService {
     // Verificar bloqueos de día completo
     const fullDayBlock = blocks.find(b => b.date === date && !b.time);
     if (fullDayBlock) {
-      console.log(`❌ Ministro ${ministroId} bloqueado - día completo: ${date}`);
       return false;
     }
 
     // Normalizar la hora antes de comparar
     const normalizedTime = time ? this.normalizeTime(time) : null;
 
-    // Verificar bloqueos de hora específica
-    const timeBlock = blocks.find(b => b.date === date && b.time === normalizedTime);
-    if (timeBlock) {
-      console.log(`❌ Ministro ${ministroId} bloqueado - hora específica: ${date} ${normalizedTime}`);
-      return false;
+    // Verificar bloques con duración
+    for (const block of blocks) {
+      if (block.date !== date) continue;
+      if (!block.time) continue; // ya chequeado como full_day
+
+      if (block.blockType === 'duration' && block.endTime) {
+        if (normalizedTime >= block.time && normalizedTime <= block.endTime) {
+          return false;
+        }
+      } else if (block.time === normalizedTime) {
+        return false;
+      }
     }
 
-    console.log(`✅ Ministro ${ministroId} disponible: ${date} ${normalizedTime}`);
     return true;
   }
 
@@ -169,6 +268,7 @@ class MinistroAvailabilityService {
 
   /**
    * Obtiene horas bloqueadas de un ministro en un día específico
+   * Soporta bloques de duración
    */
   getBlockedTimesInDay(ministroId, date) {
     const blocks = this.getByMinistroId(ministroId).filter(b =>
@@ -181,10 +281,27 @@ class MinistroAvailabilityService {
       return { fullDay: true, times: [] };
     }
 
-    // Retornar horas específicas bloqueadas
+    // Retornar horas específicas bloqueadas (expandir rangos de duración)
+    const blockedTimes = new Set();
+
+    for (const block of blocks) {
+      if (!block.time) continue;
+
+      if (block.blockType === 'duration' && block.endTime) {
+        // Expandir rango a todas las horas disponibles dentro del rango
+        for (const hour of this.availableHours) {
+          if (hour >= block.time && hour <= block.endTime) {
+            blockedTimes.add(hour);
+          }
+        }
+      } else {
+        blockedTimes.add(block.time);
+      }
+    }
+
     return {
       fullDay: false,
-      times: blocks.filter(b => b.time).map(b => b.time)
+      times: Array.from(blockedTimes)
     };
   }
 
@@ -213,6 +330,7 @@ class MinistroAvailabilityService {
       date,
       time: null,
       type: 'manual',
+      blockType: 'full_day',
       reason
     });
   }
@@ -226,6 +344,7 @@ class MinistroAvailabilityService {
       date,
       time,
       type: 'manual',
+      blockType: 'manual',
       reason
     });
   }

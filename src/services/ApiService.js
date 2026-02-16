@@ -723,6 +723,32 @@ class ApiService {
     return response.text();
   }
 
+  // ==================== MINISTRO BLOCKS ====================
+
+  async getMinistroAvailabilityForDate(date) {
+    return this.get(`/ministro-blocks/availability/date/${date}`);
+  }
+
+  async getMinistroAvailabilityForMonth(year, month) {
+    return this.get(`/ministro-blocks/availability/month/${year}/${month}`);
+  }
+
+  async getMinistroBlocks(ministroId) {
+    return this.get(`/ministro-blocks/ministro/${ministroId}`);
+  }
+
+  async createMinistroBlock(blockData) {
+    return this.post('/ministro-blocks', blockData);
+  }
+
+  async deleteMinistroBlock(blockId) {
+    return this.delete(`/ministro-blocks/${blockId}`);
+  }
+
+  async createBlockFromConfirmation(data) {
+    return this.post('/ministro-blocks/create-from-confirmation', data);
+  }
+
   // ==================== HEALTH CHECK ====================
 
   async healthCheck() {
