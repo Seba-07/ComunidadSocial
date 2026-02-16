@@ -33,21 +33,25 @@
         .dashboard-header {
             background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
             color: white;
-            padding: 16px 32px;
-            position: sticky;
+            padding: 0 24px;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
             z-index: 100;
             box-shadow: 0 2px 12px rgba(30, 58, 138, 0.3);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
         }
 
         .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
         }
 
         .header-left {
@@ -453,157 +457,152 @@
             color: #64748b;
         }
 
-        /* ===== MAIN CONTENT ===== */
+        /* ===== LAYOUT ===== */
         .dashboard-main {
             flex: 1;
+            margin-top: 72px;
             padding: 24px;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
+            transition: margin-left 0.3s ease;
         }
 
-        /* ===== PANEL UNIFICADO MINISTRO ===== */
-        .ministro-panel {
+        /* ===== SIDEBAR ===== */
+        .ministro-sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
-
-        .ministro-panel-header {
-            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #1d4ed8 100%);
-            padding: 0;
-        }
-
-        .ministro-panel-top {
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+            z-index: 200;
+            transition: left 0.3s ease;
+            overflow-y: auto;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 24px;
-            flex-wrap: wrap;
-            gap: 16px;
+            flex-direction: column;
         }
 
-        .ministro-panel-title {
-            display: flex;
-            align-items: center;
-            gap: 16px;
+        .ministro-sidebar.open {
+            left: 0;
         }
 
-        .ministro-icon {
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 199;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .menu-toggle {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-        }
-
-        .ministro-panel-title h1 {
-            color: white;
-            font-size: 1.5rem;
-            margin: 0;
-            font-weight: 700;
-        }
-
-        .ministro-panel-title p {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.9rem;
-            margin: 4px 0 0 0;
-        }
-
-        .ministro-nav-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .ministro-nav-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.85rem;
-            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-        }
-
-        .ministro-nav-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .ministro-nav-btn.active {
-            background: white;
-            color: #1e40af;
-            border-color: white;
-            font-weight: 600;
-        }
-
-        .ministro-nav-btn svg {
             flex-shrink: 0;
         }
 
-        /* Filtros del panel */
-        .ministro-filters {
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== TOOLBAR ===== */
+        .ministro-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ministro-toolbar h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .ministro-toolbar-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 14px;
+            background: #2563eb;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* ===== CLEAN FILTER CHIPS ===== */
+        .ministro-filters-clean {
             display: flex;
             gap: 8px;
-            padding: 16px 24px;
-            background: rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
-        .ministro-filter-chip {
+        .ministro-filter-chip-clean {
             padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
-            color: white;
-            font-size: 0.85rem;
+            color: #64748b;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .ministro-filter-chip:hover {
-            background: rgba(255, 255, 255, 0.25);
+        .ministro-filter-chip-clean:hover {
+            background: #e2e8f0;
+            color: #334155;
         }
 
-        .ministro-filter-chip.active {
-            background: white;
-            color: #1e40af;
-            border-color: white;
+        .ministro-filter-chip-clean.active {
+            background: #eff6ff;
+            color: #2563eb;
+            border-color: #93c5fd;
             font-weight: 600;
         }
 
-        .ministro-filter-chip .chip-count {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 2px 8px;
+        .ministro-filter-chip-clean .chip-count {
+            background: #e2e8f0;
+            padding: 1px 7px;
             border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
         }
 
-        .ministro-filter-chip.active .chip-count {
-            background: rgba(30, 64, 175, 0.15);
+        .ministro-filter-chip-clean.active .chip-count {
+            background: #dbeafe;
             color: #1e40af;
         }
 
-        /* ===== TAB CONTENT ===== */
-        .tab-content {
+        /* ===== VIEW SECTIONS ===== */
+        .ministro-view {
             display: none;
-            padding: 24px;
         }
 
-        .tab-content.active {
+        .ministro-view.active {
             display: block;
             animation: fadeIn 0.3s ease;
         }
@@ -611,6 +610,28 @@
         @keyframes fadeInContent {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== DESKTOP SIDEBAR LAYOUT ===== */
+        @media (min-width: 1024px) {
+            .ministro-sidebar {
+                left: 0;
+                top: 72px;
+                height: calc(100vh - 72px);
+                width: 260px;
+                z-index: 50;
+                box-shadow: none;
+                border-right: 1px solid #e2e8f0;
+            }
+
+            .dashboard-main {
+                margin-left: 260px;
+                padding: 24px 32px;
+            }
+
+            .menu-toggle {
+                display: none;
+            }
         }
 
         /* ===== AVAILABILITY HEADER CARD ===== */
@@ -1028,25 +1049,11 @@
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .dashboard-header {
-                padding: 16px;
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-            }
-
-            .header-left {
-                justify-content: center;
-            }
-
-            .header-right {
-                justify-content: center;
+                padding: 0 12px;
             }
 
             .header-info h1 {
-                font-size: 20px;
+                font-size: 18px;
             }
 
             .btn-header .btn-text {
@@ -1054,46 +1061,6 @@
             }
 
             .dashboard-main {
-                padding: 12px;
-            }
-
-            .ministro-panel-top {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-                padding: 16px;
-            }
-
-            .ministro-panel-title {
-                justify-content: center;
-                text-align: center;
-            }
-
-            .ministro-panel-title > div {
-                text-align: center;
-            }
-
-            .ministro-nav-buttons {
-                justify-content: center;
-                width: 100%;
-            }
-
-            .ministro-nav-btn {
-                flex: 1;
-                justify-content: center;
-            }
-
-            .ministro-filters {
-                justify-content: center;
-                padding: 12px 16px;
-            }
-
-            .ministro-filter-chip {
-                padding: 6px 12px;
-                font-size: 0.8rem;
-            }
-
-            .tab-content {
                 padding: 16px;
             }
 
@@ -1136,44 +1103,12 @@
         }
 
         @media (max-width: 480px) {
-            .header-logo {
-                height: 44px;
-                width: auto;
-            }
-
             .header-info h1 {
-                font-size: 18px;
+                font-size: 16px;
             }
 
             .header-subtitle {
-                font-size: 13px;
-            }
-
-            .ministro-panel-title h1 {
-                font-size: 1.2rem;
-            }
-
-            .ministro-panel-title p {
-                font-size: 0.8rem;
-            }
-
-            .ministro-icon {
-                width: 40px;
-                height: 40px;
-            }
-
-            .ministro-nav-btn {
-                padding: 8px 12px;
-                font-size: 0.8rem;
-            }
-
-            .ministro-nav-btn span {
                 display: none;
-            }
-
-            .ministro-filter-chip {
-                padding: 6px 10px;
-                font-size: 0.75rem;
             }
 
             .assignment-org-name {
@@ -1228,6 +1163,13 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle" title="Menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
                     <img src="/icons/logo_renca.png" alt="Logo Renca" class="header-logo">
                     <div class="header-info">
                         <h1>Panel de Ministro de Fe</h1>
@@ -1242,13 +1184,6 @@
                         </svg>
                         <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
-                    <button class="btn-header" id="btn-change-password" title="Cambiar Contraseña">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                        <span class="btn-text">Contraseña</span>
-                    </button>
                     <button class="btn-header btn-logout" id="btn-logout" title="Cerrar Sesión">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1261,87 +1196,135 @@
             </div>
         </header>
 
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <nav class="ministro-sidebar" id="ministro-sidebar">
+            <div class="nav-header">
+                <h2>Ministro de Fe</h2>
+                <button class="close-btn" id="close-sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <ul class="nav-list">
+                <!-- Principal -->
+                <li class="nav-section-title">Principal</li>
+                <li>
+                    <a href="#" data-ministro-view="assignments" class="nav-link active">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="nav-text">Mis Asambleas</span>
+                    </a>
+                </li>
+
+                <!-- Filtrar Asambleas -->
+                <li><div class="nav-section-collapsible" data-section="asambleas"><span>Filtrar Asambleas</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="asambleas">
+                    <button class="nav-link-sub active" data-ministro-filter="all">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/></svg>
+                        <span>Todas</span>
+                        <span class="nav-badge" id="badge-all">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="pending">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Pendientes</span>
+                        <span class="nav-badge nav-badge-warning" id="badge-pending">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="completed">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Completadas</span>
+                        <span class="nav-badge nav-badge-success" id="badge-completed">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="validated">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>Validadas</span>
+                        <span class="nav-badge nav-badge-info" id="badge-validated">0</span>
+                    </button>
+                </li>
+
+                <!-- Disponibilidad -->
+                <li><div class="nav-section-collapsible" data-section="disp"><span>Disponibilidad</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="disp">
+                    <button class="nav-link-sub" data-ministro-view="availability">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Gestionar Horarios</span>
+                    </button>
+                </li>
+
+                <!-- Cuenta -->
+                <li><div class="nav-section-collapsible" data-section="cuenta"><span>Cuenta</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="cuenta">
+                    <button class="nav-link-sub" id="sidebar-notifications">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span>Notificaciones</span>
+                    </button>
+                    <button class="nav-link-sub" id="sidebar-change-password">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <span>Cambiar Contraseña</span>
+                    </button>
+                </li>
+
+                <!-- Separator -->
+                <li><div class="nav-separator"></div></li>
+
+                <!-- Cerrar Sesion -->
+                <li>
+                    <a href="#" class="nav-link" id="sidebar-logout">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span class="nav-text">Cerrar Sesión</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
         <!-- Main Content -->
         <main class="dashboard-main">
-            <!-- Panel Unificado Ministro de Fe -->
-            <div class="ministro-panel">
-                <!-- Header del Panel -->
-                <div class="ministro-panel-header">
-                    <div class="ministro-panel-top">
-                        <div class="ministro-panel-title">
-                            <div class="ministro-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
-                                </svg>
-                            </div>
-                            <div>
-                                <h1>Mis Asambleas</h1>
-                                <p>Gestión de asambleas constitutivas asignadas</p>
-                            </div>
-                        </div>
-                        <div class="ministro-nav-buttons">
-                            <button class="ministro-nav-btn active" data-tab="assignments">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                                <span>Asambleas</span>
-                            </button>
-                            <button class="ministro-nav-btn" data-tab="availability">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                                <span>Disponibilidad</span>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Filtros en el header (solo para Asambleas) -->
-                    <div class="ministro-filters" id="assignments-filters">
-                        <button class="ministro-filter-chip active" data-filter="all">Todas <span class="chip-count" id="count-all">0</span></button>
-                        <button class="ministro-filter-chip" data-filter="pending">Pendientes <span class="chip-count" id="count-pending">0</span></button>
-                        <button class="ministro-filter-chip" data-filter="completed">Completadas <span class="chip-count" id="count-completed">0</span></button>
-                        <button class="ministro-filter-chip" data-filter="validated">Validadas <span class="chip-count" id="count-validated">0</span></button>
-                    </div>
+            <!-- Vista: Asambleas -->
+            <div id="view-assignments" class="ministro-view active">
+                <div class="ministro-toolbar">
+                    <h2>Mis Asambleas</h2>
+                    <span class="ministro-toolbar-count" id="toolbar-total">0</span>
                 </div>
+                <div class="ministro-filters-clean" id="assignments-filters">
+                    <button class="ministro-filter-chip-clean active" data-filter="all">Todas <span class="chip-count" id="count-all">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="pending">Pendientes <span class="chip-count" id="count-pending">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="completed">Completadas <span class="chip-count" id="count-completed">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="validated">Validadas <span class="chip-count" id="count-validated">0</span></button>
+                </div>
+                <div id="assignments-list" class="assignments-grid"></div>
+            </div>
 
-                <!-- Vista: Asambleas -->
-                <div id="tab-assignments" class="tab-content active">
-                    <div id="assignments-list" class="assignments-grid"></div>
+            <!-- Vista: Disponibilidad -->
+            <div id="view-availability" class="ministro-view">
+                <div class="ministro-toolbar">
+                    <h2>Gestión de Disponibilidad</h2>
                 </div>
-
-                <!-- Vista: Disponibilidad -->
-                <div id="tab-availability" class="tab-content">
-                    <div class="availability-header-card">
-                        <div class="availability-info">
-                            <h3>Gestión de Disponibilidad</h3>
-                            <p>Bloquea días u horarios en los que no estés disponible para asambleas</p>
-                        </div>
-                        <div class="availability-actions">
-                            <button class="btn btn-primary" id="btn-add-block">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Bloquear Horario
-                            </button>
-                            <button class="btn btn-secondary" id="btn-clear-blocks">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                                Limpiar
-                            </button>
-                        </div>
+                <div class="availability-header-card">
+                    <div class="availability-info">
+                        <h3>Bloqueos de Horario</h3>
+                        <p>Bloquea días u horarios en los que no estés disponible para asambleas</p>
                     </div>
-                    <div id="availability-list"></div>
+                    <div class="availability-actions">
+                        <button class="btn btn-primary" id="btn-add-block">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Bloquear Horario
+                        </button>
+                        <button class="btn btn-secondary" id="btn-clear-blocks">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Limpiar
+                        </button>
+                    </div>
                 </div>
+                <div id="availability-list"></div>
             </div>
         </main>
     </div>

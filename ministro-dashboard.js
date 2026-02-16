@@ -106,7 +106,7 @@ async function loadStats() {
     const validated = stats.signaturesValidated || 0;
     const total = pending + completed;
 
-    // Update filter chip counts in the unified panel
+    // Update filter chip counts
     const countAll = document.getElementById('count-all');
     const countPending = document.getElementById('count-pending');
     const countCompleted = document.getElementById('count-completed');
@@ -116,6 +116,21 @@ async function loadStats() {
     if (countPending) countPending.textContent = pending;
     if (countCompleted) countCompleted.textContent = completed;
     if (countValidated) countValidated.textContent = validated;
+
+    // Update toolbar total
+    const toolbarTotal = document.getElementById('toolbar-total');
+    if (toolbarTotal) toolbarTotal.textContent = total;
+
+    // Update sidebar badges
+    const badgeAll = document.getElementById('badge-all');
+    const badgePending = document.getElementById('badge-pending');
+    const badgeCompleted = document.getElementById('badge-completed');
+    const badgeValidated = document.getElementById('badge-validated');
+
+    if (badgeAll) badgeAll.textContent = total;
+    if (badgePending) badgePending.textContent = pending;
+    if (badgeCompleted) badgeCompleted.textContent = completed;
+    if (badgeValidated) badgeValidated.textContent = validated;
   } catch (error) {
     console.error('Error loading stats:', error);
   }
@@ -492,41 +507,162 @@ function renderAvailability() {
 // Current filter state
 let currentFilter = 'all';
 
-// Nav button switching (Asambleas / Disponibilidad)
-document.querySelectorAll('.ministro-nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tabName = btn.dataset.tab;
+// ============ SIDEBAR NAVIGATION ============
 
-    // Update active state on nav buttons
-    document.querySelectorAll('.ministro-nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+// Show a view (assignments or availability)
+function showView(viewName) {
+  // Hide all views
+  document.querySelectorAll('.ministro-view').forEach(v => v.classList.remove('active'));
 
-    // Show/hide filters (only for assignments tab)
-    const filtersEl = document.getElementById('assignments-filters');
-    if (filtersEl) {
-      filtersEl.style.display = tabName === 'assignments' ? 'flex' : 'none';
-    }
+  // Show the requested view
+  const viewEl = document.getElementById(`view-${viewName}`);
+  if (viewEl) viewEl.classList.add('active');
 
-    // Update content (switch tab)
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).classList.add('active');
+  // Update sidebar active state for view links
+  document.querySelectorAll('[data-ministro-view]').forEach(link => {
+    link.classList.remove('active');
+    if (link.dataset.ministroView === viewName) link.classList.add('active');
+  });
+
+  // Close sidebar on mobile
+  const sidebar = document.getElementById('ministro-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar && window.innerWidth < 1024) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('active');
+}
+
+// Sidebar view switching (data-ministro-view)
+document.querySelectorAll('[data-ministro-view]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView(link.dataset.ministroView);
   });
 });
 
-// Filter chip switching
-document.querySelectorAll('.ministro-filter-chip').forEach(chip => {
+// Sidebar filter switching (data-ministro-filter)
+document.querySelectorAll('[data-ministro-filter]').forEach(link => {
+  link.addEventListener('click', () => {
+    const filterType = link.dataset.ministroFilter;
+
+    // Switch to assignments view first
+    showView('assignments');
+
+    // Update sidebar filter active state
+    document.querySelectorAll('[data-ministro-filter]').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+
+    // Update content filter chips too
+    document.querySelectorAll('.ministro-filter-chip-clean').forEach(c => c.classList.remove('active'));
+    const matchingChip = document.querySelector(`.ministro-filter-chip-clean[data-filter="${filterType}"]`);
+    if (matchingChip) matchingChip.classList.add('active');
+
+    // Apply filter
+    currentFilter = filterType;
+    applyAssignmentFilter();
+
+    // Close sidebar on mobile
+    const sidebar = document.getElementById('ministro-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && window.innerWidth < 1024) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+  });
+});
+
+// Filter chip switching (in content area)
+document.querySelectorAll('.ministro-filter-chip-clean').forEach(chip => {
   chip.addEventListener('click', () => {
     const filterType = chip.dataset.filter;
 
     // Update active state on filter chips
-    document.querySelectorAll('.ministro-filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.ministro-filter-chip-clean').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
+
+    // Update sidebar filter active state
+    document.querySelectorAll('[data-ministro-filter]').forEach(l => l.classList.remove('active'));
+    const matchingLink = document.querySelector(`[data-ministro-filter="${filterType}"]`);
+    if (matchingLink) matchingLink.classList.add('active');
 
     // Apply filter
     currentFilter = filterType;
     applyAssignmentFilter();
   });
 });
+
+// Collapsible sidebar sections
+document.querySelectorAll('.nav-section-collapsible').forEach(title => {
+  title.addEventListener('click', () => {
+    const sectionName = title.dataset.section;
+    const items = document.querySelector(`[data-section-items="${sectionName}"]`);
+    if (items) {
+      title.classList.toggle('collapsed');
+      items.classList.toggle('collapsed');
+    }
+  });
+});
+
+// Menu toggle (mobile)
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const ministroSidebar = document.getElementById('ministro-sidebar');
+const closeSidebar = document.getElementById('close-sidebar');
+
+if (menuToggle) {
+  menuToggle.addEventListener('click', () => {
+    ministroSidebar.classList.add('open');
+    sidebarOverlay.classList.add('active');
+  });
+}
+
+if (closeSidebar) {
+  closeSidebar.addEventListener('click', () => {
+    ministroSidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+  });
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener('click', () => {
+    ministroSidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+  });
+}
+
+// Sidebar account buttons
+const sidebarChangePassword = document.getElementById('sidebar-change-password');
+if (sidebarChangePassword) {
+  sidebarChangePassword.addEventListener('click', () => {
+    showChangePasswordModal();
+    if (window.innerWidth < 1024) {
+      ministroSidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    }
+  });
+}
+
+const sidebarNotifications = document.getElementById('sidebar-notifications');
+if (sidebarNotifications) {
+  sidebarNotifications.addEventListener('click', () => {
+    openNotificationsPanel();
+    if (window.innerWidth < 1024) {
+      ministroSidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    }
+  });
+}
+
+const sidebarLogout = document.getElementById('sidebar-logout');
+if (sidebarLogout) {
+  sidebarLogout.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+      await apiService.logout();
+      localStorage.removeItem('isMinistroAuthenticated');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('ministro_assignments');
+      window.location.href = '/auth.html';
+    }
+  });
+}
 
 // Apply filter to assignments
 function applyAssignmentFilter() {
@@ -577,18 +713,13 @@ function applyAssignmentFilter() {
   }
 }
 
-// Change password button
-document.getElementById('btn-change-password').addEventListener('click', showChangePasswordModal);
-
-// Logout button
+// Logout button (header)
 document.getElementById('btn-logout').addEventListener('click', async () => {
   if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-    // Limpiar cookies del servidor y localStorage
     await apiService.logout();
     localStorage.removeItem('isMinistroAuthenticated');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('ministro_assignments');
-    // Redirigir directamente a auth para evitar flash de contenido
     window.location.href = '/auth.html';
   }
 });
@@ -614,6 +745,9 @@ window.viewDetails = viewDetails;
 window.deleteBlock = deleteBlock;
 window.editValidatedSignatures = editValidatedSignatures;
 window.viewValidationSummary = viewValidationSummary;
+window.viewDocumentation = viewDocumentation;
+window.closeNotificationsPanel = closeNotificationsPanel;
+window.openNotificationsPanel = openNotificationsPanel;
 
 function validateSignatures(assignmentId) {
   // Buscar en las asignaciones cargadas (usando _id de MongoDB)
