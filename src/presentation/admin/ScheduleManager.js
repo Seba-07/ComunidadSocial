@@ -215,7 +215,7 @@ export class ScheduleManager {
     }
   }
 
-  selectDay(dateKey) {
+  async selectDay(dateKey) {
     this.selectedDate = dateKey;
     const date = this.parseDateKey(dateKey);
     const daySchedule = scheduleService.getDaySchedule(date) || { enabled: false, slots: [] };
@@ -232,19 +232,24 @@ export class ScheduleManager {
     // Toggle habilitado
     document.getElementById('day-enabled-toggle').checked = daySchedule.enabled;
 
-    // Renderizar horarios
-    this.renderTimeSlots(daySchedule.slots);
+    // Renderizar horarios (async - sincroniza bloques del backend)
+    await this.renderTimeSlots(daySchedule.slots);
 
     // Renderizar reservas
     this.renderDayBookings(date);
   }
 
-  renderTimeSlots(slots) {
+  async renderTimeSlots(slots) {
     const container = document.getElementById('time-slots-list');
 
     if (!slots || slots.length === 0) {
       container.innerHTML = '<p class="empty-message">No hay horarios configurados</p>';
       return;
+    }
+
+    // Sincronizar bloques del backend para esta fecha
+    if (this.selectedDate) {
+      await scheduleService.syncMinistroBlocks(this.selectedDate, true);
     }
 
     // Obtener reservas para esta fecha para marcar slots ocupados
@@ -258,16 +263,24 @@ export class ScheduleManager {
       bookingsCountByTime[b.time] = (bookingsCountByTime[b.time] || 0) + 1;
     });
 
-    // Obtener total de ministros activos (disponibles todo el día)
+    // Obtener total de ministros activos
     const totalMinistros = scheduleService.getActiveMinistrosCount();
 
     container.innerHTML = slots.map(slot => {
       const bookingsAtTime = bookingsCountByTime[slot.time] || 0;
-      const isOccupied = bookingsAtTime >= totalMinistros || totalMinistros === 0;
+
+      // Usar disponibilidad real por hora (considera bloques de ministros)
+      const availableMinistros = this.selectedDate
+        ? scheduleService.getActiveMinistrosCountForTime(this.selectedDate, slot.time)
+        : totalMinistros;
+
+      const isOccupied = availableMinistros <= 0 || bookingsAtTime >= availableMinistros;
       const statusClass = isOccupied ? 'slot-occupied' : 'slot-available';
       const statusText = isOccupied
-        ? `Ocupado (${bookingsAtTime}/${totalMinistros} MF)`
-        : `Disponible (${bookingsAtTime}/${totalMinistros} MF)`;
+        ? (availableMinistros <= 0
+            ? `Bloqueado (0/${totalMinistros} MF disponibles)`
+            : `Ocupado (${bookingsAtTime}/${availableMinistros} MF)`)
+        : `Disponible (${bookingsAtTime}/${availableMinistros} MF)`;
 
       return `
         <div class="time-slot-item ${statusClass}">
@@ -289,7 +302,7 @@ export class ScheduleManager {
 
     // Event listeners para eliminar slots
     container.querySelectorAll('.btn-remove-slot').forEach(btn => {
-      btn.addEventListener('click', () => this.removeTimeSlot(btn.dataset.time));
+      btn.addEventListener('click', async () => await this.removeTimeSlot(btn.dataset.time));
     });
   }
 
@@ -421,7 +434,7 @@ export class ScheduleManager {
     });
 
     // Agregar horario
-    document.getElementById('add-time-slot-btn').addEventListener('click', () => {
+    document.getElementById('add-time-slot-btn').addEventListener('click', async () => {
       const timeInput = document.getElementById('new-time-slot');
       const time = timeInput.value;
 
@@ -432,12 +445,12 @@ export class ScheduleManager {
 
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
-      this.renderTimeSlots(daySchedule.slots);
+      await this.renderTimeSlots(daySchedule.slots);
       this.renderCalendar();
     });
 
     // Aplicar horario laboral
-    document.getElementById('set-default-hours-btn').addEventListener('click', () => {
+    document.getElementById('set-default-hours-btn').addEventListener('click', async () => {
       if (!this.selectedDate) return;
 
       const slots = scheduleService.generateTimeSlots('09:00', '17:00', 60);
@@ -449,12 +462,12 @@ export class ScheduleManager {
       showToast('Horario laboral aplicado (9:00 - 17:00)', 'success');
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
-      this.renderTimeSlots(daySchedule.slots);
+      await this.renderTimeSlots(daySchedule.slots);
       this.renderCalendar();
     });
 
     // Bloquear mañana
-    document.getElementById('block-morning-btn').addEventListener('click', () => {
+    document.getElementById('block-morning-btn').addEventListener('click', async () => {
       if (!this.selectedDate) return;
 
       scheduleService.blockMorning(this.selectedDate);
@@ -462,12 +475,12 @@ export class ScheduleManager {
 
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
-      this.renderTimeSlots(daySchedule?.slots || []);
+      await this.renderTimeSlots(daySchedule?.slots || []);
       this.renderCalendar();
     });
 
     // Bloquear tarde
-    document.getElementById('block-afternoon-btn').addEventListener('click', () => {
+    document.getElementById('block-afternoon-btn').addEventListener('click', async () => {
       if (!this.selectedDate) return;
 
       scheduleService.blockAfternoon(this.selectedDate);
@@ -475,12 +488,12 @@ export class ScheduleManager {
 
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
-      this.renderTimeSlots(daySchedule?.slots || []);
+      await this.renderTimeSlots(daySchedule?.slots || []);
       this.renderCalendar();
     });
   }
 
-  removeTimeSlot(time) {
+  async removeTimeSlot(time) {
     if (!this.selectedDate) return;
 
     scheduleService.removeTimeSlot(this.selectedDate, time);
@@ -488,7 +501,7 @@ export class ScheduleManager {
 
     const date = this.parseDateKey(this.selectedDate);
     const daySchedule = scheduleService.getDaySchedule(date);
-    this.renderTimeSlots(daySchedule.slots);
+    await this.renderTimeSlots(daySchedule.slots);
     this.renderCalendar();
   }
 
