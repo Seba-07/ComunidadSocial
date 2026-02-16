@@ -411,7 +411,7 @@ class OrganizationsService {
           firstName: names.firstName,
           lastName: names.lastName,
           cargo: cargoLabels[m.cargo] || m.cargo,
-          role: m.cargo
+          role: 'director'
         };
       });
 
