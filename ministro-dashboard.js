@@ -387,17 +387,9 @@ async function renderAssignments() {
   }
 }
 
-// Render availability blocks
-async function renderAvailability() {
+// Render availability blocks (reads from localStorage, which is synced with backend on init)
+function renderAvailability() {
   const ministroId = currentMinistro._id || currentMinistro.id;
-
-  // Cargar bloques desde el backend (sincroniza con localStorage)
-  try {
-    await ministroAvailabilityService.loadFromBackend(ministroId);
-  } catch (error) {
-    console.warn('Error cargando bloques del backend:', error.message);
-  }
-
   const blocks = ministroAvailabilityService.getByMinistroId(ministroId);
 
   const container = document.getElementById('availability-list');
@@ -730,12 +722,24 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 document.getElementById('btn-add-block').addEventListener('click', showAddBlockModal);
 
 // Clear blocks button
-document.getElementById('btn-clear-blocks').addEventListener('click', () => {
+document.getElementById('btn-clear-blocks').addEventListener('click', async () => {
   if (!confirm('¿Estás seguro de que deseas eliminar TODOS tus bloqueos de disponibilidad? Esta acción no se puede deshacer.')) {
     return;
   }
 
   const ministroId = currentMinistro._id || currentMinistro.id;
+  const blocks = ministroAvailabilityService.getByMinistroId(ministroId).filter(b => b.active);
+
+  // Eliminar cada bloque del backend
+  for (const block of blocks) {
+    try {
+      await ministroAvailabilityService.deleteBlock(block.id);
+    } catch (error) {
+      console.warn('Error eliminando bloque del backend:', error.message);
+    }
+  }
+
+  // Limpiar localStorage por si quedaron residuos
   ministroAvailabilityService.clearByMinistroId(ministroId);
   showToast('Todos los bloqueos han sido eliminados', 'success');
   renderAvailability();
@@ -2192,7 +2196,17 @@ if (urlParams.get('changePassword') === 'true' || currentMinistro.mustChangePass
 // Load initial data
 loadStats();
 renderAssignments();
-renderAvailability();
+
+// Sincronizar bloques del backend y luego renderizar disponibilidad
+(async () => {
+  const ministroId = currentMinistro._id || currentMinistro.id;
+  try {
+    await ministroAvailabilityService.loadFromBackend(ministroId);
+  } catch (error) {
+    console.warn('Error sincronizando bloques del backend:', error.message);
+  }
+  renderAvailability();
+})();
 
 // ==================== NOTIFICATIONS SYSTEM ====================
 
