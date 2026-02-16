@@ -393,42 +393,51 @@ export class MinistroManager {
     modal.className = 'modal-overlay';
     modal.style.display = 'flex';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header" style="background: #10b981; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
-          <h3 style="margin: 0; color: white;">✅ Ministro Creado Exitosamente</h3>
-          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
-            ${ministro.firstName} ${ministro.lastName}
-          </p>
+      <div class="modal-content" style="max-width: 480px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 28px 24px; position: relative;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div>
+              <h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700;">Ministro Creado</h3>
+              <p style="margin: 4px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">
+                ${ministro.firstName} ${ministro.lastName}
+              </p>
+            </div>
+          </div>
         </div>
-        <div class="modal-body" style="padding: 32px;">
-          <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <p style="margin: 0 0 16px 0; font-size: 14px; color: #15803d; font-weight: 600;">
-              📋 Credenciales de acceso:
-            </p>
-            <div style="background: white; padding: 16px; border-radius: 8px; font-family: monospace;">
-              <div style="margin-bottom: 12px;">
-                <strong style="color: #374151;">Email:</strong><br>
-                <span style="color: #1f2937; font-size: 15px;">${ministro.email}</span>
-              </div>
-              <div>
-                <strong style="color: #374151;">Contraseña:</strong><br>
-                <span style="color: #dc2626; font-size: 18px; font-weight: 700;">${ministro.password}</span>
-              </div>
+        <div style="padding: 24px;">
+          <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em;">Credenciales de acceso</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="margin-bottom: 16px;">
+              <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Email</span>
+              <p style="margin: 4px 0 0; font-size: 15px; color: #1e293b; font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-all;">${ministro.email}</p>
+            </div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
+              <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Contrasena temporal</span>
+              <p style="margin: 4px 0 0; font-size: 18px; color: #1e40af; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: 0.02em;">${ministro.password}</p>
             </div>
           </div>
 
-          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
-            <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>⚠️ Importante:</strong><br>
-              El Ministro de Fe deberá cambiar su contraseña en el primer inicio de sesión.
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 16px; margin-bottom: 24px; display: flex; gap: 10px; align-items: flex-start;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+              El Ministro de Fe debera cambiar su contrasena en el primer inicio de sesion.
             </p>
           </div>
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end;">
-            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;" onclick="this.closest('.modal-overlay').remove()">
               Cerrar
             </button>
-            <button type="button" class="btn btn-primary" id="copy-credentials-btn">
+            <button type="button" id="copy-credentials-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -442,18 +451,22 @@ export class MinistroManager {
 
     document.body.appendChild(modal);
 
-    // Event listener para copiar (guardar valores en closure)
     const emailToCopy = ministro.email;
     const passwordToCopy = ministro.password;
 
     modal.querySelector('#copy-credentials-btn').addEventListener('click', function() {
-      const text = `Email: ${emailToCopy}\nContraseña: ${passwordToCopy}`;
+      const text = `Email: ${emailToCopy}\nContrasena: ${passwordToCopy}`;
       navigator.clipboard.writeText(text);
-      this.textContent = '✓ Copiado';
+      this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copiado';
+      this.style.background = '#10b981';
       setTimeout(() => {
         this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copiar Credenciales';
+        this.style.background = 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)';
       }, 2000);
     });
+
+    // Cerrar al click en overlay
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   editMinistro(id) {
@@ -496,28 +509,37 @@ export class MinistroManager {
     modal.className = 'modal-overlay';
     modal.style.display = 'flex';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 700px;">
-        <div class="modal-header" style="background: #fef3c7; border-bottom: 2px solid #f59e0b;">
-          <h3 style="margin: 0; color: #78350f;">⚠️ Bloqueos de Disponibilidad</h3>
-          <p style="margin: 4px 0 0; color: #92400e; font-size: 14px;">${ministro.firstName} ${ministro.lastName}</p>
-          <button type="button" class="btn-icon" onclick="this.closest('.modal-overlay').remove()" style="position: absolute; right: 24px; top: 24px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="modal-content" style="max-width: 600px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 24px; position: relative;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <div>
+              <h3 style="margin: 0; color: white; font-size: 17px; font-weight: 700;">Bloqueos de Disponibilidad</h3>
+              <p style="margin: 4px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">${ministro.firstName} ${ministro.lastName}</p>
+            </div>
+          </div>
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" style="position: absolute; right: 16px; top: 16px; background: rgba(255,255,255,0.15); border: none; color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-        <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div style="max-height: 60vh; overflow-y: auto; padding: 20px;">
           ${blocks.length === 0 ? `
-            <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 16px;">
+            <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin: 0 auto 16px; display: block;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M12 6v6l4 2"></path>
               </svg>
-              <p>Este ministro no tiene bloqueos de disponibilidad</p>
+              <p style="margin: 0; font-size: 15px; color: #64748b;">Este ministro no tiene bloqueos de disponibilidad</p>
             </div>
           ` : `
-            <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
               ${blocks.sort((a, b) => new Date(a.date) - new Date(b.date)).map(block => {
                 const date = new Date(block.date + 'T12:00:00');
                 const formattedDate = date.toLocaleDateString('es-CL', {
@@ -528,45 +550,29 @@ export class MinistroManager {
                 });
 
                 return `
-                  <div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px; background: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                  <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; background: #f8fafc;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
                       <div style="flex: 1;">
-                        <h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 15px;">
-                          📅 ${formattedDate}
+                        <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                          ${formattedDate}
                         </h4>
                         ${!block.time ? `
-                          <span style="
-                            display: inline-block;
-                            padding: 4px 12px;
-                            background: #fee2e2;
-                            color: #991b1b;
-                            border-radius: 6px;
-                            font-size: 13px;
-                            font-weight: 600;
-                          ">
-                            ⛔ Día Completo
+                          <span style="display: inline-block; padding: 4px 10px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                            Dia Completo
                           </span>
                         ` : `
-                          <span style="
-                            display: inline-block;
-                            padding: 4px 12px;
-                            background: #fef3c7;
-                            color: #92400e;
-                            border-radius: 6px;
-                            font-size: 13px;
-                            font-weight: 600;
-                          ">
-                            🕐 ${block.time}
+                          <span style="display: inline-block; padding: 4px 10px; background: #dbeafe; color: #1e40af; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                            ${block.time}
                           </span>
                         `}
                         ${block.reason ? `
-                          <p style="margin: 12px 0 0 0; color: #6b7280; font-size: 14px; font-style: italic;">
+                          <p style="margin: 10px 0 0 0; color: #64748b; font-size: 13px; font-style: italic;">
                             "${block.reason}"
                           </p>
                         ` : ''}
                       </div>
                     </div>
-                    <div style="font-size: 12px; color: #9ca3af; margin-top: 8px;">
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
                       Creado: ${new Date(block.createdAt).toLocaleDateString('es-CL')} ${new Date(block.createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -575,8 +581,8 @@ export class MinistroManager {
             </div>
           `}
         </div>
-        <div style="padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
-          <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+        <div style="padding: 16px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+          <button type="button" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;" onclick="this.closest('.modal-overlay').remove()">
             Cerrar
           </button>
         </div>
