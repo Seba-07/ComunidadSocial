@@ -70,7 +70,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), asyn
     }
 
     // MINISTRO_FE solo puede crear bloques para sí mismo
-    if (req.user.role === 'MINISTRO_FE' && ministroId !== req.userId) {
+    if (req.user.role === 'MINISTRO_FE' && ministroId !== req.userId.toString()) {
       return res.status(403).json({ error: 'Solo puedes crear bloques para tu propia disponibilidad' });
     }
 
@@ -105,7 +105,7 @@ router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'),
     }
 
     // MINISTRO_FE solo puede eliminar sus propios bloques
-    if (req.user.role === 'MINISTRO_FE' && block.ministroId.toString() !== req.userId) {
+    if (req.user.role === 'MINISTRO_FE' && block.ministroId.toString() !== req.userId.toString()) {
       return res.status(403).json({ error: 'Solo puedes eliminar tus propios bloques' });
     }
 
