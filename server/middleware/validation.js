@@ -159,9 +159,12 @@ const certificateStep5Schema = z.object({
   memberName: z.string().optional(),
   rut: z.string().optional(),
   name: z.string().optional(),
+  fileName: z.string().optional(),
+  type: z.string().optional(),
+  base64: z.string().optional(),
   certificate: z.string().optional(), // Base64
   data: z.string().optional() // Alias para certificate
-});
+}).passthrough();
 
 export const createOrganizationSchema = z.object({
   organizationName: z.string()
@@ -183,9 +186,9 @@ export const createOrganizationSchema = z.object({
   address: z.string().min(5).max(200),
   comuna: z.string().max(50).optional(),
   region: z.string().max(50).optional(),
-  unidadVecinal: z.string().max(100).optional(),
-  territory: z.string().max(100).optional(),
-  contactEmail: emailSchema.optional(),
+  unidadVecinal: z.string().max(100).optional().or(z.literal('')),
+  territory: z.string().max(100).optional().or(z.literal('')),
+  contactEmail: emailSchema.optional().or(z.literal('')),
   contactPhone: phoneSchema,
   contactPreference: z.enum(['phone', 'email']).optional(),
   members: z.array(memberSchema).min(1, 'Debe tener al menos 1 miembro'),
@@ -196,13 +199,14 @@ export const createOrganizationSchema = z.object({
     treasurer: memberSchema.optional().nullable(),
     additionalMembers: z.array(memberSchema).optional()
   }).optional(),
-  electionDate: z.string().optional(),
-  electionTime: z.string().optional(),
-  assemblyAddress: z.string().max(200).optional(),
-  comments: z.string().max(1000).optional(),
-  estatutos: z.string().optional(),
-  certificatesStep5: z.array(certificateStep5Schema).optional() // Certificados del Paso 5
-})
+  electionDate: z.string().optional().nullable(),
+  electionTime: z.string().optional().nullable(),
+  assemblyAddress: z.string().max(200).optional().nullable(),
+  comments: z.string().max(1000).optional().nullable(),
+  estatutos: z.string().optional().or(z.literal('')),
+  // certificatesStep5 es un objeto con keys dinámicas (presidente, secretario, etc.)
+  certificatesStep5: z.record(z.string(), certificateStep5Schema).optional()
+}).passthrough()
 // ============================================
 // VALIDACIONES LEY 19.418
 // ============================================

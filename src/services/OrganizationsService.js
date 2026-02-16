@@ -464,8 +464,9 @@ class OrganizationsService {
         provisionalDirectorio: provisionalDirectorio,
         // Comisión Electoral (paso 5)
         electoralCommission: comisionElectoral,
-        // Certificados de Antecedentes del Directorio (paso 5)
-        certificatesStep5: requestData.certificatesStep5 || {},
+        // Certificados de Antecedentes del Directorio (paso 5) - objeto con keys dinámicas
+        certificatesStep5: (requestData.certificatesStep5 && typeof requestData.certificatesStep5 === 'object' && !Array.isArray(requestData.certificatesStep5))
+          ? requestData.certificatesStep5 : {},
         // Estatutos (paso 6)
         estatutos: requestData.estatutos || '',
         electionDate: requestData.electionDate,
