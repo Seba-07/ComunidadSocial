@@ -20289,98 +20289,89 @@ a.header-logo:hover {
 }
 
 /* ============================================
-   ADMIN DASHBOARD HEADER LIMPIO
+   ADMIN TOOLBAR COMPACTO (header + busqueda)
    ============================================ */
-.admin-dashboard-header {
-    padding: 24px 24px 16px;
-}
-
-.admin-dashboard-header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 4px;
-}
-
-.admin-dashboard-header p {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-/* ============================================
-   ADMIN STATS GRID (4 tarjetas)
-   ============================================ */
-.admin-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    padding: 0 24px 16px;
-}
-
-.admin-stat-card-new {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
+.admin-toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--border-color);
-    transition: box-shadow 0.2s;
+    padding: 16px 24px 12px;
 }
 
-.admin-stat-card-new:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.admin-stat-card-new .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+.admin-toolbar-left {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
     flex-shrink: 0;
 }
 
-.admin-stat-card-new .stat-icon svg {
-    width: 24px;
-    height: 24px;
-    color: white;
-}
-
-.admin-stat-card-new .stat-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.admin-stat-card-new .stat-number {
-    font-size: 28px;
+.admin-toolbar-left h1 {
+    font-size: 20px;
     font-weight: 700;
-    line-height: 1.1;
     color: var(--text-primary);
+    margin: 0;
 }
 
-.admin-stat-card-new .stat-label {
+.admin-toolbar-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 26px;
+    padding: 0 8px;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 8px;
     font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: 2px;
+    font-weight: 700;
 }
 
-.stat-icon-total { background: #2563eb; }
-.stat-icon-pending { background: #f59e0b; }
-.stat-icon-process { background: #06b6d4; }
-.stat-icon-approved { background: #10b981; }
+.admin-toolbar-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 320px;
+    padding: 8px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.admin-toolbar-search:focus-within {
+    border-color: var(--primary-color, #2563eb);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.admin-toolbar-search svg {
+    flex-shrink: 0;
+    color: #94a3b8;
+}
+
+.admin-toolbar-search input {
+    border: none;
+    background: none;
+    outline: none;
+    font-size: 14px;
+    color: var(--text-primary);
+    width: 100%;
+}
+
+.admin-toolbar-search input::placeholder {
+    color: #94a3b8;
+}
 
 /* ============================================
    FILTROS LIMPIOS (fuera del panel azul)
    ============================================ */
 .muni-filters-clean {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
-    padding: 0 24px 16px;
+    padding: 0 24px 12px;
 }
 
 .muni-filter-chip-clean {
@@ -20429,56 +20420,32 @@ a.header-logo:hover {
     color: white;
 }
 
-/* Responsive: Admin stats & filters */
+/* Responsive: Admin toolbar & filters */
 @media (max-width: 768px) {
-    .admin-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .admin-toolbar {
+        flex-wrap: wrap;
+        padding: 12px 16px 8px;
         gap: 10px;
-        padding: 0 16px 12px;
     }
 
-    .admin-stat-card-new {
-        padding: 14px;
-        gap: 12px;
+    .admin-toolbar-left h1 {
+        font-size: 18px;
     }
 
-    .admin-stat-card-new .stat-icon {
-        width: 40px;
-        height: 40px;
-    }
-
-    .admin-stat-card-new .stat-number {
-        font-size: 22px;
-    }
-
-    .admin-stat-card-new .stat-label {
-        font-size: 12px;
-    }
-
-    .admin-dashboard-header {
-        padding: 16px 16px 12px;
-    }
-
-    .admin-dashboard-header h1 {
-        font-size: 20px;
+    .admin-toolbar-search {
+        max-width: none;
+        order: 3;
+        flex-basis: 100%;
     }
 
     .muni-filters-clean {
-        padding: 0 16px 12px;
+        padding: 0 16px 10px;
         gap: 6px;
     }
 
     .muni-filter-chip-clean {
         padding: 6px 10px;
         font-size: 12px;
-    }
-}
-
-@media (max-width: 480px) {
-    .admin-stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        padding: 0 12px 10px;
     }
 }
 

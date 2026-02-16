@@ -138,14 +138,10 @@ class AdminDashboard {
    * Oculta los elementos de la vista de solicitudes
    */
   hideApplicationElements() {
-    const header = document.querySelector('.admin-dashboard-header');
-    if (header) header.style.display = 'none';
-    const statsGrid = document.getElementById('admin-stats-grid');
-    if (statsGrid) statsGrid.style.display = 'none';
+    const toolbar = document.querySelector('.admin-toolbar');
+    if (toolbar) toolbar.style.display = 'none';
     const filterBar = document.querySelector('.muni-filters-clean');
     if (filterBar) filterBar.style.display = 'none';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = 'none';
     const appList = document.getElementById('admin-applications-list');
     if (appList) appList.style.display = 'none';
   }
@@ -154,14 +150,10 @@ class AdminDashboard {
    * Muestra los elementos de la vista de solicitudes
    */
   showApplicationElements() {
-    const header = document.querySelector('.admin-dashboard-header');
-    if (header) header.style.display = '';
-    const statsGrid = document.getElementById('admin-stats-grid');
-    if (statsGrid) statsGrid.style.display = '';
+    const toolbar = document.querySelector('.admin-toolbar');
+    if (toolbar) toolbar.style.display = '';
     const filterBar = document.querySelector('.muni-filters-clean');
     if (filterBar) filterBar.style.display = '';
-    const searchBar = document.querySelector('.muni-search-bar');
-    if (searchBar) searchBar.style.display = '';
     const appList = document.getElementById('admin-applications-list');
     if (appList) appList.style.display = '';
   }
@@ -944,15 +936,9 @@ class AdminDashboard {
     if (registryEl) registryEl.textContent = counts.registry;
     if (approvedEl) approvedEl.textContent = counts.approved;
 
-    // Stat cards
+    // Toolbar total count
     const statTotal = document.getElementById('stat-total');
-    const statPending = document.getElementById('stat-pending');
-    const statProcess = document.getElementById('stat-process');
-    const statApproved = document.getElementById('stat-approved');
     if (statTotal) statTotal.textContent = orgs.length;
-    if (statPending) statPending.textContent = counts.pending;
-    if (statProcess) statProcess.textContent = counts.process;
-    if (statApproved) statApproved.textContent = counts.approved;
 
     // Sidebar badges
     this.updateSidebarBadges();

@@ -267,7 +267,7 @@ export class SearchGlobalManager {
     this.searchInput.placeholder = 'Buscar organizaciones, usuarios, noticias...';
 
     // Envolver el contenedor de busqueda existente
-    const searchBar = this.searchInput.closest('.muni-search-bar');
+    const searchBar = this.searchInput.closest('.admin-toolbar-search');
     if (searchBar) {
       this.wrapper = document.createElement('div');
       this.wrapper.className = 'search-global-wrapper';
@@ -365,7 +365,7 @@ export class SearchGlobalManager {
     // Click fuera cierra el dropdown
     document.addEventListener('click', (e) => {
       if (!this.isOpen) return;
-      const searchBar = this.searchInput.closest('.muni-search-bar');
+      const searchBar = this.searchInput.closest('.admin-toolbar-search');
       if (searchBar && !searchBar.contains(e.target)) {
         this.close();
       }
