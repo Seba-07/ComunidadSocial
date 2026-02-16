@@ -334,19 +334,26 @@ class OrganizationsService {
         return '';
       };
 
+      // Helper: solo incluir email si es válido
+      const cleanEmail = (val) => {
+        if (!val || typeof val !== 'string') return '';
+        const trimmed = val.trim();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : '';
+      };
+
       // Mapear miembros al formato del backend
       const mappedMembers = members.map((m, index) => ({
         rut: m.rut,
         firstName: m.primerNombre || m.firstName || (m.nombre ? m.nombre.split(' ')[0] : ''),
-        segundoNombre: m.segundoNombre || '', // Segundo nombre (opcional)
+        segundoNombre: m.segundoNombre || '',
         lastName: m.apellidoPaterno || m.lastName || m.apellido || '',
-        apellidoMaterno: m.apellidoMaterno || '', // Apellido materno (opcional)
+        apellidoMaterno: m.apellidoMaterno || '',
         address: m.address || m.direccion || '',
         phone: m.phone || m.telefono || '',
-        email: m.email || '',
+        email: cleanEmail(m.email),
         birthDate: m.birthDate || m.fechaNacimiento || '',
         occupation: m.occupation || m.profesion || '',
-        genero: m.genero || m.sexo || '', // Género (opcional)
+        genero: m.genero || m.sexo || '',
         role: index === 0 ? 'president' : index === 1 ? 'secretary' : index === 2 ? 'treasurer' : index < 5 ? 'director' : 'member'
       }));
 
