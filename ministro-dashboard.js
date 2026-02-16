@@ -518,6 +518,9 @@ function showView(viewName) {
     if (link.dataset.ministroView === viewName) link.classList.add('active');
   });
 
+  // Persistir vista actual para restaurar al recargar
+  sessionStorage.setItem('ministro_current_view', viewName);
+
   // Close sidebar on mobile
   const sidebar = document.getElementById('ministro-sidebar');
   const overlay = document.getElementById('sidebar-overlay');
@@ -532,6 +535,12 @@ document.querySelectorAll('[data-ministro-view]').forEach(link => {
     showView(link.dataset.ministroView);
   });
 });
+
+// Restaurar vista guardada al recargar
+const savedView = sessionStorage.getItem('ministro_current_view');
+if (savedView) {
+  showView(savedView);
+}
 
 // Sidebar filter switching (data-ministro-filter)
 document.querySelectorAll('[data-ministro-filter]').forEach(link => {

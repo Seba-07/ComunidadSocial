@@ -58,11 +58,17 @@ class MinistroAvailabilityService {
   async loadFromBackend(ministroId) {
     try {
       const blocks = await apiService.getMinistroBlocks(ministroId);
-      // Guardar en localStorage como caché
       const allBlocks = this.getAll();
-      // Eliminar bloques anteriores de este ministro del caché local
+      // Bloques de otros ministros (no tocar)
       const otherBlocks = allBlocks.filter(b => b.ministroId !== ministroId);
-      // Agregar bloques del backend
+      // Bloques locales de este ministro que NO están en el backend (ID local: block-*)
+      const backendIds = new Set((blocks || []).map(b => b._id));
+      const localOnlyBlocks = allBlocks.filter(b =>
+        b.ministroId === ministroId &&
+        typeof b.id === 'string' && b.id.startsWith('block-') &&
+        !backendIds.has(b.id)
+      );
+      // Bloques del backend
       const backendBlocks = (blocks || []).map(b => ({
         id: b._id,
         ministroId: b.ministroId,
@@ -77,9 +83,10 @@ class MinistroAvailabilityService {
         active: b.active,
         createdAt: b.createdAt
       }));
-      this.saveAll([...otherBlocks, ...backendBlocks]);
+      // Merge: backend blocks + local-only blocks + other ministros
+      this.saveAll([...otherBlocks, ...backendBlocks, ...localOnlyBlocks]);
       this.backendLoaded[ministroId] = true;
-      return backendBlocks;
+      return [...backendBlocks, ...localOnlyBlocks];
     } catch (error) {
       console.warn('Error cargando bloques del backend:', error.message);
       return this.getByMinistroId(ministroId);
