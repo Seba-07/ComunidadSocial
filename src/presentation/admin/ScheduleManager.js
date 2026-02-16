@@ -71,6 +71,8 @@ export class ScheduleManager {
               <div id="admin-calendar-days" class="sm-calendar-days"></div>
               <div class="sm-calendar-legend">
                 <span class="legend-item"><span class="legend-dot enabled"></span> Disponible</span>
+                <span class="legend-item"><span class="legend-dot partial"></span> Parcial</span>
+                <span class="legend-item"><span class="legend-dot blocked"></span> No disponible</span>
                 <span class="legend-item"><span class="legend-dot disabled"></span> Sin horarios</span>
                 <span class="legend-item"><span class="legend-dot past"></span> Pasado</span>
               </div>
@@ -154,12 +156,12 @@ export class ScheduleManager {
     `;
 
     this.attachEventListeners();
-    this.renderCalendar();
+    this.renderCalendar(); // async, no need to await on init
     this.renderStats();
     this.renderUpcomingBookings();
   }
 
-  renderCalendar() {
+  async renderCalendar() {
     const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -172,6 +174,14 @@ export class ScheduleManager {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Obtener disponibilidad mensual del backend (bloques + assignments)
+    let monthBlockData = null;
+    try {
+      monthBlockData = await apiService.getMinistroAvailabilityForMonth(year, month + 1);
+    } catch (error) {
+      console.warn('[ScheduleManager] Error obteniendo disponibilidad mensual:', error.message);
+    }
 
     const calendarDays = document.getElementById('admin-calendar-days');
     calendarDays.innerHTML = '';
@@ -194,22 +204,55 @@ export class ScheduleManager {
       dayElement.type = 'button';
       dayElement.className = 'admin-calendar-day';
 
+      // Calcular slots disponibles reales (considerando bloques de ministros)
+      let totalSlots = 0;
+      let availableSlots = 0;
+      if (daySchedule && daySchedule.enabled && daySchedule.slots.length > 0) {
+        totalSlots = daySchedule.slots.length;
+        if (monthBlockData && monthBlockData.days && monthBlockData.days[dateKey]) {
+          const dayHourly = monthBlockData.days[dateKey].hourly || {};
+          for (const slot of daySchedule.slots) {
+            const availMinistros = dayHourly[slot.time] !== undefined
+              ? dayHourly[slot.time]
+              : (monthBlockData.totalMinistros || 0);
+            const bookingsAtTime = bookings.filter(b => b.time === slot.time).length;
+            if (availMinistros > 0 && bookingsAtTime < availMinistros) {
+              availableSlots++;
+            }
+          }
+        } else {
+          availableSlots = totalSlots;
+        }
+      }
+
+      // Generar label y clase según disponibilidad
+      let slotLabel = '';
+      let dayClass = '';
+
+      if (date < today) {
+        dayClass = 'admin-day-past';
+        slotLabel = '';
+      } else if (totalSlots === 0) {
+        dayClass = 'admin-day-disabled';
+        slotLabel = '<span class="day-disabled-label">Sin horarios</span>';
+      } else if (availableSlots === 0) {
+        dayClass = 'admin-day-blocked';
+        slotLabel = '<span class="day-blocked-label">No disponible</span>';
+      } else if (availableSlots <= 4) {
+        dayClass = 'admin-day-partial';
+        slotLabel = `<span class="day-partial-count">${availableSlots} disp.</span>`;
+      } else {
+        dayClass = 'admin-day-enabled';
+        slotLabel = `<span class="day-slots-count">${availableSlots} disp.</span>`;
+      }
+
       dayElement.innerHTML = `
         <span class="day-number">${day}</span>
-        ${daySchedule && daySchedule.enabled ?
-          `<span class="day-slots-count">${daySchedule.slots.length} slots</span>` :
-          '<span class="day-disabled-label">Sin horarios</span>'}
+        ${slotLabel}
         ${bookings.length > 0 ? `<span class="day-bookings-badge">${bookings.length}</span>` : ''}
       `;
 
-      if (date < today) {
-        dayElement.classList.add('admin-day-past');
-      } else if (daySchedule && daySchedule.enabled && daySchedule.slots.length > 0) {
-        dayElement.classList.add('admin-day-enabled');
-      } else {
-        dayElement.classList.add('admin-day-disabled');
-      }
-
+      dayElement.classList.add(dayClass);
       dayElement.addEventListener('click', () => this.selectDay(dateKey));
       calendarDays.appendChild(dayElement);
     }
@@ -406,14 +449,14 @@ export class ScheduleManager {
 
   attachEventListeners() {
     // Navegación de meses
-    document.getElementById('admin-prev-month').addEventListener('click', () => {
+    document.getElementById('admin-prev-month').addEventListener('click', async () => {
       this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
 
-    document.getElementById('admin-next-month').addEventListener('click', () => {
+    document.getElementById('admin-next-month').addEventListener('click', async () => {
       this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
 
     // Cerrar editor
@@ -425,11 +468,11 @@ export class ScheduleManager {
     });
 
     // Toggle día habilitado
-    document.getElementById('day-enabled-toggle').addEventListener('change', (e) => {
+    document.getElementById('day-enabled-toggle').addEventListener('change', async (e) => {
       if (this.selectedDate) {
         scheduleService.toggleDayEnabled(this.selectedDate, e.target.checked);
         showToast(e.target.checked ? 'Día habilitado' : 'Día deshabilitado', 'success');
-        this.renderCalendar();
+        await this.renderCalendar();
       }
     });
 
@@ -446,7 +489,7 @@ export class ScheduleManager {
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
       await this.renderTimeSlots(daySchedule.slots);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
 
     // Aplicar horario laboral
@@ -463,7 +506,7 @@ export class ScheduleManager {
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
       await this.renderTimeSlots(daySchedule.slots);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
 
     // Bloquear mañana
@@ -476,7 +519,7 @@ export class ScheduleManager {
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
       await this.renderTimeSlots(daySchedule?.slots || []);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
 
     // Bloquear tarde
@@ -489,7 +532,7 @@ export class ScheduleManager {
       const date = this.parseDateKey(this.selectedDate);
       const daySchedule = scheduleService.getDaySchedule(date);
       await this.renderTimeSlots(daySchedule?.slots || []);
-      this.renderCalendar();
+      await this.renderCalendar();
     });
   }
 
@@ -502,7 +545,7 @@ export class ScheduleManager {
     const date = this.parseDateKey(this.selectedDate);
     const daySchedule = scheduleService.getDaySchedule(date);
     await this.renderTimeSlots(daySchedule.slots);
-    this.renderCalendar();
+    await this.renderCalendar();
   }
 
   async confirmBooking(bookingId) {
@@ -691,7 +734,7 @@ export class ScheduleManager {
     return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
-  cancelBooking(bookingId) {
+  async cancelBooking(bookingId) {
     const confirmed = confirm('¿Estás seguro de que deseas cancelar esta reserva?');
     if (!confirmed) return;
 
@@ -703,7 +746,7 @@ export class ScheduleManager {
       this.renderDayBookings(date);
     }
 
-    this.renderCalendar();
+    await this.renderCalendar();
     this.renderStats();
     this.renderUpcomingBookings();
   }

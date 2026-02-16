@@ -147,7 +147,7 @@ router.get('/availability/date/:date', async (req, res) => {
 
     // 4. Para cada hora, calcular disponibilidad
     const hours = [
-      '09:00', '10:00', '11:00', '12:00',
+      '09:00', '10:00', '11:00', '12:00', '13:00',
       '14:00', '15:00', '16:00', '17:00', '18:00'
     ];
 
@@ -233,7 +233,7 @@ router.get('/availability/month/:year/:month', async (req, res) => {
     });
 
     const hours = [
-      '09:00', '10:00', '11:00', '12:00',
+      '09:00', '10:00', '11:00', '12:00', '13:00',
       '14:00', '15:00', '16:00', '17:00', '18:00'
     ];
 

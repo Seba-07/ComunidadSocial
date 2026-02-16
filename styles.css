@@ -15107,6 +15107,42 @@ a.header-logo:hover {
     background: #f3f4f6;
 }
 
+.admin-day-blocked {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.admin-day-blocked:hover {
+    background: #fee2e2;
+}
+
+.admin-day-partial {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.admin-day-partial:hover {
+    background: #fef3c7;
+}
+
+.day-blocked-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #ef4444;
+    background: #fee2e2;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.day-partial-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #d97706;
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 .admin-day-past {
     opacity: 0.4;
     cursor: not-allowed;
@@ -15826,6 +15862,14 @@ a.header-logo:hover {
 
 .legend-dot.enabled {
     background: #10b981;
+}
+
+.legend-dot.partial {
+    background: #f59e0b;
+}
+
+.legend-dot.blocked {
+    background: #ef4444;
 }
 
 .legend-dot.disabled {
