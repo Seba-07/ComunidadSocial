@@ -15694,7 +15694,6 @@ a.header-logo:hover {
     max-width: 100%;
     margin: 0 auto;
     padding: 0;
-    overflow: hidden;
     box-sizing: border-box;
 }
 
@@ -15745,7 +15744,6 @@ a.header-logo:hover {
     grid-template-columns: 1fr 340px;
     gap: 20px;
     max-width: 100%;
-    overflow: hidden;
 }
 
 /* Secciones */
@@ -15753,7 +15751,6 @@ a.header-logo:hover {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    overflow: hidden;
 }
 
 .sm-sidebar {

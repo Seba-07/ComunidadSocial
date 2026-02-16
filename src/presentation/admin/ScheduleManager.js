@@ -319,11 +319,12 @@ export class ScheduleManager {
 
       const isOccupied = availableMinistros <= 0 || bookingsAtTime >= availableMinistros;
       const statusClass = isOccupied ? 'slot-occupied' : 'slot-available';
+      const freeMinistros = Math.max(0, availableMinistros - bookingsAtTime);
       const statusText = isOccupied
         ? (availableMinistros <= 0
-            ? `Bloqueado (0/${totalMinistros} MF disponibles)`
-            : `Ocupado (${bookingsAtTime}/${availableMinistros} MF)`)
-        : `Disponible (${bookingsAtTime}/${availableMinistros} MF)`;
+            ? `Bloqueado (0/${totalMinistros} MF)`
+            : `Ocupado (0/${totalMinistros} MF libres)`)
+        : `Disponible (${freeMinistros}/${totalMinistros} MF)`;
 
       return `
         <div class="time-slot-item ${statusClass}">
