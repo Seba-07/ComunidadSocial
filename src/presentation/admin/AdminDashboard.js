@@ -908,6 +908,17 @@ class AdminDashboard {
         this.renderApplicationsList();
       });
     }
+
+    // Escuchar evento del ScheduleManager para navegar a una org
+    window.addEventListener('admin-open-org-review', (e) => {
+      const { orgId } = e.detail;
+      if (orgId) {
+        // Cambiar a vista de organizaciones y abrir el modal
+        this.showApplications(true).then(() => {
+          this.openReviewModal(orgId);
+        });
+      }
+    });
   }
 
   /**

@@ -359,7 +359,10 @@ export class ScheduleManager {
       return;
     }
 
-    container.innerHTML = bookings.map(booking => `
+    container.innerHTML = bookings.map(booking => {
+      // Extraer orgId del id del booking (formato: backend-{orgId})
+      const orgId = booking.id?.startsWith('backend-') ? booking.id.replace('backend-', '') : '';
+      return `
       <div class="booking-item booking-status-${booking.status}">
         <div class="booking-time">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -369,19 +372,18 @@ export class ScheduleManager {
           ${booking.time}
         </div>
         <div class="booking-info">
-          <strong>${booking.organizationName}</strong>
-          <span>${booking.userName} - ${booking.userEmail}</span>
+          <strong>${booking.organizationName || 'Sin nombre'}</strong>
+          <span>${booking.userName || ''} ${booking.userEmail ? '- ' + booking.userEmail : ''}</span>
         </div>
         <div class="booking-actions">
-          ${booking.status === 'pending' ? `
-            <button type="button" class="btn-sm btn-success" onclick="scheduleManager.confirmBooking('${booking.id}')">Confirmar</button>
-            <button type="button" class="btn-sm btn-danger" onclick="scheduleManager.cancelBooking('${booking.id}')">Cancelar</button>
+          ${booking.status === 'pending' && orgId ? `
+            <button type="button" class="btn-sm btn-success" onclick="scheduleManager.goToOrgReview('${orgId}')">Ver Solicitud</button>
           ` : `
-            <span class="booking-status-badge">${booking.status === 'confirmed' ? 'Confirmada' : booking.status === 'cancelled' ? 'Cancelada' : 'Completada'}</span>
+            <span class="booking-status-badge booking-status-${booking.status}">${booking.status === 'confirmed' ? 'Confirmada' : booking.status === 'pending' ? 'Pendiente' : booking.status === 'cancelled' ? 'Cancelada' : 'Completada'}</span>
           `}
         </div>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   renderStats() {
@@ -429,7 +431,8 @@ export class ScheduleManager {
     }
 
     container.innerHTML = upcoming.map(booking => {
-      const date = new Date(booking.date);
+      // Parsear fecha sin problemas de timezone (YYYY-MM-DD -> local)
+      const date = this.parseDateKey(booking.date);
       return `
         <div class="upcoming-booking-item">
           <div class="booking-date-badge">
@@ -437,8 +440,8 @@ export class ScheduleManager {
             <span class="booking-month">${date.toLocaleDateString('es-CL', { month: 'short' })}</span>
           </div>
           <div class="booking-details">
-            <strong>${booking.organizationName}</strong>
-            <span>${booking.time} - ${booking.userName}</span>
+            <strong>${booking.organizationName || 'Sin nombre'}</strong>
+            <span>${booking.time} - ${booking.userName || ''}</span>
           </div>
           <span class="booking-status-badge booking-status-${booking.status}">
             ${booking.status === 'pending' ? 'Pendiente' : booking.status === 'confirmed' ? 'Confirmada' : 'Completada'}
@@ -735,21 +738,12 @@ export class ScheduleManager {
     return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
-  async cancelBooking(bookingId) {
-    const confirmed = confirm('¿Estás seguro de que deseas cancelar esta reserva?');
-    if (!confirmed) return;
-
-    scheduleService.cancelBooking(bookingId);
-    showToast('Reserva cancelada', 'info');
-
-    if (this.selectedDate) {
-      const date = this.parseDateKey(this.selectedDate);
-      this.renderDayBookings(date);
-    }
-
-    await this.renderCalendar();
-    this.renderStats();
-    this.renderUpcomingBookings();
+  /**
+   * Navega a la vista de organizaciones y abre el modal de revisión/MF
+   */
+  goToOrgReview(orgId) {
+    // Emitir evento para que AdminDashboard navegue a la org y abra el modal
+    window.dispatchEvent(new CustomEvent('admin-open-org-review', { detail: { orgId } }));
   }
 
 }
