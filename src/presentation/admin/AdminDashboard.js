@@ -4577,7 +4577,7 @@ class AdminDashboard {
     const additionalMembers = dir.additionalMembers || [];
     const commission = org.electoralCommission || [];
     const allMembers = org.members || [];
-    const estatutos = org.estatutos || '';
+    const estatutos = org.estatutos || org.estatutosSnapshot?.documentoGenerado || '';
 
     // Helper para extraer nombre de miembros (diferentes formatos)
     const extractName = (m) => {
@@ -4591,7 +4591,7 @@ class AdminDashboard {
       return m.name || m.nombre || 'Sin nombre';
     };
 
-    const cargoLabels = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', director: 'Director' };
+    const cargoLabels = { president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero', director: 'Director', member: 'Miembro', electoral_commission: 'Com. Electoral' };
 
     modal.innerHTML = `
       <div class="admin-review-modal ministro-request-modal">
@@ -4877,12 +4877,13 @@ class AdminDashboard {
                       <button class="admin-doc-tab" data-tab="comision" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Comisión</button>
                       <button class="admin-doc-tab" data-tab="miembros" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Miembros</button>
                       <button class="admin-doc-tab" data-tab="estatutos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Estatutos</button>
+                      <button class="admin-doc-tab" data-tab="documentos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Documentos</button>
                     </div>
 
                     <!-- Tab: Directorio -->
                     <div class="admin-doc-tab-content" data-tab-content="directorio" style="padding: 16px;">
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        ${['presidente', 'secretario', 'tesorero'].map(cargo => {
+                        ${['president', 'secretary', 'treasurer'].map(cargo => {
                           const member = dir[cargo];
                           return member ? `
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
@@ -4905,7 +4906,7 @@ class AdminDashboard {
                           </div>
                         `).join('')}
                       </div>
-                      ${!dir.presidente && !dir.secretario && !dir.tesorero && additionalMembers.length === 0 ? '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registró directorio provisorio</p>' : ''}
+                      ${!dir.president && !dir.secretary && !dir.treasurer && additionalMembers.length === 0 ? '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registró directorio provisorio</p>' : ''}
                     </div>
 
                     <!-- Tab: Comisión Electoral -->
@@ -4956,6 +4957,71 @@ class AdminDashboard {
                       ${estatutos ? `
                         <div style="max-height: 300px; overflow-y: auto; background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.7; color: #334155;">${estatutos}</div>
                       ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se cargaron estatutos</p>'}
+                    </div>
+
+                    <!-- Tab: Documentos -->
+                    <div class="admin-doc-tab-content" data-tab-content="documentos" style="padding: 16px; display: none;">
+                      ${(() => {
+                        const certs = org.certificatesStep5 || {};
+                        const certEntries = Object.entries(certs).filter(([k]) => k !== '_id');
+                        const membersWithCert = allMembers.filter(m => m.certificate);
+                        const membersWithoutCert = allMembers.filter(m => !m.certificate);
+                        const commWithSig = commission.filter(m => m.signature);
+
+                        let html = '';
+
+                        // Certificados de antecedentes del directorio
+                        html += '<div style="margin-bottom: 16px;"><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
+                        if (certEntries.length > 0) {
+                          html += '<div style="display: grid; gap: 6px;">';
+                          certEntries.forEach(([cargo, val]) => {
+                            const label = cargoLabels[cargo] || cargo;
+                            const hasFile = val && (typeof val === 'string' ? val.length > 0 : val.fileName || val.data);
+                            const fileName = typeof val === 'object' ? (val.fileName || 'Archivo cargado') : 'Archivo cargado';
+                            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasFile ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasFile ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
+                            html += '<span style="color: ' + (hasFile ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasFile ? '✓' : '✗') + '</span>';
+                            html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
+                            html += '<span style="color: ' + (hasFile ? '#166534' : '#991b1b') + ';">' + (hasFile ? fileName : 'No cargado') + '</span>';
+                            html += '</div>';
+                          });
+                          html += '</div>';
+                        } else {
+                          html += '<p style="color: #94a3b8; font-size: 13px;">No se cargaron certificados del directorio</p>';
+                        }
+                        html += '</div>';
+
+                        // Firmas de comisión electoral
+                        html += '<div style="margin-bottom: 16px;"><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Firmas Comisión Electoral</h5>';
+                        if (commission.length > 0) {
+                          html += '<div style="display: grid; gap: 6px;">';
+                          commission.forEach(m => {
+                            const hasSig = !!m.signature;
+                            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasSig ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasSig ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
+                            html += '<span style="color: ' + (hasSig ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasSig ? '✓' : '✗') + '</span>';
+                            html += '<span style="font-weight: 500; color: #1e293b;">' + extractName(m) + '</span>';
+                            html += '<span style="color: ' + (hasSig ? '#166534' : '#991b1b') + '; margin-left: auto; font-size: 12px;">' + (hasSig ? 'Firmado' : 'Sin firma') + '</span>';
+                            html += '</div>';
+                          });
+                          html += '</div>';
+                        } else {
+                          html += '<p style="color: #94a3b8; font-size: 13px;">No se registró comisión electoral</p>';
+                        }
+                        html += '</div>';
+
+                        // Certificados de miembros
+                        html += '<div><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Miembros Fundadores</h5>';
+                        if (allMembers.length > 0) {
+                          html += '<div style="display: flex; gap: 12px; margin-bottom: 8px;">';
+                          html += '<div style="flex: 1; text-align: center; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;"><span style="font-size: 20px; font-weight: 700; color: #16a34a;">' + membersWithCert.length + '</span><br><span style="font-size: 12px; color: #166534;">Con certificado</span></div>';
+                          html += '<div style="flex: 1; text-align: center; padding: 10px; background: ' + (membersWithoutCert.length > 0 ? '#fef2f2' : '#f0fdf4') + '; border: 1px solid ' + (membersWithoutCert.length > 0 ? '#fecaca' : '#bbf7d0') + '; border-radius: 8px;"><span style="font-size: 20px; font-weight: 700; color: ' + (membersWithoutCert.length > 0 ? '#dc2626' : '#16a34a') + ';">' + membersWithoutCert.length + '</span><br><span style="font-size: 12px; color: ' + (membersWithoutCert.length > 0 ? '#991b1b' : '#166534') + ';">Sin certificado</span></div>';
+                          html += '</div>';
+                        } else {
+                          html += '<p style="color: #94a3b8; font-size: 13px;">No se registraron miembros</p>';
+                        }
+                        html += '</div>';
+
+                        return html;
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -5065,6 +5131,80 @@ class AdminDashboard {
                     <button type="submit" class="btn btn-primary">Agendar Ministro</button>
                   </div>
                 </form>
+
+                <div style="text-align: center; margin: 16px 0; color: #94a3b8; font-size: 13px;">
+                  ── ¿La documentación tiene problemas? ──
+                </div>
+                <button type="button" id="btn-request-corrections" class="ministro-btn-edit" style="width: 100%; background: #fef2f2; color: #dc2626; border-color: #fecaca;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                  Solicitar Correcciones al Usuario
+                </button>
+
+                <!-- Panel de correcciones (oculto por defecto) -->
+                <div id="corrections-panel" style="display: none;">
+                  <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-top: 12px;">
+                    <h4 style="margin: 0 0 4px; color: #991b1b; font-size: 15px; font-weight: 700;">Solicitar Correcciones</h4>
+                    <p style="margin: 0 0 16px; color: #b91c1c; font-size: 12px;">Selecciona las secciones que requieren correcciones y detalla los problemas encontrados.</p>
+
+                    <div style="display: grid; gap: 10px;">
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="directorio"> Directorio Provisorio
+                        </label>
+                        <textarea class="correction-detail" data-section="directorio" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con el directorio..."></textarea>
+                      </div>
+
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="comision"> Comisión Electoral
+                        </label>
+                        <textarea class="correction-detail" data-section="comision" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con la comisión..."></textarea>
+                      </div>
+
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="miembros"> Miembros Fundadores
+                        </label>
+                        <textarea class="correction-detail" data-section="miembros" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con los miembros..."></textarea>
+                      </div>
+
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="estatutos"> Estatutos
+                        </label>
+                        <textarea class="correction-detail" data-section="estatutos" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con los estatutos..."></textarea>
+                      </div>
+
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="certificados"> Certificados / Documentos
+                        </label>
+                        <textarea class="correction-detail" data-section="certificados" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con certificados..."></textarea>
+                      </div>
+
+                      <div class="correction-section-item">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
+                          <input type="checkbox" class="correction-check" data-section="datos_org"> Datos de la Organización
+                        </label>
+                        <textarea class="correction-detail" data-section="datos_org" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con datos de la org..."></textarea>
+                      </div>
+                    </div>
+
+                    <div style="margin-top: 14px;">
+                      <label style="font-size: 13px; font-weight: 600; color: #1e293b; display: block; margin-bottom: 6px;">Observación General</label>
+                      <textarea id="corrections-general-comment" style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 70px; font-family: inherit;" placeholder="Comentario general sobre las correcciones requeridas..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                      <button type="button" id="btn-cancel-corrections" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+                      <button type="button" id="btn-send-corrections" class="btn" style="flex: 1; background: #dc2626; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer;">Enviar Correcciones</button>
+                    </div>
+                  </div>
+                </div>
               ` : ''}
             </div>
           </div>
@@ -5405,6 +5545,99 @@ class AdminDashboard {
           submitBtn.innerHTML = originalBtnText;
         }
       });
+    }
+
+    // Corrections panel logic
+    const btnRequestCorrections = modal.querySelector('#btn-request-corrections');
+    const correctionsPanel = modal.querySelector('#corrections-panel');
+    if (btnRequestCorrections && correctionsPanel) {
+      const scheduleFormEl = modal.querySelector('#schedule-ministro-form');
+      const actionAlert = modal.querySelector('.ministro-action-alert');
+      const correctionsSeparator = btnRequestCorrections.previousElementSibling; // the "── ¿La documentación tiene problemas? ──" div
+
+      // Toggle checkboxes to show/hide textareas
+      correctionsPanel.querySelectorAll('.correction-check').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const textarea = correctionsPanel.querySelector(`.correction-detail[data-section="${chk.dataset.section}"]`);
+          if (textarea) {
+            textarea.style.display = chk.checked ? 'block' : 'none';
+            if (!chk.checked) textarea.value = '';
+          }
+        });
+      });
+
+      // Open corrections panel
+      btnRequestCorrections.addEventListener('click', () => {
+        if (scheduleFormEl) scheduleFormEl.style.display = 'none';
+        if (actionAlert) actionAlert.style.display = 'none';
+        if (correctionsSeparator) correctionsSeparator.style.display = 'none';
+        btnRequestCorrections.style.display = 'none';
+        correctionsPanel.style.display = 'block';
+      });
+
+      // Cancel corrections
+      const btnCancelCorrections = modal.querySelector('#btn-cancel-corrections');
+      if (btnCancelCorrections) {
+        btnCancelCorrections.addEventListener('click', () => {
+          correctionsPanel.style.display = 'none';
+          if (scheduleFormEl) scheduleFormEl.style.display = '';
+          if (actionAlert) actionAlert.style.display = '';
+          if (correctionsSeparator) correctionsSeparator.style.display = '';
+          btnRequestCorrections.style.display = '';
+          // Reset checkboxes and textareas
+          correctionsPanel.querySelectorAll('.correction-check').forEach(chk => { chk.checked = false; });
+          correctionsPanel.querySelectorAll('.correction-detail').forEach(ta => { ta.style.display = 'none'; ta.value = ''; });
+          const generalComment = modal.querySelector('#corrections-general-comment');
+          if (generalComment) generalComment.value = '';
+        });
+      }
+
+      // Send corrections
+      const btnSendCorrections = modal.querySelector('#btn-send-corrections');
+      if (btnSendCorrections) {
+        btnSendCorrections.addEventListener('click', async () => {
+          const checkedSections = correctionsPanel.querySelectorAll('.correction-check:checked');
+          const generalComment = (modal.querySelector('#corrections-general-comment')?.value || '').trim();
+
+          if (checkedSections.length === 0 && !generalComment) {
+            showToast('Selecciona al menos una sección o escribe un comentario general', 'error');
+            return;
+          }
+
+          // Build corrections object
+          const corrections = { fields: {}, documents: {}, certificates: {} };
+          checkedSections.forEach(chk => {
+            const section = chk.dataset.section;
+            const detail = (correctionsPanel.querySelector(`.correction-detail[data-section="${section}"]`)?.value || '').trim();
+            if (['directorio', 'comision', 'miembros', 'datos_org'].includes(section)) {
+              corrections.fields[section] = detail || 'Requiere corrección';
+            } else if (section === 'estatutos') {
+              corrections.documents[section] = detail || 'Requiere corrección';
+            } else if (section === 'certificados') {
+              corrections.certificates[section] = detail || 'Requiere corrección';
+            }
+          });
+
+          const orgId = org._id || org.id;
+
+          // Disable button
+          btnSendCorrections.disabled = true;
+          btnSendCorrections.textContent = 'Enviando...';
+
+          try {
+            await organizationsService.rejectWithCorrections(orgId, corrections, generalComment);
+            showToast('Correcciones enviadas al usuario correctamente', 'success');
+            modal.remove();
+            this.renderApplicationsList();
+            this.updateStats();
+          } catch (error) {
+            console.error('Error sending corrections:', error);
+            showToast('Error al enviar correcciones: ' + (error.message || 'Error desconocido'), 'error');
+            btnSendCorrections.disabled = false;
+            btnSendCorrections.textContent = 'Enviar Correcciones';
+          }
+        });
+      }
     }
 
     // Form: Approve Ministro & Designate Directorio

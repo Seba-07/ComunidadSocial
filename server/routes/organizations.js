@@ -644,7 +644,7 @@ const VALID_STATUS_TRANSITIONS = {
   'ministro_approved': ['pending_review', 'in_review', 'sent_registry', 'rejected'],
   'pending_review': ['in_review', 'rejected', 'approved'],
   'in_review': ['approved', 'rejected', 'sent_registry'],
-  'rejected': ['pending_review', 'draft'], // Solo puede ir a pending_review o volver a draft
+  'rejected': ['pending_review', 'draft', 'waiting_ministro'], // Puede volver al status previo al rechazo
   'sent_registry': ['approved', 'registry_observations', 'rejected'],
   'registry_observations': ['sent_registry', 'approved', 'rejected'],
   'approved': ['dissolved'], // Estado final, solo puede disolverse
@@ -757,12 +757,14 @@ router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), validate(
 
     const { corrections, generalComment } = req.body;
 
+    const previousStatus = organization.status;
     organization.status = 'rejected';
     organization.corrections = {
       fields: corrections.fields || {},
       documents: corrections.documents || {},
       certificates: corrections.certificates || {},
       generalComment,
+      fromStatus: previousStatus,
       createdAt: new Date(),
       resolved: false
     };
@@ -830,7 +832,8 @@ router.post('/:id/resubmit', authenticate, async (req, res) => {
 
     const { userComment, fieldResponses } = req.body;
 
-    organization.status = 'pending_review';
+    const targetStatus = organization.corrections?.fromStatus || 'pending_review';
+    organization.status = targetStatus;
     if (organization.corrections) {
       organization.corrections.resolved = true;
       organization.corrections.resolvedAt = new Date();
@@ -839,7 +842,7 @@ router.post('/:id/resubmit', authenticate, async (req, res) => {
     }
 
     organization.statusHistory.push({
-      status: 'pending_review',
+      status: targetStatus,
       date: new Date(),
       comment: 'Solicitud reenviada con correcciones',
       userComment
