@@ -471,23 +471,28 @@ class OrganizationsService {
         provisionalDirectorio: provisionalDirectorio,
         // Comisión Electoral (paso 5)
         electoralCommission: comisionElectoral,
-        // Certificados de Antecedentes del Directorio (paso 5) - solo metadata, sin base64
-        // Los datos base64 se omiten para no exceder el límite de tamaño del body (10MB)
+        // Certificados de Antecedentes del Directorio (paso 5) - incluye base64
         certificatesStep5: (() => {
           const certs = requestData.certificatesStep5;
           if (!certs || typeof certs !== 'object' || Array.isArray(certs)) return {};
-          const metadata = {};
+          const result = {};
           for (const [key, cert] of Object.entries(certs)) {
             if (cert) {
-              metadata[key] = {
+              // Limpiar prefijo data:... del base64 si existe
+              let base64 = cert.base64 || cert.certificate || cert.data || '';
+              if (base64 && base64.includes(',')) {
+                base64 = base64.split(',')[1];
+              }
+              result[key] = {
                 name: cert.name || cert.fileName || '',
                 type: cert.type || '',
                 memberId: cert.memberId || '',
-                memberName: cert.memberName || ''
+                memberName: cert.memberName || '',
+                certificate: base64
               };
             }
           }
-          return metadata;
+          return result;
         })(),
         // Estatutos (paso 6)
         estatutos: requestData.estatutos || '',

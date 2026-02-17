@@ -4577,7 +4577,9 @@ class AdminDashboard {
     const additionalMembers = dir.additionalMembers || [];
     const commission = org.electoralCommission || [];
     const allMembers = org.members || [];
-    const estatutos = org.estatutos || org.estatutosSnapshot?.documentoGenerado || '';
+    // estatutos puede ser string directo o objeto {tipo, contenido}
+    const rawEstatutos = org.estatutos || org.estatutosSnapshot?.documentoGenerado || '';
+    const estatutos = typeof rawEstatutos === 'object' ? (rawEstatutos.contenido || rawEstatutos.texto || JSON.stringify(rawEstatutos)) : rawEstatutos;
 
     // Helper para extraer nombre de miembros (diferentes formatos)
     const extractName = (m) => {
@@ -4983,13 +4985,26 @@ class AdminDashboard {
                           html += '<div style="display: grid; gap: 6px;">';
                           certsArray.forEach(cert => {
                             const cargoId = cert.memberId || '';
-                            const label = cargoLabelsEs[cargoId] || cert.memberName || cargoId || 'Desconocido';
-                            const hasFile = !!(cert.certificate || cert.base64 || cert.data || cert.name || cert.uploadedAt);
-                            const fileName = cert.memberName || cert.name || 'Archivo cargado';
-                            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasFile ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasFile ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
-                            html += '<span style="color: ' + (hasFile ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasFile ? '✓' : '✗') + '</span>';
+                            const label = cargoLabelsEs[cargoId] || cargoId || 'Desconocido';
+                            // memberName en DB contiene el nombre del archivo original
+                            const fileName = cert.memberName || cert.name || '';
+                            // El entry existe en la DB = el usuario subió el archivo
+                            const wasUploaded = !!(cert.uploadedAt || fileName);
+                            // Tiene datos base64 para previsualizar
+                            const hasData = !!(cert.certificate && cert.certificate.length > 50);
+                            const certData = hasData ? (cert.certificate.startsWith('data:') ? cert.certificate : 'data:application/pdf;base64,' + cert.certificate) : null;
+                            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (wasUploaded ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (wasUploaded ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
+                            html += '<span style="color: ' + (wasUploaded ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (wasUploaded ? '✓' : '✗') + '</span>';
                             html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
-                            html += '<span style="color: ' + (hasFile ? '#166534' : '#991b1b') + ';">' + (hasFile ? 'Cargado' : 'No cargado') + '</span>';
+                            if (wasUploaded) {
+                              if (hasData) {
+                                html += '<a href="' + certData + '" target="_blank" download="' + (fileName || 'certificado.pdf') + '" style="color: #2563eb; text-decoration: underline; cursor: pointer;">' + (fileName || 'Ver archivo') + '</a>';
+                              } else {
+                                html += '<span style="color: #166534;">' + (fileName || 'Subido') + '</span>';
+                              }
+                            } else {
+                              html += '<span style="color: #991b1b;">No cargado</span>';
+                            }
                             html += '</div>';
                           });
                           html += '</div>';
