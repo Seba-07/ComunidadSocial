@@ -89,9 +89,10 @@ app.use(securityHeaders);
 app.use('/api/', generalLimiter);
 
 // Body parsing
-// NOTA: 20MB para soportar certificados base64 + documentos HTML generados del wizard
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ limit: '20mb', extended: true }));
+// NOTA: 50MB para soportar certificados base64 + documentos HTML generados del wizard
+// El cliente valida máx 2MB por certificado, pero el total puede ser grande con muchos archivos
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Sanitización de inputs (DESPUÉS de body parsing para que req.body exista)
 app.use(sanitizeInput);

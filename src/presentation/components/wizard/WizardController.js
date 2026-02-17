@@ -2584,6 +2584,9 @@ export class WizardController {
   setupCertificateInputs() {
     const certInputs = this.getCertificateConfig();
 
+    // Límite de tamaño por certificado: 2MB
+    const MAX_CERT_SIZE = 2 * 1024 * 1024;
+
     certInputs.forEach(certInfo => {
       const input = document.getElementById(certInfo.id);
       if (input) {
@@ -2591,8 +2594,21 @@ export class WizardController {
           if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
 
-            // Convertir archivo a base64 para poder guardarlo en localStorage
-            const base64Data = await this.fileToBase64(file);
+            // Validar tamaño del archivo
+            if (file.size > MAX_CERT_SIZE) {
+              const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+              showToast(`El archivo "${file.name}" pesa ${sizeMB}MB. El máximo es 2MB. Usa un PDF más liviano o comprime la imagen.`, 'error');
+              e.target.value = '';
+              return;
+            }
+
+            // Comprimir imágenes antes de convertir a base64
+            let base64Data;
+            if (file.type.startsWith('image/')) {
+              base64Data = await this.compressImage(file, 1200, 0.7);
+            } else {
+              base64Data = await this.fileToBase64(file);
+            }
 
             // Guardar el archivo (con base64 en lugar de File object)
             if (!this.formData.certificatesStep5) {
@@ -2651,6 +2667,36 @@ export class WizardController {
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result);
       reader.onerror = error => reject(error);
+    });
+  }
+
+  /**
+   * Comprime una imagen redimensionándola y reduciendo calidad
+   * @param {File} file - Archivo de imagen
+   * @param {number} maxWidth - Ancho máximo en px
+   * @param {number} quality - Calidad JPEG 0-1
+   * @returns {Promise<string>} Base64 de la imagen comprimida
+   */
+  compressImage(file, maxWidth = 1200, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round(h * maxWidth / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = url;
     });
   }
 
