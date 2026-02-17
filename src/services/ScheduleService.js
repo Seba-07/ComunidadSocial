@@ -460,12 +460,16 @@ class ScheduleService {
       // Pero mantener compatibilidad si retorna array plano
       const bookedSlots = Array.isArray(response) ? response : (response.bookedSlots || []);
 
-      // Convertir a formato de booking (solo necesitamos date y time para el cálculo)
+      // Convertir a formato de booking con datos de la organización
       const backendBookings = (bookedSlots || []).map((slot, index) => ({
-        id: `backend-${index}`,
+        id: slot.orgId ? `backend-${slot.orgId}` : `backend-${index}`,
         date: slot.date,
         time: slot.time,
-        status: 'confirmed',
+        organizationName: slot.organizationName || 'Sin nombre',
+        organizationType: slot.organizationType || '',
+        userName: slot.userName || 'Sin asignar',
+        userEmail: slot.userEmail || '',
+        status: slot.status || 'pending',
         source: 'backend'
       })).filter(b => b.date && b.time);
 

@@ -119,21 +119,37 @@ router.get('/availability/booked-slots', async (req, res) => {
         { 'ministroData.scheduledDate': { $exists: true, $ne: null } }
       ]
     })
-      .select('electionDate electionTime ministroData.scheduledDate ministroData.scheduledTime')
+      .select('organizationName organizationType status electionDate electionTime ministroData.scheduledDate ministroData.scheduledTime')
+      .populate('userId', 'firstName lastName email')
       .lean();
 
-    // Extract only date/time pairs
+    // Extract date/time pairs with org info
     const bookedSlots = organizations
       .map(org => {
         const date = org.electionDate || org.ministroData?.scheduledDate;
         const time = org.electionTime || org.ministroData?.scheduledTime;
         if (!date || !time) return null;
 
-        // Format date to YYYY-MM-DD
         const d = new Date(date);
         const dateKey = d.toISOString().split('T')[0];
 
-        return { date: dateKey, time };
+        // Estado de la reserva según status de la organización
+        let bookingStatus = 'pending';
+        if (['APPROVED', 'REGISTERED'].includes(org.status)) {
+          bookingStatus = 'confirmed';
+        }
+
+        const user = org.userId || {};
+        return {
+          date: dateKey,
+          time,
+          organizationName: org.organizationName || 'Sin nombre',
+          organizationType: org.organizationType || '',
+          status: bookingStatus,
+          userName: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Sin asignar',
+          userEmail: user.email || '',
+          orgId: org._id.toString()
+        };
       })
       .filter(Boolean);
 
