@@ -4962,26 +4962,34 @@ class AdminDashboard {
                     <!-- Tab: Documentos -->
                     <div class="admin-doc-tab-content" data-tab-content="documentos" style="padding: 16px; display: none;">
                       ${(() => {
-                        const certs = org.certificatesStep5 || {};
-                        const certEntries = Object.entries(certs).filter(([k]) => k !== '_id');
+                        const certsRaw = org.certificatesStep5 || [];
+                        // Normalizar: puede ser array (DB) u objeto (frontend)
+                        const certsArray = Array.isArray(certsRaw)
+                          ? certsRaw
+                          : Object.entries(certsRaw).filter(([k]) => k !== '_id').map(([key, val]) => ({
+                              memberId: key,
+                              memberName: (typeof val === 'object' ? val.memberName || val.name : '') || key,
+                              certificate: typeof val === 'object' ? (val.certificate || val.base64 || val.data || '') : val
+                            }));
+                        const cargoLabelsEs = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', vicepresidente: 'Vicepresidente', director: 'Director', director1: 'Director 1', director2: 'Director 2', comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3', ...cargoLabels };
                         const membersWithCert = allMembers.filter(m => m.certificate);
                         const membersWithoutCert = allMembers.filter(m => !m.certificate);
-                        const commWithSig = commission.filter(m => m.signature);
 
                         let html = '';
 
                         // Certificados de antecedentes del directorio
                         html += '<div style="margin-bottom: 16px;"><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
-                        if (certEntries.length > 0) {
+                        if (certsArray.length > 0) {
                           html += '<div style="display: grid; gap: 6px;">';
-                          certEntries.forEach(([cargo, val]) => {
-                            const label = cargoLabels[cargo] || cargo;
-                            const hasFile = val && (typeof val === 'string' ? val.length > 0 : val.fileName || val.data);
-                            const fileName = typeof val === 'object' ? (val.fileName || 'Archivo cargado') : 'Archivo cargado';
+                          certsArray.forEach(cert => {
+                            const cargoId = cert.memberId || '';
+                            const label = cargoLabelsEs[cargoId] || cert.memberName || cargoId || 'Desconocido';
+                            const hasFile = !!(cert.certificate || cert.base64 || cert.data || cert.name || cert.uploadedAt);
+                            const fileName = cert.memberName || cert.name || 'Archivo cargado';
                             html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasFile ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasFile ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
                             html += '<span style="color: ' + (hasFile ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasFile ? '✓' : '✗') + '</span>';
                             html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
-                            html += '<span style="color: ' + (hasFile ? '#166534' : '#991b1b') + ';">' + (hasFile ? fileName : 'No cargado') + '</span>';
+                            html += '<span style="color: ' + (hasFile ? '#166534' : '#991b1b') + ';">' + (hasFile ? 'Cargado' : 'No cargado') + '</span>';
                             html += '</div>';
                           });
                           html += '</div>';
