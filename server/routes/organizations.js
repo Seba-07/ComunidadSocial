@@ -357,15 +357,27 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       logger.debug('CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
     }
 
-    // Guardar certificados del Paso 5 (certificados de socios)
-    if (certificatesStep5 && Array.isArray(certificatesStep5) && certificatesStep5.length > 0) {
-      orgData.certificatesStep5 = certificatesStep5.map(cert => ({
-        memberId: cert.memberId || cert.rut || '',
-        memberName: cert.memberName || cert.name || '',
-        certificate: cert.certificate || cert.data || '',
-        uploadedAt: new Date()
-      }));
-      logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
+    // Guardar certificados del Paso 5 (metadata de certificados de socios)
+    if (certificatesStep5) {
+      if (Array.isArray(certificatesStep5) && certificatesStep5.length > 0) {
+        orgData.certificatesStep5 = certificatesStep5.map(cert => ({
+          memberId: cert.memberId || cert.rut || '',
+          memberName: cert.memberName || cert.name || '',
+          certificate: cert.certificate || cert.data || '',
+          uploadedAt: new Date()
+        }));
+      } else if (typeof certificatesStep5 === 'object' && Object.keys(certificatesStep5).length > 0) {
+        // Formato record: { presidente: { name, type, ... }, secretario: { ... } }
+        orgData.certificatesStep5 = Object.entries(certificatesStep5).map(([key, cert]) => ({
+          memberId: key,
+          memberName: cert.memberName || cert.name || key,
+          certificate: cert.certificate || cert.base64 || '',
+          uploadedAt: new Date()
+        }));
+      }
+      if (orgData.certificatesStep5) {
+        logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
+      }
     }
 
     const organization = new Organization(orgData);

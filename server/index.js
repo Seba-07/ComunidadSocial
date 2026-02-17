@@ -216,10 +216,32 @@ app.get('/api/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('=== GLOBAL ERROR HANDLER ===');
+  console.error('Route:', req.method, req.originalUrl);
+  console.error('Error name:', err.name);
+  console.error('Error message:', err.message);
+  console.error('Error stack:', err.stack);
+
+  // Payload too large (body exceeds express.json limit)
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'El tamaño de los datos excede el límite permitido. Intente con archivos más pequeños.',
+      details: 'PayloadTooLarge'
+    });
+  }
+
+  // JSON syntax error
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      error: 'Error en el formato de los datos enviados',
+      details: 'InvalidJSON'
+    });
+  }
+
   res.status(500).json({
     error: 'Error interno del servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message,
+    errorName: err.name
   });
 });
 
