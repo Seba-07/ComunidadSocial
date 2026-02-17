@@ -4572,6 +4572,27 @@ class AdminDashboard {
     // Dirección de la organización
     const orgAddress = org.address || '';
 
+    // Datos de documentación para revisión del admin
+    const dir = org.provisionalDirectorio || {};
+    const additionalMembers = dir.additionalMembers || [];
+    const commission = org.electoralCommission || [];
+    const allMembers = org.members || [];
+    const estatutos = org.estatutos || '';
+
+    // Helper para extraer nombre de miembros (diferentes formatos)
+    const extractName = (m) => {
+      if (!m) return 'Sin nombre';
+      if (m.primerNombre) {
+        const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+        const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+        return (fn + ' ' + ln).trim() || 'Sin nombre';
+      }
+      if (m.firstName) return `${m.firstName} ${m.lastName || ''}`.trim();
+      return m.name || m.nombre || 'Sin nombre';
+    };
+
+    const cargoLabels = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', director: 'Director' };
+
     modal.innerHTML = `
       <div class="admin-review-modal ministro-request-modal">
         <div class="review-modal-header ministro-modal-header-redesign">
@@ -4837,6 +4858,107 @@ class AdminDashboard {
                     </div>
                   </div>
                 </div>
+
+                <!-- Tarjeta: Documentación de la Solicitud -->
+                <div class="ministro-info-card">
+                  <div class="ministro-info-card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <h4>Documentación de la Solicitud</h4>
+                  </div>
+                  <div class="ministro-info-card-body" style="padding: 0;">
+                    <!-- Tabs -->
+                    <div class="admin-doc-tabs" style="display: flex; border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
+                      <button class="admin-doc-tab active" data-tab="directorio" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 600; color: #2563eb; background: white; border: none; border-bottom: 2px solid #2563eb; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Directorio</button>
+                      <button class="admin-doc-tab" data-tab="comision" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Comisión</button>
+                      <button class="admin-doc-tab" data-tab="miembros" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Miembros</button>
+                      <button class="admin-doc-tab" data-tab="estatutos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Estatutos</button>
+                    </div>
+
+                    <!-- Tab: Directorio -->
+                    <div class="admin-doc-tab-content" data-tab-content="directorio" style="padding: 16px;">
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        ${['presidente', 'secretario', 'tesorero'].map(cargo => {
+                          const member = dir[cargo];
+                          return member ? `
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+                              <div style="font-size: 11px; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">${cargoLabels[cargo]}</div>
+                              <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${extractName(member)}</div>
+                              <div style="font-size: 12px; color: #64748b; margin-top: 2px;">RUT: ${member.rut || 'No registrado'}</div>
+                            </div>
+                          ` : `
+                            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px;">
+                              <div style="font-size: 11px; font-weight: 600; color: #dc2626; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">${cargoLabels[cargo]}</div>
+                              <div style="font-size: 13px; color: #991b1b;">No asignado</div>
+                            </div>
+                          `;
+                        }).join('')}
+                        ${additionalMembers.map((m, i) => `
+                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+                            <div style="font-size: 11px; font-weight: 600; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">${cargoLabels[m.role] || m.role || 'Director'}</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${extractName(m)}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">RUT: ${m.rut || 'No registrado'}</div>
+                          </div>
+                        `).join('')}
+                      </div>
+                      ${!dir.presidente && !dir.secretario && !dir.tesorero && additionalMembers.length === 0 ? '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registró directorio provisorio</p>' : ''}
+                    </div>
+
+                    <!-- Tab: Comisión Electoral -->
+                    <div class="admin-doc-tab-content" data-tab-content="comision" style="padding: 16px; display: none;">
+                      ${commission.length > 0 ? `
+                        <ol style="margin: 0; padding-left: 24px; list-style: decimal;">
+                          ${commission.map(m => `
+                            <li style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px;">
+                              <span style="font-weight: 600; color: #1e293b;">${extractName(m)}</span>
+                              <span style="color: #64748b; margin-left: 8px; font-size: 12px;">RUT: ${m.rut || 'No registrado'}</span>
+                            </li>
+                          `).join('')}
+                        </ol>
+                      ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registró comisión electoral</p>'}
+                    </div>
+
+                    <!-- Tab: Miembros Fundadores -->
+                    <div class="admin-doc-tab-content" data-tab-content="miembros" style="padding: 16px; display: none;">
+                      ${allMembers.length > 0 ? `
+                        <div style="max-height: 280px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                              <tr style="background: #f8fafc; position: sticky; top: 0;">
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; width: 40px;">#</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;">Nombre</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;">RUT</th>
+                                <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;">Rol</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${allMembers.map((m, i) => `
+                                <tr style="border-bottom: 1px solid #f1f5f9;${i % 2 === 1 ? ' background: #fafbfc;' : ''}">
+                                  <td style="padding: 8px 12px; color: #94a3b8;">${i + 1}</td>
+                                  <td style="padding: 8px 12px; font-weight: 500; color: #1e293b;">${extractName(m)}</td>
+                                  <td style="padding: 8px 12px; color: #64748b;">${m.rut || 'No registrado'}</td>
+                                  <td style="padding: 8px 12px; color: #64748b;">${m.role ? (cargoLabels[m.role] || m.role) : 'Miembro'}</td>
+                                </tr>
+                              `).join('')}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: right;">${allMembers.length} miembro${allMembers.length !== 1 ? 's' : ''} registrado${allMembers.length !== 1 ? 's' : ''}</p>
+                      ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registraron miembros fundadores</p>'}
+                    </div>
+
+                    <!-- Tab: Estatutos -->
+                    <div class="admin-doc-tab-content" data-tab-content="estatutos" style="padding: 16px; display: none;">
+                      ${estatutos ? `
+                        <div style="max-height: 300px; overflow-y: auto; background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.7; color: #334155;">${estatutos}</div>
+                      ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se cargaron estatutos</p>'}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- COLUMNA DERECHA: Formulario -->
@@ -4952,6 +5074,30 @@ class AdminDashboard {
     `;
 
     document.body.appendChild(modal);
+
+    // Event listeners - Tabs de documentación
+    const docTabs = modal.querySelectorAll('.admin-doc-tab');
+    const docContents = modal.querySelectorAll('.admin-doc-tab-content');
+    docTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        docTabs.forEach(t => {
+          t.style.color = '#64748b';
+          t.style.fontWeight = '500';
+          t.style.background = 'transparent';
+          t.style.borderBottom = '2px solid transparent';
+          t.classList.remove('active');
+        });
+        tab.style.color = '#2563eb';
+        tab.style.fontWeight = '600';
+        tab.style.background = 'white';
+        tab.style.borderBottom = '2px solid #2563eb';
+        tab.classList.add('active');
+        docContents.forEach(c => {
+          c.style.display = c.dataset.tabContent === target ? 'block' : 'none';
+        });
+      });
+    });
 
     // Event listeners
     modal.querySelectorAll('.ministro-close').forEach(btn => {
