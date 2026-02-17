@@ -97,14 +97,18 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
     }
 
     const assignments = await Assignment.find({ ministroId: req.params.ministroId })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos`)
       .sort({ scheduledDate: -1 })
       .lean();
 
     // Limpiar datos Base64 de miembros antes de enviar (ya son objetos planos por .lean())
+    // NOTA: estatutos se mantiene porque es necesario para generar documentos
     const cleanedAssignments = assignments.map(assignment => {
       if (assignment.organizationId) {
+        // Preservar estatutos antes de limpiar
+        const estatutos = assignment.organizationId.estatutos;
         assignment.organizationId = cleanMembersData(assignment.organizationId);
+        assignment.organizationId.estatutos = estatutos;
       }
       return assignment;
     });
