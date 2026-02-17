@@ -871,7 +871,7 @@ router.get('/status/:status', authenticate, requireRole('MUNICIPALIDAD'), async 
   }
 });
 
-// Sync certificates data for existing organizations (from IndexedDB)
+// Sync certificates and estatutos data for existing organizations (from IndexedDB)
 router.post('/:id/sync-certificates', authenticate, async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
@@ -882,29 +882,35 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
-    const { certificates } = req.body;
-    if (!certificates || typeof certificates !== 'object') {
-      return res.status(400).json({ error: 'Datos inválidos' });
-    }
+    const { certificates, estatutos } = req.body;
+    let certsSynced = 0;
+    let estatutosSynced = false;
 
-    // Actualizar cada certificado existente con su base64
-    let updated = 0;
-    for (const [key, certData] of Object.entries(certificates)) {
-      const existing = organization.certificatesStep5.find(c => c.memberId === key);
-      if (existing && !existing.certificate && certData.certificate) {
-        // Limpiar prefijo data:...;base64, si existe
-        let base64 = certData.certificate;
-        if (base64.includes(',')) base64 = base64.split(',')[1];
-        existing.certificate = base64;
-        updated++;
+    // Sync certificados
+    if (certificates && typeof certificates === 'object') {
+      for (const [key, certData] of Object.entries(certificates)) {
+        const existing = organization.certificatesStep5.find(c => c.memberId === key);
+        if (existing && !existing.certificate && certData.certificate) {
+          // Limpiar prefijo data:...;base64, si existe
+          let base64 = certData.certificate;
+          if (base64.includes(',')) base64 = base64.split(',')[1];
+          existing.certificate = base64;
+          certsSynced++;
+        }
       }
     }
 
-    if (updated > 0) {
+    // Sync estatutos (solo si el server no tiene y el cliente envía contenido)
+    if (estatutos && typeof estatutos === 'string' && estatutos.length > 50 && !organization.estatutos) {
+      organization.estatutos = estatutos;
+      estatutosSynced = true;
+    }
+
+    if (certsSynced > 0 || estatutosSynced) {
       await organization.save();
     }
 
-    res.json({ synced: updated });
+    res.json({ synced: certsSynced, estatutosSynced });
   } catch (error) {
     console.error('Sync certificates error:', error);
     res.status(500).json({ error: 'Error al sincronizar certificados' });

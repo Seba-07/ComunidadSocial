@@ -1200,7 +1200,7 @@ function initOrganizations() {
 }
 
 /**
- * Auto-sync certificados desde IndexedDB para orgs que no los tienen en server.
+ * Auto-sync certificados y estatutos desde IndexedDB para orgs que no los tienen en server.
  * Se ejecuta una sola vez por sesión (flag en sessionStorage).
  */
 async function syncCertificatesFromIndexedDB(organizations) {
@@ -1211,42 +1211,55 @@ async function syncCertificatesFromIndexedDB(organizations) {
   try {
     await indexedDBService.init();
     const localCerts = await indexedDBService.getAllWizardCertificates();
-    if (!localCerts || Object.keys(localCerts).length === 0) return;
+    const localEstatutos = await indexedDBService.getWizardEstatutos().catch(() => null);
+
+    const hasCerts = localCerts && Object.keys(localCerts).length > 0;
+    const hasEstatutos = localEstatutos && localEstatutos.length > 50;
+
+    if (!hasCerts && !hasEstatutos) return;
 
     // Filtrar orgs que podrían necesitar sync
     const syncableStatuses = ['waiting_ministro', 'ministro_scheduled'];
-    const orgsToSync = organizations.filter(org =>
-      syncableStatuses.includes(org.status) &&
-      Array.isArray(org.certificatesStep5) &&
-      org.certificatesStep5.some(c => !c.certificate)
-    );
+    const orgsToSync = organizations.filter(org => {
+      if (!syncableStatuses.includes(org.status)) return false;
+      const needsCerts = hasCerts && Array.isArray(org.certificatesStep5) && org.certificatesStep5.some(c => !c.certificate);
+      const needsEstatutos = hasEstatutos && !org.estatutos;
+      return needsCerts || needsEstatutos;
+    });
 
     if (orgsToSync.length === 0) return;
 
     for (const org of orgsToSync) {
-      // Construir payload solo con certificados que faltan en server y existen en IndexedDB
-      const certsToSync = {};
-      for (const certEntry of org.certificatesStep5) {
-        if (!certEntry.certificate && localCerts[certEntry.memberId]?.base64) {
-          certsToSync[certEntry.memberId] = {
-            certificate: localCerts[certEntry.memberId].base64,
-            name: localCerts[certEntry.memberId].name || ''
-          };
+      // Construir payload de certificados que faltan
+      let certsToSync = null;
+      if (hasCerts && Array.isArray(org.certificatesStep5)) {
+        const certs = {};
+        for (const certEntry of org.certificatesStep5) {
+          if (!certEntry.certificate && localCerts[certEntry.memberId]?.base64) {
+            certs[certEntry.memberId] = {
+              certificate: localCerts[certEntry.memberId].base64,
+              name: localCerts[certEntry.memberId].name || ''
+            };
+          }
         }
+        if (Object.keys(certs).length > 0) certsToSync = certs;
       }
 
-      if (Object.keys(certsToSync).length > 0) {
-        console.log(`🔄 Sync certificados para org ${org._id}: ${Object.keys(certsToSync).length} pendientes`);
+      // Estatutos
+      const estatutosToSync = (hasEstatutos && !org.estatutos) ? localEstatutos : null;
+
+      if (certsToSync || estatutosToSync) {
+        console.log(`🔄 Sync para org ${org._id}: ${certsToSync ? Object.keys(certsToSync).length + ' certs' : ''} ${estatutosToSync ? '+ estatutos' : ''}`);
         try {
-          const result = await apiService.syncCertificates(org._id, certsToSync);
-          console.log(`✅ Certificados sincronizados: ${result.synced}`);
+          const result = await apiService.syncCertificates(org._id, certsToSync, estatutosToSync);
+          console.log(`✅ Sincronizado: ${result.synced} certs, estatutos: ${result.estatutosSynced}`);
         } catch (err) {
-          console.warn(`⚠️ Error sync certificados org ${org._id}:`, err.message);
+          console.warn(`⚠️ Error sync org ${org._id}:`, err.message);
         }
       }
     }
   } catch (err) {
-    console.warn('⚠️ Error en auto-sync de certificados:', err.message);
+    console.warn('⚠️ Error en auto-sync:', err.message);
   }
 }
 

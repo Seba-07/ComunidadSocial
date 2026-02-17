@@ -293,6 +293,38 @@ export class IndexedDBService {
   }
 
   /**
+   * Guarda los estatutos del wizard en IndexedDB (reutiliza store wizard_certificates con key especial)
+   */
+  async saveWizardEstatutos(contenido) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readwrite');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.put({ key: '_estatutos', contenido, savedAt: new Date().toISOString() });
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(new Error('Error al guardar estatutos'));
+    });
+  }
+
+  /**
+   * Obtiene los estatutos guardados del wizard
+   */
+  async getWizardEstatutos() {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wizard_certificates'], 'readonly');
+      const store = transaction.objectStore('wizard_certificates');
+      const request = store.get('_estatutos');
+
+      request.onsuccess = () => resolve(request.result?.contenido || null);
+      request.onerror = () => reject(new Error('Error al obtener estatutos'));
+    });
+  }
+
+  /**
    * Limpia todos los certificados del wizard
    */
   async clearWizardCertificates() {

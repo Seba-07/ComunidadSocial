@@ -1310,10 +1310,19 @@ export class WizardController {
     }
 
     // Guardar los estatutos en formData
+    const editorContent = document.getElementById('statutes-editor')?.value || '';
     this.formData.estatutos = {
       tipo: statutesOption || 'template',
-      contenido: document.getElementById('statutes-editor')?.value || ''
+      contenido: editorContent
     };
+
+    // Guardar también en IndexedDB para recovery/sync
+    if (editorContent) {
+      indexedDBService.init().then(() => {
+        indexedDBService.saveWizardEstatutos(editorContent);
+        console.log('✅ Estatutos guardados en IndexedDB');
+      }).catch(e => console.warn('⚠️ Error guardando estatutos en IndexedDB:', e));
+    }
 
     return true;
   }
@@ -1499,6 +1508,13 @@ export class WizardController {
           editedContent: editedContent,
           content: this.generateStatutesFromTemplate()
         };
+
+        // Guardar también en IndexedDB para recovery/sync
+        if (editedContent) {
+          indexedDBService.init().then(() => {
+            indexedDBService.saveWizardEstatutos(editedContent);
+          }).catch(() => {});
+        }
       } else {
         const fileInput = document.getElementById('custom-statutes-file');
         if (fileInput?.files?.length || this.formData.statutes?.customFile) {
@@ -7762,8 +7778,8 @@ Secretaria Municipal`;
         comisionElectoral: this.formData.commission?.members || [],
         // Datos del paso 5: Certificados de Antecedentes
         certificatesStep5: this.formData.certificatesStep5 || {},
-        // Datos del paso 6: Estatutos
-        estatutos: this.formData.estatutos?.contenido || '',
+        // Datos del paso 6: Estatutos (fallback entre ambas fuentes de datos)
+        estatutos: this.formData.estatutos?.contenido || this.formData.statutes?.editedContent || this.formData.statutes?.content || '',
         electionDate: electionDate,
         electionTime: electionTime,
         assemblyAddress: assemblyAddress,
