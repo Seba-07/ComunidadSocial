@@ -496,6 +496,21 @@ class OrganizationsService {
         })(),
         // Estatutos (paso 6)
         estatutos: requestData.estatutos || '',
+        // Documentos generados del wizard (objeto→array para MongoDB)
+        generatedDocuments: (() => {
+          const docs = requestData.generatedDocuments;
+          if (!docs || typeof docs !== 'object') return [];
+          return Object.entries(docs)
+            .filter(([_, doc]) => doc && doc.content)
+            .map(([key, doc]) => ({
+              docType: key,
+              content: doc.content,
+              generatedAt: doc.generatedAt || new Date().toISOString(),
+              editedAt: doc.editedAt || null,
+              cargoId: doc.cargoId || null,
+              cargoNombre: doc.cargoNombre || null
+            }));
+        })(),
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
         assemblyAddress: requestData.assemblyAddress || null,

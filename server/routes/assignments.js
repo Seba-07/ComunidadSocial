@@ -99,20 +99,22 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
     }
 
     const assignments = await Assignment.find({ ministroId: req.params.ministroId })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5 generatedDocuments`)
       .sort({ scheduledDate: -1 })
       .lean();
 
     // Limpiar datos Base64 de miembros antes de enviar (ya son objetos planos por .lean())
-    // NOTA: estatutos y certificatesStep5 se mantienen porque son necesarios para revisión de documentos
+    // NOTA: estatutos, certificatesStep5 y generatedDocuments se mantienen porque son necesarios para revisión de documentos
     const cleanedAssignments = assignments.map(assignment => {
       if (assignment.organizationId) {
         // Preservar campos de documentación antes de limpiar
         const estatutos = assignment.organizationId.estatutos;
         const certificatesStep5 = assignment.organizationId.certificatesStep5;
+        const generatedDocuments = assignment.organizationId.generatedDocuments;
         assignment.organizationId = cleanMembersData(assignment.organizationId);
         assignment.organizationId.estatutos = estatutos;
         assignment.organizationId.certificatesStep5 = certificatesStep5;
+        assignment.organizationId.generatedDocuments = generatedDocuments;
       }
       return assignment;
     });
@@ -131,20 +133,22 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, 
       ministroId: req.userId,
       status: 'pending'
     })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5 generatedDocuments`)
       .sort({ scheduledDate: 1 })
       .lean();
 
     // Limpiar datos Base64 de miembros antes de enviar (ya son objetos planos por .lean())
-    // NOTA: estatutos y certificatesStep5 se mantienen porque son necesarios para revisión de documentos
+    // NOTA: estatutos, certificatesStep5 y generatedDocuments se mantienen porque son necesarios para revisión de documentos
     const cleanedAssignments = assignments.map(assignment => {
       if (assignment.organizationId) {
         // Preservar campos de documentación antes de limpiar
         const estatutos = assignment.organizationId.estatutos;
         const certificatesStep5 = assignment.organizationId.certificatesStep5;
+        const generatedDocuments = assignment.organizationId.generatedDocuments;
         assignment.organizationId = cleanMembersData(assignment.organizationId);
         assignment.organizationId.estatutos = estatutos;
         assignment.organizationId.certificatesStep5 = certificatesStep5;
+        assignment.organizationId.generatedDocuments = generatedDocuments;
       }
       return assignment;
     });
@@ -160,7 +164,7 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, 
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos generatedDocuments`)
       .lean();
 
     if (!assignment) {
@@ -170,8 +174,10 @@ router.get('/:id', authenticate, async (req, res) => {
     // Limpiar datos Base64 de miembros antes de enviar (ya es objeto plano por .lean())
     if (assignment.organizationId) {
       const estatutos = assignment.organizationId.estatutos;
+      const generatedDocuments = assignment.organizationId.generatedDocuments;
       assignment.organizationId = cleanMembersData(assignment.organizationId);
       assignment.organizationId.estatutos = estatutos;
+      assignment.organizationId.generatedDocuments = generatedDocuments;
     }
 
     res.json(assignment);

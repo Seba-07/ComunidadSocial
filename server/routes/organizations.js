@@ -285,7 +285,8 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       assemblyAddress,
       comments,
       estatutos,
-      certificatesStep5
+      certificatesStep5,
+      generatedDocuments
     } = req.body;
 
     const orgData = {
@@ -378,6 +379,19 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       if (orgData.certificatesStep5) {
         logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
       }
+    }
+
+    // Guardar documentos generados del wizard (Acta, Estatutos, Registro, Declaraciones, etc.)
+    if (generatedDocuments && Array.isArray(generatedDocuments) && generatedDocuments.length > 0) {
+      orgData.generatedDocuments = generatedDocuments.map(doc => ({
+        docType: doc.docType,
+        content: doc.content,
+        generatedAt: doc.generatedAt ? new Date(doc.generatedAt) : new Date(),
+        editedAt: doc.editedAt ? new Date(doc.editedAt) : null,
+        cargoId: doc.cargoId || null,
+        cargoNombre: doc.cargoNombre || null
+      }));
+      logger.debug('CREATE ORG - generatedDocuments a guardar:', orgData.generatedDocuments.length, 'documentos');
     }
 
     const organization = new Organization(orgData);

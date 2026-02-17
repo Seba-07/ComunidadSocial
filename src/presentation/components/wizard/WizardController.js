@@ -7784,7 +7784,9 @@ Secretaria Municipal`;
         electionTime: electionTime,
         assemblyAddress: assemblyAddress,
         bookingId: booking.id,
-        comments: comments
+        comments: comments,
+        // Documentos generados del wizard (Acta, Estatutos, Registro, Declaraciones, Certificados, etc.)
+        generatedDocuments: this.formData.documents || {}
       };
 
       console.log('📤 [WizardController] requestData a enviar:', requestData);
