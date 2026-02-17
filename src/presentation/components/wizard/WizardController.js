@@ -7802,12 +7802,12 @@ Secretaria Municipal`;
         showToast('¡Solicitud de Ministro de Fe enviada correctamente!', 'success');
       } catch (error) {
         console.error('❌ Error al crear organización:', error);
-        if (error.details && error.details.length > 0) {
+        if (error.details && Array.isArray(error.details) && error.details.length > 0) {
           console.error('📋 Detalles de validación:', error.details);
           const firstError = error.details[0];
-          showToast(`Error: ${firstError.field} - ${firstError.message}`, 'error');
+          showToast(`Error: ${firstError.field || 'validación'} - ${firstError.message || 'dato inválido'}`, 'error');
         } else {
-          showToast('Error al enviar la solicitud: ' + error.message, 'error');
+          showToast('Error al enviar la solicitud: ' + (error.message || 'Error desconocido'), 'error');
         }
         return;
       }

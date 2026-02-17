@@ -427,7 +427,7 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
     // Para otros errores, devolver más detalles
     res.status(500).json({
       error: error.message || 'Error al crear organización',
-      details: error.name
+      errorType: error.name
     });
   }
 });
