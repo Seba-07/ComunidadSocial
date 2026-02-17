@@ -88,11 +88,10 @@ app.use(securityHeaders);
 // Rate limiting global
 app.use('/api/', generalLimiter);
 
-// Body parsing con límites reducidos (previene DDoS)
-// NOTA: 10MB es suficiente para la mayoría de operaciones
-// Para uploads de archivos grandes, usar rutas específicas con multer
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// Body parsing
+// NOTA: 20MB para soportar certificados base64 + documentos HTML generados del wizard
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // Sanitización de inputs (DESPUÉS de body parsing para que req.body exista)
 app.use(sanitizeInput);
