@@ -23,7 +23,7 @@ function cleanMembersData(org) {
 
   const cleanMember = (m) => {
     if (!m) return m;
-    // Retornar solo campos necesarios, excluyendo signature y certificate
+    // Retornar solo campos necesarios, excluyendo signature y certificate (Base64 pesados)
     return {
       _id: m._id,
       rut: m.rut,
@@ -31,6 +31,8 @@ function cleanMembersData(org) {
       segundoNombre: m.segundoNombre,
       lastName: m.lastName,
       apellidoMaterno: m.apellidoMaterno,
+      name: m.name,               // nombre concatenado (usado por provisionalDirectorio)
+      cargo: m.cargo,             // cargo en directorio (vicepresidente, director, etc.)
       role: m.role,
       email: m.email,
       phone: m.phone,
@@ -38,7 +40,7 @@ function cleanMembersData(org) {
       birthDate: m.birthDate,
       occupation: m.occupation,
       genero: m.genero
-      // EXCLUIDO: signature, certificate
+      // EXCLUIDO: signature, certificate, certificado
     };
   };
 
@@ -97,18 +99,20 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
     }
 
     const assignments = await Assignment.find({ ministroId: req.params.ministroId })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
       .sort({ scheduledDate: -1 })
       .lean();
 
     // Limpiar datos Base64 de miembros antes de enviar (ya son objetos planos por .lean())
-    // NOTA: estatutos se mantiene porque es necesario para generar documentos
+    // NOTA: estatutos y certificatesStep5 se mantienen porque son necesarios para revisión de documentos
     const cleanedAssignments = assignments.map(assignment => {
       if (assignment.organizationId) {
-        // Preservar estatutos antes de limpiar
+        // Preservar campos de documentación antes de limpiar
         const estatutos = assignment.organizationId.estatutos;
+        const certificatesStep5 = assignment.organizationId.certificatesStep5;
         assignment.organizationId = cleanMembersData(assignment.organizationId);
         assignment.organizationId.estatutos = estatutos;
+        assignment.organizationId.certificatesStep5 = certificatesStep5;
       }
       return assignment;
     });
@@ -127,18 +131,20 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, 
       ministroId: req.userId,
       status: 'pending'
     })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
       .sort({ scheduledDate: 1 })
       .lean();
 
     // Limpiar datos Base64 de miembros antes de enviar (ya son objetos planos por .lean())
-    // NOTA: estatutos se mantiene porque es necesario para generar documentos
+    // NOTA: estatutos y certificatesStep5 se mantienen porque son necesarios para revisión de documentos
     const cleanedAssignments = assignments.map(assignment => {
       if (assignment.organizationId) {
-        // Preservar estatutos antes de limpiar
+        // Preservar campos de documentación antes de limpiar
         const estatutos = assignment.organizationId.estatutos;
+        const certificatesStep5 = assignment.organizationId.certificatesStep5;
         assignment.organizationId = cleanMembersData(assignment.organizationId);
         assignment.organizationId.estatutos = estatutos;
+        assignment.organizationId.certificatesStep5 = certificatesStep5;
       }
       return assignment;
     });

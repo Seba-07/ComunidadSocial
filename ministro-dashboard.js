@@ -1678,7 +1678,7 @@ function viewDocumentation(assignmentId) {
         </div>
 
         <!-- Contenido de tabs -->
-        <div id="doc-content">
+        <div id="doc-content" style="min-height: 480px;">
           <!-- Tab: Directorio Provisorio -->
           <div id="tab-directorio" class="tab-content" style="display: block;">
             <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 16px; padding: 24px; margin-bottom: 20px;">
