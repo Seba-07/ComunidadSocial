@@ -428,6 +428,10 @@ class ApiService {
     return this.get(`/organizations/status/${status}`);
   }
 
+  async syncCertificates(orgId, certificates) {
+    return this.post(`/organizations/${orgId}/sync-certificates`, { certificates });
+  }
+
   async getOrganizationStats() {
     return this.get('/organizations/stats/counts');
   }

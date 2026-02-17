@@ -17,6 +17,7 @@ import { organizationDashboard } from './src/presentation/organization/Organizat
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
+import { indexedDBService } from './src/infrastructure/database/IndexedDBService.js';
 import guiaConstitucionManager from './src/presentation/guia/GuiaConstitucionManager.js';
 import bibliotecaManager from './src/presentation/biblioteca/BibliotecaManager.js';
 import newsManager from './src/presentation/news/NewsManager.js';
@@ -1198,6 +1199,57 @@ function initOrganizations() {
   if (btnCrearOrg) btnCrearOrg.addEventListener('click', openWizard);
 }
 
+/**
+ * Auto-sync certificados desde IndexedDB para orgs que no los tienen en server.
+ * Se ejecuta una sola vez por sesión (flag en sessionStorage).
+ */
+async function syncCertificatesFromIndexedDB(organizations) {
+  // Solo ejecutar una vez por sesión
+  if (sessionStorage.getItem('cert_sync_done')) return;
+  sessionStorage.setItem('cert_sync_done', '1');
+
+  try {
+    await indexedDBService.init();
+    const localCerts = await indexedDBService.getAllWizardCertificates();
+    if (!localCerts || Object.keys(localCerts).length === 0) return;
+
+    // Filtrar orgs que podrían necesitar sync
+    const syncableStatuses = ['waiting_ministro', 'ministro_scheduled'];
+    const orgsToSync = organizations.filter(org =>
+      syncableStatuses.includes(org.status) &&
+      Array.isArray(org.certificatesStep5) &&
+      org.certificatesStep5.some(c => !c.certificate)
+    );
+
+    if (orgsToSync.length === 0) return;
+
+    for (const org of orgsToSync) {
+      // Construir payload solo con certificados que faltan en server y existen en IndexedDB
+      const certsToSync = {};
+      for (const certEntry of org.certificatesStep5) {
+        if (!certEntry.certificate && localCerts[certEntry.memberId]?.base64) {
+          certsToSync[certEntry.memberId] = {
+            certificate: localCerts[certEntry.memberId].base64,
+            name: localCerts[certEntry.memberId].name || ''
+          };
+        }
+      }
+
+      if (Object.keys(certsToSync).length > 0) {
+        console.log(`🔄 Sync certificados para org ${org._id}: ${Object.keys(certsToSync).length} pendientes`);
+        try {
+          const result = await apiService.syncCertificates(org._id, certsToSync);
+          console.log(`✅ Certificados sincronizados: ${result.synced}`);
+        } catch (err) {
+          console.warn(`⚠️ Error sync certificados org ${org._id}:`, err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Error en auto-sync de certificados:', err.message);
+  }
+}
+
 async function renderOrganizations() {
   // Usar getCurrentUserOrganizations para mostrar solo las del usuario actual
   const organizations = await organizationsService.getCurrentUserOrganizations();
@@ -1213,6 +1265,9 @@ async function renderOrganizations() {
 
   const hasOrgs = allOrganizations.length > 0;
   console.log('📋 Organizaciones cargadas:', allOrganizations.length, allOrganizations);
+
+  // Auto-sync certificados desde IndexedDB para orgs que no los tienen en server
+  syncCertificatesFromIndexedDB(organizations);
 
   const noOrgsSection = document.getElementById('no-organizations');
   const orgsList = document.getElementById('organizations-list');
