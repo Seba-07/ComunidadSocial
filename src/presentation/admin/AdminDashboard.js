@@ -5280,7 +5280,8 @@ class AdminDashboard {
             let label = getDocLabel(doc);
             const subModal = document.createElement('div');
             subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
-            subModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4><button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><div style="flex: 1; overflow-y: auto; padding: 20px; font-size: 13px; line-height: 1.7; color: #334155;">' + doc.content + '</div></div>';
+            const escapedContent = doc.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            subModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4><button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><pre style="flex: 1; overflow-y: auto; padding: 24px; margin: 0; font-family: \'Courier New\', Courier, monospace; font-size: 12px; line-height: 1.5; color: #1e293b; white-space: pre-wrap; word-wrap: break-word; background: #fafbfc;">' + escapedContent + '</pre></div>';
             document.body.appendChild(subModal);
             subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
             subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });
@@ -5300,15 +5301,19 @@ class AdminDashboard {
       try {
         const { apiService } = await import('../../services/ApiService.js');
         const certFiles = await apiService.get(`/organizations/${org._id}/certificate-files`);
+        console.log('📋 [Admin] certFiles desde API:', certFiles?.length || 0, 'archivos', certFiles);
         const cargoLabelsEs = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', vicepresidente: 'Vicepresidente', director: 'Director', director1: 'Director 1', director2: 'Director 2', comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3' };
 
         // También usar metadata de org.certificatesStep5 para saber qué cargos existen
         const certsMeta = org.certificatesStep5 || [];
+        console.log('📋 [Admin] certsMeta desde org:', certsMeta);
         const metaArray = Array.isArray(certsMeta) ? certsMeta : Object.entries(certsMeta).filter(([k]) => k !== '_id').map(([key, val]) => ({ memberId: key, memberName: typeof val === 'object' ? (val.memberName || val.name || '') : key }));
+        console.log('📋 [Admin] metaArray:', metaArray);
 
         // Merge: metadata de org + base64 de colección separada
         const mergedCerts = metaArray.map(meta => {
           const fileData = certFiles.find(f => f.memberId === meta.memberId);
+          console.log('📋 [Admin] Merge cert:', meta.memberId, '→ fileData encontrado:', !!fileData, fileData ? 'cert length: ' + (fileData.certificate?.length || 0) : '');
           return { ...meta, certificate: fileData ? fileData.certificate : '' };
         });
         // También agregar certs que solo están en la colección separada
@@ -5318,7 +5323,11 @@ class AdminDashboard {
           }
         });
 
+        const hasAnyCertData = mergedCerts.some(c => c.certificate && c.certificate.length > 50);
         let html = '<h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
+        if (!hasAnyCertData && certFiles.length === 0 && metaArray.length > 0) {
+          html += '<p style="color: #f59e0b; font-size: 12px; margin: 0 0 8px; padding: 6px 10px; background: #fefce8; border: 1px solid #fef08a; border-radius: 6px;">Los archivos de certificados no se encontraron en el servidor. Es posible que la solicitud se haya creado antes de esta funcionalidad o que hubo un error al guardarlos.</p>';
+        }
         if (mergedCerts.length > 0) {
           html += '<div style="display: grid; gap: 6px;">';
           mergedCerts.forEach((cert, idx) => {
@@ -5334,7 +5343,7 @@ class AdminDashboard {
               html += '<button class="btn-view-cert" data-cert-idx="' + idx + '" style="padding: 4px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Ver</button>';
               html += '<button class="btn-download-cert" data-cert-idx="' + idx + '" style="padding: 4px 12px; background: #059669; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Descargar</button>';
             } else {
-              html += '<span style="color: #991b1b; font-size: 12px;">No cargado</span>';
+              html += '<span style="color: #991b1b; font-size: 12px;">Sin archivo</span>';
             }
             html += '</div>';
           });
