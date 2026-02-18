@@ -2183,10 +2183,46 @@ async function loadGeneratedDocsForMF(modal, org) {
 }
 
 /**
+ * Formatea el contenido de un documento aplicando estilos
+ */
+function formatDocumentContent(content) {
+  if (!content) return '<p style="text-align: center; color: #9ca3af;">Sin contenido</p>';
+
+  // Si ya tiene estilos inline, devolverlo tal cual
+  if (content.includes('style=')) {
+    return content;
+  }
+
+  // Aplicar estilos a elementos HTML comunes
+  let formatted = content
+    // Títulos
+    .replace(/<h1([^>]*)>/gi, '<h1$1 style="font-size: 24px; font-weight: 700; margin: 0 0 24px; text-align: center; color: #1e293b;">')
+    .replace(/<h2([^>]*)>/gi, '<h2$1 style="font-size: 20px; font-weight: 700; margin: 24px 0 16px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">')
+    .replace(/<h3([^>]*)>/gi, '<h3$1 style="font-size: 18px; font-weight: 700; margin: 20px 0 12px; color: #334155;">')
+    .replace(/<h4([^>]*)>/gi, '<h4$1 style="font-size: 16px; font-weight: 600; margin: 16px 0 10px; color: #475569;">')
+    // Párrafos
+    .replace(/<p([^>]*)>/gi, '<p$1 style="margin: 0 0 16px; text-align: justify; line-height: 1.8;">')
+    // Listas
+    .replace(/<ul([^>]*)>/gi, '<ul$1 style="margin: 16px 0; padding-left: 24px;">')
+    .replace(/<ol([^>]*)>/gi, '<ol$1 style="margin: 16px 0; padding-left: 24px;">')
+    .replace(/<li([^>]*)>/gi, '<li$1 style="margin: 8px 0;">')
+    // Tablas
+    .replace(/<table([^>]*)>/gi, '<table$1 style="width: 100%; border-collapse: collapse; margin: 16px 0;">')
+    .replace(/<th([^>]*)>/gi, '<th$1 style="border: 1px solid #e2e8f0; padding: 12px; background: #f8fafc; text-align: left; font-weight: 600;">')
+    .replace(/<td([^>]*)>/gi, '<td$1 style="border: 1px solid #e2e8f0; padding: 12px;">')
+    // Strong/Bold
+    .replace(/<strong([^>]*)>/gi, '<strong$1 style="font-weight: 700; color: #1e293b;">')
+    .replace(/<b([^>]*)>/gi, '<b$1 style="font-weight: 700;">');
+
+  return formatted;
+}
+
+/**
  * Muestra un documento generado en un modal
  */
 function viewDocumentMF(doc, org) {
   const orgName = org.organizationName || 'Organización';
+  const formattedContent = formatDocumentContent(doc.content);
 
   const docModal = document.createElement('div');
   docModal.className = 'doc-modal-overlay';
@@ -2211,7 +2247,7 @@ function viewDocumentMF(doc, org) {
       <!-- Content -->
       <div style="flex: 1; overflow: auto; padding: 24px; background: #f8fafc;">
         <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
-          ${doc.content || '<p style="text-align: center; color: #9ca3af;">Sin contenido</p>'}
+          ${formattedContent}
         </div>
       </div>
 
@@ -2346,14 +2382,28 @@ async function loadCertificatesForMF(modal, org) {
     const dir = org.provisionalDirectorio || {};
     const directorioCards = [];
 
+    // Normalizar cargo a key de certificado
+    const normalizeCertKey = (cargo) => {
+      if (!cargo) return null;
+      const normalized = cargo.toLowerCase()
+        .replace(/\/[ao]$/, '')  // Quitar /a o /o al final
+        .replace(/\s+/g, '_')    // Espacios a guiones bajos
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+      return normalized;
+    };
+
     // Helper para buscar certificado (primero en API, luego en metadata)
-    const findCert = (key) => {
-      // Primero buscar en certFiles (API - tiene datos reales)
-      const fromAPI = certFiles.find(c => c.memberId === key);
-      if (fromAPI && fromAPI.certificate) return fromAPI;
-      // Luego buscar en metadata del org
-      const fromMeta = certsMeta[key];
-      if (fromMeta && (fromMeta.certificate || fromMeta.base64 || fromMeta.data)) return fromMeta;
+    const findCert = (key, altKeys = []) => {
+      const keysToTry = [key, ...altKeys].filter(Boolean);
+
+      for (const k of keysToTry) {
+        // Primero buscar en certFiles (API - tiene datos reales)
+        const fromAPI = certFiles.find(c => c.memberId === k);
+        if (fromAPI && fromAPI.certificate) return fromAPI;
+        // Luego buscar en metadata del org
+        const fromMeta = certsMeta[k];
+        if (fromMeta && (fromMeta.certificate || fromMeta.base64 || fromMeta.data)) return fromMeta;
+      }
       return null;
     };
 
@@ -2398,14 +2448,29 @@ async function loadCertificatesForMF(modal, org) {
 
     // Miembros adicionales del directorio
     const additionalMembers = dir.additionalMembers || [];
+    let directorCount = 0;
     additionalMembers.forEach((m, idx) => {
-      const cargoKey = m.cargo || m.role || `adicional${idx + 1}`;
-      const cert = findCert(cargoKey);
+      const cargoRaw = m.cargo || m.role || `adicional${idx + 1}`;
+      const cargoNormalized = normalizeCertKey(cargoRaw);
+
+      // Determinar las keys posibles para buscar el certificado
+      let altKeys = [cargoNormalized];
+
+      // Si es director, probar con director1, director2, etc.
+      if (cargoNormalized && (cargoNormalized.includes('director') || cargoRaw.toLowerCase().includes('director'))) {
+        directorCount++;
+        altKeys.push(`director${directorCount}`);
+        altKeys.push('director');
+      }
+
+      const cert = findCert(cargoRaw, altKeys);
+      const displayRole = cargoLabels[cargoNormalized] || cargoLabels[cargoRaw] || cargoRaw || 'Miembro Adicional';
+
       directorioCards.push({
-        role: cargoLabels[cargoKey] || cargoKey || 'Miembro Adicional',
+        role: displayRole,
         name: extractName(m),
         rut: m.rut,
-        certKey: cargoKey,
+        certKey: cargoNormalized || cargoRaw,
         hasCert: !!cert,
         cert: cert
       });
