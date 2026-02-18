@@ -2103,6 +2103,55 @@ async function viewOrganization(orgId, forceRefresh = false) {
         </div>
       `;
     }
+  } else if (corrections && corrections.resolved) {
+    // ═══ CORRECCIONES YA ENVIADAS - VISTA DE SOLO LECTURA ═══
+    const isV2 = corrections.version === 2 && Array.isArray(corrections.items);
+    const resolvedAt = corrections.resolvedAt ? new Date(corrections.resolvedAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    const userResponse = corrections.userResponse || '';
+
+    correctionsHTML = `
+      <div class="corrections-submitted-banner" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+        <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 700;">Correcciones Enviadas</h3>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Su solicitud ha sido reenviada para revisión</p>
+        ${resolvedAt ? `<p style="margin: 8px 0 0; opacity: 0.8; font-size: 12px;">Enviado: ${resolvedAt}</p>` : ''}
+      </div>
+
+      <div class="corrections-summary" style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 16px; font-size: 16px; color: #166534; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📋</span> Resumen de Correcciones Realizadas
+        </h4>
+
+        ${isV2 && corrections.items ? `
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${corrections.items.map(item => `
+              <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="color: #22c55e; font-size: 16px;">✓</span>
+                  <span style="font-weight: 600; color: #166534; font-size: 14px;">${item.label}</span>
+                  <span style="margin-left: auto; font-size: 11px; color: #059669; background: #dcfce7; padding: 2px 8px; border-radius: 4px;">Corregido</span>
+                </div>
+                <p style="margin: 6px 0 0 24px; font-size: 12px; color: #4b5563;">${item.message}</p>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${userResponse ? `
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #bbf7d0;">
+            <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #166534;">Su comentario:</p>
+            <p style="margin: 0; font-size: 13px; color: #374151; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb;">"${userResponse}"</p>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 14px 16px;">
+        <p style="margin: 0; color: #1e40af; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;">
+          <span style="font-size: 16px;">⏳</span>
+          <span>Su solicitud está siendo revisada nuevamente. Recibirá una notificación cuando el revisor haya evaluado sus correcciones.</span>
+        </p>
+      </div>
+    `;
   }
 
   // Generar HTML de información de Ministro asignado o cita pendiente
@@ -2678,8 +2727,42 @@ async function viewOrganization(orgId, forceRefresh = false) {
     // Botón de reenvío
     const resubmitBtn = modal.querySelector('.btn-resubmit-org');
     if (resubmitBtn) {
-      resubmitBtn.addEventListener('click', () => {
-        if (confirm('¿Está seguro de reenviar la solicitud para revisión?')) {
+      resubmitBtn.addEventListener('click', async () => {
+        // Crear modal de confirmación visual
+        const confirmModal = document.createElement('div');
+        confirmModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:400000;';
+        confirmModal.innerHTML = `
+          <div id="resubmit-modal-content" style="background:white;border-radius:20px;width:90%;max-width:420px;padding:32px;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+            <div id="resubmit-icon" style="font-size:64px;margin-bottom:16px;">📤</div>
+            <h3 id="resubmit-title" style="margin:0 0 12px;font-size:22px;color:#1e293b;">¿Reenviar para Revisión?</h3>
+            <p id="resubmit-message" style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.5;">Sus correcciones serán enviadas al revisor para su evaluación.</p>
+            <div id="resubmit-buttons" style="display:flex;gap:12px;justify-content:center;">
+              <button id="btn-cancel-resubmit" style="padding:12px 28px;background:#f1f5f9;color:#64748b;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">Cancelar</button>
+              <button id="btn-confirm-resubmit" style="padding:12px 28px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">Sí, Enviar</button>
+            </div>
+            <div id="resubmit-loading" style="display:none;">
+              <div style="width:60px;height:60px;border:4px solid #e2e8f0;border-top-color:#10b981;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div>
+              <p style="color:#64748b;font-size:15px;">Enviando solicitud...</p>
+            </div>
+          </div>
+          <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+        `;
+
+        document.body.appendChild(confirmModal);
+
+        // Event: Cancelar
+        confirmModal.querySelector('#btn-cancel-resubmit').addEventListener('click', () => confirmModal.remove());
+        confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) confirmModal.remove(); });
+
+        // Event: Confirmar
+        confirmModal.querySelector('#btn-confirm-resubmit').addEventListener('click', async () => {
+          // Mostrar loading
+          confirmModal.querySelector('#resubmit-buttons').style.display = 'none';
+          confirmModal.querySelector('#resubmit-loading').style.display = 'block';
+          confirmModal.querySelector('#resubmit-icon').style.display = 'none';
+          confirmModal.querySelector('#resubmit-title').textContent = 'Enviando...';
+          confirmModal.querySelector('#resubmit-message').style.display = 'none';
+
           // Recolectar respuestas por campo
           const fieldResponses = {};
           modal.querySelectorAll('.user-field-response').forEach(input => {
@@ -2693,15 +2776,42 @@ async function viewOrganization(orgId, forceRefresh = false) {
           });
 
           const generalComment = modal.querySelector('#user-correction-comments')?.value.trim() || '';
-          const result = organizationsService.resubmitForReview(org.id, generalComment, fieldResponses);
-          if (result) {
-            showToast('Solicitud reenviada correctamente', 'success');
-            modal.remove();
-            renderOrganizations();
-          } else {
-            showToast('Error al reenviar la solicitud', 'error');
+
+          try {
+            const result = await organizationsService.resubmitForReview(org.id || org._id, generalComment, fieldResponses);
+
+            if (result) {
+              // Mostrar éxito
+              confirmModal.querySelector('#resubmit-loading').style.display = 'none';
+              confirmModal.querySelector('#resubmit-modal-content').innerHTML = `
+                <div style="font-size:80px;margin-bottom:20px;animation:bounceIn 0.5s ease;">✅</div>
+                <h3 style="margin:0 0 12px;font-size:24px;color:#10b981;font-weight:700;">¡Enviado Correctamente!</h3>
+                <p style="margin:0 0 8px;color:#374151;font-size:16px;">Su solicitud ha sido reenviada para revisión.</p>
+                <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Recibirá una notificación cuando el revisor evalúe sus correcciones.</p>
+                <button id="btn-close-success" style="padding:14px 36px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;">Entendido</button>
+                <style>@keyframes bounceIn{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}</style>
+              `;
+
+              confirmModal.querySelector('#btn-close-success').addEventListener('click', () => {
+                confirmModal.remove();
+                modal.remove();
+                renderOrganizations();
+              });
+            } else {
+              throw new Error('No se pudo reenviar');
+            }
+          } catch (error) {
+            console.error('Error al reenviar:', error);
+            confirmModal.querySelector('#resubmit-loading').style.display = 'none';
+            confirmModal.querySelector('#resubmit-modal-content').innerHTML = `
+              <div style="font-size:64px;margin-bottom:16px;">❌</div>
+              <h3 style="margin:0 0 12px;font-size:22px;color:#dc2626;">Error al Enviar</h3>
+              <p style="margin:0 0 24px;color:#64748b;font-size:15px;">${error.message || 'Ocurrió un error. Por favor intente nuevamente.'}</p>
+              <button id="btn-close-error" style="padding:12px 28px;background:#f1f5f9;color:#64748b;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">Cerrar</button>
+            `;
+            confirmModal.querySelector('#btn-close-error').addEventListener('click', () => confirmModal.remove());
           }
-        }
+        });
       });
     }
   }
