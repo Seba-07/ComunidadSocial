@@ -305,9 +305,9 @@ export const statusChangeSchema = z.object({
  */
 export const rejectWithCorrectionsSchema = z.object({
   corrections: z.object({
-    fields: z.record(z.string()).optional(),
-    documents: z.record(z.string()).optional(),
-    certificates: z.record(z.string()).optional()
+    fields: z.record(z.string(), z.string()).optional(),
+    documents: z.record(z.string(), z.string()).optional(),
+    certificates: z.record(z.string(), z.string()).optional()
   }),
   generalComment: z.string().max(1000).optional()
 });
