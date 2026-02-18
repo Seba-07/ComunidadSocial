@@ -2665,11 +2665,24 @@ async function viewOrganization(orgId, forceRefresh = false) {
     });
 
     // Botones de edición
-    modal.querySelectorAll('.btn-edit-correction').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const type = btn.dataset.type;
-        const key = btn.dataset.key;
-        openCorrectionEditor(org, type, key, modal);
+    console.log('Configurando botones de edición. Total encontrados:', modal.querySelectorAll('.btn-edit-correction').length);
+    modal.querySelectorAll('.btn-edit-correction').forEach((btn, index) => {
+      console.log(`Botón ${index}:`, btn.dataset.type, btn.dataset.key);
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Click detectado! Type: ' + btn.dataset.type + ', Key: ' + btn.dataset.key);
+        try {
+          console.log('>>> CLICK EN BOTÓN EDITAR <<<');
+          const type = btn.dataset.type;
+          const key = btn.dataset.key;
+          console.log('Type:', type, 'Key:', key);
+          console.log('Org:', org);
+          openCorrectionEditor(org, type, key, modal);
+        } catch (error) {
+          console.error('ERROR EN CLICK HANDLER:', error);
+          alert('Error: ' + error.message);
+        }
       });
     });
 
@@ -2911,11 +2924,22 @@ async function downloadAllUserPDFs(orgId) {
 
 // Función para abrir el editor de correcciones (v2 con soporte para nuevas categorías)
 function openCorrectionEditor(org, type, key, parentModal) {
+  console.log('========================================');
+  console.log('openCorrectionEditor LLAMADO');
+  console.log('Type:', type);
+  console.log('Key:', key);
+  console.log('Org ID:', org.id || org._id);
+  console.log('Org Name:', org.organizationName);
+  console.log('Corrections items:', org.corrections?.items);
+  console.log('provisionalDirectorio:', JSON.stringify(org.provisionalDirectorio, null, 2));
+  console.log('========================================');
+
   // Obtener el ítem de corrección específico para mostrar el mensaje del admin
   const correctionItem = org.corrections?.items?.find(item => {
     const itemKey = item.field || item.memberId || item.docType || item.label;
     return item.category === type && itemKey === key;
   });
+  console.log('Correction item encontrado:', correctionItem);
   const adminMessage = correctionItem?.message || 'Requiere corrección';
 
   // Labels para campos de datos generales
@@ -3066,39 +3090,114 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'directorio') {
     // El key puede venir en diferentes formatos:
-    // 1. ID directo: "president", "secretary", "treasurer"
-    // 2. Formato label: "Presidente: Nombre Apellido"
+    // 1. RUT del miembro: "12.345.678-9" (formato más común desde admin)
+    // 2. ID directo: "president", "secretary", "treasurer"
+    // 3. Formato label: "Presidente: Nombre Apellido"
 
     console.log('=== DEBUG DIRECTORIO ===');
     console.log('Key recibido:', key);
-    console.log('Org provisionalDirectorio:', org.provisionalDirectorio);
+    console.log('CorrectionItem completo:', correctionItem);
+    console.log('CorrectionItem role:', correctionItem?.role);
+    console.log('CorrectionItem memberName:', correctionItem?.memberName);
+    console.log('CorrectionItem memberId:', correctionItem?.memberId);
+    console.log('Org provisionalDirectorio:', JSON.stringify(org.provisionalDirectorio, null, 2));
+    console.log('Org members (primeros 3):', org.members?.slice(0, 3));
 
-    const dir = org.provisionalDirectorio || {};
+    // Usar provisionalDirectorio o buscar alternativas
+    let dir = org.provisionalDirectorio || {};
+
+    // Si provisionalDirectorio está vacío, intentar construirlo desde org.members
+    const dirIsEmpty = !dir.president && !dir.secretary && !dir.treasurer && (!dir.additionalMembers || dir.additionalMembers.length === 0);
+    console.log('¿Directorio está vacío?:', dirIsEmpty);
+
+    if (dirIsEmpty && org.members && org.members.length > 0) {
+      console.log('Construyendo directorio desde org.members...');
+      // Buscar miembros con roles de directorio
+      const president = org.members.find(m => m.role === 'president');
+      const secretary = org.members.find(m => m.role === 'secretary');
+      const treasurer = org.members.find(m => m.role === 'treasurer');
+      const directors = org.members.filter(m => m.role === 'director');
+
+      if (president || secretary || treasurer || directors.length > 0) {
+        dir = {
+          president: president || null,
+          secretary: secretary || null,
+          treasurer: treasurer || null,
+          additionalMembers: directors
+        };
+        console.log('Directorio construido desde members:', dir);
+      }
+    }
+
     let member = null;
     let memberPath = '';
     let role = 'member';
 
-    // Primero verificar si key es directamente el ID del rol (en inglés o español)
-    const directRoleMap = {
-      'president': 'president',
-      'secretary': 'secretary',
-      'treasurer': 'treasurer',
-      'presidente': 'president',
-      'secretario': 'secretary',
-      'tesorero': 'treasurer'
+    // Normalizar RUT para comparación (quitar puntos y guión, lowercase)
+    const normalizeRut = (rut) => {
+      if (!rut) return '';
+      return rut.replace(/[.\-]/g, '').toLowerCase();
     };
 
+    const keyNormalized = normalizeRut(key);
     const keyLower = key.toLowerCase().trim();
 
-    if (directRoleMap[keyLower]) {
-      // Key es directamente el rol
-      role = directRoleMap[keyLower];
-      memberPath = role;
-      member = dir[role];
-      console.log('Búsqueda directa por rol:', role, '-> Encontrado:', !!member);
+    // ═══ BÚSQUEDA 1: Por RUT (formato más común desde admin) ═══
+    // El admin envía memberId = m.rut || cargo, así que es probable que key sea un RUT
+    const isRutFormat = /^\d{7,8}[\dkK]$/i.test(keyNormalized) || /^\d{1,2}\.\d{3}\.\d{3}[-]?[\dkK]$/i.test(key);
+    console.log('¿Es formato RUT?:', isRutFormat, '- Key normalizado:', keyNormalized);
+
+    if (isRutFormat || key.includes('.') || key.includes('-')) {
+      // Buscar por RUT en presidente, secretario, tesorero
+      for (const roleKey of ['president', 'secretary', 'treasurer']) {
+        if (dir[roleKey] && dir[roleKey].rut) {
+          const memberRutNorm = normalizeRut(dir[roleKey].rut);
+          console.log(`Comparando RUT con ${roleKey}:`, memberRutNorm, 'vs', keyNormalized);
+          if (memberRutNorm === keyNormalized) {
+            member = dir[roleKey];
+            memberPath = roleKey;
+            role = roleKey;
+            console.log('Encontrado por RUT en', roleKey);
+            break;
+          }
+        }
+      }
+
+      // Si no encontró, buscar en miembros adicionales por RUT
+      if (!member && dir.additionalMembers && dir.additionalMembers.length > 0) {
+        const idx = dir.additionalMembers.findIndex(m => {
+          const memberRutNorm = normalizeRut(m.rut);
+          return memberRutNorm === keyNormalized;
+        });
+        if (idx !== -1) {
+          member = dir.additionalMembers[idx];
+          memberPath = `additionalMembers.${idx}`;
+          role = 'director';
+          console.log('Encontrado en additionalMembers por RUT:', idx);
+        }
+      }
     }
 
-    // Si no encontró, intentar parsear formato "Rol: Nombre"
+    // ═══ BÚSQUEDA 2: Por rol directo (en inglés o español) ═══
+    if (!member) {
+      const directRoleMap = {
+        'president': 'president',
+        'secretary': 'secretary',
+        'treasurer': 'treasurer',
+        'presidente': 'president',
+        'secretario': 'secretary',
+        'tesorero': 'treasurer'
+      };
+
+      if (directRoleMap[keyLower]) {
+        role = directRoleMap[keyLower];
+        memberPath = role;
+        member = dir[role];
+        console.log('Búsqueda directa por rol:', role, '-> Encontrado:', !!member);
+      }
+    }
+
+    // ═══ BÚSQUEDA 3: Formato "Rol: Nombre" ═══
     if (!member) {
       const roleMatch = key.match(/^(Presidente|Secretario|Tesorero|Director\s*\d*):\s*(.+)$/i);
       console.log('Regex roleMatch:', roleMatch);
@@ -3119,7 +3218,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
           memberPath = role;
           console.log('Encontrado por rol después de regex:', !!member);
         } else if (dir.additionalMembers && dir.additionalMembers.length > 0) {
-          // Buscar en miembros adicionales por nombre
           const idx = dir.additionalMembers.findIndex(m => {
             const name = extractMemberName(m);
             return name.toLowerCase().includes(memberName.toLowerCase().split(' ')[0]);
@@ -3133,12 +3231,11 @@ function openCorrectionEditor(org, type, key, parentModal) {
       }
     }
 
-    // Si aún no encontró, buscar por nombre en todos los miembros del directorio
+    // ═══ BÚSQUEDA 4: Por nombre en todos los miembros del directorio ═══
     if (!member) {
       const searchName = key.toLowerCase();
       console.log('Búsqueda por nombre:', searchName);
 
-      // Buscar en presidente, secretario, tesorero
       for (const roleKey of ['president', 'secretary', 'treasurer']) {
         if (dir[roleKey]) {
           const name = extractMemberName(dir[roleKey]).toLowerCase();
@@ -3153,7 +3250,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
         }
       }
 
-      // Si no encontró, buscar en miembros adicionales
       if (!member && dir.additionalMembers && dir.additionalMembers.length > 0) {
         const idx = dir.additionalMembers.findIndex(m => {
           const name = extractMemberName(m).toLowerCase();
@@ -3168,23 +3264,89 @@ function openCorrectionEditor(org, type, key, parentModal) {
       }
     }
 
-    // ÚLTIMO INTENTO: Si el directorio tiene datos pero con estructura diferente
-    if (!member && dir) {
-      // Quizás los datos están directamente en dir sin subdivisiones
-      // O el directorio tiene una estructura anidada diferente
-      console.log('Último intento - revisando estructura alternativa del directorio');
+    // ═══ BÚSQUEDA 5: En org.members si el directorio está vacío ═══
+    if (!member) {
+      console.log('Último intento - buscando en org.members');
+      const orgMembers = org.members || [];
 
-      // Verificar si hay datos de presidente aunque sean null/undefined
-      if (dir.president === null || dir.president === undefined) {
-        // Quizás los miembros están en otra parte de la organización
-        // Buscar en org.members si tienen role='president'
+      // Buscar por RUT en org.members
+      if (isRutFormat || key.includes('.') || key.includes('-')) {
+        const foundMember = orgMembers.find(m => normalizeRut(m.rut) === keyNormalized);
+        if (foundMember) {
+          member = foundMember;
+          memberPath = 'members_by_rut';
+          role = foundMember.role || 'member';
+          console.log('Encontrado en org.members por RUT');
+        }
+      }
+
+      // Buscar por role en org.members
+      if (!member) {
+        const roleMap = { 'president': 'president', 'presidente': 'president', 'secretary': 'secretary', 'secretario': 'secretary', 'treasurer': 'treasurer', 'tesorero': 'treasurer' };
+        const targetRole = roleMap[keyLower];
+        if (targetRole) {
+          const foundMember = orgMembers.find(m => m.role === targetRole);
+          if (foundMember) {
+            member = foundMember;
+            memberPath = 'members_by_role';
+            role = targetRole;
+            console.log('Encontrado en org.members por role');
+          }
+        }
+      }
+    }
+
+    // ═══ BÚSQUEDA 6: Usando correctionItem.role del admin ═══
+    if (!member && correctionItem?.role) {
+      console.log('Búsqueda usando correctionItem.role:', correctionItem.role);
+      const roleFromCorrection = correctionItem.role.toLowerCase();
+      const roleMapping = {
+        'presidente': 'president',
+        'secretario': 'secretary',
+        'tesorero': 'treasurer',
+        'director': 'director'
+      };
+
+      const targetRole = roleMapping[roleFromCorrection] || roleFromCorrection;
+      console.log('Target role mapeado:', targetRole);
+
+      if (targetRole !== 'director' && dir[targetRole]) {
+        member = dir[targetRole];
+        memberPath = targetRole;
+        role = targetRole;
+        console.log('Encontrado usando correctionItem.role en dir');
+      } else if (targetRole === 'director' && dir.additionalMembers?.length > 0) {
+        // Si es director, buscar por nombre en additionalMembers
+        const searchName = correctionItem.memberName?.toLowerCase() || '';
+        if (searchName) {
+          const idx = dir.additionalMembers.findIndex(m => {
+            const name = extractMemberName(m).toLowerCase();
+            return name.includes(searchName.split(' ')[0]) || searchName.includes(name.split(' ')[0]);
+          });
+          if (idx !== -1) {
+            member = dir.additionalMembers[idx];
+            memberPath = `additionalMembers.${idx}`;
+            role = 'director';
+            console.log('Encontrado director en additionalMembers:', idx);
+          }
+        } else {
+          // Tomar el primer director disponible
+          member = dir.additionalMembers[0];
+          memberPath = 'additionalMembers.0';
+          role = 'director';
+          console.log('Tomando primer director disponible');
+        }
+      }
+
+      // Si aún no encontró, buscar en org.members por role
+      if (!member) {
         const orgMembers = org.members || [];
-        const presidentFromMembers = orgMembers.find(m => m.role === 'president' || m.role === 'presidente');
-        if (presidentFromMembers && keyLower.includes('president')) {
-          member = presidentFromMembers;
-          memberPath = 'members_president';
-          role = 'president';
-          console.log('Encontrado presidente en org.members');
+        const foundMember = orgMembers.find(m => m.role === targetRole);
+        if (foundMember) {
+          member = foundMember;
+          memberPath = 'members_by_correction_role';
+          role = targetRole;
+          console.log('Encontrado en org.members usando correctionItem.role');
         }
       }
     }
@@ -3196,6 +3358,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     if (!member) {
       console.error('Miembro del directorio no encontrado. Key:', key, 'Directorio:', JSON.stringify(dir, null, 2));
+      console.error('CorrectionItem:', correctionItem);
       showToast('Miembro del directorio no encontrado. Revise la consola para más detalles.', 'error');
       return;
     }
@@ -3328,21 +3491,67 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: COMISIÓN ELECTORAL
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'comision_electoral' || type === 'commission') {
-    // Buscar miembro de la comisión
-    const commission = org.electoralCommission || [];
-    let memberIndex = commission.findIndex(m => {
-      const name = extractMemberName(m);
-      return key.includes(name.split(' ')[0]);
-    });
+    console.log('=== DEBUG COMISIÓN ELECTORAL ===');
+    console.log('Key recibido:', key);
 
+    // Normalizar RUT para comparación
+    const normalizeRut = (rut) => {
+      if (!rut) return '';
+      return rut.replace(/[.\-]/g, '').toLowerCase();
+    };
+
+    const keyNormalized = normalizeRut(key);
+    const commission = org.electoralCommission || org.comisionElectoral || [];
+    console.log('Comisión electoral:', commission);
+
+    let memberIndex = -1;
+
+    // ═══ BÚSQUEDA 1: Por RUT ═══
+    const isRutFormat = /^\d{7,8}[\dkK]$/i.test(keyNormalized) || /^\d{1,2}\.\d{3}\.\d{3}[-]?[\dkK]$/i.test(key);
+    if (isRutFormat || key.includes('.') || key.includes('-')) {
+      memberIndex = commission.findIndex(m => {
+        const memberRutNorm = normalizeRut(m.rut);
+        console.log('Comparando RUT comisión:', memberRutNorm, 'vs', keyNormalized);
+        return memberRutNorm === keyNormalized;
+      });
+      console.log('Búsqueda por RUT - índice encontrado:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 2: Por nombre ═══
+    if (memberIndex === -1) {
+      memberIndex = commission.findIndex(m => {
+        const name = extractMemberName(m);
+        return key.toLowerCase().includes(name.split(' ')[0].toLowerCase()) ||
+               name.toLowerCase().includes(key.split(' ')[0].toLowerCase());
+      });
+      console.log('Búsqueda por nombre - índice encontrado:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 3: Por formato "Miembro N" ═══
     if (memberIndex === -1 && key.match(/miembro\s*(\d+)/i)) {
       memberIndex = parseInt(key.match(/miembro\s*(\d+)/i)[1]) - 1;
+      console.log('Búsqueda por índice numérico:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 4: Por formato "Rol: Nombre" ═══
+    if (memberIndex === -1) {
+      const roleMatch = key.match(/^(Presidente|Secretario|Vocal|Miembro):\s*(.+)$/i);
+      if (roleMatch) {
+        const memberName = roleMatch[2].toLowerCase();
+        memberIndex = commission.findIndex(m => {
+          const name = extractMemberName(m).toLowerCase();
+          return name.includes(memberName.split(' ')[0]) || memberName.includes(name.split(' ')[0]);
+        });
+        console.log('Búsqueda por formato Rol:Nombre - índice:', memberIndex);
+      }
     }
 
     const member = commission[memberIndex];
+    console.log('Miembro encontrado:', member, 'en índice:', memberIndex);
 
     if (!member) {
-      showToast('Miembro de comisión electoral no encontrado', 'error');
+      console.error('Miembro de comisión no encontrado. Key:', key, 'Comisión:', JSON.stringify(commission, null, 2));
+      showToast('Miembro de comisión electoral no encontrado. Revise la consola para más detalles.', 'error');
       return;
     }
 
@@ -3452,17 +3661,63 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: MIEMBROS FUNDADORES
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'miembros' || type === 'member') {
-    // Buscar miembro fundador
+    console.log('=== DEBUG MIEMBROS FUNDADORES ===');
+    console.log('Key recibido:', key);
+
+    // Normalizar RUT para comparación
+    const normalizeRut = (rut) => {
+      if (!rut) return '';
+      return rut.replace(/[.\-]/g, '').toLowerCase();
+    };
+
+    const keyNormalized = normalizeRut(key);
     const members = org.members || [];
-    let memberIndex = members.findIndex(m => {
-      const name = extractMemberName(m);
-      return key.includes(name.split(' ')[0]) || m.rut === key || m._id === key || m.id === key;
-    });
+    console.log('Total miembros:', members.length);
+
+    let memberIndex = -1;
+
+    // ═══ BÚSQUEDA 1: Por RUT normalizado ═══
+    const isRutFormat = /^\d{7,8}[\dkK]$/i.test(keyNormalized) || /^\d{1,2}\.\d{3}\.\d{3}[-]?[\dkK]$/i.test(key);
+    if (isRutFormat || key.includes('.') || key.includes('-')) {
+      memberIndex = members.findIndex(m => {
+        const memberRutNorm = normalizeRut(m.rut);
+        return memberRutNorm === keyNormalized;
+      });
+      console.log('Búsqueda por RUT - índice encontrado:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 2: Por ID o RUT exacto ═══
+    if (memberIndex === -1) {
+      memberIndex = members.findIndex(m => m.rut === key || m._id === key || m.id === key);
+      console.log('Búsqueda por ID/RUT exacto - índice encontrado:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 3: Por nombre ═══
+    if (memberIndex === -1) {
+      memberIndex = members.findIndex(m => {
+        const name = extractMemberName(m);
+        return key.toLowerCase().includes(name.split(' ')[0].toLowerCase()) ||
+               name.toLowerCase().includes(key.split(' ')[0].toLowerCase());
+      });
+      console.log('Búsqueda por nombre - índice encontrado:', memberIndex);
+    }
+
+    // ═══ BÚSQUEDA 4: Por formato "Nombre Completo" ═══
+    if (memberIndex === -1) {
+      const keyLower = key.toLowerCase();
+      memberIndex = members.findIndex(m => {
+        const name = extractMemberName(m).toLowerCase();
+        return name === keyLower || keyLower.includes(name) || name.includes(keyLower);
+      });
+      console.log('Búsqueda por nombre completo - índice encontrado:', memberIndex);
+    }
 
     const member = members[memberIndex];
+    console.log('Miembro encontrado:', member, 'en índice:', memberIndex);
 
     if (!member) {
-      showToast('Miembro fundador no encontrado', 'error');
+      console.error('Miembro no encontrado. Key:', key, 'Miembros (primeros 3):', JSON.stringify(members.slice(0, 3), null, 2));
+      showToast('Miembro fundador no encontrado. Revise la consola para más detalles.', 'error');
       return;
     }
 
