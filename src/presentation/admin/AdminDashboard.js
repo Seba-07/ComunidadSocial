@@ -1539,6 +1539,171 @@ class AdminDashboard {
     modal.querySelector('.review-close-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
+    // Cargar certificados de forma asíncrona desde la API
+    const loadAsyncCertificates = async () => {
+      const container = modal.querySelector('#async-certificates-container');
+      if (!container) return;
+
+      const orgId = container.dataset.orgId;
+      const isReviewable = container.dataset.reviewable === 'true';
+      const dir = org.provisionalDirectorio || {};
+      const comMembers = org.comisionElectoral || org.commission?.members || [];
+
+      try {
+        const { apiService } = await import('../../services/ApiService.js');
+        const certFiles = await apiService.get(`/organizations/${orgId}/certificate-files`);
+
+        // Crear mapa de certificados por memberId
+        const certMap = {};
+        if (certFiles && certFiles.length > 0) {
+          certFiles.forEach(cf => {
+            if (cf.memberId) certMap[cf.memberId] = cf;
+          });
+        }
+
+        // Preparar certificados del directorio
+        const dirCerts = [];
+        if (dir.president) {
+          const cert = certMap['presidente'] || certMap['president'];
+          const name = dir.president.name || `${dir.president.firstName || ''} ${dir.president.lastName || ''}`.trim();
+          dirCerts.push({ role: 'Presidente', name, cert: cert?.certificate, certKey: 'presidente' });
+        }
+        if (dir.secretary) {
+          const cert = certMap['secretario'] || certMap['secretary'];
+          const name = dir.secretary.name || `${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}`.trim();
+          dirCerts.push({ role: 'Secretario', name, cert: cert?.certificate, certKey: 'secretario' });
+        }
+        if (dir.treasurer) {
+          const cert = certMap['tesorero'] || certMap['treasurer'];
+          const name = dir.treasurer.name || `${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}`.trim();
+          dirCerts.push({ role: 'Tesorero', name, cert: cert?.certificate, certKey: 'tesorero' });
+        }
+
+        // Certificados de la comisión electoral
+        const comCerts = [];
+        const comRoles = ['Presidente', 'Secretario', 'Vocal'];
+        comMembers.forEach((m, i) => {
+          const certKey = `comision${i + 1}`;
+          const cert = certMap[certKey];
+          const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
+          comCerts.push({ role: comRoles[i] || 'Miembro', name, cert: cert?.certificate, certKey });
+        });
+
+        // Función para renderizar un certificado
+        const renderCertItem = (item) => {
+          const hasCert = item.cert && item.cert.length > 50;
+          return `
+            <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
+              <div class="doc-info">
+                <span class="doc-icon">📋</span>
+                <span class="doc-name">${item.role}: ${item.name || 'Sin nombre'}</span>
+                ${hasCert ? '<span class="cert-uploaded-badge">Subido</span>' : '<span style="color: #dc2626; font-size: 11px;">No disponible</span>'}
+              </div>
+              <div class="doc-actions">
+                ${hasCert ? `
+                  <button class="btn-view-cert-async" data-cert-key="${item.certKey}" title="Ver certificado" style="background: #ecfdf5; color: #065f46; border: 1px solid #10b981; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Ver
+                  </button>
+                  <button class="btn-download-cert-async" data-cert-key="${item.certKey}" title="Descargar" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        };
+
+        // Construir HTML
+        let html = '';
+        if (dirCerts.length > 0) {
+          html += `<h4 class="docs-subtitle">Certificados de Antecedentes - Directorio Provisorio</h4>`;
+          html += dirCerts.map(c => renderCertItem(c)).join('');
+        }
+        if (comCerts.length > 0) {
+          html += `<h4 class="docs-subtitle" style="margin-top: 20px;">Certificados de Antecedentes - Comision Electoral</h4>`;
+          html += comCerts.map(c => renderCertItem(c)).join('');
+        }
+
+        if (!html) {
+          html = '<p style="color: #64748b; font-size: 13px; text-align: center; padding: 20px;">No hay certificados disponibles</p>';
+        }
+
+        container.innerHTML = html;
+
+        // Guardar datos de certificados para los event listeners
+        const allCerts = [...dirCerts, ...comCerts];
+
+        // Event listeners para ver certificados
+        container.querySelectorAll('.btn-view-cert-async').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const certKey = btn.dataset.certKey;
+            const certItem = allCerts.find(c => c.certKey === certKey);
+            if (!certItem || !certItem.cert) return;
+
+            const base64 = certItem.cert;
+            const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+            const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+
+            const certModal = document.createElement('div');
+            certModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            const contentHtml = isImage || base64.startsWith('data:image')
+              ? `<img src="${dataUri}" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px;" />`
+              : `<iframe src="${dataUri}" style="width: 100%; height: 80vh; border: none; border-radius: 8px;"></iframe>`;
+
+            certModal.innerHTML = `
+              <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+                  <h4 style="margin: 0; font-size: 16px; color: #1e293b;">Certificado - ${certItem.role}: ${certItem.name}</h4>
+                  <button class="close-cert-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+                <div style="flex: 1; overflow: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: #f8fafc;">
+                  ${contentHtml}
+                </div>
+              </div>
+            `;
+            document.body.appendChild(certModal);
+            certModal.querySelector('.close-cert-modal').addEventListener('click', () => certModal.remove());
+            certModal.addEventListener('click', (e) => { if (e.target === certModal) certModal.remove(); });
+          });
+        });
+
+        // Event listeners para descargar certificados
+        container.querySelectorAll('.btn-download-cert-async').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const certKey = btn.dataset.certKey;
+            const certItem = allCerts.find(c => c.certKey === certKey);
+            if (!certItem || !certItem.cert) return;
+
+            const base64 = certItem.cert;
+            const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+            const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+            const ext = isImage ? '.jpg' : '.pdf';
+
+            const a = document.createElement('a');
+            a.href = dataUri;
+            a.download = `certificado_${certItem.role.toLowerCase()}_${certItem.name.replace(/\s+/g, '_')}${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          });
+        });
+
+      } catch (err) {
+        console.error('Error cargando certificados:', err);
+        container.innerHTML = '<p style="color: #dc2626; font-size: 13px; text-align: center; padding: 20px;">Error al cargar certificados</p>';
+      }
+    };
+    loadAsyncCertificates();
+
     // Toggle para ver detalles de correcciones del usuario
     const toggleCorrectionsBtn = modal.querySelector('.btn-toggle-corrections-detail');
     if (toggleCorrectionsBtn) {
@@ -3261,95 +3426,13 @@ class AdminDashboard {
           `).join('')}
         ` : ''}
 
-        ${(() => {
-          // Funcion para renderizar un certificado
-          const renderCertItem = (item) => `
-            <div class="document-item-admin ${isReviewable ? 'reviewable' : ''}">
-              <div class="doc-info">
-                <span class="doc-icon">📋</span>
-                <span class="doc-name">${item.role}: ${item.name || 'Sin nombre'}</span>
-                ${item.cert ? '<span class="cert-uploaded-badge">Subido</span>' : '<span style="color: #dc2626; font-size: 11px;">No disponible</span>'}
-              </div>
-              <div class="doc-actions">
-                ${item.cert ? `
-                  <button class="btn-view-cert-admin" data-cert-key="${item.certKey}" title="Ver certificado">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    Ver
-                  </button>
-                ` : ''}
-                ${isReviewable && item.cert ? `
-                  <button class="btn-mark-error doc-error" data-type="certificate" data-key="${item.certKey}" data-label="Certificado ${item.role}: ${item.name}" title="Marcar para correccion">
-                    <svg class="icon-mark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="15" y1="9" x2="9" y2="15"></line>
-                      <line x1="9" y1="9" x2="15" y2="15"></line>
-                    </svg>
-                    <svg class="icon-comment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          `;
-
-          // Certificados del Directorio Provisorio (desde certificatesStep5)
-          const certs = org.certificatesStep5 || {};
-          const dir = org.provisionalDirectorio || {};
-          const dirCerts = [];
-
-          // Presidente
-          if (dir.president) {
-            const cert = certs.presidente || certs.president;
-            const name = dir.president.name || `${dir.president.firstName || ''} ${dir.president.lastName || ''}`.trim();
-            dirCerts.push({ role: 'Presidente', name, cert, certKey: 'presidente' });
-          }
-
-          // Secretario
-          if (dir.secretary) {
-            const cert = certs.secretario || certs.secretary;
-            const name = dir.secretary.name || `${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}`.trim();
-            dirCerts.push({ role: 'Secretario', name, cert, certKey: 'secretario' });
-          }
-
-          // Tesorero
-          if (dir.treasurer) {
-            const cert = certs.tesorero || certs.treasurer;
-            const name = dir.treasurer.name || `${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}`.trim();
-            dirCerts.push({ role: 'Tesorero', name, cert, certKey: 'tesorero' });
-          }
-
-          // Certificados de la Comision Electoral
-          const comCerts = [];
-          const comMembers = org.comisionElectoral || org.commission?.members || [];
-          const comRoles = ['Presidente', 'Secretario', 'Vocal'];
-
-          comMembers.forEach((m, i) => {
-            const certKey = `comision${i + 1}`;
-            const cert = certs[certKey] || org.certificates?.[m.id] || org.certificates?.[m._id];
-            const name = m.name || `${m.firstName || ''} ${m.lastName || ''}`.trim();
-            comCerts.push({ role: comRoles[i] || 'Miembro', name, cert, certKey });
-          });
-
-          let html = '';
-
-          // Mostrar certificados del Directorio Provisorio
-          if (dirCerts.length > 0) {
-            html += `<h4 class="docs-subtitle">Certificados de Antecedentes - Directorio Provisorio</h4>`;
-            html += dirCerts.map(c => renderCertItem(c)).join('');
-          }
-
-          // Mostrar certificados de la Comision Electoral
-          if (comCerts.length > 0) {
-            html += `<h4 class="docs-subtitle" style="margin-top: 20px;">Certificados de Antecedentes - Comision Electoral</h4>`;
-            html += comCerts.map(c => renderCertItem(c)).join('');
-          }
-
-          return html;
-        })()}
+        <!-- Contenedor para certificados cargados asíncronamente -->
+        <div id="async-certificates-container" data-org-id="${orgId}" data-reviewable="${isReviewable}">
+          <div style="text-align: center; padding: 20px; color: #64748b;">
+            <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 8px; font-size: 13px;">Cargando certificados...</p>
+          </div>
+        </div>
       </div>
     `;
   }
