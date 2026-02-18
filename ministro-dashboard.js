@@ -807,6 +807,109 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
     ministro: ministro ? 'presente' : 'undefined'
   });
 
+  // ============ MOSTRAR MODAL DE CARGA ============
+  const loadingModal = document.createElement('div');
+  loadingModal.id = 'validation-loading-modal';
+  loadingModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999999;';
+  loadingModal.innerHTML = `
+    <div style="background: white; border-radius: 24px; max-width: 400px; width: 90%; padding: 48px 32px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      <div id="loading-icon" style="width: 100px; height: 100px; margin: 0 auto 32px; position: relative;">
+        <div style="width: 100%; height: 100%; border: 6px solid #e5e7eb; border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+      </div>
+      <h3 id="loading-title" style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #1f2937;">Procesando Validación</h3>
+      <p id="loading-message" style="margin: 0 0 8px; color: #6b7280; font-size: 16px; line-height: 1.6;">
+        Guardando datos de la asamblea constitutiva...
+      </p>
+      <p style="margin: 0; color: #9ca3af; font-size: 13px;">Por favor no cierre esta ventana</p>
+    </div>
+  `;
+
+  // Agregar estilos de animación
+  const style = document.createElement('style');
+  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  loadingModal.appendChild(style);
+  document.body.appendChild(loadingModal);
+
+  // Función para actualizar mensaje de carga
+  const updateLoadingMessage = (message) => {
+    const msgEl = loadingModal.querySelector('#loading-message');
+    if (msgEl) msgEl.textContent = message;
+  };
+
+  // Función para mostrar éxito
+  const showSuccess = () => {
+    const iconContainer = loadingModal.querySelector('#loading-icon');
+    const title = loadingModal.querySelector('#loading-title');
+    const message = loadingModal.querySelector('#loading-message');
+
+    if (iconContainer) {
+      iconContainer.innerHTML = `
+        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+      `;
+    }
+    if (title) {
+      title.textContent = '¡Validación Completada!';
+      title.style.color = '#059669';
+    }
+    if (message) {
+      message.innerHTML = `
+        <span style="color: #059669; font-weight: 600;">La asamblea ha sido validada exitosamente.</span><br>
+        <span style="color: #6b7280; font-size: 14px;">El estado ha cambiado a "Aprobada por Ministro de Fe"</span>
+      `;
+    }
+
+    // Cerrar después de 3 segundos
+    setTimeout(() => {
+      loadingModal.remove();
+    }, 3000);
+  };
+
+  // Función para mostrar error
+  const showError = (errorMsg) => {
+    const iconContainer = loadingModal.querySelector('#loading-icon');
+    const title = loadingModal.querySelector('#loading-title');
+    const message = loadingModal.querySelector('#loading-message');
+
+    if (iconContainer) {
+      iconContainer.innerHTML = `
+        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+      `;
+    }
+    if (title) {
+      title.textContent = 'Error en Validación';
+      title.style.color = '#dc2626';
+    }
+    if (message) {
+      message.innerHTML = `
+        <span style="color: #dc2626;">${errorMsg}</span><br>
+        <button id="close-error-modal" style="margin-top: 16px; padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Cerrar
+        </button>
+      `;
+    }
+
+    loadingModal.querySelector('#close-error-modal')?.addEventListener('click', () => {
+      loadingModal.remove();
+    });
+  };
+
   const president = wizardData.directorio.president;
   const secretary = wizardData.directorio.secretary;
   const treasurer = wizardData.directorio.treasurer;
@@ -822,7 +925,7 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
 
   if (!assignmentId) {
     console.error('❌ assignmentId es undefined! assignment:', assignment);
-    showToast('Error: No se encontró el ID de la asignación', 'error');
+    showError('No se encontró el ID de la asignación');
     return;
   }
 
@@ -851,8 +954,11 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
   };
 
   try {
+    updateLoadingMessage('Enviando datos al servidor...');
     console.log('📝 Enviando validación al servidor...', { assignmentId, validationData });
     await ministroAssignmentService.markSignaturesValidated(assignmentId, validationData);
+
+    updateLoadingMessage('Actualizando estado de la organización...');
 
     // Actualizar la organización
     if (org) {
@@ -901,13 +1007,16 @@ async function processValidationComplete(wizardData, assignment, org, ministro) 
       }
     }
 
-    showToast('✅ Validación completada exitosamente', 'success');
+    updateLoadingMessage('Recargando datos...');
     console.log('✅ Validación guardada, recargando datos...');
     await loadStats();
     await renderAssignments();
+
+    // Mostrar éxito
+    showSuccess();
   } catch (error) {
     console.error('❌ Error en validación:', error);
-    showToast(error.message || 'Error al procesar la validación', 'error');
+    showError(error.message || 'Error al procesar la validación');
   }
 }
 
