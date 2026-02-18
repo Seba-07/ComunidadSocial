@@ -1675,6 +1675,9 @@ function viewDocumentation(assignmentId) {
           <button class="doc-tab" data-tab="estatutos" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
             📜 Estatutos
           </button>
+          <button class="doc-tab" data-tab="documentos" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📁 Documentos
+          </button>
           <button class="doc-tab" data-tab="certificados" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
             📄 Certificados
           </button>
@@ -1844,6 +1847,31 @@ function viewDocumentation(assignmentId) {
             </div>
           </div>
 
+          <!-- Tab: Documentos Generados -->
+          <div id="tab-documentos" class="tab-content" style="display: none;">
+            <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 16px; padding: 24px;">
+              <h3 style="margin: 0 0 20px; color: #991b1b; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <line x1="10" y1="9" x2="8" y2="9"></line>
+                </svg>
+                Documentos Generados
+              </h3>
+              <div id="generated-docs-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+                <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; opacity: 0.5;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                  </svg>
+                  Cargando documentos...
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Tab: Certificados de Antecedentes -->
           <div id="tab-certificados" class="tab-content" style="display: none;">
             <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 24px;">
@@ -1912,8 +1940,293 @@ function viewDocumentation(assignmentId) {
     });
   });
 
-  // Cargar certificados de antecedentes
+  // Cargar documentos generados y certificados de antecedentes
+  loadGeneratedDocsForMF(modal, org);
   loadCertificatesForMF(modal, org);
+}
+
+/**
+ * Carga y muestra los documentos generados para el Ministro de Fe
+ */
+async function loadGeneratedDocsForMF(modal, org) {
+  const container = modal.querySelector('#generated-docs-container');
+  if (!container) return;
+
+  const DOC_TYPE_LABELS = {
+    'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
+    'ESTATUTOS': 'Estatutos',
+    'REGISTRO_SOCIOS': 'Registro de Socios',
+    'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+    'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+    'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes',
+    'DECLARACION_JURADA': 'Declaración Jurada'
+  };
+
+  const DOC_ICONS = {
+    'ACTA_CONSTITUTIVA': '📜',
+    'ESTATUTOS': '📘',
+    'REGISTRO_SOCIOS': '📋',
+    'CERTIFICADO_MINISTRO_FE': '🏛️',
+    'CERTIFICACION_MUNICIPAL': '🏢',
+    'DEPOSITO_ANTECEDENTES': '📁',
+    'DECLARACION_JURADA': '📄'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${window.API_BASE_URL || ''}/api/organizations/${org._id}/generated-documents`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al cargar documentos');
+    }
+
+    const data = await response.json();
+    const documents = data.documents || data || [];
+
+    if (!documents || documents.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #9ca3af;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.5;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <p style="margin: 0; font-weight: 600;">No hay documentos generados</p>
+          <p style="margin: 8px 0 0; font-size: 14px;">Los documentos se generarán durante el proceso de constitución</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Agrupar por tipo (algunos docs como declaraciones tienen múltiples)
+    const groupedDocs = {};
+    documents.forEach(doc => {
+      const baseType = doc.docType.startsWith('DECLARACION_JURADA') ? 'DECLARACION_JURADA' : doc.docType;
+      if (!groupedDocs[baseType]) {
+        groupedDocs[baseType] = [];
+      }
+      groupedDocs[baseType].push(doc);
+    });
+
+    let html = '';
+
+    for (const [baseType, docs] of Object.entries(groupedDocs)) {
+      docs.forEach((doc, idx) => {
+        const label = doc.docType.startsWith('DECLARACION_JURADA')
+          ? `Declaración Jurada${doc.cargoNombre ? ' - ' + doc.cargoNombre : ''}`
+          : (DOC_TYPE_LABELS[doc.docType] || doc.docType);
+        const icon = DOC_ICONS[baseType] || '📄';
+        const date = doc.generatedAt ? new Date(doc.generatedAt).toLocaleDateString('es-CL') : '';
+
+        html += `
+          <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                ${icon}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937;">${label}</h4>
+                ${date ? `<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Generado: ${date}</p>` : ''}
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                  <button type="button" class="btn-view-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" style="
+                    padding: 8px 16px;
+                    background: linear-gradient(135deg, #3b82f6, #2563eb);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                  ">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Ver
+                  </button>
+                  <button type="button" class="btn-download-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" data-label="${label}" style="
+                    padding: 8px 16px;
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                  ">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    container.innerHTML = html;
+
+    // Guardar documentos para acceso posterior
+    container.dataset.documents = JSON.stringify(documents);
+
+    // Event listeners para ver documentos
+    container.querySelectorAll('.btn-view-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docType = btn.getAttribute('data-doc-type');
+        const cargoId = btn.getAttribute('data-cargo-id');
+        const docs = JSON.parse(container.dataset.documents || '[]');
+        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
+        if (doc) {
+          viewDocumentMF(doc, org);
+        }
+      });
+    });
+
+    // Event listeners para descargar documentos
+    container.querySelectorAll('.btn-download-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docType = btn.getAttribute('data-doc-type');
+        const cargoId = btn.getAttribute('data-cargo-id');
+        const label = btn.getAttribute('data-label');
+        const docs = JSON.parse(container.dataset.documents || '[]');
+        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
+        if (doc) {
+          downloadDocumentMF(doc, org, label);
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('Error loading generated docs for MF:', error);
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <p style="margin: 0; font-weight: 600;">Error al cargar documentos</p>
+        <p style="margin: 8px 0 0; font-size: 14px;">${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Muestra un documento generado en un modal
+ */
+function viewDocumentMF(doc, org) {
+  const orgName = org.organizationName || 'Organización';
+
+  const docModal = document.createElement('div');
+  docModal.className = 'doc-modal-overlay';
+  docModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px;';
+
+  docModal.innerHTML = `
+    <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${doc.docType.startsWith('DECLARACION_JURADA') ? 'Declaración Jurada' : (doc.docType.replace(/_/g, ' '))}</h3>
+          <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${orgName}${doc.cargoNombre ? ' - ' + doc.cargoNombre : ''}</p>
+        </div>
+        <button type="button" class="close-doc-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div style="flex: 1; overflow: auto; padding: 24px; background: #f8fafc;">
+        <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
+          ${doc.content || '<p style="text-align: center; color: #9ca3af;">Sin contenido</p>'}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; background: white; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="close-doc-modal" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(docModal);
+
+  // Event listeners
+  docModal.querySelectorAll('.close-doc-modal').forEach(btn => {
+    btn.addEventListener('click', () => docModal.remove());
+  });
+
+  docModal.addEventListener('click', (e) => {
+    if (e.target === docModal) docModal.remove();
+  });
+}
+
+/**
+ * Descarga un documento como archivo HTML/PDF
+ */
+function downloadDocumentMF(doc, org, label) {
+  const orgName = org.organizationName || 'Organización';
+  const fileName = `${label.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}_${orgName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}.html`;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${label} - ${orgName}</title>
+      <style>
+        body {
+          font-family: 'Georgia', serif;
+          line-height: 1.8;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 40px;
+          color: #1f2937;
+        }
+        h1, h2, h3 { font-family: Arial, sans-serif; }
+        @media print {
+          body { padding: 20px; }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${label}</h1>
+      <h2>${orgName}</h2>
+      <hr>
+      ${doc.content || '<p>Sin contenido</p>'}
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Documento descargado', 'success');
 }
 
 /**
@@ -1970,41 +2283,52 @@ async function loadCertificatesForMF(modal, org) {
     const dir = org.provisionalDirectorio || {};
     const directorioCards = [];
 
+    // Helper para buscar certificado (primero en API, luego en metadata)
+    const findCert = (key) => {
+      // Primero buscar en certFiles (API - tiene datos reales)
+      const fromAPI = certFiles.find(c => c.memberId === key);
+      if (fromAPI && fromAPI.certificate) return fromAPI;
+      // Luego buscar en metadata del org
+      const fromMeta = certsMeta[key];
+      if (fromMeta && (fromMeta.certificate || fromMeta.base64 || fromMeta.data)) return fromMeta;
+      return null;
+    };
+
     // Presidente
     if (dir.president) {
-      const cert = certsMeta.presidente || certsMeta.president || certFiles.find(c => c.memberId === 'presidente');
+      const cert = findCert('presidente') || findCert('president');
       directorioCards.push({
         role: 'Presidente/a',
         name: extractName(dir.president),
         rut: dir.president.rut,
         certKey: 'presidente',
-        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        hasCert: !!cert,
         cert: cert
       });
     }
 
     // Secretario
     if (dir.secretary) {
-      const cert = certsMeta.secretario || certsMeta.secretary || certFiles.find(c => c.memberId === 'secretario');
+      const cert = findCert('secretario') || findCert('secretary');
       directorioCards.push({
         role: 'Secretario/a',
         name: extractName(dir.secretary),
         rut: dir.secretary.rut,
         certKey: 'secretario',
-        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        hasCert: !!cert,
         cert: cert
       });
     }
 
     // Tesorero
     if (dir.treasurer) {
-      const cert = certsMeta.tesorero || certsMeta.treasurer || certFiles.find(c => c.memberId === 'tesorero');
+      const cert = findCert('tesorero') || findCert('treasurer');
       directorioCards.push({
         role: 'Tesorero/a',
         name: extractName(dir.treasurer),
         rut: dir.treasurer.rut,
         certKey: 'tesorero',
-        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        hasCert: !!cert,
         cert: cert
       });
     }
@@ -2013,13 +2337,13 @@ async function loadCertificatesForMF(modal, org) {
     const additionalMembers = dir.additionalMembers || [];
     additionalMembers.forEach((m, idx) => {
       const cargoKey = m.cargo || m.role || `adicional${idx + 1}`;
-      const cert = certsMeta[cargoKey] || certFiles.find(c => c.memberId === cargoKey);
+      const cert = findCert(cargoKey);
       directorioCards.push({
         role: cargoLabels[cargoKey] || cargoKey || 'Miembro Adicional',
         name: extractName(m),
         rut: m.rut,
         certKey: cargoKey,
-        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        hasCert: !!cert,
         cert: cert
       });
     });
@@ -2087,13 +2411,13 @@ async function loadCertificatesForMF(modal, org) {
 
     comision.forEach((m, idx) => {
       const certKey = `comision${idx + 1}`;
-      const cert = certsMeta[certKey] || certFiles.find(c => c.memberId === certKey);
+      const cert = findCert(certKey);
       comisionCards.push({
         role: `Miembro ${idx + 1}`,
         name: extractName(m),
         rut: m.rut,
         certKey: certKey,
-        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        hasCert: !!cert,
         cert: cert
       });
     });
@@ -2176,8 +2500,11 @@ async function loadCertificatesForMF(modal, org) {
  * Muestra el modal de visualización de certificado para el MF
  */
 async function viewCertificateMF(org, certKey, memberName, role, certFiles, certsMeta) {
-  // Buscar el certificado
-  let cert = certsMeta[certKey] || certFiles.find(c => c.memberId === certKey);
+  // Buscar el certificado - primero en API (certFiles), luego en metadata (certsMeta)
+  let cert = certFiles.find(c => c.memberId === certKey);
+  if (!cert || !cert.certificate) {
+    cert = certsMeta[certKey];
+  }
 
   if (!cert) {
     showToast('Certificado no disponible', 'error');
@@ -2186,11 +2513,30 @@ async function viewCertificateMF(org, certKey, memberName, role, certFiles, cert
 
   // Normalizar formato del certificado
   let certData = null;
+  let certType = cert.type || '';
+
   if (cert.certificate) {
-    // Formato de certificate-files collection
+    // Formato de certificate-files collection (ya incluye data URI completa o base64 puro)
     certData = cert.certificate;
+    // Si no tiene prefijo data:, agregarlo
+    if (!certData.startsWith('data:')) {
+      // Intentar detectar tipo por contenido
+      if (certData.startsWith('JVBERi')) {
+        certData = `data:application/pdf;base64,${certData}`;
+        certType = 'application/pdf';
+      } else if (certData.startsWith('/9j/') || certData.startsWith('iVBOR')) {
+        const imgType = certData.startsWith('/9j/') ? 'jpeg' : 'png';
+        certData = `data:image/${imgType};base64,${certData}`;
+        certType = `image/${imgType}`;
+      } else {
+        // Asumir imagen por defecto
+        certData = `data:image/png;base64,${certData}`;
+        certType = 'image/png';
+      }
+    }
   } else if (cert.base64) {
     certData = `data:${cert.type || 'application/pdf'};base64,${cert.base64}`;
+    certType = cert.type || 'application/pdf';
   } else if (cert.data) {
     certData = cert.data;
   }
@@ -2201,8 +2547,8 @@ async function viewCertificateMF(org, certKey, memberName, role, certFiles, cert
   }
 
   // Determinar tipo de archivo
-  const isPDF = certData.includes('application/pdf') || (cert.type && cert.type.includes('pdf'));
-  const isImage = certData.includes('image/') || (cert.type && cert.type.startsWith('image/'));
+  const isPDF = certData.includes('application/pdf') || certType.includes('pdf');
+  const isImage = certData.includes('image/') || certType.startsWith('image/');
 
   const certModal = document.createElement('div');
   certModal.className = 'cert-modal-overlay';
@@ -2244,6 +2590,14 @@ async function viewCertificateMF(org, certKey, memberName, role, certFiles, cert
 
       <!-- Footer -->
       <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; background: white; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="download-cert-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #a855f7, #7e22ce); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Descargar
+        </button>
         <button type="button" class="close-cert-modal" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
           Cerrar
         </button>
@@ -2256,6 +2610,33 @@ async function viewCertificateMF(org, certKey, memberName, role, certFiles, cert
   // Event listeners
   certModal.querySelectorAll('.close-cert-modal').forEach(btn => {
     btn.addEventListener('click', () => certModal.remove());
+  });
+
+  // Download button
+  certModal.querySelector('.download-cert-btn').addEventListener('click', () => {
+    const extension = isPDF ? 'pdf' : (certType.includes('png') ? 'png' : 'jpg');
+    const fileName = `Certificado_${role}_${memberName.replace(/\s+/g, '_')}.${extension}`;
+
+    // Convertir data URI a blob
+    const byteString = atob(certData.split(',')[1]);
+    const mimeType = certData.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeType });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Certificado descargado', 'success');
   });
 
   certModal.addEventListener('click', (e) => {
