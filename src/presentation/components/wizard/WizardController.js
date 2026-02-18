@@ -1468,6 +1468,7 @@ export class WizardController {
       type: formData.get('type'),
       name: formData.get('name'),
       description: formData.get('description'),
+      objectives: formData.get('objectives'),
       address: composedAddress,
       street,
       streetNumber,
@@ -1548,7 +1549,7 @@ export class WizardController {
         },
         {
           title: 'TÍTULO II: OBJETIVOS',
-          content: org.description
+          content: org.objectives || org.description
         },
         // ... más artículos
       ]
@@ -3746,7 +3747,7 @@ TÍTULO SEGUNDO
 OBJETIVOS Y FUNCIONES
 
 Artículo 4°: Los objetivos de la Organización son:
-${org.description || `a) Promover el desarrollo comunitario en el ámbito de su especialidad;
+${org.objectives || org.description || `a) Promover el desarrollo comunitario en el ámbito de su especialidad;
 b) Representar a sus socios ante autoridades y organismos;
 c) Fomentar la participación ciudadana y el trabajo colaborativo;
 d) Gestionar recursos para proyectos de beneficio común.`}
@@ -5365,7 +5366,7 @@ TÍTULO II
 OBJETIVOS
 
 Artículo 4°: Los objetivos de la Organización son:
-${org.description}
+${org.objectives || org.description}
 
 Artículo 5°: Para el cumplimiento de sus objetivos, la Organización podrá:
 a) Representar a sus miembros ante las autoridades y organismos públicos y privados;
@@ -6868,7 +6869,8 @@ Secretaria Municipal`;
       ${org.neighborhood ? `<p><strong>Unidad Vecinal:</strong> ${org.neighborhood}</p>` : ''}
       <p><strong>Email:</strong> ${org.email}</p>
       <p><strong>Teléfono:</strong> ${org.phone}</p>
-      <p><strong>Objetivos:</strong> ${org.description}</p>
+      <p><strong>Descripción:</strong> ${org.description || '-'}</p>
+      <p><strong>Objetivos:</strong> ${org.objectives || '-'}</p>
       <div class="review-actions">
         <button type="button" class="btn-review-edit" data-goto-step="1">✏️ Editar</button>
       </div>

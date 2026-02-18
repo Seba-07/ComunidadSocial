@@ -93,6 +93,8 @@ const organizationSchema = new mongoose.Schema({
   },
   unidadVecinal: String,
   territory: String,
+  description: { type: String, trim: true },
+  objectives: { type: String, trim: true },
 
   // Números de certificación y depósito (se generan al aprobar)
   certNumber: String,
@@ -236,9 +238,15 @@ const organizationSchema = new mongoose.Schema({
 
   // Corrections
   corrections: {
+    version: Number,
+    items: [mongoose.Schema.Types.Mixed],
+    fromStatus: String,
+    createdAt: Date,
+    // v1 legacy
     fields: mongoose.Schema.Types.Mixed,
     documents: mongoose.Schema.Types.Mixed,
     certificates: mongoose.Schema.Types.Mixed,
+    // common
     generalComment: String,
     resolved: { type: Boolean, default: false },
     resolvedAt: Date,

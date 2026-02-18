@@ -1157,12 +1157,12 @@ class AdminDashboard {
 
     // SEGURIDAD: Sanitizar todos los datos de usuario para prevenir XSS
     const safeOrgName = escapeHtml(getOrgName(org));
-    const safeCommune = escapeHtml(org.organization?.commune || 'Sin ubicación');
-    const safeAddress = escapeHtml(org.organization?.address || '-');
-    const safePhone = escapeHtml(org.organization?.phone || '-');
-    const safeEmail = escapeHtml(org.organization?.email || '-');
+    const safeCommune = escapeHtml(org.comuna || org.commune || 'Sin ubicación');
+    const safeAddress = escapeHtml(org.address || '-');
+    const safePhone = escapeHtml(org.contactPhone || '-');
+    const safeEmail = escapeHtml(org.contactEmail || '-');
     const safeSchedule = escapeHtml(org.organization?.preferredSchedule || '');
-    const safeDescription = escapeHtml(org.organization?.description || '');
+    const safeDescription = escapeHtml(org.description || org.objectives || '');
 
     const modal = document.createElement('div');
     modal.className = 'admin-review-modal-overlay';
@@ -5139,16 +5139,16 @@ class AdminDashboard {
                         </div>
                         <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
                           ${(() => {
-                            const orgData = org.organization || {};
                             const datosFields = [
-                              { field: 'organizationName', label: 'Nombre', value: org.organizationName || orgData.name || '' },
-                              { field: 'address', label: 'Direcci\u00f3n', value: orgData.address || org.address || '' },
-                              { field: 'commune', label: 'Comuna', value: orgData.commune || '' },
-                              { field: 'region', label: 'Regi\u00f3n', value: orgData.region || '' },
-                              { field: 'neighborhood', label: 'Unidad Vecinal', value: orgData.neighborhood || '' },
-                              { field: 'email', label: 'Email', value: orgData.email || org.contactEmail || '' },
-                              { field: 'phone', label: 'Tel\u00e9fono', value: orgData.phone || org.contactPhone || '' },
-                              { field: 'description', label: 'Objetivos', value: orgData.description || '' }
+                              { field: 'organizationName', label: 'Nombre', value: org.organizationName || '' },
+                              { field: 'address', label: 'Direcci\u00f3n', value: org.address || '' },
+                              { field: 'commune', label: 'Comuna', value: org.comuna || org.commune || 'Renca' },
+                              { field: 'region', label: 'Regi\u00f3n', value: org.region || 'Metropolitana' },
+                              { field: 'neighborhood', label: 'Unidad Vecinal', value: org.unidadVecinal || '' },
+                              { field: 'email', label: 'Email', value: org.contactEmail || '' },
+                              { field: 'phone', label: 'Tel\u00e9fono', value: org.contactPhone || '' },
+                              { field: 'description', label: 'Descripci\u00f3n', value: org.description || '' },
+                              { field: 'objectives', label: 'Objetivos', value: org.objectives || '' }
                             ];
                             return datosFields.map(f => `
                               <div class="correction-selectable-item" data-category="datos_generales" data-field="${f.field}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">

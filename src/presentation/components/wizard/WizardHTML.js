@@ -136,13 +136,26 @@ function getStep1HTML() {
 
         <div class="form-row">
           <div class="form-group">
-            <label for="org-description">Descripción y Objetivos <span class="required">*</span></label>
+            <label for="org-description">Descripción de la Organización <span class="required">*</span></label>
             <textarea
               id="org-description"
               name="description"
               required
+              rows="3"
+              placeholder="Breve descripción de su organización..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="org-objectives">Objetivos <span class="required">*</span></label>
+            <textarea
+              id="org-objectives"
+              name="objectives"
+              required
               rows="4"
-              placeholder="Describa los objetivos principales de su organización..."
+              placeholder="Detalle los objetivos principales de su organización..."
             ></textarea>
           </div>
         </div>

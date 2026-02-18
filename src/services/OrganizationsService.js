@@ -462,6 +462,8 @@ class OrganizationsService {
         region: orgInfo.region || 'Metropolitana',
         unidadVecinal: orgInfo.unidadVecinal || '',
         territory: orgInfo.territory || orgInfo.territorio || '',
+        description: orgInfo.description || '',
+        objectives: orgInfo.objectives || orgInfo.objetivos || '',
         // Datos de contacto del usuario solicitante (del paso 1)
         contactEmail: orgInfo.contactEmail || orgInfo.email || '',
         contactPhone: orgInfo.contactPhone || orgInfo.phone || '',
