@@ -285,8 +285,7 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       assemblyAddress,
       comments,
       estatutos,
-      certificatesStep5,
-      generatedDocuments
+      certificatesStep5
     } = req.body;
 
     const orgData = {
@@ -379,19 +378,6 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       if (orgData.certificatesStep5) {
         logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
       }
-    }
-
-    // Guardar documentos generados del wizard (Acta, Estatutos, Registro, Declaraciones, etc.)
-    if (generatedDocuments && Array.isArray(generatedDocuments) && generatedDocuments.length > 0) {
-      orgData.generatedDocuments = generatedDocuments.map(doc => ({
-        docType: doc.docType,
-        content: doc.content,
-        generatedAt: doc.generatedAt ? new Date(doc.generatedAt) : new Date(),
-        editedAt: doc.editedAt ? new Date(doc.editedAt) : null,
-        cargoId: doc.cargoId || null,
-        cargoNombre: doc.cargoNombre || null
-      }));
-      logger.debug('CREATE ORG - generatedDocuments a guardar:', orgData.generatedDocuments.length, 'documentos');
     }
 
     const organization = new Organization(orgData);
@@ -1396,6 +1382,63 @@ router.get('/my-organization', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Get my organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
+  }
+});
+
+// ==================== DOCUMENTOS GENERADOS (colección separada) ====================
+
+import GeneratedDocuments from '../models/GeneratedDocuments.js';
+
+// Guardar documentos generados del wizard (colección separada para evitar límite BSON 16MB)
+router.post('/:id/generated-documents', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Solo el dueño puede guardar documentos
+    if (organization.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ error: 'No tienes permisos' });
+    }
+
+    const { documents } = req.body;
+    if (!documents || !Array.isArray(documents) || documents.length === 0) {
+      return res.status(400).json({ error: 'No se enviaron documentos' });
+    }
+
+    const docsData = documents.map(doc => ({
+      docType: doc.docType,
+      content: doc.content,
+      generatedAt: doc.generatedAt ? new Date(doc.generatedAt) : new Date(),
+      editedAt: doc.editedAt ? new Date(doc.editedAt) : null,
+      cargoId: doc.cargoId || null,
+      cargoNombre: doc.cargoNombre || null
+    }));
+
+    // Upsert: crear o actualizar
+    await GeneratedDocuments.findOneAndUpdate(
+      { organizationId: req.params.id },
+      { organizationId: req.params.id, documents: docsData },
+      { upsert: true, new: true }
+    );
+
+    logger.debug('GENERATED DOCS - Guardados:', docsData.length, 'documentos para org:', req.params.id);
+    res.json({ saved: docsData.length });
+  } catch (error) {
+    logger.error('Save generated documents error:', error.message);
+    res.status(500).json({ error: error.message || 'Error al guardar documentos' });
+  }
+});
+
+// Obtener documentos generados de una organización
+router.get('/:id/generated-documents', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const genDocs = await GeneratedDocuments.findOne({ organizationId: req.params.id }).lean();
+    res.json(genDocs ? genDocs.documents : []);
+  } catch (error) {
+    console.error('Get generated documents error:', error);
+    res.status(500).json({ error: 'Error al obtener documentos' });
   }
 });
 

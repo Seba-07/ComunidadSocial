@@ -222,17 +222,6 @@ const organizationSchema = new mongoose.Schema({
     fechaSnapshot: Date
   },
 
-  // Documentos generados por el wizard (Acta, Estatutos, Registro, Declaraciones, Certificados, etc.)
-  // El usuario puede editar estos documentos antes de enviar la solicitud
-  generatedDocuments: [{
-    docType: { type: String, required: true },
-    content: { type: String, required: true },
-    generatedAt: { type: Date },
-    editedAt: { type: Date, default: null },
-    cargoId: { type: String, default: null },
-    cargoNombre: { type: String, default: null }
-  }],
-
   // Validated attendees from assembly (flexible schema para soportar externos con name)
   validatedAttendees: [mongoose.Schema.Types.Mixed],
 

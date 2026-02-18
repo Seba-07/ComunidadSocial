@@ -4963,63 +4963,9 @@ class AdminDashboard {
 
                     <!-- Tab: Documentos -->
                     <div class="admin-doc-tab-content" data-tab-content="documentos" style="padding: 16px; display: none;">
-                      ${(() => {
-                        // === Documentos Generados del Wizard ===
-                        const genDocs = org.generatedDocuments || [];
-                        const DOC_TYPE_LABELS = {
-                          'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
-                          'ESTATUTOS': 'Estatutos',
-                          'REGISTRO_SOCIOS': 'Registro de Socios',
-                          'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
-                          'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
-                          'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
-                        };
-                        const getDocLabel = (doc) => {
-                          if (DOC_TYPE_LABELS[doc.docType]) return DOC_TYPE_LABELS[doc.docType];
-                          if (doc.docType && doc.docType.startsWith('DECLARACION_JURADA')) {
-                            return 'Declaración Jurada' + (doc.cargoNombre ? ' - ' + doc.cargoNombre : '');
-                          }
-                          return doc.docType || 'Documento';
-                        };
-                        const DOC_ICONS = {
-                          'ACTA_CONSTITUTIVA': '📜',
-                          'ESTATUTOS': '📘',
-                          'REGISTRO_SOCIOS': '📋',
-                          'CERTIFICADO_MINISTRO_FE': '🏛️',
-                          'CERTIFICACION_MUNICIPAL': '🏢',
-                          'DEPOSITO_ANTECEDENTES': '📁'
-                        };
-                        const getDocIcon = (docType) => {
-                          if (DOC_ICONS[docType]) return DOC_ICONS[docType];
-                          if (docType && docType.startsWith('DECLARACION_JURADA')) return '📄';
-                          return '📄';
-                        };
-
-                        let genDocsHtml = '';
-                        if (genDocs.length > 0) {
-                          genDocsHtml += '<div style="margin-bottom: 20px;">';
-                          genDocsHtml += '<h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">📂 Documentos Generados del Wizard <span style="background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">' + genDocs.length + '</span></h5>';
-                          genDocsHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">';
-                          genDocs.forEach((doc, idx) => {
-                            const label = getDocLabel(doc);
-                            const icon = getDocIcon(doc.docType);
-                            const isEdited = !!doc.editedAt;
-                            genDocsHtml += '<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">';
-                            genDocsHtml += '<div style="display: flex; align-items: center; gap: 6px;">';
-                            genDocsHtml += '<span style="font-size: 18px;">' + icon + '</span>';
-                            genDocsHtml += '<span style="font-weight: 600; color: #334155; flex: 1; font-size: 12px; line-height: 1.3;">' + label + '</span>';
-                            genDocsHtml += '</div>';
-                            if (isEdited) {
-                              genDocsHtml += '<span style="display: inline-flex; align-items: center; gap: 3px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; width: fit-content;">✏️ Editado</span>';
-                            }
-                            genDocsHtml += '<button class="btn-view-gen-doc" data-doc-idx="' + idx + '" style="margin-top: auto; padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.2s;">Ver</button>';
-                            genDocsHtml += '</div>';
-                          });
-                          genDocsHtml += '</div></div>';
-                          genDocsHtml += '<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">';
-                        }
-                        return genDocsHtml;
-                      })()}
+                      <div id="generated-docs-container" style="margin-bottom: 16px;">
+                        <div id="generated-docs-loading" style="text-align: center; padding: 12px; color: #94a3b8; font-size: 13px;">Cargando documentos generados...</div>
+                      </div>
                       ${(() => {
                         const certsRaw = org.certificatesStep5 || [];
                         // Normalizar: puede ser array (DB) u objeto (frontend)
@@ -5319,13 +5265,20 @@ class AdminDashboard {
       });
     });
 
-    // Event listeners - Ver documentos generados del wizard
-    modal.querySelectorAll('.btn-view-gen-doc').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.docIdx);
-        const genDocs = org.generatedDocuments || [];
-        const doc = genDocs[idx];
-        if (!doc) return;
+    // Cargar documentos generados asincrónicamente desde colección separada
+    const loadGeneratedDocs = async () => {
+      const container = modal.querySelector('#generated-docs-container');
+      const loading = modal.querySelector('#generated-docs-loading');
+      if (!container) return;
+
+      try {
+        const { apiService } = await import('../../services/ApiService.js');
+        const genDocs = await apiService.get(`/organizations/${org._id}/generated-documents`);
+
+        if (!genDocs || genDocs.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
 
         const DOC_TYPE_LABELS = {
           'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
@@ -5335,28 +5288,50 @@ class AdminDashboard {
           'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
           'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes'
         };
-        let label = DOC_TYPE_LABELS[doc.docType] || doc.docType || 'Documento';
-        if (doc.docType && doc.docType.startsWith('DECLARACION_JURADA')) {
-          label = 'Declaración Jurada' + (doc.cargoNombre ? ' - ' + doc.cargoNombre : '');
-        }
+        const DOC_ICONS = { 'ACTA_CONSTITUTIVA': '📜', 'ESTATUTOS': '📘', 'REGISTRO_SOCIOS': '📋', 'CERTIFICADO_MINISTRO_FE': '🏛️', 'CERTIFICACION_MUNICIPAL': '🏢', 'DEPOSITO_ANTECEDENTES': '📁' };
+        const getDocLabel = (doc) => {
+          if (DOC_TYPE_LABELS[doc.docType]) return DOC_TYPE_LABELS[doc.docType];
+          if (doc.docType && doc.docType.startsWith('DECLARACION_JURADA')) return 'Declaración Jurada' + (doc.cargoNombre ? ' - ' + doc.cargoNombre : '');
+          return doc.docType || 'Documento';
+        };
+        const getDocIcon = (dt) => DOC_ICONS[dt] || (dt && dt.startsWith('DECLARACION_JURADA') ? '📄' : '📄');
 
-        const subModal = document.createElement('div');
-        subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100001; display: flex; align-items: center; justify-content: center; padding: 20px;';
-        subModal.innerHTML = `
-          <div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
-              <h4 style="margin: 0; font-size: 15px; color: #1e293b;">${label}${doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : ''}</h4>
-              <button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button>
-            </div>
-            <div style="flex: 1; overflow-y: auto; padding: 20px; font-size: 13px; line-height: 1.7; color: #334155;">${doc.content}</div>
-          </div>
-        `;
+        let html = '<h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">📂 Documentos Generados del Wizard <span style="background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">' + genDocs.length + '</span></h5>';
+        html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">';
+        genDocs.forEach((doc, idx) => {
+          const label = getDocLabel(doc);
+          const icon = getDocIcon(doc.docType);
+          const isEdited = !!doc.editedAt;
+          html += '<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">';
+          html += '<div style="display: flex; align-items: center; gap: 6px;"><span style="font-size: 18px;">' + icon + '</span><span style="font-weight: 600; color: #334155; flex: 1; font-size: 12px; line-height: 1.3;">' + label + '</span></div>';
+          if (isEdited) html += '<span style="display: inline-flex; align-items: center; gap: 3px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; width: fit-content;">✏️ Editado</span>';
+          html += '<button class="btn-view-gen-doc" data-doc-idx="' + idx + '" style="margin-top: auto; padding: 5px 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;">Ver</button>';
+          html += '</div>';
+        });
+        html += '</div><hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">';
+        container.innerHTML = html;
 
-        document.body.appendChild(subModal);
-        subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
-        subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });
-      });
-    });
+        // Event listeners para botones "Ver"
+        container.querySelectorAll('.btn-view-gen-doc').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.docIdx);
+            const doc = genDocs[idx];
+            if (!doc) return;
+            let label = getDocLabel(doc);
+            const subModal = document.createElement('div');
+            subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            subModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4><button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><div style="flex: 1; overflow-y: auto; padding: 20px; font-size: 13px; line-height: 1.7; color: #334155;">' + doc.content + '</div></div>';
+            document.body.appendChild(subModal);
+            subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
+            subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });
+          });
+        });
+      } catch (err) {
+        console.error('Error cargando documentos generados:', err);
+        if (loading) loading.textContent = '';
+      }
+    };
+    loadGeneratedDocs();
 
     // Event listeners
     modal.querySelectorAll('.ministro-close').forEach(btn => {

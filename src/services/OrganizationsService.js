@@ -496,21 +496,6 @@ class OrganizationsService {
         })(),
         // Estatutos (paso 6)
         estatutos: requestData.estatutos || '',
-        // Documentos generados del wizard (objeto→array para MongoDB)
-        generatedDocuments: (() => {
-          const docs = requestData.generatedDocuments;
-          if (!docs || typeof docs !== 'object') return [];
-          return Object.entries(docs)
-            .filter(([_, doc]) => doc && doc.content)
-            .map(([key, doc]) => ({
-              docType: key,
-              content: doc.content,
-              generatedAt: doc.generatedAt || new Date().toISOString(),
-              editedAt: doc.editedAt || null,
-              cargoId: doc.cargoId || null,
-              cargoNombre: doc.cargoNombre || null
-            }));
-        })(),
         electionDate: requestData.electionDate,
         electionTime: requestData.electionTime || null,
         assemblyAddress: requestData.assemblyAddress || null,
@@ -522,6 +507,31 @@ class OrganizationsService {
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
       localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+
+      // Guardar documentos generados en colección separada (evita límite BSON 16MB)
+      if (requestData.generatedDocuments && typeof requestData.generatedDocuments === 'object') {
+        try {
+          const docs = Object.entries(requestData.generatedDocuments)
+            .filter(([_, doc]) => doc && doc.content)
+            .map(([key, doc]) => ({
+              docType: key,
+              content: doc.content,
+              generatedAt: doc.generatedAt || new Date().toISOString(),
+              editedAt: doc.editedAt || null,
+              cargoId: doc.cargoId || null,
+              cargoNombre: doc.cargoNombre || null
+            }));
+
+          if (docs.length > 0) {
+            await apiService.post(`/organizations/${newOrg._id}/generated-documents`, { documents: docs });
+            console.log('✅ Documentos generados guardados:', docs.length);
+          }
+        } catch (docError) {
+          console.error('⚠️ Error guardando documentos generados (org creada OK):', docError);
+          // No lanzar error — la org ya se creó exitosamente
+        }
+      }
+
       return newOrg;
     } catch (e) {
       console.error('Error requesting ministro:', e);
