@@ -351,15 +351,22 @@ organizationSchema.pre('save', function(next) {
 
   // 6. Validar estructura de corrections
   if (this.corrections) {
-    // Asegurar que los campos de corrections sean objetos
-    if (this.corrections.fields && typeof this.corrections.fields !== 'object') {
-      this.corrections.fields = {};
-    }
-    if (this.corrections.documents && typeof this.corrections.documents !== 'object') {
-      this.corrections.documents = {};
-    }
-    if (this.corrections.certificates && typeof this.corrections.certificates !== 'object') {
-      this.corrections.certificates = {};
+    if (this.corrections.version === 2) {
+      // v2: array de ítems específicos
+      if (this.corrections.items && !Array.isArray(this.corrections.items)) {
+        this.corrections.items = [];
+      }
+    } else {
+      // Legacy v1: campos como objetos
+      if (this.corrections.fields && typeof this.corrections.fields !== 'object') {
+        this.corrections.fields = {};
+      }
+      if (this.corrections.documents && typeof this.corrections.documents !== 'object') {
+        this.corrections.documents = {};
+      }
+      if (this.corrections.certificates && typeof this.corrections.certificates !== 'object') {
+        this.corrections.certificates = {};
+      }
     }
   }
 

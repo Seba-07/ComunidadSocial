@@ -301,14 +301,21 @@ export const statusChangeSchema = z.object({
 });
 
 /**
- * Esquema para rechazo con correcciones
+ * Esquema para rechazo con correcciones (v2 – ítems específicos)
  */
+const correctionItemSchema = z.object({
+  category: z.enum(['datos_generales', 'directorio', 'comision_electoral', 'miembros', 'documentos', 'certificados']),
+  field: z.string().optional(),
+  memberId: z.string().optional(),
+  memberName: z.string().optional(),
+  role: z.string().optional(),
+  docType: z.string().optional(),
+  label: z.string().min(1),
+  message: z.string().max(1000).default('Requiere corrección')
+});
+
 export const rejectWithCorrectionsSchema = z.object({
-  corrections: z.object({
-    fields: z.record(z.string(), z.string()).optional(),
-    documents: z.record(z.string(), z.string()).optional(),
-    certificates: z.record(z.string(), z.string()).optional()
-  }),
+  corrections: z.array(correctionItemSchema).min(1),
   generalComment: z.string().max(1000).optional()
 });
 

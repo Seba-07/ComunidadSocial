@@ -1659,238 +1659,363 @@ async function viewOrganization(orgId) {
   // Generar HTML de correcciones si existen
   let correctionsHTML = '';
   if (isRejected && corrections && !corrections.resolved) {
-    const fieldLabels = {
-      'name': 'Nombre de la organización',
-      'address': 'Dirección',
-      'commune': 'Comuna',
-      'region': 'Región',
-      'neighborhood': 'Unidad Vecinal',
-      'email': 'Email',
-      'phone': 'Teléfono',
-      'description': 'Objetivos'
-    };
+    const isV2 = corrections.version === 2 && Array.isArray(corrections.items);
 
-    const docNames = {
-      'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
-      'ESTATUTOS': 'Estatutos',
-      'REGISTRO_SOCIOS': 'Registro de Socios',
-      'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-      'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
-    };
+    if (isV2) {
+      // ── v2: ítems específicos agrupados por categoría ──
+      const categoryMeta = {
+        'datos_generales': { title: 'Datos de la Organización', icon: '\ud83d\udccb', action: 'Editar' },
+        'directorio': { title: 'Directorio Provisorio', icon: '\ud83d\udc64', action: 'Editar' },
+        'comision_electoral': { title: 'Comisión Electoral', icon: '\ud83d\uddf3\ufe0f', action: 'Editar' },
+        'miembros': { title: 'Miembros Fundadores', icon: '\ud83d\udc65', action: 'Editar' },
+        'documentos': { title: 'Documentos', icon: '\ud83d\udcc4', action: 'Resubir' },
+        'certificados': { title: 'Certificados', icon: '\ud83d\udcce', action: 'Resubir' }
+      };
 
-    const roles = ['Presidente', 'Secretario', 'Vocal'];
+      // Group items by category
+      const grouped = {};
+      corrections.items.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
 
-    // Campos ya corregidos por el usuario
-    const correctedFields = org.userCorrectedFields || {};
+      const correctedFields = org.userCorrectedFields || {};
 
-    correctionsHTML = `
-      <div class="org-corrections-section">
-        <div class="corrections-alert">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <div class="corrections-alert-content">
-            <h4>Correcciones Requeridas</h4>
-            <p>La municipalidad ha solicitado las siguientes correcciones para continuar con el proceso.</p>
+      let categoriesHTML = '';
+      for (const [cat, items] of Object.entries(grouped)) {
+        const meta = categoryMeta[cat] || { title: cat, icon: '\ud83d\udccc', action: 'Editar' };
+        categoriesHTML += `
+          <div class="correction-category">
+            <h5>${meta.icon} ${meta.title}</h5>
+            <div class="correction-items-list">
+              ${items.map(item => {
+                const itemKey = item.field || item.memberId || item.docType || item.label;
+                const isCorrected = correctedFields[cat] && correctedFields[cat][itemKey];
+                return `
+                <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="${cat}" data-key="${itemKey}">
+                  <div class="correction-item-header">
+                    <span class="correction-item-name">${item.label}</span>
+                    <button class="btn-edit-correction" data-type="${cat}" data-key="${itemKey}">${isCorrected ? '\u2713 ' + meta.action + (meta.action === 'Editar' ? 'do' : 'do') : meta.action}</button>
+                  </div>
+                  <div class="correction-item-reviewer-comment">
+                    <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                    <p>${item.message}</p>
+                  </div>
+                  <div class="correction-item-user-response">
+                    <label>Tu respuesta (opcional):</label>
+                    <input type="text" class="user-field-response" data-type="${cat}" data-key="${itemKey}"
+                           placeholder="Agrega una nota sobre esta corrección...">
+                  </div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      correctionsHTML = `
+        <div class="org-corrections-section">
+          <div class="corrections-alert">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="corrections-alert-content">
+              <h4>Correcciones Requeridas (${corrections.items.length} ítem${corrections.items.length !== 1 ? 's' : ''})</h4>
+              <p>La municipalidad ha solicitado las siguientes correcciones específicas para continuar con el proceso.</p>
+            </div>
+          </div>
+
+          ${corrections.generalComment ? `
+            <div class="correction-general-comment">
+              <strong>Observación general:</strong>
+              <p>${corrections.generalComment}</p>
+            </div>
+          ` : ''}
+
+          ${categoriesHTML}
+
+          <div class="user-observations-section general-observation">
+            <label for="user-correction-comments">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Observación general para el revisor (opcional)
+            </label>
+            <textarea id="user-correction-comments" class="user-observations-textarea"
+                      placeholder="Escriba aquí cualquier comentario o aclaración general sobre las correcciones realizadas..."></textarea>
+          </div>
+
+          <div class="correction-actions">
+            <button class="btn-resubmit-org" id="btn-resubmit-${org.id}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+              </svg>
+              Reenviar para Revisión
+            </button>
           </div>
         </div>
+      `;
+    } else {
+      // ── v1 Legacy: formato antiguo con fields/documents/certificates ──
+      const fieldLabels = {
+        'name': 'Nombre de la organización',
+        'address': 'Dirección',
+        'commune': 'Comuna',
+        'region': 'Región',
+        'neighborhood': 'Unidad Vecinal',
+        'email': 'Email',
+        'phone': 'Teléfono',
+        'description': 'Objetivos'
+      };
 
-        ${corrections.generalComment ? `
-          <div class="correction-general-comment">
-            <strong>Observación general:</strong>
-            <p>${corrections.generalComment}</p>
-          </div>
-        ` : ''}
+      const docNames = {
+        'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
+        'ESTATUTOS': 'Estatutos',
+        'REGISTRO_SOCIOS': 'Registro de Socios',
+        'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
+        'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+      };
 
-        ${Object.keys(corrections.fields).length > 0 ? `
-          <div class="correction-category">
-            <h5>Información a corregir:</h5>
-            <div class="correction-items-list">
-              ${Object.entries(corrections.fields).map(([key, val]) => {
-                const isCorrected = correctedFields.field && correctedFields.field[key];
-                return `
-                <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="field" data-key="${key}">
-                  <div class="correction-item-header">
-                    <span class="correction-item-name">${fieldLabels[key] || key}</span>
-                    <button class="btn-edit-correction" data-type="field" data-key="${key}">${isCorrected ? '✓ Editado' : 'Editar'}</button>
-                  </div>
-                  <div class="correction-item-current">
-                    <span class="label">Valor actual:</span>
-                    <span class="value">${org.organization?.[key] || '-'}</span>
-                  </div>
-                  ${val.comment ? `
-                    <div class="correction-item-reviewer-comment">
-                      <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
-                      <p>${val.comment}</p>
-                    </div>
-                  ` : ''}
-                  <div class="correction-item-user-response">
-                    <label>Tu respuesta (opcional):</label>
-                    <input type="text" class="user-field-response" data-type="field" data-key="${key}"
-                           placeholder="Agrega una nota sobre esta corrección...">
-                  </div>
-                </div>
-              `;}).join('')}
+      const roles = ['Presidente', 'Secretario', 'Vocal'];
+      const correctedFields = org.userCorrectedFields || {};
+
+      correctionsHTML = `
+        <div class="org-corrections-section">
+          <div class="corrections-alert">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="corrections-alert-content">
+              <h4>Correcciones Requeridas</h4>
+              <p>La municipalidad ha solicitado las siguientes correcciones para continuar con el proceso.</p>
             </div>
           </div>
-        ` : ''}
 
-        ${Object.keys(corrections.documents).length > 0 ? `
-          <div class="correction-category">
-            <h5>Documentos a corregir:</h5>
-            <div class="correction-items-list">
-              ${Object.entries(corrections.documents).map(([key, val]) => {
-                const isCorrected = correctedFields.document && correctedFields.document[key];
-                return `
-                <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="document" data-key="${key}">
-                  <div class="correction-item-header">
-                    <span class="correction-item-name">${docNames[key] || key}</span>
-                    <button class="btn-edit-correction" data-type="document" data-key="${key}">${isCorrected ? '✓ Resubido' : 'Resubir'}</button>
-                  </div>
-                  ${val.comment ? `
-                    <div class="correction-item-reviewer-comment">
-                      <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
-                      <p>${val.comment}</p>
-                    </div>
-                  ` : ''}
-                  <div class="correction-item-user-response">
-                    <label>Tu respuesta (opcional):</label>
-                    <input type="text" class="user-field-response" data-type="document" data-key="${key}"
-                           placeholder="Agrega una nota sobre esta corrección...">
-                  </div>
-                </div>
-              `;}).join('')}
+          ${corrections.generalComment ? `
+            <div class="correction-general-comment">
+              <strong>Observación general:</strong>
+              <p>${corrections.generalComment}</p>
             </div>
-          </div>
-        ` : ''}
+          ` : ''}
 
-        ${Object.keys(corrections.certificates).length > 0 ? `
-          <div class="correction-category">
-            <h5>Certificados a corregir:</h5>
-            <div class="correction-items-list">
-              ${Object.entries(corrections.certificates).map(([memberId, val]) => {
-                const memberIndex = org.commission?.members?.findIndex(m => m.id === memberId) ?? -1;
-                const member = org.commission?.members?.[memberIndex];
-                const role = roles[memberIndex] || 'Miembro';
-                const isCorrected = correctedFields.certificate && correctedFields.certificate[memberId];
-                return `
-                  <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="certificate" data-key="${memberId}">
+          ${corrections.fields && Object.keys(corrections.fields).length > 0 ? `
+            <div class="correction-category">
+              <h5>Información a corregir:</h5>
+              <div class="correction-items-list">
+                ${Object.entries(corrections.fields).map(([key, val]) => {
+                  const isCorrected = correctedFields.field && correctedFields.field[key];
+                  return `
+                  <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="field" data-key="${key}">
                     <div class="correction-item-header">
-                      <span class="correction-item-name">${role}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}</span>
-                      <button class="btn-edit-correction" data-type="certificate" data-key="${memberId}">${isCorrected ? '✓ Resubido' : 'Resubir'}</button>
+                      <span class="correction-item-name">${fieldLabels[key] || key}</span>
+                      <button class="btn-edit-correction" data-type="field" data-key="${key}">${isCorrected ? '✓ Editado' : 'Editar'}</button>
                     </div>
-                    ${val.comment ? `
+                    <div class="correction-item-current">
+                      <span class="label">Valor actual:</span>
+                      <span class="value">${org.organization?.[key] || '-'}</span>
+                    </div>
+                    ${typeof val === 'object' && val.comment ? `
                       <div class="correction-item-reviewer-comment">
                         <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
                         <p>${val.comment}</p>
                       </div>
-                    ` : ''}
-                    <div class="correction-item-user-response">
-                      <label>Tu respuesta (opcional):</label>
-                      <input type="text" class="user-field-response" data-type="certificate" data-key="${memberId}"
-                             placeholder="Agrega una nota sobre esta corrección...">
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        ${corrections.members && Object.keys(corrections.members).length > 0 ? `
-          <div class="correction-category">
-            <h5>Miembros fundadores a corregir:</h5>
-            <div class="correction-items-list">
-              ${Object.entries(corrections.members).map(([memberId, val]) => {
-                const member = org.members?.find(m => m.id === memberId);
-                const isCorrected = correctedFields.member && correctedFields.member[memberId];
-                return `
-                  <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="member" data-key="${memberId}">
-                    <div class="correction-item-header">
-                      <span class="correction-item-name">Miembro: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}</span>
-                      <button class="btn-edit-correction" data-type="member" data-key="${memberId}">${isCorrected ? '✓ Corregido' : 'Editar'}</button>
-                    </div>
-                    ${val.comment ? `
+                    ` : typeof val === 'string' && val ? `
                       <div class="correction-item-reviewer-comment">
                         <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
-                        <p>${val.comment}</p>
+                        <p>${val}</p>
                       </div>
                     ` : ''}
                     <div class="correction-item-user-response">
                       <label>Tu respuesta (opcional):</label>
-                      <input type="text" class="user-field-response" data-type="member" data-key="${memberId}"
+                      <input type="text" class="user-field-response" data-type="field" data-key="${key}"
                              placeholder="Agrega una nota sobre esta corrección...">
                     </div>
                   </div>
-                `;
-              }).join('')}
+                `;}).join('')}
+              </div>
             </div>
-          </div>
-        ` : ''}
+          ` : ''}
 
-        ${corrections.commission && Object.keys(corrections.commission).length > 0 ? `
-          <div class="correction-category">
-            <h5>Comisión Electoral a corregir:</h5>
-            <div class="correction-items-list">
-              ${Object.entries(corrections.commission).map(([key, val]) => {
-                let label = key;
-                if (key === 'electionDate') {
-                  label = 'Fecha de Elección';
-                } else {
-                  const memberIndex = org.commission?.members?.findIndex(m => m.id === key) ?? -1;
+          ${corrections.documents && Object.keys(corrections.documents).length > 0 ? `
+            <div class="correction-category">
+              <h5>Documentos a corregir:</h5>
+              <div class="correction-items-list">
+                ${Object.entries(corrections.documents).map(([key, val]) => {
+                  const isCorrected = correctedFields.document && correctedFields.document[key];
+                  return `
+                  <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="document" data-key="${key}">
+                    <div class="correction-item-header">
+                      <span class="correction-item-name">${docNames[key] || key}</span>
+                      <button class="btn-edit-correction" data-type="document" data-key="${key}">${isCorrected ? '✓ Resubido' : 'Resubir'}</button>
+                    </div>
+                    ${typeof val === 'object' && val.comment ? `
+                      <div class="correction-item-reviewer-comment">
+                        <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                        <p>${val.comment}</p>
+                      </div>
+                    ` : typeof val === 'string' && val ? `
+                      <div class="correction-item-reviewer-comment">
+                        <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                        <p>${val}</p>
+                      </div>
+                    ` : ''}
+                    <div class="correction-item-user-response">
+                      <label>Tu respuesta (opcional):</label>
+                      <input type="text" class="user-field-response" data-type="document" data-key="${key}"
+                             placeholder="Agrega una nota sobre esta corrección...">
+                    </div>
+                  </div>
+                `;}).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${corrections.certificates && Object.keys(corrections.certificates).length > 0 ? `
+            <div class="correction-category">
+              <h5>Certificados a corregir:</h5>
+              <div class="correction-items-list">
+                ${Object.entries(corrections.certificates).map(([memberId, val]) => {
+                  const memberIndex = org.commission?.members?.findIndex(m => m.id === memberId) ?? -1;
                   const member = org.commission?.members?.[memberIndex];
-                  const commRole = ['Presidente', 'Secretario', 'Vocal'][memberIndex] || 'Miembro';
-                  label = `${commRole}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}`;
-                }
-                const isCorrected = correctedFields.commission && correctedFields.commission[key];
-                return `
-                  <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="commission" data-key="${key}">
-                    <div class="correction-item-header">
-                      <span class="correction-item-name">${label}</span>
-                      <button class="btn-edit-correction" data-type="commission" data-key="${key}">${isCorrected ? '✓ Corregido' : 'Editar'}</button>
-                    </div>
-                    ${val.comment ? `
-                      <div class="correction-item-reviewer-comment">
-                        <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
-                        <p>${val.comment}</p>
+                  const role = roles[memberIndex] || 'Miembro';
+                  const isCorrected = correctedFields.certificate && correctedFields.certificate[memberId];
+                  return `
+                    <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="certificate" data-key="${memberId}">
+                      <div class="correction-item-header">
+                        <span class="correction-item-name">${role}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}</span>
+                        <button class="btn-edit-correction" data-type="certificate" data-key="${memberId}">${isCorrected ? '✓ Resubido' : 'Resubir'}</button>
                       </div>
-                    ` : ''}
-                    <div class="correction-item-user-response">
-                      <label>Tu respuesta (opcional):</label>
-                      <input type="text" class="user-field-response" data-type="commission" data-key="${key}"
-                             placeholder="Agrega una nota sobre esta corrección...">
+                      ${typeof val === 'object' && val.comment ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val.comment}</p>
+                        </div>
+                      ` : typeof val === 'string' && val ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val}</p>
+                        </div>
+                      ` : ''}
+                      <div class="correction-item-user-response">
+                        <label>Tu respuesta (opcional):</label>
+                        <input type="text" class="user-field-response" data-type="certificate" data-key="${memberId}"
+                               placeholder="Agrega una nota sobre esta corrección...">
+                      </div>
                     </div>
-                  </div>
-                `;
-              }).join('')}
+                  `;
+                }).join('')}
+              </div>
             </div>
+          ` : ''}
+
+          ${corrections.members && Object.keys(corrections.members).length > 0 ? `
+            <div class="correction-category">
+              <h5>Miembros fundadores a corregir:</h5>
+              <div class="correction-items-list">
+                ${Object.entries(corrections.members).map(([memberId, val]) => {
+                  const member = org.members?.find(m => m.id === memberId);
+                  const isCorrected = correctedFields.member && correctedFields.member[memberId];
+                  return `
+                    <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="member" data-key="${memberId}">
+                      <div class="correction-item-header">
+                        <span class="correction-item-name">Miembro: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}</span>
+                        <button class="btn-edit-correction" data-type="member" data-key="${memberId}">${isCorrected ? '✓ Corregido' : 'Editar'}</button>
+                      </div>
+                      ${typeof val === 'object' && val.comment ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val.comment}</p>
+                        </div>
+                      ` : typeof val === 'string' && val ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val}</p>
+                        </div>
+                      ` : ''}
+                      <div class="correction-item-user-response">
+                        <label>Tu respuesta (opcional):</label>
+                        <input type="text" class="user-field-response" data-type="member" data-key="${memberId}"
+                               placeholder="Agrega una nota sobre esta corrección...">
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${corrections.commission && Object.keys(corrections.commission).length > 0 ? `
+            <div class="correction-category">
+              <h5>Comisión Electoral a corregir:</h5>
+              <div class="correction-items-list">
+                ${Object.entries(corrections.commission).map(([key, val]) => {
+                  let label = key;
+                  if (key === 'electionDate') {
+                    label = 'Fecha de Elección';
+                  } else {
+                    const memberIndex = org.commission?.members?.findIndex(m => m.id === key) ?? -1;
+                    const member = org.commission?.members?.[memberIndex];
+                    const commRole = ['Presidente', 'Secretario', 'Vocal'][memberIndex] || 'Miembro';
+                    label = `${commRole}: ${member ? `${member.firstName} ${member.lastName}` : 'Miembro'}`;
+                  }
+                  const isCorrected = correctedFields.commission && correctedFields.commission[key];
+                  return `
+                    <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="commission" data-key="${key}">
+                      <div class="correction-item-header">
+                        <span class="correction-item-name">${label}</span>
+                        <button class="btn-edit-correction" data-type="commission" data-key="${key}">${isCorrected ? '✓ Corregido' : 'Editar'}</button>
+                      </div>
+                      ${typeof val === 'object' && val.comment ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val.comment}</p>
+                        </div>
+                      ` : typeof val === 'string' && val ? `
+                        <div class="correction-item-reviewer-comment">
+                          <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
+                          <p>${val}</p>
+                        </div>
+                      ` : ''}
+                      <div class="correction-item-user-response">
+                        <label>Tu respuesta (opcional):</label>
+                        <input type="text" class="user-field-response" data-type="commission" data-key="${key}"
+                               placeholder="Agrega una nota sobre esta corrección...">
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="user-observations-section general-observation">
+            <label for="user-correction-comments">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Observación general para el revisor (opcional)
+            </label>
+            <textarea id="user-correction-comments" class="user-observations-textarea"
+                      placeholder="Escriba aquí cualquier comentario o aclaración general sobre las correcciones realizadas..."></textarea>
           </div>
-        ` : ''}
 
-        <div class="user-observations-section general-observation">
-          <label for="user-correction-comments">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            Observación general para el revisor (opcional)
-          </label>
-          <textarea id="user-correction-comments" class="user-observations-textarea"
-                    placeholder="Escriba aquí cualquier comentario o aclaración general sobre las correcciones realizadas..."></textarea>
+          <div class="correction-actions">
+            <button class="btn-resubmit-org" id="btn-resubmit-${org.id}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+              </svg>
+              Reenviar para Revisión
+            </button>
+          </div>
         </div>
-
-        <div class="correction-actions">
-          <button class="btn-resubmit-org" id="btn-resubmit-${org.id}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 2L11 13"></path>
-              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-            </svg>
-            Reenviar para Revisión
-          </button>
-        </div>
-      </div>
-    `;
+      `;
+    }
   }
 
   // Generar HTML de información de Ministro asignado o cita pendiente

@@ -5122,64 +5122,172 @@ class AdminDashboard {
                   Solicitar Correcciones al Usuario
                 </button>
 
-                <!-- Panel de correcciones (oculto por defecto) -->
+                <!-- Panel de correcciones v2 (oculto por defecto) -->
                 <div id="corrections-panel" style="display: none;">
                   <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-top: 12px;">
                     <h4 style="margin: 0 0 4px; color: #991b1b; font-size: 15px; font-weight: 700;">Solicitar Correcciones</h4>
-                    <p style="margin: 0 0 16px; color: #b91c1c; font-size: 12px;">Selecciona las secciones que requieren correcciones y detalla los problemas encontrados.</p>
+                    <p style="margin: 0 0 16px; color: #b91c1c; font-size: 12px;">Selecciona los ítems específicos que requieren corrección. Al marcar uno, escribe la observación.</p>
 
-                    <div style="display: grid; gap: 10px;">
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="directorio"> Directorio Provisorio
-                        </label>
-                        <textarea class="correction-detail" data-section="directorio" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con el directorio..."></textarea>
+                    <div style="display: grid; gap: 6px;" id="corrections-accordion">
+
+                      <!-- Sección 1: Datos Generales -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Datos de la Organizaci&oacute;n</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          ${(() => {
+                            const orgData = org.organization || {};
+                            const datosFields = [
+                              { field: 'organizationName', label: 'Nombre', value: org.organizationName || orgData.name || '' },
+                              { field: 'address', label: 'Direcci\u00f3n', value: orgData.address || org.address || '' },
+                              { field: 'commune', label: 'Comuna', value: orgData.commune || '' },
+                              { field: 'region', label: 'Regi\u00f3n', value: orgData.region || '' },
+                              { field: 'neighborhood', label: 'Unidad Vecinal', value: orgData.neighborhood || '' },
+                              { field: 'email', label: 'Email', value: orgData.email || org.contactEmail || '' },
+                              { field: 'phone', label: 'Tel\u00e9fono', value: orgData.phone || org.contactPhone || '' },
+                              { field: 'description', label: 'Objetivos', value: orgData.description || '' }
+                            ];
+                            return datosFields.map(f => `
+                              <div class="correction-selectable-item" data-category="datos_generales" data-field="${f.field}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                                  <input type="checkbox" class="correction-item-check">
+                                  <span style="font-weight: 600; min-width: 90px;">${f.label}:</span>
+                                  <span style="color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.value || '(vac\u00edo)'}</span>
+                                </label>
+                                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre ${f.label.toLowerCase()}..."></textarea>
+                              </div>
+                            `).join('');
+                          })()}
+                        </div>
                       </div>
 
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="comision"> Comisión Electoral
-                        </label>
-                        <textarea class="correction-detail" data-section="comision" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con la comisión..."></textarea>
+                      <!-- Sección 2: Directorio -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Directorio Provisorio</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          ${(() => {
+                            const dirItems = [];
+                            ['president', 'secretary', 'treasurer'].forEach(cargo => {
+                              const m = dir[cargo];
+                              if (m) dirItems.push({ memberId: m.rut || cargo, memberName: extractName(m), role: cargoLabels[cargo] || cargo });
+                            });
+                            additionalMembers.forEach(m => {
+                              dirItems.push({ memberId: m.rut || m.id || '', memberName: extractName(m), role: cargoLabels[m.role] || m.role || 'Director' });
+                            });
+                            if (dirItems.length === 0) return '<p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">No hay miembros de directorio registrados</p>';
+                            return dirItems.map(d => `
+                              <div class="correction-selectable-item" data-category="directorio" data-member-id="${d.memberId}" data-member-name="${d.memberName}" data-role="${d.role}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                                  <input type="checkbox" class="correction-item-check">
+                                  <span style="font-weight: 600;">${d.role}:</span>
+                                  <span style="color: #64748b;">${d.memberName}</span>
+                                </label>
+                                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre este miembro..."></textarea>
+                              </div>
+                            `).join('');
+                          })()}
+                        </div>
                       </div>
 
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="miembros"> Miembros Fundadores
-                        </label>
-                        <textarea class="correction-detail" data-section="miembros" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con los miembros..."></textarea>
+                      <!-- Sección 3: Comisión Electoral -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Comisi&oacute;n Electoral</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          ${(() => {
+                            if (!commission || commission.length === 0) return '<p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">No se registr\u00f3 comisi\u00f3n electoral</p>';
+                            return commission.map((m, i) => {
+                              const name = extractName(m);
+                              const role = ['Presidente', 'Secretario', 'Vocal'][i] || 'Miembro';
+                              return `
+                              <div class="correction-selectable-item" data-category="comision_electoral" data-member-id="${m.rut || m.id || ''}" data-member-name="${name}" data-role="${role}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                                  <input type="checkbox" class="correction-item-check">
+                                  <span style="font-weight: 600;">${role}:</span>
+                                  <span style="color: #64748b;">${name}</span>
+                                </label>
+                                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre este miembro..."></textarea>
+                              </div>`;
+                            }).join('');
+                          })()}
+                        </div>
                       </div>
 
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="estatutos"> Estatutos
-                        </label>
-                        <textarea class="correction-detail" data-section="estatutos" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con los estatutos..."></textarea>
+                      <!-- Sección 4: Miembros Fundadores -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Miembros Fundadores (${allMembers.length})</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          ${allMembers.length > 5 ? `<input type="text" class="corr-member-search" placeholder="Buscar miembro por nombre o RUT..." style="width: 100%; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; margin-bottom: 6px; font-family: inherit;">` : ''}
+                          <div class="corr-members-list" style="max-height: 300px; overflow-y: auto;">
+                          ${(() => {
+                            if (allMembers.length === 0) return '<p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">No se registraron miembros</p>';
+                            return allMembers.map((m, i) => {
+                              const name = extractName(m);
+                              const rut = m.rut || '';
+                              return `
+                              <div class="correction-selectable-item" data-category="miembros" data-member-id="${m.id || m._id || rut || i}" data-member-name="${name}" data-searchable="${name.toLowerCase()} ${rut.toLowerCase()}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                                  <input type="checkbox" class="correction-item-check">
+                                  <span style="font-weight: 600; min-width: 24px; color: #94a3b8;">${i + 1}.</span>
+                                  <span style="flex: 1;">${name}</span>
+                                  <span style="color: #94a3b8; font-size: 11px;">${rut}</span>
+                                </label>
+                                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre este miembro..."></textarea>
+                              </div>`;
+                            }).join('');
+                          })()}
+                          </div>
+                        </div>
                       </div>
 
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="certificados"> Certificados / Documentos
-                        </label>
-                        <textarea class="correction-detail" data-section="certificados" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con certificados..."></textarea>
+                      <!-- Sección 5: Documentos (se puebla async) -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Documentos</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          <div id="corr-docs-list"><p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">Cargando documentos...</p></div>
+                        </div>
                       </div>
 
-                      <div class="correction-section-item">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #1e293b;">
-                          <input type="checkbox" class="correction-check" data-section="datos_org"> Datos de la Organización
-                        </label>
-                        <textarea class="correction-detail" data-section="datos_org" style="display: none; width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;" placeholder="Detalle del problema con datos de la org..."></textarea>
+                      <!-- Sección 6: Certificados (se puebla async) -->
+                      <div class="corr-accordion-section">
+                        <div class="corr-accordion-header" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; user-select: none;">
+                          <span style="transition: transform 0.2s; font-size: 11px;">&#9654;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #1e293b; flex: 1;">Certificados</span>
+                          <span class="corr-section-count" style="background: #e2e8f0; color: #64748b; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">0</span>
+                        </div>
+                        <div class="corr-accordion-body" style="display: none; padding: 8px 0 0 0;">
+                          <div id="corr-certs-list"><p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">Cargando certificados...</p></div>
+                        </div>
                       </div>
+
                     </div>
 
                     <div style="margin-top: 14px;">
-                      <label style="font-size: 13px; font-weight: 600; color: #1e293b; display: block; margin-bottom: 6px;">Observación General</label>
+                      <label style="font-size: 13px; font-weight: 600; color: #1e293b; display: block; margin-bottom: 6px;">Observaci&oacute;n General</label>
                       <textarea id="corrections-general-comment" style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 70px; font-family: inherit;" placeholder="Comentario general sobre las correcciones requeridas..."></textarea>
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 16px;">
                       <button type="button" id="btn-cancel-corrections" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
-                      <button type="button" id="btn-send-corrections" class="btn" style="flex: 1; background: #dc2626; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer;">Enviar Correcciones</button>
+                      <button type="button" id="btn-send-corrections" class="btn" style="flex: 1; background: #dc2626; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer;">Enviar Correcciones (0)</button>
                     </div>
                   </div>
                 </div>
@@ -5760,16 +5868,138 @@ class AdminDashboard {
       const actionAlert = modal.querySelector('.ministro-action-alert');
       const correctionsSeparator = btnRequestCorrections.previousElementSibling; // the "── ¿La documentación tiene problemas? ──" div
 
-      // Toggle checkboxes to show/hide textareas
-      correctionsPanel.querySelectorAll('.correction-check').forEach(chk => {
-        chk.addEventListener('change', () => {
-          const textarea = correctionsPanel.querySelector(`.correction-detail[data-section="${chk.dataset.section}"]`);
-          if (textarea) {
-            textarea.style.display = chk.checked ? 'block' : 'none';
-            if (!chk.checked) textarea.value = '';
+      // --- v2 Corrections Panel Logic ---
+
+      const updateCorrectionCount = () => {
+        const total = correctionsPanel.querySelectorAll('.correction-item-check:checked').length;
+        const btnSend = modal.querySelector('#btn-send-corrections');
+        if (btnSend) btnSend.textContent = `Enviar Correcciones (${total})`;
+        // Update per-section counts
+        correctionsPanel.querySelectorAll('.corr-accordion-section').forEach(sec => {
+          const count = sec.querySelectorAll('.correction-item-check:checked').length;
+          const badge = sec.querySelector('.corr-section-count');
+          if (badge) {
+            badge.textContent = count;
+            badge.style.background = count > 0 ? '#fecaca' : '#e2e8f0';
+            badge.style.color = count > 0 ? '#dc2626' : '#64748b';
+          }
+        });
+      };
+
+      // Accordion toggle
+      correctionsPanel.querySelectorAll('.corr-accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const body = header.nextElementSibling;
+          const arrow = header.querySelector('span');
+          if (body.style.display === 'none') {
+            body.style.display = 'block';
+            if (arrow) arrow.style.transform = 'rotate(90deg)';
+          } else {
+            body.style.display = 'none';
+            if (arrow) arrow.style.transform = '';
           }
         });
       });
+
+      // Item checkbox → show/hide textarea
+      correctionsPanel.addEventListener('change', (e) => {
+        if (e.target.classList.contains('correction-item-check')) {
+          const textarea = e.target.closest('.correction-selectable-item')?.querySelector('.correction-item-message');
+          if (textarea) {
+            textarea.style.display = e.target.checked ? 'block' : 'none';
+            if (!e.target.checked) textarea.value = '';
+          }
+          updateCorrectionCount();
+        }
+      });
+
+      // Member search filter
+      const memberSearch = correctionsPanel.querySelector('.corr-member-search');
+      if (memberSearch) {
+        memberSearch.addEventListener('input', () => {
+          const q = memberSearch.value.toLowerCase();
+          correctionsPanel.querySelectorAll('.corr-members-list .correction-selectable-item').forEach(item => {
+            const searchable = item.dataset.searchable || '';
+            item.style.display = searchable.includes(q) ? '' : 'none';
+          });
+        });
+      }
+
+      // Populate documents section async
+      const populateCorrDocs = async () => {
+        const container = correctionsPanel.querySelector('#corr-docs-list');
+        if (!container) return;
+        try {
+          const { apiService } = await import('../../services/ApiService.js');
+          const genDocs = await apiService.get(`/organizations/${org._id}/generated-documents`);
+          if (!genDocs || genDocs.length === 0) {
+            container.innerHTML = '<p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">No hay documentos generados</p>';
+            return;
+          }
+          const DOC_LABELS = { 'ACTA_CONSTITUTIVA': 'Acta Constitutiva', 'ESTATUTOS': 'Estatutos', 'REGISTRO_SOCIOS': 'Registro de Socios', 'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe', 'CERTIFICACION_MUNICIPAL': 'Certificaci\u00f3n Municipal', 'DEPOSITO_ANTECEDENTES': 'Dep\u00f3sito de Antecedentes' };
+          const getLabel = (doc) => {
+            if (DOC_LABELS[doc.docType]) return DOC_LABELS[doc.docType];
+            if (doc.docType && doc.docType.startsWith('DECLARACION_JURADA')) return 'Declaraci\u00f3n Jurada' + (doc.cargoNombre ? ' - ' + doc.cargoNombre : '');
+            return doc.docType || 'Documento';
+          };
+          container.innerHTML = genDocs.map(doc => {
+            const label = getLabel(doc);
+            return `
+              <div class="correction-selectable-item" data-category="documentos" data-doc-type="${doc.docType || ''}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                  <input type="checkbox" class="correction-item-check">
+                  <span style="font-weight: 600;">${label}</span>
+                </label>
+                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre este documento..."></textarea>
+              </div>`;
+          }).join('');
+        } catch (err) {
+          container.innerHTML = '<p style="color: #ef4444; font-size: 12px; padding: 4px 10px;">Error cargando documentos</p>';
+        }
+      };
+
+      // Populate certificates section async
+      const populateCorrCerts = async () => {
+        const container = correctionsPanel.querySelector('#corr-certs-list');
+        if (!container) return;
+        try {
+          const { apiService } = await import('../../services/ApiService.js');
+          const certFiles = await apiService.get(`/organizations/${org._id}/certificate-files`);
+          const cargoLabelsEs = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', vicepresidente: 'Vicepresidente', director: 'Director', director1: 'Director 1', director2: 'Director 2', comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3' };
+          const certsMeta = org.certificatesStep5 || [];
+          const metaArray = Array.isArray(certsMeta) ? certsMeta : Object.entries(certsMeta).filter(([k]) => k !== '_id').map(([key, val]) => ({ memberId: key, memberName: typeof val === 'object' ? (val.memberName || val.name || '') : key }));
+          const mergedCerts = metaArray.map(meta => {
+            const fileData = certFiles.find(f => f.memberId === meta.memberId);
+            return { ...meta, hasFile: !!(fileData && fileData.certificate && fileData.certificate.length > 50) };
+          });
+          certFiles.forEach(f => {
+            if (!mergedCerts.find(m => m.memberId === f.memberId)) {
+              mergedCerts.push({ ...f, hasFile: !!(f.certificate && f.certificate.length > 50) });
+            }
+          });
+          if (mergedCerts.length === 0) {
+            container.innerHTML = '<p style="color: #94a3b8; font-size: 12px; padding: 4px 10px;">No hay certificados registrados</p>';
+            return;
+          }
+          container.innerHTML = mergedCerts.map(cert => {
+            const cargoId = cert.memberId || '';
+            const label = cargoLabelsEs[cargoId] || cargoId || 'Desconocido';
+            const memberName = cert.memberName || cert.name || '';
+            const displayLabel = label + (memberName ? ': ' + memberName : '');
+            return `
+              <div class="correction-selectable-item" data-category="certificados" data-member-id="${cargoId}" data-member-name="${memberName}" style="padding: 6px 10px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #334155;">
+                  <input type="checkbox" class="correction-item-check">
+                  <span style="font-weight: 600;">${displayLabel}</span>
+                  <span style="color: ${cert.hasFile ? '#16a34a' : '#dc2626'}; font-size: 11px; margin-left: auto;">${cert.hasFile ? 'Con archivo' : 'Sin archivo'}</span>
+                </label>
+                <textarea class="correction-item-message" style="display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 40px; font-family: inherit;" placeholder="Observaci\u00f3n sobre este certificado..."></textarea>
+              </div>`;
+          }).join('');
+        } catch (err) {
+          container.innerHTML = '<p style="color: #ef4444; font-size: 12px; padding: 4px 10px;">Error cargando certificados</p>';
+        }
+      };
 
       // Open corrections panel
       btnRequestCorrections.addEventListener('click', () => {
@@ -5778,6 +6008,9 @@ class AdminDashboard {
         if (correctionsSeparator) correctionsSeparator.style.display = 'none';
         btnRequestCorrections.style.display = 'none';
         correctionsPanel.style.display = 'block';
+        // Load async sections
+        populateCorrDocs();
+        populateCorrCerts();
       });
 
       // Cancel corrections
@@ -5789,39 +6022,69 @@ class AdminDashboard {
           if (actionAlert) actionAlert.style.display = '';
           if (correctionsSeparator) correctionsSeparator.style.display = '';
           btnRequestCorrections.style.display = '';
-          // Reset checkboxes and textareas
-          correctionsPanel.querySelectorAll('.correction-check').forEach(chk => { chk.checked = false; });
-          correctionsPanel.querySelectorAll('.correction-detail').forEach(ta => { ta.style.display = 'none'; ta.value = ''; });
+          // Reset all
+          correctionsPanel.querySelectorAll('.correction-item-check').forEach(chk => { chk.checked = false; });
+          correctionsPanel.querySelectorAll('.correction-item-message').forEach(ta => { ta.style.display = 'none'; ta.value = ''; });
           const generalComment = modal.querySelector('#corrections-general-comment');
           if (generalComment) generalComment.value = '';
+          updateCorrectionCount();
         });
       }
 
-      // Send corrections
+      // Send corrections (v2 format)
       const btnSendCorrections = modal.querySelector('#btn-send-corrections');
       if (btnSendCorrections) {
         btnSendCorrections.addEventListener('click', async () => {
-          const checkedSections = correctionsPanel.querySelectorAll('.correction-check:checked');
+          const checkedItems = correctionsPanel.querySelectorAll('.correction-item-check:checked');
           const generalComment = (modal.querySelector('#corrections-general-comment')?.value || '').trim();
 
-          if (checkedSections.length === 0 && !generalComment) {
-            showToast('Selecciona al menos una sección o escribe un comentario general', 'error');
+          if (checkedItems.length === 0 && !generalComment) {
+            showToast('Selecciona al menos un \u00edtem o escribe un comentario general', 'error');
             return;
           }
 
-          // Build corrections object
-          const corrections = { fields: {}, documents: {}, certificates: {} };
-          checkedSections.forEach(chk => {
-            const section = chk.dataset.section;
-            const detail = (correctionsPanel.querySelector(`.correction-detail[data-section="${section}"]`)?.value || '').trim();
-            if (['directorio', 'comision', 'miembros', 'datos_org'].includes(section)) {
-              corrections.fields[section] = detail || 'Requiere corrección';
-            } else if (section === 'estatutos') {
-              corrections.documents[section] = detail || 'Requiere corrección';
-            } else if (section === 'certificados') {
-              corrections.certificates[section] = detail || 'Requiere corrección';
+          // Build v2 corrections array
+          const corrections = [];
+          checkedItems.forEach(chk => {
+            const item = chk.closest('.correction-selectable-item');
+            if (!item) return;
+            const category = item.dataset.category;
+            const message = (item.querySelector('.correction-item-message')?.value || '').trim() || 'Requiere correcci\u00f3n';
+
+            // Build label from context
+            let label = '';
+            if (category === 'datos_generales') {
+              const fieldLabel = item.querySelector('span[style*="font-weight: 600"]');
+              label = fieldLabel ? fieldLabel.textContent.replace(':', '').trim() : (item.dataset.field || 'Campo');
+            } else if (category === 'documentos') {
+              const docLabel = item.querySelector('span[style*="font-weight: 600"]');
+              label = docLabel ? docLabel.textContent.trim() : (item.dataset.docType || 'Documento');
+            } else if (category === 'certificados') {
+              const certLabel = item.querySelector('span[style*="font-weight: 600"]');
+              label = certLabel ? certLabel.textContent.trim() : 'Certificado';
+            } else {
+              // directorio, comision_electoral, miembros
+              const role = item.dataset.role || '';
+              const memberName = item.dataset.memberName || '';
+              label = role ? (role + ': ' + memberName) : memberName;
             }
+
+            corrections.push({
+              category,
+              field: item.dataset.field || undefined,
+              memberId: item.dataset.memberId || undefined,
+              memberName: item.dataset.memberName || undefined,
+              role: item.dataset.role || undefined,
+              docType: item.dataset.docType || undefined,
+              label: label || 'Sin especificar',
+              message
+            });
           });
+
+          if (corrections.length === 0 && !generalComment) {
+            showToast('No se pudieron construir las correcciones', 'error');
+            return;
+          }
 
           const orgId = org._id || org.id;
 
@@ -5839,7 +6102,7 @@ class AdminDashboard {
             console.error('Error sending corrections:', error);
             showToast('Error al enviar correcciones: ' + (error.message || 'Error desconocido'), 'error');
             btnSendCorrections.disabled = false;
-            btnSendCorrections.textContent = 'Enviar Correcciones';
+            btnSendCorrections.textContent = `Enviar Correcciones (${checkedItems.length})`;
           }
         });
       }

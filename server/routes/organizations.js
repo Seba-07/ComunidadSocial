@@ -763,9 +763,8 @@ router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), validate(
     const previousStatus = organization.status;
     organization.status = 'rejected';
     organization.corrections = {
-      fields: corrections.fields || {},
-      documents: corrections.documents || {},
-      certificates: corrections.certificates || {},
+      version: 2,
+      items: corrections,
       generalComment,
       fromStatus: previousStatus,
       createdAt: new Date(),
@@ -798,12 +797,14 @@ router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), validate(
       try {
         const user = await User.findById(organization.userId);
         if (user?.email) {
+          // Normalize v2 corrections array to readable strings for email
+          const correctionStrings = corrections.map(c => `${c.label}: ${c.message}`);
           await emailService.sendRejectionNotification({
             email: user.email,
             userName: `${user.firstName} ${user.lastName}`,
             orgName: organization.organizationName,
-            corrections: req.body.corrections || {},
-            comment: req.body.generalComment || ''
+            corrections: correctionStrings,
+            comment: generalComment || ''
           });
         }
       } catch (emailErr) {
