@@ -2665,24 +2665,13 @@ async function viewOrganization(orgId, forceRefresh = false) {
     });
 
     // Botones de edición
-    console.log('Configurando botones de edición. Total encontrados:', modal.querySelectorAll('.btn-edit-correction').length);
-    modal.querySelectorAll('.btn-edit-correction').forEach((btn, index) => {
-      console.log(`Botón ${index}:`, btn.dataset.type, btn.dataset.key);
+    modal.querySelectorAll('.btn-edit-correction').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        alert('Click detectado! Type: ' + btn.dataset.type + ', Key: ' + btn.dataset.key);
-        try {
-          console.log('>>> CLICK EN BOTÓN EDITAR <<<');
-          const type = btn.dataset.type;
-          const key = btn.dataset.key;
-          console.log('Type:', type, 'Key:', key);
-          console.log('Org:', org);
-          openCorrectionEditor(org, type, key, modal);
-        } catch (error) {
-          console.error('ERROR EN CLICK HANDLER:', error);
-          alert('Error: ' + error.message);
-        }
+        const type = btn.dataset.type;
+        const key = btn.dataset.key;
+        openCorrectionEditor(org, type, key, modal);
       });
     });
 
@@ -2924,22 +2913,11 @@ async function downloadAllUserPDFs(orgId) {
 
 // Función para abrir el editor de correcciones (v2 con soporte para nuevas categorías)
 function openCorrectionEditor(org, type, key, parentModal) {
-  console.log('========================================');
-  console.log('openCorrectionEditor LLAMADO');
-  console.log('Type:', type);
-  console.log('Key:', key);
-  console.log('Org ID:', org.id || org._id);
-  console.log('Org Name:', org.organizationName);
-  console.log('Corrections items:', org.corrections?.items);
-  console.log('provisionalDirectorio:', JSON.stringify(org.provisionalDirectorio, null, 2));
-  console.log('========================================');
-
   // Obtener el ítem de corrección específico para mostrar el mensaje del admin
   const correctionItem = org.corrections?.items?.find(item => {
     const itemKey = item.field || item.memberId || item.docType || item.label;
     return item.category === type && itemKey === key;
   });
-  console.log('Correction item encontrado:', correctionItem);
   const adminMessage = correctionItem?.message || 'Requiere corrección';
 
   // Labels para campos de datos generales
@@ -3089,29 +3067,13 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: DIRECTORIO (president, secretary, treasurer, additionalMembers)
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'directorio') {
-    // El key puede venir en diferentes formatos:
-    // 1. RUT del miembro: "12.345.678-9" (formato más común desde admin)
-    // 2. ID directo: "president", "secretary", "treasurer"
-    // 3. Formato label: "Presidente: Nombre Apellido"
-
-    console.log('=== DEBUG DIRECTORIO ===');
-    console.log('Key recibido:', key);
-    console.log('CorrectionItem completo:', correctionItem);
-    console.log('CorrectionItem role:', correctionItem?.role);
-    console.log('CorrectionItem memberName:', correctionItem?.memberName);
-    console.log('CorrectionItem memberId:', correctionItem?.memberId);
-    console.log('Org provisionalDirectorio:', JSON.stringify(org.provisionalDirectorio, null, 2));
-    console.log('Org members (primeros 3):', org.members?.slice(0, 3));
-
     // Usar provisionalDirectorio o buscar alternativas
     let dir = org.provisionalDirectorio || {};
 
     // Si provisionalDirectorio está vacío, intentar construirlo desde org.members
     const dirIsEmpty = !dir.president && !dir.secretary && !dir.treasurer && (!dir.additionalMembers || dir.additionalMembers.length === 0);
-    console.log('¿Directorio está vacío?:', dirIsEmpty);
 
     if (dirIsEmpty && org.members && org.members.length > 0) {
-      console.log('Construyendo directorio desde org.members...');
       // Buscar miembros con roles de directorio
       const president = org.members.find(m => m.role === 'president');
       const secretary = org.members.find(m => m.role === 'secretary');
@@ -3351,31 +3313,82 @@ function openCorrectionEditor(org, type, key, parentModal) {
       }
     }
 
-    console.log('=== RESULTADO FINAL ===');
-    console.log('Member encontrado:', member);
-    console.log('MemberPath:', memberPath);
-    console.log('Role:', role);
+    // Obtener lista de miembros disponibles para asignar a cargos
+    const availableMembers = (org.members || []).filter(m => {
+      // Excluir miembros que ya tienen cargo en el directorio
+      const memberRut = m.rut || '';
+      const isPresident = dir.president?.rut === memberRut;
+      const isSecretary = dir.secretary?.rut === memberRut;
+      const isTreasurer = dir.treasurer?.rut === memberRut;
+      const isAdditional = (dir.additionalMembers || []).some(am => am?.rut === memberRut);
+      return !isPresident && !isSecretary && !isTreasurer && !isAdditional;
+    });
 
-    if (!member) {
-      console.error('Miembro del directorio no encontrado. Key:', key, 'Directorio:', JSON.stringify(dir, null, 2));
-      console.error('CorrectionItem:', correctionItem);
-      showToast('Miembro del directorio no encontrado. Revise la consola para más detalles.', 'error');
-      return;
-    }
+    // Generar opciones de miembros disponibles
+    const memberOptionsHTML = availableMembers.map(m => {
+      const name = extractMemberName(m);
+      return `<option value="${m.rut || ''}" data-member='${JSON.stringify(m).replace(/'/g, "&#39;")}'>${name} - ${m.rut || 'Sin RUT'}</option>`;
+    }).join('');
 
-    const currentName = extractMemberName(member);
-    const currentRut = member.rut || '';
+    // Generar HTML del directorio actual
+    const generateCargoCard = (cargoKey, cargoLabel, currentMember) => {
+      const name = currentMember ? extractMemberName(currentMember) : 'Sin asignar';
+      const rut = currentMember?.rut || '';
+      const hasCorrection = correctionItem?.role?.toLowerCase() === cargoLabel.toLowerCase() ||
+                           (correctionItem?.memberId && currentMember?.rut === correctionItem.memberId);
+
+      return `
+        <div class="cargo-card" data-cargo="${cargoKey}" style="background: ${hasCorrection ? '#fef2f2' : '#f8fafc'}; border: 2px solid ${hasCorrection ? '#f87171' : '#e2e8f0'}; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">${cargoKey === 'president' ? '👑' : cargoKey === 'secretary' ? '📝' : cargoKey === 'treasurer' ? '💰' : '👤'}</span>
+              <strong style="color: #1e293b; font-size: 15px;">${cargoLabel}</strong>
+              ${hasCorrection ? '<span style="background: #dc2626; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">CORREGIR</span>' : ''}
+            </div>
+          </div>
+
+          ${currentMember ? `
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <p style="margin: 0; font-weight: 600; color: #334155;">${name}</p>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">RUT: ${rut || 'No especificado'}</p>
+                </div>
+                <button class="btn-remove-cargo" data-cargo="${cargoKey}" style="padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                  ✕ Quitar
+                </button>
+              </div>
+            </div>
+          ` : `
+            <div style="background: #fef3c7; border: 1px dashed #f59e0b; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 12px;">
+              <p style="margin: 0; color: #92400e; font-size: 13px;">⚠️ Cargo sin asignar</p>
+            </div>
+          `}
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select class="select-new-member" data-cargo="${cargoKey}" style="flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; cursor: pointer;">
+              <option value="">-- Seleccionar otro miembro --</option>
+              ${memberOptionsHTML}
+            </select>
+            <button class="btn-assign-cargo" data-cargo="${cargoKey}" style="padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;">
+              Asignar
+            </button>
+          </div>
+        </div>
+      `;
+    };
 
     const editModal = document.createElement('div');
     editModal.className = 'correction-edit-modal-overlay';
     editModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
     editModal.innerHTML = `
-      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
-        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
-          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">👤 Editar: ${roleLabels[role] || 'Miembro'}</h3>
+      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden; display: flex; flex-direction: column;">
+        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); flex-shrink: 0;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">👥 Gestionar Directorio Provisorio</h3>
           <button class="modal-close-btn" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white;">&times;</button>
         </div>
-        <div class="correction-edit-body" style="padding: 24px;">
+
+        <div class="correction-edit-body" style="padding: 24px; overflow-y: auto; flex: 1;">
           <!-- Observación del admin -->
           <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
             <div style="display: flex; align-items: flex-start; gap: 10px;">
@@ -3387,88 +3400,147 @@ function openCorrectionEditor(org, type, key, parentModal) {
             </div>
           </div>
 
-          <!-- Datos actuales -->
-          <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
-            <strong style="color: #64748b; font-size: 12px; text-transform: uppercase;">Datos enviados anteriormente:</strong>
-            <p style="margin: 8px 0 0; color: #334155; font-size: 14px;">${currentName} - RUT: ${currentRut || 'No especificado'}</p>
+          <!-- Info -->
+          <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1e40af; font-size: 13px;">
+              <strong>💡 Instrucciones:</strong> Puede quitar miembros de sus cargos, asignar nuevos miembros, o intercambiar posiciones. Los cambios se guardarán al presionar "Guardar Cambios".
+            </p>
           </div>
 
-          <!-- Campos editables -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div>
-              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
-              <input type="text" id="edit-dir-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
-            </div>
-            <div>
-              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Segundo Nombre</label>
-              <input type="text" id="edit-dir-secondname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.segundoNombre || ''}">
-            </div>
-            <div>
-              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Paterno <span style="color: #dc2626;">*</span></label>
-              <input type="text" id="edit-dir-lastname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.lastName || member.apellidoPaterno || ''}">
-            </div>
-            <div>
-              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Materno</label>
-              <input type="text" id="edit-dir-lastname2" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.apellidoMaterno || ''}">
-            </div>
-            <div style="grid-column: 1 / -1;">
-              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">RUT <span style="color: #dc2626;">*</span></label>
-              <input type="text" id="edit-dir-rut" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${currentRut}" placeholder="12.345.678-9">
-            </div>
+          <!-- Directorio -->
+          <div id="directorio-cards">
+            ${generateCargoCard('president', 'Presidente', dir.president)}
+            ${generateCargoCard('secretary', 'Secretario', dir.secretary)}
+            ${generateCargoCard('treasurer', 'Tesorero', dir.treasurer)}
           </div>
+
+          <!-- Directores adicionales -->
+          ${(dir.additionalMembers && dir.additionalMembers.length > 0) ? `
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
+              <h4 style="margin: 0 0 12px; font-size: 14px; color: #64748b;">Directores Adicionales</h4>
+              ${dir.additionalMembers.map((m, idx) => `
+                <div class="cargo-card additional" data-cargo="additional_${idx}" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 20px;">👤</span>
+                      <div>
+                        <p style="margin: 0; font-weight: 600; color: #334155;">${extractMemberName(m)}</p>
+                        <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">RUT: ${m.rut || 'No especificado'}</p>
+                      </div>
+                    </div>
+                    <button class="btn-remove-additional" data-index="${idx}" style="padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                      ✕ Quitar
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
-        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc;">
+
+        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc; flex-shrink: 0;">
           <button class="btn-cancel-edit" style="padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancelar</button>
-          <button class="btn-save-edit" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Corrección</button>
+          <button class="btn-save-directorio" style="padding: 10px 24px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Cambios</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(editModal);
 
+    // Estado local del directorio para modificaciones
+    let localDir = {
+      president: dir.president ? { ...dir.president } : null,
+      secretary: dir.secretary ? { ...dir.secretary } : null,
+      treasurer: dir.treasurer ? { ...dir.treasurer } : null,
+      additionalMembers: (dir.additionalMembers || []).map(m => ({ ...m }))
+    };
+
+    // Función para actualizar la vista
+    const updateView = () => {
+      const container = editModal.querySelector('#directorio-cards');
+      container.innerHTML = `
+        ${generateCargoCard('president', 'Presidente', localDir.president)}
+        ${generateCargoCard('secretary', 'Secretario', localDir.secretary)}
+        ${generateCargoCard('treasurer', 'Tesorero', localDir.treasurer)}
+      `;
+      attachCargoListeners();
+    };
+
+    // Función para adjuntar listeners
+    const attachCargoListeners = () => {
+      // Botones de quitar cargo
+      editModal.querySelectorAll('.btn-remove-cargo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cargo = btn.dataset.cargo;
+          localDir[cargo] = null;
+          updateView();
+        });
+      });
+
+      // Botones de asignar cargo
+      editModal.querySelectorAll('.btn-assign-cargo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cargo = btn.dataset.cargo;
+          const select = editModal.querySelector(`.select-new-member[data-cargo="${cargo}"]`);
+          const selectedOption = select.selectedOptions[0];
+
+          if (!selectedOption || !selectedOption.value) {
+            showToast('Seleccione un miembro', 'warning');
+            return;
+          }
+
+          try {
+            const memberData = JSON.parse(selectedOption.dataset.member.replace(/&#39;/g, "'"));
+            localDir[cargo] = { ...memberData, role: cargo };
+            updateView();
+            showToast(`${memberData.firstName || 'Miembro'} asignado como ${cargo === 'president' ? 'Presidente' : cargo === 'secretary' ? 'Secretario' : 'Tesorero'}`, 'success');
+          } catch (e) {
+            console.error('Error parsing member data:', e);
+            showToast('Error al asignar miembro', 'error');
+          }
+        });
+      });
+    };
+
+    // Attach initial listeners
+    attachCargoListeners();
+
+    // Botones de quitar adicionales
+    editModal.querySelectorAll('.btn-remove-additional').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index);
+        localDir.additionalMembers.splice(idx, 1);
+        btn.closest('.cargo-card').remove();
+      });
+    });
+
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
     editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
-    editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
-      const newFirstName = document.getElementById('edit-dir-firstname').value.trim();
-      const newSecondName = document.getElementById('edit-dir-secondname').value.trim();
-      const newLastName = document.getElementById('edit-dir-lastname').value.trim();
-      const newLastName2 = document.getElementById('edit-dir-lastname2').value.trim();
-      const newRut = document.getElementById('edit-dir-rut').value.trim();
-
-      if (!newFirstName || !newLastName) {
-        showToast('Nombre y apellido paterno son requeridos', 'error');
+    // Guardar cambios
+    editModal.querySelector('.btn-save-directorio').addEventListener('click', async () => {
+      // Validar que haya al menos presidente
+      if (!localDir.president) {
+        showToast('Debe asignar al menos un Presidente', 'error');
         return;
       }
 
-      // Actualizar datos del miembro
-      const updatedMember = {
-        ...member,
-        firstName: newFirstName,
-        primerNombre: newFirstName,
-        segundoNombre: newSecondName,
-        lastName: newLastName,
-        apellidoPaterno: newLastName,
-        apellidoMaterno: newLastName2,
-        rut: newRut
+      // Actualizar provisionalDirectorio
+      org.provisionalDirectorio = {
+        ...org.provisionalDirectorio,
+        president: localDir.president,
+        secretary: localDir.secretary,
+        treasurer: localDir.treasurer,
+        additionalMembers: localDir.additionalMembers
       };
-
-      // Actualizar en el directorio
-      if (!org.provisionalDirectorio) org.provisionalDirectorio = {};
-      if (memberPath.startsWith('additionalMembers')) {
-        const idx = parseInt(memberPath.split('.')[1]);
-        if (!org.provisionalDirectorio.additionalMembers) org.provisionalDirectorio.additionalMembers = [];
-        org.provisionalDirectorio.additionalMembers[idx] = updatedMember;
-      } else {
-        org.provisionalDirectorio[memberPath] = updatedMember;
-      }
 
       // Marcar como corregido
       if (!org.userCorrectedFields) org.userCorrectedFields = {};
       if (!org.userCorrectedFields[type]) org.userCorrectedFields[type] = {};
       org.userCorrectedFields[type][key] = {
-        correctedAt: new Date().toISOString()
+        correctedAt: new Date().toISOString(),
+        changes: 'Directorio modificado'
       };
 
       try {
@@ -3477,12 +3549,12 @@ function openCorrectionEditor(org, type, key, parentModal) {
           userCorrectedFields: org.userCorrectedFields
         });
 
-        showToast('Miembro del directorio actualizado correctamente', 'success');
+        showToast('Directorio actualizado correctamente. El admin será notificado.', 'success');
         editModal.remove();
         parentModal.remove();
         viewOrganization(org.id || org._id, true);
       } catch (error) {
-        console.error('Error al guardar corrección:', error);
+        console.error('Error al guardar directorio:', error);
         showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
       }
     });
@@ -3491,9 +3563,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: COMISIÓN ELECTORAL
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'comision_electoral' || type === 'commission') {
-    console.log('=== DEBUG COMISIÓN ELECTORAL ===');
-    console.log('Key recibido:', key);
-
     // Normalizar RUT para comparación
     const normalizeRut = (rut) => {
       if (!rut) return '';
@@ -3502,38 +3571,29 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     const keyNormalized = normalizeRut(key);
     const commission = org.electoralCommission || org.comisionElectoral || [];
-    console.log('Comisión electoral:', commission);
-
     let memberIndex = -1;
 
-    // ═══ BÚSQUEDA 1: Por RUT ═══
+    // Búsqueda por RUT
     const isRutFormat = /^\d{7,8}[\dkK]$/i.test(keyNormalized) || /^\d{1,2}\.\d{3}\.\d{3}[-]?[\dkK]$/i.test(key);
     if (isRutFormat || key.includes('.') || key.includes('-')) {
-      memberIndex = commission.findIndex(m => {
-        const memberRutNorm = normalizeRut(m.rut);
-        console.log('Comparando RUT comisión:', memberRutNorm, 'vs', keyNormalized);
-        return memberRutNorm === keyNormalized;
-      });
-      console.log('Búsqueda por RUT - índice encontrado:', memberIndex);
+      memberIndex = commission.findIndex(m => normalizeRut(m.rut) === keyNormalized);
     }
 
-    // ═══ BÚSQUEDA 2: Por nombre ═══
+    // Búsqueda por nombre
     if (memberIndex === -1) {
       memberIndex = commission.findIndex(m => {
         const name = extractMemberName(m);
         return key.toLowerCase().includes(name.split(' ')[0].toLowerCase()) ||
                name.toLowerCase().includes(key.split(' ')[0].toLowerCase());
       });
-      console.log('Búsqueda por nombre - índice encontrado:', memberIndex);
     }
 
-    // ═══ BÚSQUEDA 3: Por formato "Miembro N" ═══
+    // Búsqueda por formato "Miembro N"
     if (memberIndex === -1 && key.match(/miembro\s*(\d+)/i)) {
       memberIndex = parseInt(key.match(/miembro\s*(\d+)/i)[1]) - 1;
-      console.log('Búsqueda por índice numérico:', memberIndex);
     }
 
-    // ═══ BÚSQUEDA 4: Por formato "Rol: Nombre" ═══
+    // Búsqueda por formato "Rol: Nombre"
     if (memberIndex === -1) {
       const roleMatch = key.match(/^(Presidente|Secretario|Vocal|Miembro):\s*(.+)$/i);
       if (roleMatch) {
@@ -3542,12 +3602,10 @@ function openCorrectionEditor(org, type, key, parentModal) {
           const name = extractMemberName(m).toLowerCase();
           return name.includes(memberName.split(' ')[0]) || memberName.includes(name.split(' ')[0]);
         });
-        console.log('Búsqueda por formato Rol:Nombre - índice:', memberIndex);
       }
     }
 
     const member = commission[memberIndex];
-    console.log('Miembro encontrado:', member, 'en índice:', memberIndex);
 
     if (!member) {
       console.error('Miembro de comisión no encontrado. Key:', key, 'Comisión:', JSON.stringify(commission, null, 2));
@@ -3661,9 +3719,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: MIEMBROS FUNDADORES
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'miembros' || type === 'member') {
-    console.log('=== DEBUG MIEMBROS FUNDADORES ===');
-    console.log('Key recibido:', key);
-
     // Normalizar RUT para comparación
     const normalizeRut = (rut) => {
       if (!rut) return '';
@@ -3672,52 +3727,41 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     const keyNormalized = normalizeRut(key);
     const members = org.members || [];
-    console.log('Total miembros:', members.length);
-
     let memberIndex = -1;
 
-    // ═══ BÚSQUEDA 1: Por RUT normalizado ═══
+    // Búsqueda por RUT normalizado
     const isRutFormat = /^\d{7,8}[\dkK]$/i.test(keyNormalized) || /^\d{1,2}\.\d{3}\.\d{3}[-]?[\dkK]$/i.test(key);
     if (isRutFormat || key.includes('.') || key.includes('-')) {
-      memberIndex = members.findIndex(m => {
-        const memberRutNorm = normalizeRut(m.rut);
-        return memberRutNorm === keyNormalized;
-      });
-      console.log('Búsqueda por RUT - índice encontrado:', memberIndex);
+      memberIndex = members.findIndex(m => normalizeRut(m.rut) === keyNormalized);
     }
 
-    // ═══ BÚSQUEDA 2: Por ID o RUT exacto ═══
+    // Búsqueda por ID o RUT exacto
     if (memberIndex === -1) {
       memberIndex = members.findIndex(m => m.rut === key || m._id === key || m.id === key);
-      console.log('Búsqueda por ID/RUT exacto - índice encontrado:', memberIndex);
     }
 
-    // ═══ BÚSQUEDA 3: Por nombre ═══
+    // Búsqueda por nombre
     if (memberIndex === -1) {
       memberIndex = members.findIndex(m => {
         const name = extractMemberName(m);
         return key.toLowerCase().includes(name.split(' ')[0].toLowerCase()) ||
                name.toLowerCase().includes(key.split(' ')[0].toLowerCase());
       });
-      console.log('Búsqueda por nombre - índice encontrado:', memberIndex);
     }
 
-    // ═══ BÚSQUEDA 4: Por formato "Nombre Completo" ═══
+    // Búsqueda por formato "Nombre Completo"
     if (memberIndex === -1) {
       const keyLower = key.toLowerCase();
       memberIndex = members.findIndex(m => {
         const name = extractMemberName(m).toLowerCase();
         return name === keyLower || keyLower.includes(name) || name.includes(keyLower);
       });
-      console.log('Búsqueda por nombre completo - índice encontrado:', memberIndex);
     }
 
     const member = members[memberIndex];
-    console.log('Miembro encontrado:', member, 'en índice:', memberIndex);
 
     if (!member) {
-      console.error('Miembro no encontrado. Key:', key, 'Miembros (primeros 3):', JSON.stringify(members.slice(0, 3), null, 2));
-      showToast('Miembro fundador no encontrado. Revise la consola para más detalles.', 'error');
+      showToast('Miembro fundador no encontrado', 'error');
       return;
     }
 
