@@ -4657,9 +4657,17 @@ class AdminDashboard {
                         <span class="ministro-data-label">Dirección Sede</span>
                         <span class="ministro-data-value ${orgAddress ? '' : 'muted'}">${orgAddress || 'No especificada'}</span>
                       </div>
-                      <div class="ministro-data-item">
-                        <span class="ministro-data-label">Unidad Vecinal</span>
-                        <span class="ministro-data-value ${orgUnidadVecinal ? '' : 'muted'}">${orgUnidadVecinal || 'No especificada'}</span>
+                      <div class="ministro-data-item" style="grid-column: 1 / -1;">
+                        <span class="ministro-data-label">Unidad Vecinal <span style="color: #dc2626;">*</span></span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                          <select id="uv-selector" class="input-styled" data-org-id="${org._id || org.id}" style="flex: 1; padding: 8px 12px; border: 1px solid ${orgUnidadVecinal ? '#10b981' : '#f59e0b'}; border-radius: 8px; font-size: 13px; background: ${orgUnidadVecinal ? '#f0fdf4' : '#fffbeb'};">
+                            <option value="">-- Seleccionar Unidad Vecinal --</option>
+                          </select>
+                          <span id="uv-status-icon" style="font-size: 18px;">${orgUnidadVecinal ? '✅' : '⚠️'}</span>
+                        </div>
+                        <small id="uv-help-text" style="display: block; margin-top: 4px; font-size: 11px; color: ${orgUnidadVecinal ? '#10b981' : '#f59e0b'};">
+                          ${orgUnidadVecinal ? '✓ Unidad vecinal confirmada' : '⚠️ Debe seleccionar una unidad vecinal para continuar'}
+                        </small>
                       </div>
                     </div>
                     ${orgDescription ? `
@@ -4882,9 +4890,17 @@ class AdminDashboard {
                         <span class="ministro-data-label">Dirección Sede</span>
                         <span class="ministro-data-value ${orgAddress ? '' : 'muted'}">${orgAddress || 'No especificada'}</span>
                       </div>
-                      <div class="ministro-data-item">
-                        <span class="ministro-data-label">Unidad Vecinal</span>
-                        <span class="ministro-data-value ${orgUnidadVecinal ? '' : 'muted'}">${orgUnidadVecinal || 'No especificada'}</span>
+                      <div class="ministro-data-item" style="grid-column: 1 / -1;">
+                        <span class="ministro-data-label">Unidad Vecinal <span style="color: #dc2626;">*</span></span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                          <select id="uv-selector" class="input-styled" data-org-id="${org._id || org.id}" style="flex: 1; padding: 8px 12px; border: 1px solid ${orgUnidadVecinal ? '#10b981' : '#f59e0b'}; border-radius: 8px; font-size: 13px; background: ${orgUnidadVecinal ? '#f0fdf4' : '#fffbeb'};">
+                            <option value="">-- Seleccionar Unidad Vecinal --</option>
+                          </select>
+                          <span id="uv-status-icon" style="font-size: 18px;">${orgUnidadVecinal ? '✅' : '⚠️'}</span>
+                        </div>
+                        <small id="uv-help-text" style="display: block; margin-top: 4px; font-size: 11px; color: ${orgUnidadVecinal ? '#10b981' : '#f59e0b'};">
+                          ${orgUnidadVecinal ? '✓ Unidad vecinal confirmada' : '⚠️ Debe seleccionar una unidad vecinal para continuar'}
+                        </small>
                       </div>
                     </div>
                     ${orgDescription ? `
@@ -5347,6 +5363,181 @@ class AdminDashboard {
     `;
 
     document.body.appendChild(modal);
+
+    // ============================================
+    // LÓGICA DE SELECTOR DE UNIDAD VECINAL
+    // ============================================
+    const loadUVSelector = async () => {
+      const uvSelector = modal.querySelector('#uv-selector');
+      const uvStatusIcon = modal.querySelector('#uv-status-icon');
+      const uvHelpText = modal.querySelector('#uv-help-text');
+      const scheduleSubmitBtn = modal.querySelector('#schedule-ministro-form button[type="submit"]');
+      const btnSendCorrections = modal.querySelector('#btn-send-corrections');
+      const btnRequestCorrections = modal.querySelector('#btn-request-corrections');
+
+      if (!uvSelector) return;
+
+      // Función para validar si UV está seleccionada y habilitar/deshabilitar botones
+      const validateUVSelection = () => {
+        const hasUV = uvSelector.value && uvSelector.value.trim() !== '';
+
+        // Actualizar icono de estado
+        if (uvStatusIcon) {
+          uvStatusIcon.textContent = hasUV ? '✅' : '⚠️';
+        }
+
+        // Actualizar texto de ayuda
+        if (uvHelpText) {
+          if (hasUV) {
+            uvHelpText.textContent = '✓ Unidad Vecinal seleccionada correctamente';
+            uvHelpText.style.color = '#059669';
+          } else {
+            uvHelpText.textContent = '⚠️ Debe seleccionar una Unidad Vecinal antes de agendar ministro o enviar correcciones';
+            uvHelpText.style.color = '#dc2626';
+          }
+        }
+
+        // Habilitar/deshabilitar botón de agendar
+        if (scheduleSubmitBtn) {
+          scheduleSubmitBtn.disabled = !hasUV;
+          scheduleSubmitBtn.style.opacity = hasUV ? '1' : '0.5';
+          scheduleSubmitBtn.style.cursor = hasUV ? 'pointer' : 'not-allowed';
+          scheduleSubmitBtn.title = hasUV ? '' : 'Debe seleccionar una Unidad Vecinal primero';
+        }
+
+        // Habilitar/deshabilitar botón de correcciones
+        if (btnSendCorrections) {
+          btnSendCorrections.disabled = !hasUV;
+          btnSendCorrections.style.opacity = hasUV ? '1' : '0.5';
+          btnSendCorrections.style.cursor = hasUV ? 'pointer' : 'not-allowed';
+          btnSendCorrections.title = hasUV ? '' : 'Debe seleccionar una Unidad Vecinal primero';
+        }
+
+        // Habilitar/deshabilitar botón de solicitar correcciones
+        if (btnRequestCorrections) {
+          btnRequestCorrections.disabled = !hasUV;
+          btnRequestCorrections.style.opacity = hasUV ? '1' : '0.5';
+          btnRequestCorrections.style.cursor = hasUV ? 'pointer' : 'not-allowed';
+          btnRequestCorrections.title = hasUV ? '' : 'Debe seleccionar una Unidad Vecinal primero';
+        }
+
+        return hasUV;
+      };
+
+      try {
+        // Cargar lista de UVs desde el servicio
+        const { default: unidadesVecinalesService } = await import('../../services/UnidadesVecinalesService.js');
+        const uvList = await unidadesVecinalesService.getForSelect();
+
+        if (!uvList || uvList.length === 0) {
+          uvSelector.innerHTML = '<option value="">No hay unidades vecinales disponibles</option>';
+          validateUVSelection();
+          return;
+        }
+
+        // Construir opciones del selector
+        let optionsHTML = '<option value="">-- Seleccionar Unidad Vecinal --</option>';
+
+        // Agrupar por macrozona
+        const uvByMacrozona = {};
+        uvList.forEach(uv => {
+          const mz = uv.macrozona || 0;
+          if (!uvByMacrozona[mz]) uvByMacrozona[mz] = [];
+          uvByMacrozona[mz].push(uv);
+        });
+
+        // Ordenar macrozonas
+        const sortedMacrozonas = Object.keys(uvByMacrozona).sort((a, b) => parseInt(a) - parseInt(b));
+
+        sortedMacrozonas.forEach(mz => {
+          const uvs = uvByMacrozona[mz];
+          optionsHTML += `<optgroup label="Macrozona ${mz}">`;
+          uvs.sort((a, b) => a.value - b.value).forEach(uv => {
+            optionsHTML += `<option value="${uv.value}">${uv.label}</option>`;
+          });
+          optionsHTML += '</optgroup>';
+        });
+
+        uvSelector.innerHTML = optionsHTML;
+
+        // Pre-seleccionar UV actual si existe
+        const currentUV = org.unidadVecinal;
+        if (currentUV) {
+          // Buscar si el valor coincide (puede ser string o número)
+          const uvValue = typeof currentUV === 'string' ? currentUV.replace(/\D/g, '') : currentUV;
+          const options = uvSelector.querySelectorAll('option');
+          options.forEach(opt => {
+            if (opt.value === String(uvValue) || opt.value === currentUV) {
+              opt.selected = true;
+            }
+          });
+        }
+
+        // Validar estado inicial
+        validateUVSelection();
+
+        // Event listener para guardar UV cuando cambia
+        uvSelector.addEventListener('change', async () => {
+          const selectedUV = uvSelector.value;
+          const orgId = org._id || org.id;
+
+          if (!selectedUV) {
+            validateUVSelection();
+            return;
+          }
+
+          // Mostrar estado de guardado
+          uvSelector.disabled = true;
+          if (uvStatusIcon) uvStatusIcon.textContent = '⏳';
+          if (uvHelpText) {
+            uvHelpText.textContent = 'Guardando Unidad Vecinal...';
+            uvHelpText.style.color = '#64748b';
+          }
+
+          try {
+            const { apiService } = await import('../../services/ApiService.js');
+            await apiService.put(`/organizations/${orgId}`, {
+              unidadVecinal: selectedUV
+            });
+
+            // Actualizar objeto local
+            org.unidadVecinal = selectedUV;
+
+            if (uvStatusIcon) uvStatusIcon.textContent = '✅';
+            if (uvHelpText) {
+              uvHelpText.textContent = '✓ Unidad Vecinal guardada correctamente';
+              uvHelpText.style.color = '#059669';
+            }
+
+            showToast('Unidad Vecinal actualizada correctamente', 'success');
+            validateUVSelection();
+
+          } catch (error) {
+            console.error('Error al guardar UV:', error);
+            if (uvStatusIcon) uvStatusIcon.textContent = '❌';
+            if (uvHelpText) {
+              uvHelpText.textContent = '❌ Error al guardar. Intente nuevamente.';
+              uvHelpText.style.color = '#dc2626';
+            }
+            showToast('Error al guardar Unidad Vecinal: ' + (error.message || 'Error desconocido'), 'error');
+          } finally {
+            uvSelector.disabled = false;
+          }
+        });
+
+      } catch (error) {
+        console.error('Error cargando unidades vecinales:', error);
+        uvSelector.innerHTML = '<option value="">Error al cargar UVs</option>';
+        if (uvHelpText) {
+          uvHelpText.textContent = '❌ Error al cargar unidades vecinales';
+          uvHelpText.style.color = '#dc2626';
+        }
+        validateUVSelection();
+      }
+    };
+
+    // Ejecutar carga de UV selector
+    loadUVSelector();
 
     // Event listeners - Tabs de documentación
     const docTabs = modal.querySelectorAll('.admin-doc-tab');
