@@ -507,37 +507,40 @@ class OrganizationsService {
       if (onProgress) onProgress('Organización creada', 'Guardando certificados...', 50);
 
       // Guardar certificados base64 en colección separada (evita límite BSON 16MB)
+      // Se envían UNO POR UNO para evitar payloads gigantes que fallan silenciosamente
       const certs = requestData.certificatesStep5;
-      console.log('📋 [OrganizationsService] certificatesStep5 keys:', certs ? Object.keys(certs) : 'null');
       if (certs && typeof certs === 'object' && !Array.isArray(certs)) {
-        try {
-          const certFiles = Object.entries(certs)
-            .filter(([_, cert]) => cert && (cert.base64 || cert.certificate || cert.data))
-            .map(([key, cert]) => {
-              let base64 = cert.base64 || cert.certificate || cert.data || '';
-              console.log('📋 [OrganizationsService] cert', key, '→ base64 length:', base64?.length || 0, 'starts with:', base64?.substring(0, 30));
-              if (base64 && base64.includes(',')) base64 = base64.split(',')[1];
-              return {
+        const certEntries = Object.entries(certs)
+          .filter(([_, cert]) => cert && (cert.base64 || cert.certificate || cert.data));
+
+        let savedCount = 0;
+        let failedCount = 0;
+        for (const [key, cert] of certEntries) {
+          try {
+            let base64 = cert.base64 || cert.certificate || cert.data || '';
+            if (base64 && base64.includes(',')) base64 = base64.split(',')[1];
+
+            if (!base64 || base64.length < 50) {
+              console.warn('⚠️ Certificado', key, 'sin datos base64 válidos');
+              continue;
+            }
+
+            await apiService.post(`/organizations/${newOrg._id}/certificate-files`, {
+              certificate: {
                 memberId: key,
                 memberName: cert.memberName || cert.name || '',
                 certificate: base64
-              };
+              }
             });
-
-          console.log('📋 [OrganizationsService] certFiles a enviar:', certFiles.length, 'archivos, total bytes:', certFiles.reduce((sum, f) => sum + (f.certificate?.length || 0), 0));
-
-          if (certFiles.length > 0) {
-            const certResult = await apiService.post(`/organizations/${newOrg._id}/certificate-files`, { certificates: certFiles });
-            console.log('✅ Certificados base64 guardados:', certFiles.length, 'resultado:', certResult);
-          } else {
-            console.warn('⚠️ [OrganizationsService] No se encontraron certificados con datos base64');
+            savedCount++;
+            console.log('✅ Certificado guardado:', key, '(' + savedCount + '/' + certEntries.length + ')');
+            if (onProgress) onProgress('Guardando certificados...', key + ' (' + savedCount + '/' + certEntries.length + ')', 50 + Math.round(20 * savedCount / certEntries.length));
+          } catch (certError) {
+            failedCount++;
+            console.error('⚠️ Error guardando certificado', key + ':', certError.message || certError);
           }
-        } catch (certError) {
-          console.error('⚠️ Error guardando certificados (org creada OK):', certError);
-          if (onProgress) onProgress('Certificados - error al guardar', 'Continuando con documentos...', 60);
         }
-      } else {
-        console.warn('⚠️ [OrganizationsService] certificatesStep5 no es un objeto válido:', typeof certs);
+        console.log('📋 Certificados: ' + savedCount + ' guardados, ' + failedCount + ' fallidos de ' + certEntries.length + ' total');
       }
 
       if (onProgress) onProgress('Certificados guardados', 'Guardando documentos generados...', 70);

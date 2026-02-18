@@ -5281,7 +5281,15 @@ class AdminDashboard {
             const subModal = document.createElement('div');
             subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
             const escapedContent = doc.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            subModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4><button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><pre style="flex: 1; overflow-y: auto; padding: 24px; margin: 0; font-family: \'Courier New\', Courier, monospace; font-size: 12px; line-height: 1.5; color: #1e293b; white-space: pre-wrap; word-wrap: break-word; background: #fafbfc;">' + escapedContent + '</pre></div>';
+            subModal.innerHTML = '<div style="background: #e2e8f0; border-radius: 12px; width: 100%; max-width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">'
+              + '<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: white; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e2e8f0;">'
+              + '<h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4>'
+              + '<button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button>'
+              + '</div>'
+              + '<div style="flex: 1; overflow-y: auto; padding: 24px; display: flex; justify-content: center;">'
+              + '<div style="background: white; width: 100%; max-width: 700px; min-height: 900px; padding: 60px 60px 80px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #d1d5db;">'
+              + '<pre style="margin: 0; font-family: \'Times New Roman\', Times, Georgia, serif; font-size: 13px; line-height: 1.7; color: #1a1a1a; white-space: pre-wrap; word-wrap: break-word;">' + escapedContent + '</pre>'
+              + '</div></div></div>';
             document.body.appendChild(subModal);
             subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
             subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });

@@ -1436,6 +1436,7 @@ router.post('/:id/generated-documents', authenticate, validateObjectId(), async 
 });
 
 // Guardar archivos de certificados base64 (colección separada para evitar BSON 16MB)
+// Acepta bulk (certificates array) o individual (certificate object)
 router.post('/:id/certificate-files', authenticate, validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
@@ -1446,27 +1447,55 @@ router.post('/:id/certificate-files', authenticate, validateObjectId(), async (r
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
-    const { certificates } = req.body;
-    if (!certificates || !Array.isArray(certificates) || certificates.length === 0) {
+    // Soportar envío individual (certificate) o bulk (certificates)
+    const { certificate, certificates } = req.body;
+
+    if (certificate && certificate.memberId) {
+      // Modo individual: agregar/reemplazar un solo certificado usando $push/$pull
+      const certData = {
+        memberId: certificate.memberId || '',
+        memberName: certificate.memberName || '',
+        certificate: certificate.certificate || '',
+        uploadedAt: new Date()
+      };
+
+      // Primero remover si ya existe uno con ese memberId, luego agregar
+      await CertificateFiles.findOneAndUpdate(
+        { organizationId: req.params.id },
+        { $pull: { certificates: { memberId: certData.memberId } } }
+      );
+      await CertificateFiles.findOneAndUpdate(
+        { organizationId: req.params.id },
+        {
+          $push: { certificates: certData },
+          $setOnInsert: { organizationId: req.params.id }
+        },
+        { upsert: true, new: true }
+      );
+
+      logger.debug('CERT FILE - Individual guardado:', certData.memberId, 'para org:', req.params.id, 'size:', (certData.certificate?.length || 0));
+      res.json({ saved: 1, memberId: certData.memberId });
+    } else if (certificates && Array.isArray(certificates) && certificates.length > 0) {
+      // Modo bulk (legacy)
+      await CertificateFiles.findOneAndUpdate(
+        { organizationId: req.params.id },
+        {
+          organizationId: req.params.id,
+          certificates: certificates.map(c => ({
+            memberId: c.memberId || '',
+            memberName: c.memberName || '',
+            certificate: c.certificate || '',
+            uploadedAt: new Date()
+          }))
+        },
+        { upsert: true, new: true }
+      );
+
+      logger.debug('CERT FILES - Bulk guardados:', certificates.length, 'para org:', req.params.id);
+      res.json({ saved: certificates.length });
+    } else {
       return res.status(400).json({ error: 'No se enviaron certificados' });
     }
-
-    await CertificateFiles.findOneAndUpdate(
-      { organizationId: req.params.id },
-      {
-        organizationId: req.params.id,
-        certificates: certificates.map(c => ({
-          memberId: c.memberId || '',
-          memberName: c.memberName || '',
-          certificate: c.certificate || '',
-          uploadedAt: new Date()
-        }))
-      },
-      { upsert: true, new: true }
-    );
-
-    logger.debug('CERT FILES - Guardados:', certificates.length, 'para org:', req.params.id);
-    res.json({ saved: certificates.length });
   } catch (error) {
     logger.error('Save certificate files error:', error.message);
     res.status(500).json({ error: error.message || 'Error al guardar certificados' });
