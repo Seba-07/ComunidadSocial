@@ -5788,7 +5788,7 @@ class AdminDashboard {
             if (!doc) return;
             let label = getDocLabel(doc);
             const subModal = document.createElement('div');
-            subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             const formattedContent = formatDocContent(doc.content.split('========== FIRMAS ==========')[0] || doc.content);
             subModal.innerHTML = '<div style="background: #f1f5f9; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">'
               + '<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 12px 12px 0 0;">'
@@ -5885,7 +5885,7 @@ class AdminDashboard {
             const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
 
             const certModal = document.createElement('div');
-            certModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200002; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            certModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             let contentHtml;
             if (isImage || base64.startsWith('data:image')) {
               contentHtml = '<img src="' + dataUri + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;" />';
