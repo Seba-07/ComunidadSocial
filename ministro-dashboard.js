@@ -2010,164 +2010,131 @@ function formatEstatutosContent(text) {
 }
 
 /**
- * Carga y muestra los documentos generados para el Ministro de Fe
+ * Carga y muestra los documentos oficiales para el Ministro de Fe
+ * Usa los endpoints de generación de PDF reales
  */
 async function loadGeneratedDocsForMF(modal, org) {
   const container = modal.querySelector('#generated-docs-container');
   if (!container) return;
 
-  const DOC_TYPE_LABELS = {
-    'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
-    'ESTATUTOS': 'Estatutos',
-    'REGISTRO_SOCIOS': 'Registro de Socios',
-    'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
-    'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
-    'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes',
-    'DECLARACION_JURADA': 'Declaración Jurada'
-  };
-
-  const DOC_ICONS = {
-    'ACTA_CONSTITUTIVA': '📜',
-    'ESTATUTOS': '📘',
-    'REGISTRO_SOCIOS': '📋',
-    'CERTIFICADO_MINISTRO_FE': '🏛️',
-    'CERTIFICACION_MUNICIPAL': '🏢',
-    'DEPOSITO_ANTECEDENTES': '📁',
-    'DECLARACION_JURADA': '📄'
-  };
+  // Documentos disponibles como PDF (generados por el servidor)
+  const availableDocs = [
+    {
+      id: 'acta',
+      label: 'Acta Constitutiva',
+      icon: '📜',
+      description: 'Documento oficial de constitución de la organización',
+      endpoint: `/documents/${org._id}/generate-acta`,
+      previewEndpoint: `/documents/${org._id}/preview-acta`
+    },
+    {
+      id: 'members',
+      label: 'Lista de Socios Fundadores',
+      icon: '📋',
+      description: 'Registro de miembros fundadores con firmas',
+      endpoint: `/documents/${org._id}/generate-members`,
+      previewEndpoint: null
+    }
+  ];
 
   try {
-    // Usar apiService que maneja automáticamente la URL base y autenticación
-    const data = await apiService.get(`/organizations/${org._id}/generated-documents`);
-    const documents = Array.isArray(data) ? data : (data?.documents || []);
-
-    console.log('📁 [MF] Documentos generados cargados:', documents.length, documents);
-
-    if (!documents || documents.length === 0) {
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #9ca3af;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.5;">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-          </svg>
-          <p style="margin: 0; font-weight: 600;">No hay documentos generados</p>
-          <p style="margin: 8px 0 0; font-size: 14px;">Los documentos se generarán durante el proceso de constitución</p>
-        </div>
-      `;
-      return;
-    }
-
-    // Agrupar por tipo (algunos docs como declaraciones tienen múltiples)
-    const groupedDocs = {};
-    documents.forEach(doc => {
-      const baseType = doc.docType.startsWith('DECLARACION_JURADA') ? 'DECLARACION_JURADA' : doc.docType;
-      if (!groupedDocs[baseType]) {
-        groupedDocs[baseType] = [];
-      }
-      groupedDocs[baseType].push(doc);
-    });
-
     let html = '';
 
-    for (const [baseType, docs] of Object.entries(groupedDocs)) {
-      docs.forEach((doc, idx) => {
-        const label = doc.docType.startsWith('DECLARACION_JURADA')
-          ? `Declaración Jurada${doc.cargoNombre ? ' - ' + doc.cargoNombre : ''}`
-          : (DOC_TYPE_LABELS[doc.docType] || doc.docType);
-        const icon = DOC_ICONS[baseType] || '📄';
-        const date = doc.generatedAt ? new Date(doc.generatedAt).toLocaleDateString('es-CL') : '';
-
-        html += `
-          <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="display: flex; align-items: flex-start; gap: 16px;">
-              <div style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-                ${icon}
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937;">${label}</h4>
-                ${date ? `<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Generado: ${date}</p>` : ''}
-                <div style="display: flex; gap: 8px; margin-top: 12px;">
-                  <button type="button" class="btn-view-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" style="
-                    padding: 8px 16px;
-                    background: linear-gradient(135deg, #3b82f6, #2563eb);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                  ">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    Ver
-                  </button>
-                  <button type="button" class="btn-download-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" data-label="${label}" style="
-                    padding: 8px 16px;
-                    background: #f1f5f9;
-                    color: #475569;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                  ">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Descargar
-                  </button>
-                </div>
+    for (const doc of availableDocs) {
+      html += `
+        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+              ${doc.icon}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937;">${doc.label}</h4>
+              <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">${doc.description}</p>
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button type="button" class="btn-view-pdf" data-doc-id="${doc.id}" data-endpoint="${doc.endpoint}" data-label="${doc.label}" style="
+                  padding: 8px 16px;
+                  background: linear-gradient(135deg, #3b82f6, #2563eb);
+                  color: white;
+                  border: none;
+                  border-radius: 8px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                ">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  Ver PDF
+                </button>
+                <button type="button" class="btn-download-pdf" data-doc-id="${doc.id}" data-endpoint="${doc.endpoint}" data-label="${doc.label}" style="
+                  padding: 8px 16px;
+                  background: #f1f5f9;
+                  color: #475569;
+                  border: none;
+                  border-radius: 8px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                ">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  Descargar PDF
+                </button>
               </div>
             </div>
           </div>
-        `;
-      });
+        </div>
+      `;
     }
+
+    // Agregar nota informativa
+    html += `
+      <div style="grid-column: 1 / -1; padding: 16px; background: #fef3c7; border-radius: 12px; border: 1px solid #fde68a;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span style="font-size: 20px;">ℹ️</span>
+          <div>
+            <p style="margin: 0; font-size: 13px; color: #92400e; font-weight: 600;">Documentos Oficiales</p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #a16207;">
+              Estos documentos se generan automáticamente con los datos de la organización.
+              Revise que la información sea correcta antes de la asamblea constitutiva.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
 
     container.innerHTML = html;
 
-    // Guardar documentos para acceso posterior
-    container.dataset.documents = JSON.stringify(documents);
-
-    // Event listeners para ver documentos
-    container.querySelectorAll('.btn-view-doc').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const docType = btn.getAttribute('data-doc-type');
-        const cargoId = btn.getAttribute('data-cargo-id');
-        const docs = JSON.parse(container.dataset.documents || '[]');
-        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
-        if (doc) {
-          viewDocumentMF(doc, org);
-        }
+    // Event listeners para ver PDFs
+    container.querySelectorAll('.btn-view-pdf').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const endpoint = btn.getAttribute('data-endpoint');
+        const label = btn.getAttribute('data-label');
+        await viewPDFDocumentMF(endpoint, label, org);
       });
     });
 
-    // Event listeners para descargar documentos
-    container.querySelectorAll('.btn-download-doc').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const docType = btn.getAttribute('data-doc-type');
-        const cargoId = btn.getAttribute('data-cargo-id');
+    // Event listeners para descargar PDFs
+    container.querySelectorAll('.btn-download-pdf').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const endpoint = btn.getAttribute('data-endpoint');
         const label = btn.getAttribute('data-label');
-        const docs = JSON.parse(container.dataset.documents || '[]');
-        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
-        if (doc) {
-          downloadDocumentMF(doc, org, label);
-        }
+        await downloadPDFDocumentMF(endpoint, label, org);
       });
     });
 
   } catch (error) {
-    console.error('Error loading generated docs for MF:', error);
+    console.error('Error loading docs for MF:', error);
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px;">
@@ -2218,7 +2185,214 @@ function formatDocumentContent(content) {
 }
 
 /**
- * Muestra un documento generado en un modal
+ * Muestra un documento PDF en un modal con iframe
+ */
+async function viewPDFDocumentMF(endpoint, label, org) {
+  const orgName = org.organizationName || 'Organización';
+
+  // Crear modal de carga
+  const docModal = document.createElement('div');
+  docModal.className = 'doc-modal-overlay';
+  docModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px;';
+
+  docModal.innerHTML = `
+    <div style="background: white; border-radius: 16px; max-width: 1000px; width: 100%; height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${label}</h3>
+          <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${orgName}</p>
+        </div>
+        <button type="button" class="close-doc-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div id="pdf-container" style="flex: 1; overflow: hidden; background: #374151; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; color: white;">
+          <div style="width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+          <p style="margin: 0; font-size: 14px;">Generando documento PDF...</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; background: white; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" id="btn-download-current-pdf" style="padding: 10px 20px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Descargar PDF
+        </button>
+        <button type="button" class="close-doc-modal" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Agregar estilos de animación
+  const style = document.createElement('style');
+  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  docModal.appendChild(style);
+
+  document.body.appendChild(docModal);
+
+  // Event listeners para cerrar
+  docModal.querySelectorAll('.close-doc-modal').forEach(btn => {
+    btn.addEventListener('click', () => docModal.remove());
+  });
+  docModal.addEventListener('click', (e) => {
+    if (e.target === docModal) docModal.remove();
+  });
+
+  try {
+    // Obtener el PDF como blob
+    const token = localStorage.getItem('token');
+    const apiBase = window.API_BASE_URL || 'https://comunidadsocial-production.up.railway.app/api';
+
+    const response = await fetch(`${apiBase}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const pdfUrl = URL.createObjectURL(blob);
+
+    // Mostrar el PDF en un iframe
+    const container = docModal.querySelector('#pdf-container');
+    container.innerHTML = `
+      <iframe
+        src="${pdfUrl}"
+        style="width: 100%; height: 100%; border: none;"
+        title="${label}"
+      ></iframe>
+    `;
+
+    // Habilitar botón de descarga
+    const downloadBtn = docModal.querySelector('#btn-download-current-pdf');
+    downloadBtn.disabled = false;
+    downloadBtn.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `${label.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}_${orgName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    // Limpiar URL cuando se cierre el modal
+    const cleanup = () => {
+      URL.revokeObjectURL(pdfUrl);
+    };
+    docModal.querySelectorAll('.close-doc-modal').forEach(btn => {
+      btn.addEventListener('click', cleanup);
+    });
+
+  } catch (error) {
+    console.error('Error loading PDF:', error);
+    const container = docModal.querySelector('#pdf-container');
+    container.innerHTML = `
+      <div style="text-align: center; color: white; padding: 40px;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.7;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <p style="margin: 0; font-size: 16px; font-weight: 600;">Error al cargar el documento</p>
+        <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.8;">${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Descarga un documento PDF directamente
+ */
+async function downloadPDFDocumentMF(endpoint, label, org) {
+  const orgName = org.organizationName || 'Organización';
+
+  try {
+    // Mostrar indicador de carga
+    const loadingToast = document.createElement('div');
+    loadingToast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; gap: 12px;';
+    loadingToast.innerHTML = `
+      <div style="width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <span>Descargando PDF...</span>
+    `;
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    loadingToast.appendChild(style);
+    document.body.appendChild(loadingToast);
+
+    // Obtener el PDF
+    const token = localStorage.getItem('token');
+    const apiBase = window.API_BASE_URL || 'https://comunidadsocial-production.up.railway.app/api';
+
+    const response = await fetch(`${apiBase}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const pdfUrl = URL.createObjectURL(blob);
+
+    // Descargar el archivo
+    const a = document.createElement('a');
+    a.href = pdfUrl;
+    a.download = `${label.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}_${orgName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(pdfUrl);
+
+    // Mostrar éxito
+    loadingToast.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>PDF descargado correctamente</span>
+    `;
+    loadingToast.style.background = '#065f46';
+
+    setTimeout(() => loadingToast.remove(), 2000);
+
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+
+    // Mostrar error
+    const errorToast = document.createElement('div');
+    errorToast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #dc2626; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; gap: 12px;';
+    errorToast.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
+      </svg>
+      <span>Error al descargar: ${error.message}</span>
+    `;
+    document.body.appendChild(errorToast);
+    setTimeout(() => errorToast.remove(), 4000);
+  }
+}
+
+/**
+ * Muestra un documento generado en un modal (legacy - para contenido HTML)
  */
 function viewDocumentMF(doc, org) {
   const orgName = org.organizationName || 'Organización';

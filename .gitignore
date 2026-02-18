@@ -30,3 +30,4 @@ nul
 # Data files (shapefiles, etc.) - root data folder only
 /data/
 !src/data/
+server/.cache/

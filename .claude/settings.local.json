@@ -51,7 +51,10 @@
       "Bash(__NEW_LINE__ echo \"\")",
       "Bash(__NEW_LINE__ echo \"=== Test: Crear Ministro de Fe ===\")",
       "Bash(node --experimental-modules:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(cd:*)",
+      "Bash(npx eslint:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []
