@@ -7323,7 +7323,7 @@ class AdminDashboard {
 
       const previewModal = document.createElement('div');
       previewModal.className = 'pdf-preview-modal';
-      previewModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1050;';
+      previewModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999999;';
       previewModal.innerHTML = `
         <div style="background: white; border-radius: 12px; width: 90%; max-width: 900px; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
           <div style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
