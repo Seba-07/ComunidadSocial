@@ -1636,8 +1636,16 @@ function renderOrganizationCard(org) {
   `;
 }
 
-async function viewOrganization(orgId) {
-  let org = organizationsService.getById(orgId);
+async function viewOrganization(orgId, forceRefresh = false) {
+  let org;
+
+  // Si forceRefresh, obtener siempre del servidor primero
+  if (forceRefresh) {
+    console.log('Forzando recarga de organización desde servidor:', orgId);
+    org = await organizationsService.getByIdAsync(orgId);
+  } else {
+    org = organizationsService.getById(orgId);
+  }
 
   // Si no se encuentra localmente, intentar obtenerla del servidor
   if (!org) {
@@ -2969,7 +2977,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
         showToast('Campo actualizado correctamente', 'success');
         editModal.remove();
         parentModal.remove();
-        viewOrganization(org.id || org._id);
+        viewOrganization(org.id || org._id, true);
       } catch (error) {
         console.error('Error al guardar corrección:', error);
         showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
@@ -3139,7 +3147,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
         showToast('Miembro del directorio actualizado correctamente', 'success');
         editModal.remove();
         parentModal.remove();
-        viewOrganization(org.id || org._id);
+        viewOrganization(org.id || org._id, true);
       } catch (error) {
         console.error('Error al guardar corrección:', error);
         showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
@@ -3263,7 +3271,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
         showToast('Miembro de comisión actualizado correctamente', 'success');
         editModal.remove();
         parentModal.remove();
-        viewOrganization(org.id || org._id);
+        viewOrganization(org.id || org._id, true);
       } catch (error) {
         console.error('Error al guardar corrección:', error);
         showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
@@ -3383,7 +3391,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
         showToast('Miembro actualizado correctamente', 'success');
         editModal.remove();
         parentModal.remove();
-        viewOrganization(org.id || org._id);
+        viewOrganization(org.id || org._id, true);
       } catch (error) {
         console.error('Error al guardar corrección:', error);
         showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');

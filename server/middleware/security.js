@@ -239,7 +239,8 @@ export const ALLOWED_FIELDS = {
     'region', 'territory', 'unidadVecinal', 'contactEmail', 'contactPhone',
     'contactPreference', 'members', 'minMembers', 'electoralCommission',
     'provisionalDirectorio', 'electionDate', 'electionTime', 'assemblyAddress',
-    'comments', 'estatutos', 'corrections'
+    'comments', 'estatutos', 'corrections',
+    'description', 'objectives', 'userCorrectedFields'
   ],
 
   // Campos que solo admin puede modificar en organización
