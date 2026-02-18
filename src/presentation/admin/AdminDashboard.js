@@ -4966,55 +4966,15 @@ class AdminDashboard {
                       <div id="generated-docs-container" style="margin-bottom: 16px;">
                         <div id="generated-docs-loading" style="text-align: center; padding: 12px; color: #94a3b8; font-size: 13px;">Cargando documentos generados...</div>
                       </div>
+                      <div id="certificate-files-container" style="margin-bottom: 16px;">
+                        <h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>
+                        <div id="certificate-files-loading" style="color: #94a3b8; font-size: 13px;">Cargando certificados...</div>
+                      </div>
                       ${(() => {
-                        const certsRaw = org.certificatesStep5 || [];
-                        // Normalizar: puede ser array (DB) u objeto (frontend)
-                        const certsArray = Array.isArray(certsRaw)
-                          ? certsRaw
-                          : Object.entries(certsRaw).filter(([k]) => k !== '_id').map(([key, val]) => ({
-                              memberId: key,
-                              memberName: (typeof val === 'object' ? val.memberName || val.name : '') || key,
-                              certificate: typeof val === 'object' ? (val.certificate || val.base64 || val.data || '') : val
-                            }));
                         const cargoLabelsEs = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', vicepresidente: 'Vicepresidente', director: 'Director', director1: 'Director 1', director2: 'Director 2', comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3', ...cargoLabels };
                         const membersWithCert = allMembers.filter(m => m.certificate);
                         const membersWithoutCert = allMembers.filter(m => !m.certificate);
-
                         let html = '';
-
-                        // Certificados de antecedentes del directorio
-                        html += '<div style="margin-bottom: 16px;"><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
-                        if (certsArray.length > 0) {
-                          html += '<div style="display: grid; gap: 6px;">';
-                          certsArray.forEach(cert => {
-                            const cargoId = cert.memberId || '';
-                            const label = cargoLabelsEs[cargoId] || cargoId || 'Desconocido';
-                            // memberName en DB contiene el nombre del archivo original
-                            const fileName = cert.memberName || cert.name || '';
-                            // El entry existe en la DB = el usuario subió el archivo
-                            const wasUploaded = !!(cert.uploadedAt || fileName);
-                            // Tiene datos base64 para previsualizar
-                            const hasData = !!(cert.certificate && cert.certificate.length > 50);
-                            const certData = hasData ? (cert.certificate.startsWith('data:') ? cert.certificate : 'data:application/pdf;base64,' + cert.certificate) : null;
-                            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (wasUploaded ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (wasUploaded ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
-                            html += '<span style="color: ' + (wasUploaded ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (wasUploaded ? '✓' : '✗') + '</span>';
-                            html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
-                            if (wasUploaded) {
-                              if (hasData) {
-                                html += '<a href="' + certData + '" target="_blank" download="' + (fileName || 'certificado.pdf') + '" style="color: #2563eb; text-decoration: underline; cursor: pointer;">' + (fileName || 'Ver archivo') + '</a>';
-                              } else {
-                                html += '<span style="color: #166534;">' + (fileName || 'Subido') + '</span>';
-                              }
-                            } else {
-                              html += '<span style="color: #991b1b;">No cargado</span>';
-                            }
-                            html += '</div>';
-                          });
-                          html += '</div>';
-                        } else {
-                          html += '<p style="color: #94a3b8; font-size: 13px;">No se cargaron certificados del directorio</p>';
-                        }
-                        html += '</div>';
 
                         // Firmas de comisión electoral
                         html += '<div style="margin-bottom: 16px;"><h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Firmas Comisión Electoral</h5>';
@@ -5332,6 +5292,63 @@ class AdminDashboard {
       }
     };
     loadGeneratedDocs();
+
+    // Cargar certificados base64 desde colección separada
+    const loadCertificateFiles = async () => {
+      const container = modal.querySelector('#certificate-files-container');
+      if (!container) return;
+      try {
+        const { apiService } = await import('../../services/ApiService.js');
+        const certFiles = await apiService.get(`/organizations/${org._id}/certificate-files`);
+        const cargoLabelsEs = { presidente: 'Presidente', secretario: 'Secretario', tesorero: 'Tesorero', vicepresidente: 'Vicepresidente', director: 'Director', director1: 'Director 1', director2: 'Director 2', comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3' };
+
+        // También usar metadata de org.certificatesStep5 para saber qué cargos existen
+        const certsMeta = org.certificatesStep5 || [];
+        const metaArray = Array.isArray(certsMeta) ? certsMeta : Object.entries(certsMeta).filter(([k]) => k !== '_id').map(([key, val]) => ({ memberId: key, memberName: typeof val === 'object' ? (val.memberName || val.name || '') : key }));
+
+        // Merge: metadata de org + base64 de colección separada
+        const mergedCerts = metaArray.map(meta => {
+          const fileData = certFiles.find(f => f.memberId === meta.memberId);
+          return { ...meta, certificate: fileData ? fileData.certificate : '' };
+        });
+        // También agregar certs que solo están en la colección separada
+        certFiles.forEach(f => {
+          if (!mergedCerts.find(m => m.memberId === f.memberId)) {
+            mergedCerts.push(f);
+          }
+        });
+
+        let html = '<h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
+        if (mergedCerts.length > 0) {
+          html += '<div style="display: grid; gap: 6px;">';
+          mergedCerts.forEach(cert => {
+            const cargoId = cert.memberId || '';
+            const label = cargoLabelsEs[cargoId] || cargoId || 'Desconocido';
+            const fileName = cert.memberName || cert.name || '';
+            const hasData = !!(cert.certificate && cert.certificate.length > 50);
+            const certData = hasData ? (cert.certificate.startsWith('data:') ? cert.certificate : 'data:application/pdf;base64,' + cert.certificate) : null;
+            html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasData ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasData ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
+            html += '<span style="color: ' + (hasData ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasData ? '✓' : '✗') + '</span>';
+            html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
+            if (hasData) {
+              html += '<a href="' + certData + '" target="_blank" download="' + (fileName || 'certificado.pdf') + '" style="color: #2563eb; text-decoration: underline; cursor: pointer;">' + (fileName || 'Ver archivo') + '</a>';
+            } else {
+              html += '<span style="color: ' + (fileName ? '#166534' : '#991b1b') + ';">' + (fileName || 'No cargado') + '</span>';
+            }
+            html += '</div>';
+          });
+          html += '</div>';
+        } else {
+          html += '<p style="color: #94a3b8; font-size: 13px;">No se cargaron certificados del directorio</p>';
+        }
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('Error cargando certificados:', err);
+        const loading = container.querySelector('#certificate-files-loading');
+        if (loading) loading.textContent = 'No se pudieron cargar los certificados';
+      }
+    };
+    loadCertificateFiles();
 
     // Event listeners
     modal.querySelectorAll('.ministro-close').forEach(btn => {

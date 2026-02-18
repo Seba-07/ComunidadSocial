@@ -357,26 +357,29 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
       logger.debug('CREATE ORG - estatutos a guardar (primeros 100 chars):', orgData.estatutos.substring(0, 100));
     }
 
-    // Guardar certificados del Paso 5 (metadata de certificados de socios)
+    // Guardar certificados del Paso 5 (SOLO metadata, sin base64 para evitar límite BSON 16MB)
+    // Los archivos base64 se guardan en colección separada CertificateFiles
     if (certificatesStep5) {
-      if (Array.isArray(certificatesStep5) && certificatesStep5.length > 0) {
-        orgData.certificatesStep5 = certificatesStep5.map(cert => ({
-          memberId: cert.memberId || cert.rut || '',
-          memberName: cert.memberName || cert.name || '',
-          certificate: cert.certificate || cert.data || '',
-          uploadedAt: new Date()
-        }));
-      } else if (typeof certificatesStep5 === 'object' && Object.keys(certificatesStep5).length > 0) {
-        // Formato record: { presidente: { name, type, ... }, secretario: { ... } }
-        orgData.certificatesStep5 = Object.entries(certificatesStep5).map(([key, cert]) => ({
-          memberId: key,
-          memberName: cert.memberName || cert.name || key,
-          certificate: cert.certificate || cert.base64 || '',
-          uploadedAt: new Date()
-        }));
-      }
-      if (orgData.certificatesStep5) {
-        logger.debug('CREATE ORG - certificatesStep5 a guardar:', orgData.certificatesStep5.length, 'certificados');
+      const parseCerts = (certs) => {
+        if (Array.isArray(certs) && certs.length > 0) {
+          return certs.map(cert => ({
+            memberId: cert.memberId || cert.rut || '',
+            memberName: cert.memberName || cert.name || '',
+            uploadedAt: new Date()
+          }));
+        } else if (typeof certs === 'object' && Object.keys(certs).length > 0) {
+          return Object.entries(certs).map(([key, cert]) => ({
+            memberId: key,
+            memberName: cert.memberName || cert.name || key,
+            uploadedAt: new Date()
+          }));
+        }
+        return [];
+      };
+      const certsMeta = parseCerts(certificatesStep5);
+      if (certsMeta.length > 0) {
+        orgData.certificatesStep5 = certsMeta;
+        logger.debug('CREATE ORG - certificatesStep5 metadata:', certsMeta.length, 'certificados');
       }
     }
 
@@ -1388,6 +1391,7 @@ router.get('/my-organization', authenticate, async (req, res) => {
 // ==================== DOCUMENTOS GENERADOS (colección separada) ====================
 
 import GeneratedDocuments from '../models/GeneratedDocuments.js';
+import CertificateFiles from '../models/CertificateFiles.js';
 
 // Guardar documentos generados del wizard (colección separada para evitar límite BSON 16MB)
 router.post('/:id/generated-documents', authenticate, validateObjectId(), async (req, res) => {
@@ -1428,6 +1432,55 @@ router.post('/:id/generated-documents', authenticate, validateObjectId(), async 
   } catch (error) {
     logger.error('Save generated documents error:', error.message);
     res.status(500).json({ error: error.message || 'Error al guardar documentos' });
+  }
+});
+
+// Guardar archivos de certificados base64 (colección separada para evitar BSON 16MB)
+router.post('/:id/certificate-files', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+    if (organization.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ error: 'No tienes permisos' });
+    }
+
+    const { certificates } = req.body;
+    if (!certificates || !Array.isArray(certificates) || certificates.length === 0) {
+      return res.status(400).json({ error: 'No se enviaron certificados' });
+    }
+
+    await CertificateFiles.findOneAndUpdate(
+      { organizationId: req.params.id },
+      {
+        organizationId: req.params.id,
+        certificates: certificates.map(c => ({
+          memberId: c.memberId || '',
+          memberName: c.memberName || '',
+          certificate: c.certificate || '',
+          uploadedAt: new Date()
+        }))
+      },
+      { upsert: true, new: true }
+    );
+
+    logger.debug('CERT FILES - Guardados:', certificates.length, 'para org:', req.params.id);
+    res.json({ saved: certificates.length });
+  } catch (error) {
+    logger.error('Save certificate files error:', error.message);
+    res.status(500).json({ error: error.message || 'Error al guardar certificados' });
+  }
+});
+
+// Obtener archivos de certificados de una organización
+router.get('/:id/certificate-files', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const certFiles = await CertificateFiles.findOne({ organizationId: req.params.id }).lean();
+    res.json(certFiles ? certFiles.certificates : []);
+  } catch (error) {
+    console.error('Get certificate files error:', error);
+    res.status(500).json({ error: 'Error al obtener certificados' });
   }
 });
 

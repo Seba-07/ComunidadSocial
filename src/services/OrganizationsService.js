@@ -471,24 +471,19 @@ class OrganizationsService {
         provisionalDirectorio: provisionalDirectorio,
         // Comisión Electoral (paso 5)
         electoralCommission: comisionElectoral,
-        // Certificados de Antecedentes del Directorio (paso 5) - incluye base64
+        // Certificados de Antecedentes del Directorio (paso 5) - SOLO metadata, sin base64
+        // El base64 se guarda en colección separada CertificateFiles post-creación
         certificatesStep5: (() => {
           const certs = requestData.certificatesStep5;
           if (!certs || typeof certs !== 'object' || Array.isArray(certs)) return {};
           const result = {};
           for (const [key, cert] of Object.entries(certs)) {
             if (cert) {
-              // Limpiar prefijo data:... del base64 si existe
-              let base64 = cert.base64 || cert.certificate || cert.data || '';
-              if (base64 && base64.includes(',')) {
-                base64 = base64.split(',')[1];
-              }
               result[key] = {
                 name: cert.name || cert.fileName || '',
                 type: cert.type || '',
                 memberId: cert.memberId || '',
-                memberName: cert.memberName || '',
-                certificate: base64
+                memberName: cert.memberName || ''
               };
             }
           }
@@ -507,6 +502,31 @@ class OrganizationsService {
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
       localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+
+      // Guardar certificados base64 en colección separada (evita límite BSON 16MB)
+      const certs = requestData.certificatesStep5;
+      if (certs && typeof certs === 'object' && !Array.isArray(certs)) {
+        try {
+          const certFiles = Object.entries(certs)
+            .filter(([_, cert]) => cert && (cert.base64 || cert.certificate || cert.data))
+            .map(([key, cert]) => {
+              let base64 = cert.base64 || cert.certificate || cert.data || '';
+              if (base64 && base64.includes(',')) base64 = base64.split(',')[1];
+              return {
+                memberId: key,
+                memberName: cert.memberName || cert.name || '',
+                certificate: base64
+              };
+            });
+
+          if (certFiles.length > 0) {
+            await apiService.post(`/organizations/${newOrg._id}/certificate-files`, { certificates: certFiles });
+            console.log('✅ Certificados base64 guardados:', certFiles.length);
+          }
+        } catch (certError) {
+          console.error('⚠️ Error guardando certificados (org creada OK):', certError);
+        }
+      }
 
       // Guardar documentos generados en colección separada (evita límite BSON 16MB)
       if (requestData.generatedDocuments && typeof requestData.generatedDocuments === 'object') {
