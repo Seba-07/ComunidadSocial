@@ -4572,6 +4572,11 @@ class AdminDashboard {
     // Dirección de la organización
     const orgAddress = org.address || '';
 
+    // Descripción, Objetivos y Unidad Vecinal
+    const orgDescription = org.description || '';
+    const orgObjectives = org.objectives || '';
+    const orgUnidadVecinal = org.unidadVecinal || org.neighborhood || '';
+
     // Datos de documentación para revisión del admin
     const dir = org.provisionalDirectorio || {};
     const additionalMembers = dir.additionalMembers || [];
@@ -4652,7 +4657,27 @@ class AdminDashboard {
                         <span class="ministro-data-label">Dirección Sede</span>
                         <span class="ministro-data-value ${orgAddress ? '' : 'muted'}">${orgAddress || 'No especificada'}</span>
                       </div>
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Unidad Vecinal</span>
+                        <span class="ministro-data-value ${orgUnidadVecinal ? '' : 'muted'}">${orgUnidadVecinal || 'No especificada'}</span>
+                      </div>
                     </div>
+                    ${orgDescription ? `
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                      <div class="ministro-data-item" style="margin-bottom: 8px;">
+                        <span class="ministro-data-label">Descripción</span>
+                        <span class="ministro-data-value" style="display: block; margin-top: 4px; font-size: 13px; line-height: 1.5;">${escapeHtml(orgDescription)}</span>
+                      </div>
+                    </div>
+                    ` : ''}
+                    ${orgObjectives ? `
+                    <div style="margin-top: 8px;">
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Objetivos</span>
+                        <span class="ministro-data-value" style="display: block; margin-top: 4px; font-size: 13px; line-height: 1.5;">${escapeHtml(orgObjectives)}</span>
+                      </div>
+                    </div>
+                    ` : ''}
                   </div>
                 </div>
 
@@ -4857,7 +4882,27 @@ class AdminDashboard {
                         <span class="ministro-data-label">Dirección Sede</span>
                         <span class="ministro-data-value ${orgAddress ? '' : 'muted'}">${orgAddress || 'No especificada'}</span>
                       </div>
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Unidad Vecinal</span>
+                        <span class="ministro-data-value ${orgUnidadVecinal ? '' : 'muted'}">${orgUnidadVecinal || 'No especificada'}</span>
+                      </div>
                     </div>
+                    ${orgDescription ? `
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                      <div class="ministro-data-item" style="margin-bottom: 8px;">
+                        <span class="ministro-data-label">Descripción</span>
+                        <span class="ministro-data-value" style="display: block; margin-top: 4px; font-size: 13px; line-height: 1.5;">${escapeHtml(orgDescription)}</span>
+                      </div>
+                    </div>
+                    ` : ''}
+                    ${orgObjectives ? `
+                    <div style="margin-top: 8px;">
+                      <div class="ministro-data-item">
+                        <span class="ministro-data-label">Objetivos</span>
+                        <span class="ministro-data-value" style="display: block; margin-top: 4px; font-size: 13px; line-height: 1.5;">${escapeHtml(orgObjectives)}</span>
+                      </div>
+                    </div>
+                    ` : ''}
                   </div>
                 </div>
 
@@ -4881,8 +4926,10 @@ class AdminDashboard {
                       <button class="admin-doc-tab" data-tab="documentos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Documentos</button>
                     </div>
 
+                    <!-- Contenedor de tabs con altura fija -->
+                    <div class="admin-doc-tabs-container" style="height: 320px; overflow-y: auto;">
                     <!-- Tab: Directorio -->
-                    <div class="admin-doc-tab-content" data-tab-content="directorio" style="padding: 16px;">
+                    <div class="admin-doc-tab-content" data-tab-content="directorio" style="padding: 16px; min-height: 280px;">
                       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         ${['president', 'secretary', 'treasurer'].map(cargo => {
                           const member = dir[cargo];
@@ -4911,7 +4958,7 @@ class AdminDashboard {
                     </div>
 
                     <!-- Tab: Comisión Electoral -->
-                    <div class="admin-doc-tab-content" data-tab-content="comision" style="padding: 16px; display: none;">
+                    <div class="admin-doc-tab-content" data-tab-content="comision" style="padding: 16px; display: none; min-height: 280px;">
                       ${commission.length > 0 ? `
                         <ol style="margin: 0; padding-left: 24px; list-style: decimal;">
                           ${commission.map(m => `
@@ -4925,7 +4972,7 @@ class AdminDashboard {
                     </div>
 
                     <!-- Tab: Miembros Fundadores -->
-                    <div class="admin-doc-tab-content" data-tab-content="miembros" style="padding: 16px; display: none;">
+                    <div class="admin-doc-tab-content" data-tab-content="miembros" style="padding: 16px; display: none; min-height: 280px;">
                       ${allMembers.length > 0 ? `
                         <div style="max-height: 280px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -4954,7 +5001,7 @@ class AdminDashboard {
                     </div>
 
                     <!-- Tab: Documentos -->
-                    <div class="admin-doc-tab-content" data-tab-content="documentos" style="padding: 16px; display: none;">
+                    <div class="admin-doc-tab-content" data-tab-content="documentos" style="padding: 16px; display: none; min-height: 280px;">
                       <div id="generated-docs-container" style="margin-bottom: 16px;">
                         <div id="generated-docs-loading" style="text-align: center; padding: 12px; color: #94a3b8; font-size: 13px;">Cargando documentos generados...</div>
                       </div>
@@ -5001,6 +5048,7 @@ class AdminDashboard {
                         return html;
                       })()}
                     </div>
+                    </div><!-- Cierre admin-doc-tabs-container -->
                   </div>
                 </div>
               </div>
