@@ -1808,26 +1808,101 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
         const newPhotoInput = modal.querySelector('#group-photo-input');
         const newTakePhotoBtn = modal.querySelector('#take-photo-btn');
 
+        // Función para comprimir imagen
+        const compressImage = (file, maxSizeKB = 1500) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                // Reducir dimensiones si es muy grande
+                const maxDimension = 1920;
+                if (width > maxDimension || height > maxDimension) {
+                  if (width > height) {
+                    height = (height / width) * maxDimension;
+                    width = maxDimension;
+                  } else {
+                    width = (width / height) * maxDimension;
+                    height = maxDimension;
+                  }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Comprimir con calidad reducida
+                let quality = 0.8;
+                let result = canvas.toDataURL('image/jpeg', quality);
+
+                // Si sigue muy grande, reducir más
+                while (result.length > maxSizeKB * 1024 * 1.37 && quality > 0.3) {
+                  quality -= 0.1;
+                  result = canvas.toDataURL('image/jpeg', quality);
+                }
+
+                resolve(result);
+              };
+              img.onerror = reject;
+              img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        };
+
+        // Función para procesar y validar foto
+        const processPhoto = async (file) => {
+          // Validar que sea imagen
+          if (!file.type.startsWith('image/')) {
+            alert('Por favor selecciona un archivo de imagen válido');
+            return;
+          }
+
+          // Validar tamaño inicial (máx 15MB antes de comprimir)
+          if (file.size > 15 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. Máximo 15MB.');
+            return;
+          }
+
+          // Mostrar indicador de carga
+          photoContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <div style="width: 48px; height: 48px; border: 4px solid #e5e7eb; border-top-color: #a855f7; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+              <p style="color: #6b7280; margin: 0;">Procesando imagen...</p>
+            </div>
+          `;
+
+          try {
+            // Comprimir la imagen
+            const compressedImage = await compressImage(file);
+
+            // Validar tamaño después de comprimir (máx 2MB en base64 ≈ 1.5MB real)
+            const base64Size = compressedImage.length;
+            const realSizeKB = Math.round(base64Size / 1.37 / 1024);
+
+            if (realSizeKB > 2000) {
+              alert(`La imagen sigue siendo muy grande (${realSizeKB}KB) después de comprimir. Por favor usa una imagen de menor resolución.`);
+              updatePhotoPreview(null);
+              return;
+            }
+
+            updatePhotoPreview(compressedImage);
+          } catch (error) {
+            console.error('Error procesando imagen:', error);
+            alert('Error al procesar la imagen. Intenta con otra.');
+            updatePhotoPreview(null);
+          }
+        };
+
         newPhotoInput?.addEventListener('change', (e) => {
           const file = e.target.files[0];
           if (file) {
-            // Validar que sea imagen
-            if (!file.type.startsWith('image/')) {
-              alert('Por favor selecciona un archivo de imagen válido');
-              return;
-            }
-
-            // Validar tamaño (máx 10MB)
-            if (file.size > 10 * 1024 * 1024) {
-              alert('La imagen es demasiado grande. Máximo 10MB.');
-              return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              updatePhotoPreview(event.target.result);
-            };
-            reader.readAsDataURL(file);
+            processPhoto(file);
           }
         });
 
@@ -1841,11 +1916,7 @@ Validados por Ministro de Fe de la Municipalidad de Renca`;
           cameraInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                updatePhotoPreview(event.target.result);
-              };
-              reader.readAsDataURL(file);
+              processPhoto(file);
             }
           });
 

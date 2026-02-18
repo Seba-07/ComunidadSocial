@@ -256,8 +256,8 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // ============ CONSTANTES DE VALIDACIÓN ============
-const MAX_GROUP_PHOTO_SIZE = 500 * 1024; // 500KB en bytes
-const MAX_SIGNATURE_SIZE = 50 * 1024; // 50KB por firma
+const MAX_GROUP_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB en bytes (aumentado para fotos de celular)
+const MAX_SIGNATURE_SIZE = 100 * 1024; // 100KB por firma
 const BASE64_OVERHEAD = 1.37; // Base64 aumenta tamaño ~37%
 
 /**
