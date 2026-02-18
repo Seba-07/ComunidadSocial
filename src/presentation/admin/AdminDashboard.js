@@ -1407,6 +1407,7 @@ class AdminDashboard {
         </div>
 
         ${this.renderNextStepIndicator(org)}
+        ${this.renderUserCorrectionsSummary(org)}
 
         <div class="review-modal-body">
           ${(org.status === ORG_STATUS.MINISTRO_APPROVED || org.status === ORG_STATUS.SENT_TO_REGISTRY) ? `
@@ -1537,6 +1538,19 @@ class AdminDashboard {
     // Event listeners del modal
     modal.querySelector('.review-close-btn').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Toggle para ver detalles de correcciones del usuario
+    const toggleCorrectionsBtn = modal.querySelector('.btn-toggle-corrections-detail');
+    if (toggleCorrectionsBtn) {
+      toggleCorrectionsBtn.addEventListener('click', () => {
+        const panel = modal.querySelector('.corrections-detail-panel');
+        if (panel) {
+          const isHidden = panel.style.display === 'none';
+          panel.style.display = isHidden ? 'block' : 'none';
+          toggleCorrectionsBtn.textContent = isHidden ? 'Ocultar Detalles' : 'Ver Detalles';
+        }
+      });
+    }
 
     // Tabs - usar closest para manejar clicks en SVG
     modal.querySelectorAll('.review-tab').forEach(tab => {
@@ -3394,17 +3408,30 @@ class AdminDashboard {
         break;
 
       case ORG_STATUS.PENDING_REVIEW:
-        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-        </svg>`;
-        title = 'Esperando Revision del Administrador';
-        message = 'El usuario completó todos los pasos. La solicitud está lista para ser revisada por el administrador.';
-        bgColor = '#fef3c7';
-        borderColor = '#f59e0b';
-        iconBg = '#f59e0b';
+        // Verificar si hay correcciones enviadas por el usuario
+        if (org.corrections && org.corrections.resolved) {
+          icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>`;
+          title = 'Correcciones Enviadas por Usuario';
+          message = 'El usuario ha realizado las correcciones solicitadas y reenviado la solicitud. Revise los cambios realizados.';
+          bgColor = '#d1fae5';
+          borderColor = '#10b981';
+          iconBg = '#10b981';
+        } else {
+          icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>`;
+          title = 'Esperando Revision del Administrador';
+          message = 'El usuario completó todos los pasos. La solicitud está lista para ser revisada por el administrador.';
+          bgColor = '#fef3c7';
+          borderColor = '#f59e0b';
+          iconBg = '#f59e0b';
+        }
         break;
 
       case ORG_STATUS.IN_REVIEW:
@@ -3504,6 +3531,116 @@ class AdminDashboard {
           <div style="font-size: 13px; color: #4b5563; line-height: 1.5;">
             ${message}
           </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renderiza el panel de correcciones enviadas por el usuario (para admin)
+   */
+  renderUserCorrectionsSummary(org) {
+    if (!org.corrections || !org.corrections.resolved) {
+      return '';
+    }
+
+    const corrections = org.corrections;
+    const isV2 = corrections.version === 2 && Array.isArray(corrections.items);
+    const resolvedAt = corrections.resolvedAt ? new Date(corrections.resolvedAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    const userResponse = corrections.userResponse || '';
+    const userCorrectedFields = org.userCorrectedFields || {};
+
+    // Agrupar items por categoría para v2
+    const categoryMeta = {
+      'datos_generales': { title: 'Datos de la Organización', icon: '📋' },
+      'directorio': { title: 'Directorio Provisorio', icon: '👤' },
+      'comision_electoral': { title: 'Comisión Electoral', icon: '🗳️' },
+      'miembros': { title: 'Miembros Fundadores', icon: '👥' },
+      'documentos': { title: 'Documentos', icon: '📄' },
+      'certificados': { title: 'Certificados', icon: '📎' }
+    };
+
+    let correctionItemsHTML = '';
+
+    if (isV2 && corrections.items) {
+      // Agrupar por categoría
+      const grouped = {};
+      corrections.items.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      for (const [cat, items] of Object.entries(grouped)) {
+        const meta = categoryMeta[cat] || { title: cat, icon: '📌' };
+        const catCorrections = userCorrectedFields[cat] || {};
+
+        correctionItemsHTML += `
+          <div style="margin-bottom: 16px;">
+            <h5 style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;">
+              ${meta.icon} ${meta.title}
+            </h5>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${items.map(item => {
+                const itemKey = item.field || item.memberId || item.docType || item.label;
+                const correctionData = catCorrections[itemKey];
+                const wasCorrected = !!correctionData;
+                const newValue = correctionData?.newValue || '';
+                const correctedAt = correctionData?.correctedAt ? new Date(correctionData.correctedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+                return `
+                  <div style="background: ${wasCorrected ? '#f0fdf4' : '#fef3c7'}; border: 1px solid ${wasCorrected ? '#86efac' : '#fde047'}; border-radius: 8px; padding: 10px 14px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                      <span style="font-size: 14px;">${wasCorrected ? '✅' : '⚠️'}</span>
+                      <span style="font-weight: 600; color: ${wasCorrected ? '#166534' : '#854d0e'}; font-size: 13px;">${item.label}</span>
+                      <span style="margin-left: auto; font-size: 10px; color: ${wasCorrected ? '#15803d' : '#92400e'}; background: ${wasCorrected ? '#dcfce7' : '#fef9c3'}; padding: 2px 6px; border-radius: 4px;">
+                        ${wasCorrected ? 'Corregido' : 'Sin cambios'}
+                      </span>
+                    </div>
+                    <p style="margin: 0; font-size: 11px; color: #6b7280;"><strong>Observación original:</strong> ${item.message}</p>
+                    ${newValue ? `<p style="margin: 4px 0 0; font-size: 12px; color: #166534;"><strong>Nuevo valor:</strong> ${newValue.length > 80 ? newValue.substring(0, 80) + '...' : newValue}</p>` : ''}
+                    ${correctedAt ? `<p style="margin: 4px 0 0; font-size: 10px; color: #9ca3af;">Corregido: ${correctedAt}</p>` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    return `
+      <div class="user-corrections-summary" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 0 24px 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 44px; height: 44px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 24px; color: white;">✓</span>
+          </div>
+          <div>
+            <h4 style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #065f46;">Correcciones Enviadas por el Usuario</h4>
+            ${resolvedAt ? `<p style="margin: 0; font-size: 12px; color: #047857;">Recibido: ${resolvedAt}</p>` : ''}
+          </div>
+          <button class="btn-toggle-corrections-detail" style="margin-left: auto; padding: 6px 12px; background: white; color: #059669; border: 1px solid #10b981; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;">
+            Ver Detalles
+          </button>
+        </div>
+
+        <div class="corrections-detail-panel" style="display: none; background: white; border-radius: 8px; padding: 16px; margin-top: 12px; max-height: 400px; overflow-y: auto;">
+          ${correctionItemsHTML}
+
+          ${userResponse ? `
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 2px dashed #10b981;">
+              <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #065f46;">Comentario del usuario:</p>
+              <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 10px 12px;">
+                <p style="margin: 0; font-size: 13px; color: #374151; font-style: italic;">"${userResponse}"</p>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #86efac;">
+          <p style="margin: 0; font-size: 13px; color: #065f46; display: flex; align-items: flex-start; gap: 8px;">
+            <span style="font-size: 16px;">💡</span>
+            <span>Revise las correcciones realizadas. Puede <strong>aprobar</strong> si todo está correcto, o <strong>solicitar más correcciones</strong> si es necesario.</span>
+          </p>
         </div>
       </div>
     `;
