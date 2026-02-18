@@ -939,6 +939,8 @@ export class WizardController {
       if (type === 'JUNTA_VECINOS') {
         neighborhoodRow.style.display = 'flex';
         document.getElementById('org-neighborhood').required = true;
+        // Intentar detectar UV si ya hay dirección ingresada
+        this.detectUnidadVecinal();
       } else {
         neighborhoodRow.style.display = 'none';
         document.getElementById('org-neighborhood').required = false;
@@ -947,6 +949,87 @@ export class WizardController {
       // Actualizar requisitos de miembros según tipo
       this.updateMemberRequirements(type);
     });
+
+    // Auto-detección de Unidad Vecinal al cambiar dirección
+    const streetInput = document.getElementById('org-street');
+    const streetNumberInput = document.getElementById('org-street-number');
+    const postalCodeInput = document.getElementById('org-postal-code');
+
+    // Debounce para evitar muchas llamadas mientras escribe
+    let uvDetectionTimeout = null;
+    const detectUVOnChange = () => {
+      clearTimeout(uvDetectionTimeout);
+      uvDetectionTimeout = setTimeout(() => {
+        // Solo detectar si es Junta de Vecinos
+        if (typeSelect.value === 'JUNTA_VECINOS') {
+          this.detectUnidadVecinal();
+        }
+      }, 800); // Esperar 800ms después de que el usuario deje de escribir
+    };
+
+    streetInput.addEventListener('input', detectUVOnChange);
+    streetNumberInput.addEventListener('input', detectUVOnChange);
+    postalCodeInput.addEventListener('input', detectUVOnChange);
+  }
+
+  /**
+   * Detecta la Unidad Vecinal según la dirección ingresada
+   */
+  async detectUnidadVecinal() {
+    const streetInput = document.getElementById('org-street');
+    const streetNumberInput = document.getElementById('org-street-number');
+    const neighborhoodInput = document.getElementById('org-neighborhood');
+    const loadingIndicator = document.getElementById('uv-loading-indicator');
+    const successIndicator = document.getElementById('uv-success-indicator');
+    const helpText = document.getElementById('uv-help-text');
+
+    const street = streetInput?.value?.trim() || '';
+    const streetNumber = streetNumberInput?.value?.trim() || '';
+
+    // Necesitamos al menos la calle para buscar
+    if (!street) {
+      neighborhoodInput.value = '';
+      helpText.textContent = 'Ingresa la dirección para detectar la unidad vecinal';
+      helpText.style.color = '#64748b';
+      successIndicator.style.display = 'none';
+      return;
+    }
+
+    // Construir dirección completa
+    const fullAddress = `${street} ${streetNumber}`.trim();
+
+    // Mostrar indicador de carga
+    loadingIndicator.style.display = 'inline';
+    successIndicator.style.display = 'none';
+    helpText.textContent = 'Buscando unidad vecinal...';
+    helpText.style.color = '#2563eb';
+
+    try {
+      const result = await unidadesVecinalesService.buscarPorDireccion(fullAddress);
+
+      loadingIndicator.style.display = 'none';
+
+      if (result.encontrada && result.unidadVecinal) {
+        const uv = result.unidadVecinal;
+        neighborhoodInput.value = `UV ${uv.numero} - ${uv.nombre}`;
+        this.formData.organization.neighborhood = uv.numero;
+        this.formData.organization.neighborhoodName = uv.nombre;
+
+        successIndicator.style.display = 'inline';
+        helpText.textContent = `✓ Unidad Vecinal detectada: ${uv.nombre}`;
+        helpText.style.color = '#10b981';
+      } else {
+        neighborhoodInput.value = '';
+        helpText.textContent = 'No se encontró unidad vecinal para esta dirección. Verifique que sea en Renca.';
+        helpText.style.color = '#f59e0b';
+      }
+    } catch (error) {
+      console.error('Error detectando unidad vecinal:', error);
+      loadingIndicator.style.display = 'none';
+      neighborhoodInput.value = '';
+      helpText.textContent = 'Error al buscar unidad vecinal. Intente nuevamente.';
+      helpText.style.color = '#ef4444';
+    }
   }
 
   /**
@@ -4148,9 +4231,13 @@ Una vez aprobados en Asamblea, se emitirá el documento definitivo con la fecha 
     // Construir descripción completa si existe
     const descripcionTexto = org.description ? `\nDescripción: ${org.description}\n` : '';
 
+    // Solo mostrar el subtipo si es diferente al genérico para evitar duplicación
+    const subtipoLinea = (tipoNombre !== 'Organización Comunitaria Funcional')
+      ? `\n${tipoNombre.toUpperCase()}`
+      : '';
+
     return `ESTATUTOS TIPO
-ORGANIZACIÓN COMUNITARIA FUNCIONAL
-${tipoNombre.toUpperCase()}
+ORGANIZACIÓN COMUNITARIA FUNCIONAL${subtipoLinea}
 "${(org.name || '[NOMBRE DE LA ORGANIZACIÓN]').toUpperCase()}"
 ${descripcionTexto}
 TÍTULO PRIMERO

@@ -5144,7 +5144,6 @@ class AdminDashboard {
                               { field: 'address', label: 'Direcci\u00f3n', value: org.address || '' },
                               { field: 'commune', label: 'Comuna', value: org.comuna || org.commune || 'Renca' },
                               { field: 'region', label: 'Regi\u00f3n', value: org.region || 'Metropolitana' },
-                              { field: 'neighborhood', label: 'Unidad Vecinal', value: org.unidadVecinal || '' },
                               { field: 'email', label: 'Email', value: org.contactEmail || '' },
                               { field: 'phone', label: 'Tel\u00e9fono', value: org.contactPhone || '' },
                               { field: 'description', label: 'Descripci\u00f3n', value: org.description || '' },

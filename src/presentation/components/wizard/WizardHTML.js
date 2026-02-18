@@ -224,13 +224,25 @@ function getStep1HTML() {
         <div class="form-row form-row-2" id="neighborhood-row" style="display: none;">
           <div class="form-group">
             <label for="org-neighborhood">Unidad Vecinal <span class="required">*</span></label>
-            <input
-              type="text"
-              id="org-neighborhood"
-              name="neighborhood"
-              placeholder="Nombre de la unidad vecinal"
-            >
-            <small class="form-help">Requerido para Juntas de Vecinos</small>
+            <div style="position: relative;">
+              <input
+                type="text"
+                id="org-neighborhood"
+                name="neighborhood"
+                placeholder="Se detectará automáticamente según la dirección"
+                readonly
+                class="input-readonly"
+                style="padding-right: 40px;"
+              >
+              <span id="uv-loading-indicator" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+                  <circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span id="uv-success-indicator" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none; color: #10b981;">✓</span>
+            </div>
+            <small id="uv-help-text" class="form-help">Se detecta automáticamente según la dirección ingresada</small>
+            <style>@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }</style>
           </div>
         </div>
 
