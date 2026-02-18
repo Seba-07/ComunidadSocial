@@ -2103,56 +2103,9 @@ async function viewOrganization(orgId, forceRefresh = false) {
         </div>
       `;
     }
-  } else if (corrections && corrections.resolved) {
-    // ═══ CORRECCIONES YA ENVIADAS - VISTA DE SOLO LECTURA ═══
-    const isV2 = corrections.version === 2 && Array.isArray(corrections.items);
-    const resolvedAt = corrections.resolvedAt ? new Date(corrections.resolvedAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    const userResponse = corrections.userResponse || '';
-
-    correctionsHTML = `
-      <div class="corrections-submitted-banner" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white; text-align: center;">
-        <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
-        <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 700;">Correcciones Enviadas</h3>
-        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Su solicitud ha sido reenviada para revisión</p>
-        ${resolvedAt ? `<p style="margin: 8px 0 0; opacity: 0.8; font-size: 12px;">Enviado: ${resolvedAt}</p>` : ''}
-      </div>
-
-      <div class="corrections-summary" style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 16px; font-size: 16px; color: #166534; display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 20px;">📋</span> Resumen de Correcciones Realizadas
-        </h4>
-
-        ${isV2 && corrections.items ? `
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            ${corrections.items.map(item => `
-              <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="color: #22c55e; font-size: 16px;">✓</span>
-                  <span style="font-weight: 600; color: #166534; font-size: 14px;">${item.label}</span>
-                  <span style="margin-left: auto; font-size: 11px; color: #059669; background: #dcfce7; padding: 2px 8px; border-radius: 4px;">Corregido</span>
-                </div>
-                <p style="margin: 6px 0 0 24px; font-size: 12px; color: #4b5563;">${item.message}</p>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        ${userResponse ? `
-          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #bbf7d0;">
-            <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #166534;">Su comentario:</p>
-            <p style="margin: 0; font-size: 13px; color: #374151; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb;">"${userResponse}"</p>
-          </div>
-        ` : ''}
-      </div>
-
-      <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 14px 16px;">
-        <p style="margin: 0; color: #1e40af; font-size: 13px; display: flex; align-items: flex-start; gap: 8px;">
-          <span style="font-size: 16px;">⏳</span>
-          <span>Su solicitud está siendo revisada nuevamente. Recibirá una notificación cuando el revisor haya evaluado sus correcciones.</span>
-        </p>
-      </div>
-    `;
   }
+  // Nota: Si corrections.resolved = true pero el status ya no es 'rejected',
+  // no mostramos nada - las correcciones ya fueron procesadas y la organización avanzó
 
   // Generar HTML de información de Ministro asignado o cita pendiente
   const isMinistroScheduled = org.status === ORG_STATUS.MINISTRO_SCHEDULED;
