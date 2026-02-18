@@ -1177,6 +1177,32 @@ export class WizardController {
       showToast(`${orgName} requiere al menos ${requiredMembers} miembros fundadores. Tienes ${this.formData.members.length}.`, 'error');
       return false;
     }
+
+    // Validar que ningún miembro sea menor de 14 años
+    const today = new Date();
+    const underage = [];
+    for (const m of this.formData.members) {
+      if (m.birthDate) {
+        const birth = new Date(m.birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        if (age < 14) {
+          const name = m.primerNombre
+            ? `${m.primerNombre} ${m.apellidoPaterno || ''}`.trim()
+            : `${m.firstName || ''} ${m.lastName || ''}`.trim();
+          underage.push(name || m.rut || 'Sin nombre');
+        }
+      }
+    }
+
+    if (underage.length > 0) {
+      showToast(`Hay ${underage.length} miembro(s) menor(es) de 14 años: ${underage.slice(0, 3).join(', ')}${underage.length > 3 ? '...' : ''}. Todos deben tener al menos 14 años según la Ley 19.418.`, 'error');
+      return false;
+    }
+
     return true;
   }
 
