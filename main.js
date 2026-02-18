@@ -3331,17 +3331,26 @@ function openCorrectionEditor(org, type, key, parentModal) {
     }).join('');
 
     // Generar HTML del directorio actual
-    const generateCargoCard = (cargoKey, cargoLabel, currentMember) => {
+    const generateCargoCard = (cargoKey, cargoLabel, currentMember, isAdditional = false, additionalIndex = -1) => {
       const name = currentMember ? extractMemberName(currentMember) : 'Sin asignar';
       const rut = currentMember?.rut || '';
+      const memberRole = currentMember?.role || currentMember?.cargo || '';
       const hasCorrection = correctionItem?.role?.toLowerCase() === cargoLabel.toLowerCase() ||
                            (correctionItem?.memberId && currentMember?.rut === correctionItem.memberId);
 
+      // Íconos según el cargo
+      const getIcon = (key) => {
+        const icons = { 'president': '👑', 'secretary': '📝', 'treasurer': '💰', 'director': '⭐', 'vocal': '🗳️' };
+        return icons[key] || '👤';
+      };
+
+      const dataAttr = isAdditional ? `data-cargo="additional_${additionalIndex}" data-index="${additionalIndex}"` : `data-cargo="${cargoKey}"`;
+
       return `
-        <div class="cargo-card" data-cargo="${cargoKey}" style="background: ${hasCorrection ? '#fef2f2' : '#f8fafc'}; border: 2px solid ${hasCorrection ? '#f87171' : '#e2e8f0'}; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+        <div class="cargo-card ${isAdditional ? 'additional' : ''}" ${dataAttr} style="background: ${hasCorrection ? '#fef2f2' : '#f8fafc'}; border: 2px solid ${hasCorrection ? '#f87171' : '#e2e8f0'}; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 20px;">${cargoKey === 'president' ? '👑' : cargoKey === 'secretary' ? '📝' : cargoKey === 'treasurer' ? '💰' : '👤'}</span>
+              <span style="font-size: 20px;">${getIcon(cargoKey)}</span>
               <strong style="color: #1e293b; font-size: 15px;">${cargoLabel}</strong>
               ${hasCorrection ? '<span style="background: #dc2626; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">CORREGIR</span>' : ''}
             </div>
@@ -3349,14 +3358,19 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
           ${currentMember ? `
             <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <div style="flex: 1;">
                   <p style="margin: 0; font-weight: 600; color: #334155;">${name}</p>
                   <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">RUT: ${rut || 'No especificado'}</p>
                 </div>
-                <button class="btn-remove-cargo" data-cargo="${cargoKey}" style="padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                  ✕ Quitar
-                </button>
+                <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                  <button class="btn-edit-member-data" ${dataAttr} style="padding: 6px 10px; background: #e0f2fe; color: #0369a1; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap;">
+                    ✏️ Editar datos
+                  </button>
+                  <button class="${isAdditional ? 'btn-remove-additional' : 'btn-remove-cargo'}" ${dataAttr} style="padding: 6px 10px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                    ✕ Quitar
+                  </button>
+                </div>
               </div>
             </div>
           ` : `
@@ -3365,17 +3379,35 @@ function openCorrectionEditor(org, type, key, parentModal) {
             </div>
           `}
 
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <select class="select-new-member" data-cargo="${cargoKey}" style="flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; cursor: pointer;">
-              <option value="">-- Seleccionar otro miembro --</option>
-              ${memberOptionsHTML}
-            </select>
-            <button class="btn-assign-cargo" data-cargo="${cargoKey}" style="padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;">
-              Asignar
-            </button>
-          </div>
+          ${!isAdditional ? `
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select class="select-new-member" data-cargo="${cargoKey}" style="flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; cursor: pointer;">
+                <option value="">-- Seleccionar otro miembro --</option>
+                ${memberOptionsHTML}
+              </select>
+              <button class="btn-assign-cargo" data-cargo="${cargoKey}" style="padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                Asignar
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
+    };
+
+    // Labels de cargos adicionales
+    const getAdditionalCargoLabel = (member, index) => {
+      const role = member?.role || member?.cargo || '';
+      const roleLabelsMap = {
+        'director': 'Director',
+        'vocal': 'Vocal',
+        'director_1': 'Director 1',
+        'director_2': 'Director 2',
+        'director_3': 'Director 3',
+        'primer_director': 'Primer Director',
+        'segundo_director': 'Segundo Director',
+        'tercer_director': 'Tercer Director'
+      };
+      return roleLabelsMap[role?.toLowerCase()] || role || `Director ${index + 1}`;
     };
 
     const editModal = document.createElement('div');
@@ -3415,27 +3447,14 @@ function openCorrectionEditor(org, type, key, parentModal) {
           </div>
 
           <!-- Directores adicionales -->
-          ${(dir.additionalMembers && dir.additionalMembers.length > 0) ? `
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
-              <h4 style="margin: 0 0 12px; font-size: 14px; color: #64748b;">Directores Adicionales</h4>
-              ${dir.additionalMembers.map((m, idx) => `
-                <div class="cargo-card additional" data-cargo="additional_${idx}" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 20px;">👤</span>
-                      <div>
-                        <p style="margin: 0; font-weight: 600; color: #334155;">${extractMemberName(m)}</p>
-                        <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">RUT: ${m.rut || 'No especificado'}</p>
-                      </div>
-                    </div>
-                    <button class="btn-remove-additional" data-index="${idx}" style="padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                      ✕ Quitar
-                    </button>
-                  </div>
-                </div>
-              `).join('')}
+          <div id="directorio-additional" style="margin-top: 16px; padding-top: 16px; border-top: 2px dashed #e2e8f0; ${!(dir.additionalMembers && dir.additionalMembers.length > 0) ? 'display:none;' : ''}">
+            <h4 style="margin: 0 0 12px; font-size: 14px; color: #64748b;">Directores Adicionales</h4>
+            <div id="additional-cards">
+              ${(dir.additionalMembers || []).map((m, idx) =>
+                generateCargoCard(`additional_${idx}`, getAdditionalCargoLabel(m, idx), m, true, idx)
+              ).join('')}
             </div>
-          ` : ''}
+          </div>
         </div>
 
         <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc; flex-shrink: 0;">
@@ -3457,18 +3476,140 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     // Función para actualizar la vista
     const updateView = () => {
+      // Actualizar cargos principales
       const container = editModal.querySelector('#directorio-cards');
       container.innerHTML = `
         ${generateCargoCard('president', 'Presidente', localDir.president)}
         ${generateCargoCard('secretary', 'Secretario', localDir.secretary)}
         ${generateCargoCard('treasurer', 'Tesorero', localDir.treasurer)}
       `;
+
+      // Actualizar directores adicionales
+      const additionalContainer = editModal.querySelector('#additional-cards');
+      const additionalSection = editModal.querySelector('#directorio-additional');
+      if (additionalContainer && additionalSection) {
+        if (localDir.additionalMembers && localDir.additionalMembers.length > 0) {
+          additionalSection.style.display = '';
+          additionalContainer.innerHTML = localDir.additionalMembers.map((m, idx) =>
+            generateCargoCard(`additional_${idx}`, getAdditionalCargoLabel(m, idx), m, true, idx)
+          ).join('');
+        } else {
+          additionalSection.style.display = 'none';
+        }
+      }
+
       attachCargoListeners();
+    };
+
+    // Función para abrir sub-modal de edición de datos del miembro
+    const openEditMemberDataModal = (cargoKey, isAdditional, additionalIndex) => {
+      let member;
+      let cargoLabel;
+
+      if (isAdditional) {
+        member = localDir.additionalMembers[additionalIndex];
+        cargoLabel = getAdditionalCargoLabel(member, additionalIndex);
+      } else {
+        member = localDir[cargoKey];
+        cargoLabel = cargoKey === 'president' ? 'Presidente' : cargoKey === 'secretary' ? 'Secretario' : 'Tesorero';
+      }
+
+      if (!member) {
+        showToast('No hay miembro para editar', 'warning');
+        return;
+      }
+
+      const subModal = document.createElement('div');
+      subModal.className = 'correction-edit-modal-overlay';
+      subModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10002;';
+      subModal.innerHTML = `
+        <div style="background:white;border-radius:16px;width:95%;max-width:450px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+          <div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;font-size:18px;color:#1e293b;">Editar Datos - ${cargoLabel}</h3>
+            <button class="sub-modal-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px;">&times;</button>
+          </div>
+          <div style="padding:24px;overflow-y:auto;">
+            <div style="display:grid;gap:16px;">
+              <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">RUT</label>
+                <input type="text" id="edit-member-rut" value="${member.rut || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Primer Nombre</label>
+                  <input type="text" id="edit-member-firstName" value="${member.firstName || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Segundo Nombre</label>
+                  <input type="text" id="edit-member-segundoNombre" value="${member.segundoNombre || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Apellido Paterno</label>
+                  <input type="text" id="edit-member-lastName" value="${member.lastName || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Apellido Materno</label>
+                  <input type="text" id="edit-member-apellidoMaterno" value="${member.apellidoMaterno || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Email</label>
+                <input type="email" id="edit-member-email" value="${member.email || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Teléfono</label>
+                <input type="tel" id="edit-member-phone" value="${member.phone || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+          <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;gap:12px;justify-content:flex-end;">
+            <button class="btn-cancel-sub" style="padding:10px 20px;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-weight:500;cursor:pointer;">Cancelar</button>
+            <button class="btn-save-member-data" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Guardar</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(subModal);
+
+      // Event listeners
+      subModal.querySelector('.sub-modal-close').addEventListener('click', () => subModal.remove());
+      subModal.querySelector('.btn-cancel-sub').addEventListener('click', () => subModal.remove());
+      subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });
+
+      subModal.querySelector('.btn-save-member-data').addEventListener('click', () => {
+        const newData = {
+          rut: subModal.querySelector('#edit-member-rut').value.trim(),
+          firstName: subModal.querySelector('#edit-member-firstName').value.trim(),
+          segundoNombre: subModal.querySelector('#edit-member-segundoNombre').value.trim(),
+          lastName: subModal.querySelector('#edit-member-lastName').value.trim(),
+          apellidoMaterno: subModal.querySelector('#edit-member-apellidoMaterno').value.trim(),
+          email: subModal.querySelector('#edit-member-email').value.trim(),
+          phone: subModal.querySelector('#edit-member-phone').value.trim()
+        };
+
+        if (!newData.firstName || !newData.lastName) {
+          showToast('Nombre y apellido paterno son obligatorios', 'warning');
+          return;
+        }
+
+        // Actualizar miembro en localDir
+        if (isAdditional) {
+          localDir.additionalMembers[additionalIndex] = { ...localDir.additionalMembers[additionalIndex], ...newData };
+        } else {
+          localDir[cargoKey] = { ...localDir[cargoKey], ...newData };
+        }
+
+        subModal.remove();
+        updateView();
+        showToast('Datos actualizados', 'success');
+      });
     };
 
     // Función para adjuntar listeners
     const attachCargoListeners = () => {
-      // Botones de quitar cargo
+      // Botones de quitar cargo principal
       editModal.querySelectorAll('.btn-remove-cargo').forEach(btn => {
         btn.addEventListener('click', () => {
           const cargo = btn.dataset.cargo;
@@ -3500,19 +3641,29 @@ function openCorrectionEditor(org, type, key, parentModal) {
           }
         });
       });
+
+      // Botones de quitar adicionales
+      editModal.querySelectorAll('.btn-remove-additional').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.index);
+          localDir.additionalMembers.splice(idx, 1);
+          updateView();
+        });
+      });
+
+      // Botones de editar datos del miembro
+      editModal.querySelectorAll('.btn-edit-member-data').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cargoKey = btn.dataset.cargo;
+          const isAdditional = cargoKey && cargoKey.startsWith('additional_');
+          const additionalIndex = isAdditional ? parseInt(btn.dataset.index) : -1;
+          openEditMemberDataModal(isAdditional ? null : cargoKey, isAdditional, additionalIndex);
+        });
+      });
     };
 
     // Attach initial listeners
     attachCargoListeners();
-
-    // Botones de quitar adicionales
-    editModal.querySelectorAll('.btn-remove-additional').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.index);
-        localDir.additionalMembers.splice(idx, 1);
-        btn.closest('.cargo-card').remove();
-      });
-    });
 
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
