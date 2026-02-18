@@ -1747,8 +1747,24 @@ async function viewOrganization(orgId) {
                       placeholder="Escriba aquí cualquier comentario o aclaración general sobre las correcciones realizadas..."></textarea>
           </div>
 
+          <!-- Indicador de progreso de correcciones -->
+          <div class="correction-progress" id="correction-progress-${org.id || org._id}" style="background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: #374151; font-size: 14px;">Progreso de correcciones</span>
+              <span id="correction-count-${org.id || org._id}" style="font-weight: 700; color: #dc2626; font-size: 14px;">${Object.keys(correctedFields).reduce((acc, cat) => acc + Object.keys(correctedFields[cat] || {}).length, 0)} / ${corrections.items.length}</span>
+            </div>
+            <div style="background: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden;">
+              <div id="correction-bar-${org.id || org._id}" style="background: linear-gradient(90deg, #10b981, #059669); height: 100%; width: ${Math.round((Object.keys(correctedFields).reduce((acc, cat) => acc + Object.keys(correctedFields[cat] || {}).length, 0) / corrections.items.length) * 100)}%; transition: width 0.3s ease;"></div>
+            </div>
+            <p id="correction-status-${org.id || org._id}" style="margin: 8px 0 0; font-size: 12px; color: ${Object.keys(correctedFields).reduce((acc, cat) => acc + Object.keys(correctedFields[cat] || {}).length, 0) >= corrections.items.length ? '#059669' : '#dc2626'};">
+              ${Object.keys(correctedFields).reduce((acc, cat) => acc + Object.keys(correctedFields[cat] || {}).length, 0) >= corrections.items.length
+                ? '✓ Todas las correcciones completadas. Puede reenviar para revisión.'
+                : '⚠️ Debe completar todas las correcciones antes de reenviar.'}
+            </p>
+          </div>
+
           <div class="correction-actions">
-            <button class="btn-resubmit-org" id="btn-resubmit-${org.id}">
+            <button class="btn-resubmit-org" id="btn-resubmit-${org.id || org._id}" ${Object.keys(correctedFields).reduce((acc, cat) => acc + Object.keys(correctedFields[cat] || {}).length, 0) < corrections.items.length ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 2L11 13"></path>
                 <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
@@ -2808,53 +2824,115 @@ async function downloadAllUserPDFs(orgId) {
   }
 }
 
-// Función para abrir el editor de correcciones
+// Función para abrir el editor de correcciones (v2 con soporte para nuevas categorías)
 function openCorrectionEditor(org, type, key, parentModal) {
+  // Obtener el ítem de corrección específico para mostrar el mensaje del admin
+  const correctionItem = org.corrections?.items?.find(item => {
+    const itemKey = item.field || item.memberId || item.docType || item.label;
+    return item.category === type && itemKey === key;
+  });
+  const adminMessage = correctionItem?.message || 'Requiere corrección';
+
+  // Labels para campos de datos generales
   const fieldLabels = {
+    'organizationName': 'Nombre de la organización',
     'name': 'Nombre de la organización',
     'address': 'Dirección',
     'commune': 'Comuna',
+    'comuna': 'Comuna',
     'region': 'Región',
     'neighborhood': 'Unidad Vecinal',
+    'unidadVecinal': 'Unidad Vecinal',
     'email': 'Email',
+    'contactEmail': 'Email de contacto',
     'phone': 'Teléfono',
-    'description': 'Objetivos'
+    'contactPhone': 'Teléfono de contacto',
+    'description': 'Descripción',
+    'objectives': 'Objetivos',
+    'Descripción': 'Descripción',
+    'Objetivos': 'Objetivos'
   };
 
-  const docNames = {
-    'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
-    'ESTATUTOS': 'Estatutos',
-    'REGISTRO_SOCIOS': 'Registro de Socios',
-    'DECLARACION_JURADA_PRESIDENTE': 'Declaración Jurada',
-    'ACTA_COMISION_ELECTORAL': 'Acta Comisión Electoral'
+  // Labels para cargos del directorio
+  const roleLabels = {
+    'president': 'Presidente',
+    'secretary': 'Secretario',
+    'treasurer': 'Tesorero',
+    'director': 'Director'
   };
 
-  if (type === 'field') {
-    // Editor de campo
-    const currentValue = org.organization?.[key] || '';
-    const label = fieldLabels[key] || key;
+  // Helper para extraer nombre de miembro
+  const extractMemberName = (m) => {
+    if (!m) return 'Sin nombre';
+    if (m.primerNombre) {
+      const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+      const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+      return (fn + ' ' + ln).trim() || 'Sin nombre';
+    }
+    if (m.firstName) return `${m.firstName} ${m.lastName || ''}`.trim();
+    return m.name || m.nombre || 'Sin nombre';
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // CATEGORÍA: DATOS GENERALES (organizationName, address, description, etc.)
+  // ═══════════════════════════════════════════════════════════════
+  if (type === 'datos_generales' || type === 'field') {
+    // Mapear key a campo real de la organización
+    const fieldMapping = {
+      'Nombre': 'organizationName',
+      'Dirección': 'address',
+      'Comuna': 'comuna',
+      'Email': 'contactEmail',
+      'Teléfono': 'contactPhone',
+      'Descripción': 'description',
+      'Objetivos': 'objectives'
+    };
+    const actualField = fieldMapping[key] || key;
+    const currentValue = org[actualField] || org.organization?.[actualField] || '';
+    const label = fieldLabels[key] || fieldLabels[actualField] || key;
 
     const editModal = document.createElement('div');
     editModal.className = 'correction-edit-modal-overlay';
-    editModal.innerHTML = `
-      <div class="correction-edit-modal">
-        <div class="correction-edit-header">
-          <h3>Editar: ${label}</h3>
-          <button class="modal-close-btn">&times;</button>
-        </div>
-        <div class="correction-edit-body">
-          <label class="correction-edit-label">Valor actual:</label>
-          <p class="correction-current">${currentValue || '(vacío)'}</p>
+    editModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
 
-          <label class="correction-edit-label">Nuevo valor:</label>
-          ${key === 'description' ?
-            `<textarea id="correction-new-value" class="correction-input-textarea">${currentValue}</textarea>` :
-            `<input type="text" id="correction-new-value" class="correction-input" value="${currentValue}">`
-          }
+    const isTextArea = actualField === 'description' || actualField === 'objectives' || key === 'Descripción' || key === 'Objetivos';
+
+    editModal.innerHTML = `
+      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
+        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">✏️ Editar: ${label}</h3>
+          <button class="modal-close-btn" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white; display: flex; align-items: center; justify-content: center;">&times;</button>
         </div>
-        <div class="correction-edit-footer">
-          <button class="btn-cancel-edit">Cancelar</button>
-          <button class="btn-save-edit">Guardar Cambio</button>
+        <div class="correction-edit-body" style="padding: 24px;">
+          <!-- Observación del admin -->
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div>
+                <strong style="color: #92400e; font-size: 13px;">Observación del revisor:</strong>
+                <p style="margin: 4px 0 0; color: #78350f; font-size: 14px;">${adminMessage}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Valor actual -->
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Valor enviado anteriormente:</label>
+            <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; color: #64748b; font-size: 14px; ${isTextArea ? 'max-height: 100px; overflow-y: auto;' : ''}">${currentValue || '<em style="color: #94a3b8;">(vacío)</em>'}</div>
+          </div>
+
+          <!-- Nuevo valor -->
+          <div>
+            <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Nuevo valor corregido: <span style="color: #dc2626;">*</span></label>
+            ${isTextArea ?
+              `<textarea id="correction-new-value" style="width: 100%; min-height: 120px; padding: 12px; border: 2px solid #3b82f6; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;">${currentValue}</textarea>` :
+              `<input type="text" id="correction-new-value" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${currentValue}">`
+            }
+          </div>
+        </div>
+        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc;">
+          <button class="btn-cancel-edit" style="padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancelar</button>
+          <button class="btn-save-edit" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Corrección</button>
         </div>
       </div>
     `;
@@ -2865,16 +2943,16 @@ function openCorrectionEditor(org, type, key, parentModal) {
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
     editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
-    editModal.querySelector('.btn-save-edit').addEventListener('click', () => {
+    editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
       const newValue = document.getElementById('correction-new-value').value.trim();
       if (!newValue) {
         showToast('El valor no puede estar vacío', 'error');
         return;
       }
 
-      // Actualizar el campo en la organización
-      if (!org.organization) org.organization = {};
-      org.organization[key] = newValue;
+      // Preparar datos para actualizar
+      const updateData = {};
+      updateData[actualField] = newValue;
 
       // Marcar este campo como corregido por el usuario
       if (!org.userCorrectedFields) org.userCorrectedFields = {};
@@ -2883,56 +2961,124 @@ function openCorrectionEditor(org, type, key, parentModal) {
         correctedAt: new Date().toISOString(),
         newValue: newValue
       };
+      updateData.userCorrectedFields = org.userCorrectedFields;
 
-      organizationsService.update(org.id, {
-        organization: org.organization,
-        userCorrectedFields: org.userCorrectedFields
-      });
-
-      showToast('Campo actualizado correctamente', 'success');
-      editModal.remove();
-      parentModal.remove();
-      viewOrganization(org.id);
+      try {
+        await organizationsService.update(org.id || org._id, updateData);
+        org[actualField] = newValue;
+        showToast('Campo actualizado correctamente', 'success');
+        editModal.remove();
+        parentModal.remove();
+        viewOrganization(org.id || org._id);
+      } catch (error) {
+        console.error('Error al guardar corrección:', error);
+        showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
+      }
     });
 
-  } else if (type === 'document' || type === 'certificate') {
-    // Para documentos y certificados mostrar mensaje por ahora
-    showToast('Para resubir documentos, contacte al administrador', 'info');
-  } else if (type === 'member') {
-    // Editor de miembro
-    const member = org.members?.find(m => m.id === key);
+  // ═══════════════════════════════════════════════════════════════
+  // CATEGORÍA: DIRECTORIO (president, secretary, treasurer, additionalMembers)
+  // ═══════════════════════════════════════════════════════════════
+  } else if (type === 'directorio') {
+    // El key puede ser "Presidente: Nombre Apellido" o similar
+    const roleMatch = key.match(/^(Presidente|Secretario|Tesorero|Director\s*\d*):\s*(.+)$/i);
+    let role = 'member';
+    let memberName = key;
+
+    if (roleMatch) {
+      const roleText = roleMatch[1].toLowerCase();
+      memberName = roleMatch[2];
+      if (roleText === 'presidente') role = 'president';
+      else if (roleText === 'secretario') role = 'secretary';
+      else if (roleText === 'tesorero') role = 'treasurer';
+      else if (roleText.startsWith('director')) role = 'director';
+    }
+
+    // Buscar el miembro en el directorio
+    const dir = org.provisionalDirectorio || {};
+    let member = null;
+    let memberPath = '';
+
+    if (role === 'president' && dir.president) {
+      member = dir.president;
+      memberPath = 'president';
+    } else if (role === 'secretary' && dir.secretary) {
+      member = dir.secretary;
+      memberPath = 'secretary';
+    } else if (role === 'treasurer' && dir.treasurer) {
+      member = dir.treasurer;
+      memberPath = 'treasurer';
+    } else if (dir.additionalMembers) {
+      // Buscar en miembros adicionales
+      const idx = dir.additionalMembers.findIndex(m => extractMemberName(m).includes(memberName.split(' ')[0]));
+      if (idx !== -1) {
+        member = dir.additionalMembers[idx];
+        memberPath = `additionalMembers.${idx}`;
+      }
+    }
+
     if (!member) {
-      showToast('Miembro no encontrado', 'error');
+      showToast('Miembro del directorio no encontrado', 'error');
       return;
     }
 
+    const currentName = extractMemberName(member);
+    const currentRut = member.rut || '';
+
     const editModal = document.createElement('div');
     editModal.className = 'correction-edit-modal-overlay';
+    editModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
     editModal.innerHTML = `
-      <div class="correction-edit-modal">
-        <div class="correction-edit-header">
-          <h3>Editar Miembro: ${member.firstName} ${member.lastName}</h3>
-          <button class="modal-close-btn">&times;</button>
+      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
+        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">👤 Editar: ${roleLabels[role] || 'Miembro'}</h3>
+          <button class="modal-close-btn" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white;">&times;</button>
         </div>
-        <div class="correction-edit-body">
-          <div class="member-edit-fields">
-            <div class="edit-field-group">
-              <label>Nombre:</label>
-              <input type="text" id="edit-member-firstname" value="${member.firstName || ''}">
+        <div class="correction-edit-body" style="padding: 24px;">
+          <!-- Observación del admin -->
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div>
+                <strong style="color: #92400e; font-size: 13px;">Observación del revisor:</strong>
+                <p style="margin: 4px 0 0; color: #78350f; font-size: 14px;">${adminMessage}</p>
+              </div>
             </div>
-            <div class="edit-field-group">
-              <label>Apellido:</label>
-              <input type="text" id="edit-member-lastname" value="${member.lastName || ''}">
+          </div>
+
+          <!-- Datos actuales -->
+          <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <strong style="color: #64748b; font-size: 12px; text-transform: uppercase;">Datos enviados anteriormente:</strong>
+            <p style="margin: 8px 0 0; color: #334155; font-size: 14px;">${currentName} - RUT: ${currentRut || 'No especificado'}</p>
+          </div>
+
+          <!-- Campos editables -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-dir-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
             </div>
-            <div class="edit-field-group">
-              <label>RUT:</label>
-              <input type="text" id="edit-member-rut" value="${member.rut || ''}">
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Segundo Nombre</label>
+              <input type="text" id="edit-dir-secondname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.segundoNombre || ''}">
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Paterno <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-dir-lastname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.lastName || member.apellidoPaterno || ''}">
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Materno</label>
+              <input type="text" id="edit-dir-lastname2" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.apellidoMaterno || ''}">
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">RUT <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-dir-rut" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${currentRut}" placeholder="12.345.678-9">
             </div>
           </div>
         </div>
-        <div class="correction-edit-footer">
-          <button class="btn-cancel-edit">Cancelar</button>
-          <button class="btn-save-edit">Guardar Cambios</button>
+        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc;">
+          <button class="btn-cancel-edit" style="padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancelar</button>
+          <button class="btn-save-edit" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Corrección</button>
         </div>
       </div>
     `;
@@ -2943,7 +3089,265 @@ function openCorrectionEditor(org, type, key, parentModal) {
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
     editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
-    editModal.querySelector('.btn-save-edit').addEventListener('click', () => {
+    editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
+      const newFirstName = document.getElementById('edit-dir-firstname').value.trim();
+      const newSecondName = document.getElementById('edit-dir-secondname').value.trim();
+      const newLastName = document.getElementById('edit-dir-lastname').value.trim();
+      const newLastName2 = document.getElementById('edit-dir-lastname2').value.trim();
+      const newRut = document.getElementById('edit-dir-rut').value.trim();
+
+      if (!newFirstName || !newLastName) {
+        showToast('Nombre y apellido paterno son requeridos', 'error');
+        return;
+      }
+
+      // Actualizar datos del miembro
+      const updatedMember = {
+        ...member,
+        firstName: newFirstName,
+        primerNombre: newFirstName,
+        segundoNombre: newSecondName,
+        lastName: newLastName,
+        apellidoPaterno: newLastName,
+        apellidoMaterno: newLastName2,
+        rut: newRut
+      };
+
+      // Actualizar en el directorio
+      if (!org.provisionalDirectorio) org.provisionalDirectorio = {};
+      if (memberPath.startsWith('additionalMembers')) {
+        const idx = parseInt(memberPath.split('.')[1]);
+        if (!org.provisionalDirectorio.additionalMembers) org.provisionalDirectorio.additionalMembers = [];
+        org.provisionalDirectorio.additionalMembers[idx] = updatedMember;
+      } else {
+        org.provisionalDirectorio[memberPath] = updatedMember;
+      }
+
+      // Marcar como corregido
+      if (!org.userCorrectedFields) org.userCorrectedFields = {};
+      if (!org.userCorrectedFields[type]) org.userCorrectedFields[type] = {};
+      org.userCorrectedFields[type][key] = {
+        correctedAt: new Date().toISOString()
+      };
+
+      try {
+        await organizationsService.update(org.id || org._id, {
+          provisionalDirectorio: org.provisionalDirectorio,
+          userCorrectedFields: org.userCorrectedFields
+        });
+
+        showToast('Miembro del directorio actualizado correctamente', 'success');
+        editModal.remove();
+        parentModal.remove();
+        viewOrganization(org.id || org._id);
+      } catch (error) {
+        console.error('Error al guardar corrección:', error);
+        showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    });
+
+  // ═══════════════════════════════════════════════════════════════
+  // CATEGORÍA: COMISIÓN ELECTORAL
+  // ═══════════════════════════════════════════════════════════════
+  } else if (type === 'comision_electoral' || type === 'commission') {
+    // Buscar miembro de la comisión
+    const commission = org.electoralCommission || [];
+    let memberIndex = commission.findIndex(m => {
+      const name = extractMemberName(m);
+      return key.includes(name.split(' ')[0]);
+    });
+
+    if (memberIndex === -1 && key.match(/miembro\s*(\d+)/i)) {
+      memberIndex = parseInt(key.match(/miembro\s*(\d+)/i)[1]) - 1;
+    }
+
+    const member = commission[memberIndex];
+
+    if (!member) {
+      showToast('Miembro de comisión electoral no encontrado', 'error');
+      return;
+    }
+
+    const currentName = extractMemberName(member);
+    const currentRut = member.rut || '';
+
+    const editModal = document.createElement('div');
+    editModal.className = 'correction-edit-modal-overlay';
+    editModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+    editModal.innerHTML = `
+      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
+        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">🗳️ Editar Miembro Comisión Electoral</h3>
+          <button class="modal-close-btn" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white;">&times;</button>
+        </div>
+        <div class="correction-edit-body" style="padding: 24px;">
+          <!-- Observación del admin -->
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div>
+                <strong style="color: #92400e; font-size: 13px;">Observación del revisor:</strong>
+                <p style="margin: 4px 0 0; color: #78350f; font-size: 14px;">${adminMessage}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Datos actuales -->
+          <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <strong style="color: #64748b; font-size: 12px; text-transform: uppercase;">Datos enviados anteriormente:</strong>
+            <p style="margin: 8px 0 0; color: #334155; font-size: 14px;">${currentName} - RUT: ${currentRut || 'No especificado'}</p>
+          </div>
+
+          <!-- Campos editables -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-comm-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Paterno <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-comm-lastname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.lastName || member.apellidoPaterno || ''}">
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">RUT <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-comm-rut" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${currentRut}" placeholder="12.345.678-9">
+            </div>
+          </div>
+        </div>
+        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc;">
+          <button class="btn-cancel-edit" style="padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancelar</button>
+          <button class="btn-save-edit" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Corrección</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(editModal);
+
+    editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
+    editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
+
+    editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
+      const newFirstName = document.getElementById('edit-comm-firstname').value.trim();
+      const newLastName = document.getElementById('edit-comm-lastname').value.trim();
+      const newRut = document.getElementById('edit-comm-rut').value.trim();
+
+      if (!newFirstName || !newLastName) {
+        showToast('Nombre y apellido son requeridos', 'error');
+        return;
+      }
+
+      // Actualizar miembro de comisión
+      org.electoralCommission[memberIndex] = {
+        ...org.electoralCommission[memberIndex],
+        firstName: newFirstName,
+        primerNombre: newFirstName,
+        lastName: newLastName,
+        apellidoPaterno: newLastName,
+        rut: newRut
+      };
+
+      // Marcar como corregido
+      if (!org.userCorrectedFields) org.userCorrectedFields = {};
+      if (!org.userCorrectedFields[type]) org.userCorrectedFields[type] = {};
+      org.userCorrectedFields[type][key] = {
+        correctedAt: new Date().toISOString()
+      };
+
+      try {
+        await organizationsService.update(org.id || org._id, {
+          electoralCommission: org.electoralCommission,
+          userCorrectedFields: org.userCorrectedFields
+        });
+
+        showToast('Miembro de comisión actualizado correctamente', 'success');
+        editModal.remove();
+        parentModal.remove();
+        viewOrganization(org.id || org._id);
+      } catch (error) {
+        console.error('Error al guardar corrección:', error);
+        showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    });
+
+  // ═══════════════════════════════════════════════════════════════
+  // CATEGORÍA: MIEMBROS FUNDADORES
+  // ═══════════════════════════════════════════════════════════════
+  } else if (type === 'miembros' || type === 'member') {
+    // Buscar miembro fundador
+    const members = org.members || [];
+    let memberIndex = members.findIndex(m => {
+      const name = extractMemberName(m);
+      return key.includes(name.split(' ')[0]) || m.rut === key || m._id === key || m.id === key;
+    });
+
+    const member = members[memberIndex];
+
+    if (!member) {
+      showToast('Miembro fundador no encontrado', 'error');
+      return;
+    }
+
+    const currentName = extractMemberName(member);
+    const currentRut = member.rut || '';
+
+    const editModal = document.createElement('div');
+    editModal.className = 'correction-edit-modal-overlay';
+    editModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+    editModal.innerHTML = `
+      <div class="correction-edit-modal" style="background: white; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
+        <div class="correction-edit-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">👥 Editar Miembro Fundador</h3>
+          <button class="modal-close-btn" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white;">&times;</button>
+        </div>
+        <div class="correction-edit-body" style="padding: 24px;">
+          <!-- Observación del admin -->
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <div>
+                <strong style="color: #92400e; font-size: 13px;">Observación del revisor:</strong>
+                <p style="margin: 4px 0 0; color: #78350f; font-size: 14px;">${adminMessage}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Datos actuales -->
+          <div style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <strong style="color: #64748b; font-size: 12px; text-transform: uppercase;">Datos enviados anteriormente:</strong>
+            <p style="margin: 8px 0 0; color: #334155; font-size: 14px;">${currentName} - RUT: ${currentRut || 'No especificado'}</p>
+          </div>
+
+          <!-- Campos editables -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-member-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Apellido Paterno <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-member-lastname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.lastName || member.apellidoPaterno || ''}">
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">RUT <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="edit-member-rut" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${currentRut}" placeholder="12.345.678-9">
+            </div>
+          </div>
+        </div>
+        <div class="correction-edit-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc;">
+          <button class="btn-cancel-edit" style="padding: 10px 20px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancelar</button>
+          <button class="btn-save-edit" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✓ Guardar Corrección</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(editModal);
+
+    editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
+    editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
+
+    editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
       const newFirstName = document.getElementById('edit-member-firstname').value.trim();
       const newLastName = document.getElementById('edit-member-lastname').value.trim();
       const newRut = document.getElementById('edit-member-rut').value.trim();
@@ -2954,177 +3358,48 @@ function openCorrectionEditor(org, type, key, parentModal) {
       }
 
       // Actualizar miembro
-      const memberIndex = org.members.findIndex(m => m.id === key);
-      if (memberIndex !== -1) {
-        org.members[memberIndex] = {
-          ...org.members[memberIndex],
-          firstName: newFirstName,
-          lastName: newLastName,
-          rut: newRut
-        };
-      }
+      org.members[memberIndex] = {
+        ...org.members[memberIndex],
+        firstName: newFirstName,
+        primerNombre: newFirstName,
+        lastName: newLastName,
+        apellidoPaterno: newLastName,
+        rut: newRut
+      };
 
       // Marcar como corregido
       if (!org.userCorrectedFields) org.userCorrectedFields = {};
-      if (!org.userCorrectedFields.member) org.userCorrectedFields.member = {};
-      org.userCorrectedFields.member[key] = {
+      if (!org.userCorrectedFields[type]) org.userCorrectedFields[type] = {};
+      org.userCorrectedFields[type][key] = {
         correctedAt: new Date().toISOString()
       };
 
-      organizationsService.update(org.id, {
-        members: org.members,
-        userCorrectedFields: org.userCorrectedFields
-      });
+      try {
+        await organizationsService.update(org.id || org._id, {
+          members: org.members,
+          userCorrectedFields: org.userCorrectedFields
+        });
 
-      showToast('Miembro actualizado correctamente', 'success');
-      editModal.remove();
-      parentModal.remove();
-      viewOrganization(org.id);
+        showToast('Miembro actualizado correctamente', 'success');
+        editModal.remove();
+        parentModal.remove();
+        viewOrganization(org.id || org._id);
+      } catch (error) {
+        console.error('Error al guardar corrección:', error);
+        showToast('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
+      }
     });
 
-  } else if (type === 'commission') {
-    // Editor de comisión
-    if (key === 'electionDate') {
-      // Editar fecha de elección
-      const currentDate = org.commission?.electionDate || '';
-
-      const editModal = document.createElement('div');
-      editModal.className = 'correction-edit-modal-overlay';
-      editModal.innerHTML = `
-        <div class="correction-edit-modal">
-          <div class="correction-edit-header">
-            <h3>Editar: Fecha de Elección</h3>
-            <button class="modal-close-btn">&times;</button>
-          </div>
-          <div class="correction-edit-body">
-            <label class="correction-edit-label">Nueva fecha:</label>
-            <input type="date" id="edit-election-date" class="correction-input" value="${currentDate}">
-          </div>
-          <div class="correction-edit-footer">
-            <button class="btn-cancel-edit">Cancelar</button>
-            <button class="btn-save-edit">Guardar</button>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(editModal);
-
-      editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
-      editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-      editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
-
-      editModal.querySelector('.btn-save-edit').addEventListener('click', () => {
-        const newDate = document.getElementById('edit-election-date').value;
-
-        if (!newDate) {
-          showToast('La fecha es requerida', 'error');
-          return;
-        }
-
-        if (!org.commission) org.commission = {};
-        org.commission.electionDate = newDate;
-
-        // Marcar como corregido
-        if (!org.userCorrectedFields) org.userCorrectedFields = {};
-        if (!org.userCorrectedFields.commission) org.userCorrectedFields.commission = {};
-        org.userCorrectedFields.commission[key] = {
-          correctedAt: new Date().toISOString()
-        };
-
-        organizationsService.update(org.id, {
-          commission: org.commission,
-          userCorrectedFields: org.userCorrectedFields
-        });
-
-        showToast('Fecha actualizada correctamente', 'success');
-        editModal.remove();
-        parentModal.remove();
-        viewOrganization(org.id);
-      });
-    } else {
-      // Editar miembro de comisión
-      const memberIndex = org.commission?.members?.findIndex(m => m.id === key) ?? -1;
-      const member = org.commission?.members?.[memberIndex];
-      const role = ['Presidente', 'Secretario', 'Vocal'][memberIndex] || 'Miembro';
-
-      if (!member) {
-        showToast('Miembro de comisión no encontrado', 'error');
-        return;
-      }
-
-      const editModal = document.createElement('div');
-      editModal.className = 'correction-edit-modal-overlay';
-      editModal.innerHTML = `
-        <div class="correction-edit-modal">
-          <div class="correction-edit-header">
-            <h3>Editar ${role}</h3>
-            <button class="modal-close-btn">&times;</button>
-          </div>
-          <div class="correction-edit-body">
-            <div class="member-edit-fields">
-              <div class="edit-field-group">
-                <label>Nombre:</label>
-                <input type="text" id="edit-comm-firstname" value="${member.firstName || ''}">
-              </div>
-              <div class="edit-field-group">
-                <label>Apellido:</label>
-                <input type="text" id="edit-comm-lastname" value="${member.lastName || ''}">
-              </div>
-              <div class="edit-field-group">
-                <label>RUT:</label>
-                <input type="text" id="edit-comm-rut" value="${member.rut || ''}">
-              </div>
-            </div>
-          </div>
-          <div class="correction-edit-footer">
-            <button class="btn-cancel-edit">Cancelar</button>
-            <button class="btn-save-edit">Guardar</button>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(editModal);
-
-      editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
-      editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-      editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
-
-      editModal.querySelector('.btn-save-edit').addEventListener('click', () => {
-        const newFirstName = document.getElementById('edit-comm-firstname').value.trim();
-        const newLastName = document.getElementById('edit-comm-lastname').value.trim();
-        const newRut = document.getElementById('edit-comm-rut').value.trim();
-
-        if (!newFirstName || !newLastName) {
-          showToast('Nombre y apellido son requeridos', 'error');
-          return;
-        }
-
-        // Actualizar miembro de comisión
-        org.commission.members[memberIndex] = {
-          ...org.commission.members[memberIndex],
-          firstName: newFirstName,
-          lastName: newLastName,
-          rut: newRut
-        };
-
-        // Marcar como corregido
-        if (!org.userCorrectedFields) org.userCorrectedFields = {};
-        if (!org.userCorrectedFields.commission) org.userCorrectedFields.commission = {};
-        org.userCorrectedFields.commission[key] = {
-          correctedAt: new Date().toISOString()
-        };
-
-        organizationsService.update(org.id, {
-          commission: org.commission,
-          userCorrectedFields: org.userCorrectedFields
-        });
-
-        showToast('Miembro de comisión actualizado correctamente', 'success');
-        editModal.remove();
-        parentModal.remove();
-        viewOrganization(org.id);
-      });
-    }
+  // ═══════════════════════════════════════════════════════════════
+  // CATEGORÍA: DOCUMENTOS Y CERTIFICADOS
+  // ═══════════════════════════════════════════════════════════════
+  } else if (type === 'documentos' || type === 'certificados' || type === 'document' || type === 'certificate') {
+    // Por ahora mostrar mensaje - se podría implementar un file picker
+    showToast('Para resubir documentos o certificados, por favor contacte al administrador o vuelva a enviar la solicitud completa', 'info');
+  } else {
+    // Tipo desconocido
+    console.warn('Tipo de corrección desconocido:', type, key);
+    showToast('Este tipo de corrección no puede editarse desde aquí', 'info');
   }
 }
 
