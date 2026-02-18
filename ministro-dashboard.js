@@ -1633,7 +1633,7 @@ function viewDocumentation(assignmentId) {
   modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 100%); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 20px; backdrop-filter: blur(8px);';
 
   modal.innerHTML = `
-    <div style="background: white; border-radius: 20px; max-width: 1100px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.4); overflow: hidden;">
+    <div style="background: white; border-radius: 20px; max-width: 1100px; width: 100%; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.4); overflow: hidden;">
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; padding: 24px 28px; position: relative;">
         <div style="position: absolute; top: -50%; right: -5%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;"></div>
@@ -1825,7 +1825,7 @@ function viewDocumentation(assignmentId) {
 
           <!-- Tab: Estatutos -->
           <div id="tab-estatutos" class="tab-content" style="display: none;">
-            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 16px; padding: 24px;">
+            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 16px; padding: 24px; height: 100%;">
               <h3 style="margin: 0 0 20px; color: #065f46; display: flex; align-items: center; gap: 10px;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -1835,15 +1835,9 @@ function viewDocumentation(assignmentId) {
                 </svg>
                 Estatutos de la Organización
               </h3>
-              ${estatutos ? `
-                <div style="background: white; border-radius: 12px; padding: 24px; max-height: 500px; overflow-y: auto; border: 1px solid #bbf7d0;">
-                  <div style="font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
-                    ${estatutos}
-                  </div>
-                </div>
-              ` : `
-                <p style="margin: 0; color: #065f46; text-align: center; padding: 40px;">No hay estatutos registrados para esta organización</p>
-              `}
+              <div id="estatutos-content" style="background: white; border-radius: 12px; padding: 24px; max-height: calc(85vh - 280px); overflow-y: auto; border: 1px solid #bbf7d0;">
+                <div style="text-align: center; padding: 20px; color: #9ca3af;">Cargando estatutos...</div>
+              </div>
             </div>
           </div>
 
@@ -1940,9 +1934,79 @@ function viewDocumentation(assignmentId) {
     });
   });
 
-  // Cargar documentos generados y certificados de antecedentes
+  // Cargar documentos generados, certificados y estatutos formateados
   loadGeneratedDocsForMF(modal, org);
   loadCertificatesForMF(modal, org);
+  loadEstatutosForMF(modal, org, estatutos);
+}
+
+/**
+ * Carga y formatea los estatutos para el Ministro de Fe
+ */
+async function loadEstatutosForMF(modal, org, estatutosText) {
+  const container = modal.querySelector('#estatutos-content');
+  if (!container) return;
+
+  try {
+    // Intentar cargar estatutos formateados desde documentos generados
+    const data = await apiService.get(`/organizations/${org._id}/generated-documents`);
+    const documents = Array.isArray(data) ? data : (data?.documents || []);
+
+    // Buscar documento de tipo ESTATUTOS
+    const estatutosDoc = documents.find(d => d.docType === 'ESTATUTOS');
+
+    if (estatutosDoc && estatutosDoc.content) {
+      // Usar el documento formateado
+      container.innerHTML = `
+        <div style="font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
+          ${estatutosDoc.content}
+        </div>
+      `;
+      return;
+    }
+  } catch (e) {
+    console.warn('No se pudieron cargar estatutos desde documentos generados:', e.message);
+  }
+
+  // Si no hay documento generado, usar el texto plano con formato mejorado
+  if (estatutosText) {
+    // Formatear el texto plano para mejor visualización
+    const formattedContent = formatEstatutosContent(estatutosText);
+    container.innerHTML = `
+      <div style="font-family: 'Georgia', serif; line-height: 1.8; color: #1f2937;">
+        ${formattedContent}
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <p style="margin: 0; color: #065f46; text-align: center; padding: 40px;">No hay estatutos registrados para esta organización</p>
+    `;
+  }
+}
+
+/**
+ * Formatea el contenido de estatutos para mejor visualización
+ */
+function formatEstatutosContent(text) {
+  if (!text) return '';
+
+  // Si ya tiene tags HTML, devolverlo tal cual
+  if (text.includes('<') && text.includes('>')) {
+    return text;
+  }
+
+  // Formatear texto plano
+  let formatted = text
+    // Convertir saltos de línea dobles en párrafos
+    .split(/\n\n+/)
+    .map(para => `<p style="margin: 0 0 16px; text-align: justify;">${para.trim()}</p>`)
+    .join('')
+    // Detectar títulos (líneas en mayúsculas o que empiezan con "ARTÍCULO", "TÍTULO", etc.)
+    .replace(/<p([^>]*)>(TÍTULO[^<]*)<\/p>/gi, '<h3 style="margin: 24px 0 16px; font-weight: 700; color: #065f46; font-size: 16px; text-transform: uppercase;">$2</h3>')
+    .replace(/<p([^>]*)>(ARTÍCULO[^<]*)<\/p>/gi, '<h4 style="margin: 20px 0 12px; font-weight: 700; color: #1f2937; font-size: 15px;">$2</h4>')
+    .replace(/<p([^>]*)>(CAPÍTULO[^<]*)<\/p>/gi, '<h3 style="margin: 24px 0 16px; font-weight: 700; color: #065f46; font-size: 16px; text-transform: uppercase;">$2</h3>');
+
+  return formatted;
 }
 
 /**
@@ -1973,17 +2037,11 @@ async function loadGeneratedDocsForMF(modal, org) {
   };
 
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${window.API_BASE_URL || ''}/api/organizations/${org._id}/generated-documents`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    // Usar apiService que maneja automáticamente la URL base y autenticación
+    const data = await apiService.get(`/organizations/${org._id}/generated-documents`);
+    const documents = Array.isArray(data) ? data : (data?.documents || []);
 
-    if (!response.ok) {
-      throw new Error('Error al cargar documentos');
-    }
-
-    const data = await response.json();
-    const documents = data.documents || data || [];
+    console.log('📁 [MF] Documentos generados cargados:', documents.length, documents);
 
     if (!documents || documents.length === 0) {
       container.innerHTML = `
@@ -2270,14 +2328,19 @@ async function loadCertificatesForMF(modal, org) {
 
   try {
     // Obtener certificados desde la API (colección separada)
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${window.API_BASE_URL || ''}/api/organizations/${org._id}/certificate-files`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const certFiles = response.ok ? await response.json() : [];
+    let certFiles = [];
+    try {
+      certFiles = await apiService.get(`/organizations/${org._id}/certificate-files`);
+      if (!Array.isArray(certFiles)) certFiles = [];
+    } catch (e) {
+      console.warn('No se pudieron cargar certificados desde API:', e.message);
+    }
+
+    console.log('📄 [MF] Certificados cargados desde API:', certFiles.length, certFiles);
 
     // También usar certificatesStep5 del org para metadata
     const certsMeta = org.certificatesStep5 || {};
+    console.log('📄 [MF] Certificados metadata del org:', Object.keys(certsMeta));
 
     // Directorio Provisorio
     const dir = org.provisionalDirectorio || {};
