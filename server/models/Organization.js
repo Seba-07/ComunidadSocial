@@ -254,6 +254,12 @@ const organizationSchema = new mongoose.Schema({
     userFieldResponses: mongoose.Schema.Types.Mixed
   },
 
+  // User corrected fields - tracks which corrections the user has made
+  userCorrectedFields: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+
   // Appointment tracking
   originalAppointment: mongoose.Schema.Types.Mixed,
   appointmentChanges: [mongoose.Schema.Types.Mixed],
