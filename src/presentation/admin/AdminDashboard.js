@@ -4878,7 +4878,6 @@ class AdminDashboard {
                       <button class="admin-doc-tab active" data-tab="directorio" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 600; color: #2563eb; background: white; border: none; border-bottom: 2px solid #2563eb; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Directorio</button>
                       <button class="admin-doc-tab" data-tab="comision" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Comisión</button>
                       <button class="admin-doc-tab" data-tab="miembros" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Miembros</button>
-                      <button class="admin-doc-tab" data-tab="estatutos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Estatutos</button>
                       <button class="admin-doc-tab" data-tab="documentos" style="flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 500; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.2s;">Documentos</button>
                     </div>
 
@@ -4952,13 +4951,6 @@ class AdminDashboard {
                         </div>
                         <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: right;">${allMembers.length} miembro${allMembers.length !== 1 ? 's' : ''} registrado${allMembers.length !== 1 ? 's' : ''}</p>
                       ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se registraron miembros fundadores</p>'}
-                    </div>
-
-                    <!-- Tab: Estatutos -->
-                    <div class="admin-doc-tab-content" data-tab-content="estatutos" style="padding: 16px; display: none;">
-                      ${estatutos ? `
-                        <div style="max-height: 300px; overflow-y: auto; background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.7; color: #334155;">${estatutos}</div>
-                      ` : '<p style="text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0;">No se cargaron estatutos</p>'}
                     </div>
 
                     <!-- Tab: Documentos -->

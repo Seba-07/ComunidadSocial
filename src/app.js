@@ -212,7 +212,7 @@ export function showToast(message, type = 'info') {
     padding: 12px 24px;
     border-radius: 8px;
     font-size: 14px;
-    z-index: 100000;
+    z-index: 300000;
     animation: slideUp 0.3s ease;
   `;
   document.body.appendChild(toast);
