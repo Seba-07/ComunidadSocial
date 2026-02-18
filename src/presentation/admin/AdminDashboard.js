@@ -5279,7 +5279,7 @@ class AdminDashboard {
             if (!doc) return;
             let label = getDocLabel(doc);
             const subModal = document.createElement('div');
-            subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
             subModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4><button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><div style="flex: 1; overflow-y: auto; padding: 20px; font-size: 13px; line-height: 1.7; color: #334155;">' + doc.content + '</div></div>';
             document.body.appendChild(subModal);
             subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
@@ -5321,19 +5321,20 @@ class AdminDashboard {
         let html = '<h5 style="font-size: 13px; font-weight: 700; color: #1e293b; margin: 0 0 8px;">Certificados de Antecedentes (Directorio)</h5>';
         if (mergedCerts.length > 0) {
           html += '<div style="display: grid; gap: 6px;">';
-          mergedCerts.forEach(cert => {
+          mergedCerts.forEach((cert, idx) => {
             const cargoId = cert.memberId || '';
             const label = cargoLabelsEs[cargoId] || cargoId || 'Desconocido';
             const fileName = cert.memberName || cert.name || '';
             const hasData = !!(cert.certificate && cert.certificate.length > 50);
-            const certData = hasData ? (cert.certificate.startsWith('data:') ? cert.certificate : 'data:application/pdf;base64,' + cert.certificate) : null;
             html += '<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: ' + (hasData ? '#f0fdf4' : '#fef2f2') + '; border: 1px solid ' + (hasData ? '#bbf7d0' : '#fecaca') + '; border-radius: 8px; font-size: 13px;">';
             html += '<span style="color: ' + (hasData ? '#16a34a' : '#dc2626') + '; font-size: 16px;">' + (hasData ? '✓' : '✗') + '</span>';
             html += '<span style="font-weight: 600; color: #475569; min-width: 90px;">' + label + '</span>';
+            html += '<span style="color: #64748b; flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (fileName || '') + '</span>';
             if (hasData) {
-              html += '<a href="' + certData + '" target="_blank" download="' + (fileName || 'certificado.pdf') + '" style="color: #2563eb; text-decoration: underline; cursor: pointer;">' + (fileName || 'Ver archivo') + '</a>';
+              html += '<button class="btn-view-cert" data-cert-idx="' + idx + '" style="padding: 4px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Ver</button>';
+              html += '<button class="btn-download-cert" data-cert-idx="' + idx + '" style="padding: 4px 12px; background: #059669; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Descargar</button>';
             } else {
-              html += '<span style="color: ' + (fileName ? '#166534' : '#991b1b') + ';">' + (fileName || 'No cargado') + '</span>';
+              html += '<span style="color: #991b1b; font-size: 12px;">No cargado</span>';
             }
             html += '</div>';
           });
@@ -5342,6 +5343,54 @@ class AdminDashboard {
           html += '<p style="color: #94a3b8; font-size: 13px;">No se cargaron certificados del directorio</p>';
         }
         container.innerHTML = html;
+
+        // Event listeners para botones "Ver" certificado
+        container.querySelectorAll('.btn-view-cert').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.certIdx);
+            const cert = mergedCerts[idx];
+            if (!cert || !cert.certificate) return;
+            const cargoId = cert.memberId || '';
+            const label = cargoLabelsEs[cargoId] || cargoId || 'Certificado';
+            const base64 = cert.certificate;
+            const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+            const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+
+            const certModal = document.createElement('div');
+            certModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200002; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            let contentHtml;
+            if (isImage || base64.startsWith('data:image')) {
+              contentHtml = '<img src="' + dataUri + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;" />';
+            } else {
+              contentHtml = '<iframe src="' + dataUri + '" style="width: 100%; height: 70vh; border: none; border-radius: 8px;"></iframe>';
+            }
+            certModal.innerHTML = '<div style="background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);"><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;"><h4 style="margin: 0; font-size: 15px; color: #1e293b;">Certificado - ' + label + '</h4><button class="close-cert-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button></div><div style="flex: 1; overflow: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: #f8fafc;">' + contentHtml + '</div></div>';
+            document.body.appendChild(certModal);
+            certModal.querySelector('.close-cert-modal').addEventListener('click', () => certModal.remove());
+            certModal.addEventListener('click', (e) => { if (e.target === certModal) certModal.remove(); });
+          });
+        });
+
+        // Event listeners para botones "Descargar" certificado
+        container.querySelectorAll('.btn-download-cert').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.certIdx);
+            const cert = mergedCerts[idx];
+            if (!cert || !cert.certificate) return;
+            const cargoId = cert.memberId || '';
+            const label = cargoLabelsEs[cargoId] || cargoId || 'certificado';
+            const base64 = cert.certificate;
+            const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+            const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+            const ext = isImage ? '.jpg' : '.pdf';
+            const a = document.createElement('a');
+            a.href = dataUri;
+            a.download = 'certificado_' + label.toLowerCase().replace(/\s+/g, '_') + ext;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          });
+        });
       } catch (err) {
         console.error('Error cargando certificados:', err);
         const loading = container.querySelector('#certificate-files-loading');

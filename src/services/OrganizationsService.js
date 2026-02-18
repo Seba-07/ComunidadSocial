@@ -297,7 +297,7 @@ class OrganizationsService {
   /**
    * Solicita un Ministro de Fe (después de completar pasos 1-2)
    */
-  async requestMinistro(requestData) {
+  async requestMinistro(requestData, onProgress = null) {
     try {
       const orgInfo = requestData.organizationData?.organization || {};
       const members = requestData.organizationData?.members || [];
@@ -498,10 +498,13 @@ class OrganizationsService {
       };
 
       console.log('📤 Enviando organización:', orgData);
+      if (onProgress) onProgress('Creando organización...', 'Enviando datos al servidor', 30);
 
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
       localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+
+      if (onProgress) onProgress('Organización creada', 'Guardando certificados...', 50);
 
       // Guardar certificados base64 en colección separada (evita límite BSON 16MB)
       const certs = requestData.certificatesStep5;
@@ -528,6 +531,8 @@ class OrganizationsService {
         }
       }
 
+      if (onProgress) onProgress('Certificados guardados', 'Guardando documentos generados...', 70);
+
       // Guardar documentos generados en colección separada (evita límite BSON 16MB)
       if (requestData.generatedDocuments && typeof requestData.generatedDocuments === 'object') {
         try {
@@ -551,6 +556,8 @@ class OrganizationsService {
           // No lanzar error — la org ya se creó exitosamente
         }
       }
+
+      if (onProgress) onProgress('¡Solicitud completada!', 'Todo se guardó correctamente', 100);
 
       return newOrg;
     } catch (e) {

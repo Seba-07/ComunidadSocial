@@ -7758,8 +7758,33 @@ Secretaria Municipal`;
    * FASE 2: Envía la solicitud de Ministro de Fe
    */
   async submitMinistroRequest(electionDate, electionTime, comments = '', assemblyAddress = '') {
+    // Crear overlay de carga visual prominente
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'submit-loading-overlay';
+    loadingOverlay.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px);';
+    loadingOverlay.innerHTML = `
+      <div style="background: white; border-radius: 20px; padding: 40px 50px; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.3); max-width: 420px; width: 90%;">
+        <div style="width: 56px; height: 56px; border: 4px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spinLoader 0.8s linear infinite; margin: 0 auto 20px;"></div>
+        <h3 id="loading-title" style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #1e293b;">Enviando solicitud...</h3>
+        <p id="loading-detail" style="margin: 0 0 16px; font-size: 14px; color: #64748b;">Preparando datos de la organización</p>
+        <div style="background: #f1f5f9; border-radius: 8px; height: 6px; overflow: hidden;">
+          <div id="loading-progress-bar" style="height: 100%; width: 10%; background: linear-gradient(90deg, #2563eb, #7c3aed); border-radius: 8px; transition: width 0.5s ease;"></div>
+        </div>
+      </div>
+      <style>@keyframes spinLoader { to { transform: rotate(360deg); } }</style>
+    `;
+    document.body.appendChild(loadingOverlay);
+
+    const updateProgress = (title, detail, pct) => {
+      const t = document.getElementById('loading-title');
+      const d = document.getElementById('loading-detail');
+      const b = document.getElementById('loading-progress-bar');
+      if (t) t.textContent = title;
+      if (d) d.textContent = detail;
+      if (b) b.style.width = pct + '%';
+    };
+
     try {
-      showToast('Enviando solicitud de Ministro de Fe...', 'info');
 
       // Importar servicios
       const { organizationsService } = await import('../../../services/OrganizationsService.js');
@@ -7838,16 +7863,25 @@ Secretaria Municipal`;
       console.log('📤 [WizardController] requestData a enviar:', requestData);
 
       // Guardar en el servicio de organizaciones con estado WAITING_MINISTRO_REQUEST
+      updateProgress('Creando organización...', 'Conectando con el servidor', 20);
       try {
-        const org = await organizationsService.requestMinistro(requestData);
+        const org = await organizationsService.requestMinistro(requestData, (title, detail, pct) => {
+          updateProgress(title, detail, pct);
+        });
         console.log('✅ Organización creada:', org);
 
         // Limpiar progreso del wizard
         this.clearProgress();
 
+        // Remover overlay de carga
+        if (loadingOverlay.parentNode) loadingOverlay.remove();
+
         showToast('¡Solicitud de Ministro de Fe enviada correctamente!', 'success');
       } catch (error) {
         console.error('❌ Error al crear organización:', error);
+        // Remover overlay de carga
+        if (loadingOverlay.parentNode) loadingOverlay.remove();
+
         if (error.details && Array.isArray(error.details) && error.details.length > 0) {
           console.error('📋 Detalles de validación:', error.details);
           const firstError = error.details[0];
@@ -7944,6 +7978,7 @@ Secretaria Municipal`;
 
     } catch (error) {
       console.error('Error al enviar solicitud de Ministro de Fe:', error);
+      if (loadingOverlay.parentNode) loadingOverlay.remove();
       showToast('Error al enviar la solicitud', 'error');
     }
   }
