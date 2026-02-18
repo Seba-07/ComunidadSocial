@@ -1691,31 +1691,94 @@ async function viewOrganization(orgId, forceRefresh = false) {
 
       let categoriesHTML = '';
       for (const [cat, items] of Object.entries(grouped)) {
-        const meta = categoryMeta[cat] || { title: cat, icon: '\ud83d\udccc', action: 'Editar' };
+        const meta = categoryMeta[cat] || { title: cat, icon: '📌', action: 'Editar' };
+        const catCorrectedCount = items.filter(item => {
+          const itemKey = item.field || item.memberId || item.docType || item.label;
+          return correctedFields[cat] && correctedFields[cat][itemKey];
+        }).length;
+
         categoriesHTML += `
-          <div class="correction-category">
-            <h5>${meta.icon} ${meta.title}</h5>
-            <div class="correction-items-list">
+          <div class="correction-category" style="margin-bottom: 16px;">
+            <h5 style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;">
+              ${meta.icon} ${meta.title}
+              <span style="margin-left: auto; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 10px; ${catCorrectedCount === items.length ? 'background: #dcfce7; color: #166534;' : 'background: #fef3c7; color: #92400e;'}">${catCorrectedCount}/${items.length}</span>
+            </h5>
+            <div class="correction-items-list" style="display: flex; flex-direction: column; gap: 10px;">
               ${items.map(item => {
                 const itemKey = item.field || item.memberId || item.docType || item.label;
                 const isCorrected = correctedFields[cat] && correctedFields[cat][itemKey];
-                return `
-                <div class="correction-item-card ${isCorrected ? 'corrected' : ''}" data-type="${cat}" data-key="${itemKey}">
-                  <div class="correction-item-header">
-                    <span class="correction-item-name">${item.label}</span>
-                    <button class="btn-edit-correction" data-type="${cat}" data-key="${itemKey}">${isCorrected ? '\u2713 ' + meta.action + (meta.action === 'Editar' ? 'do' : 'do') : meta.action}</button>
+                const correctionData = isCorrected ? correctedFields[cat][itemKey] : null;
+                const newValue = correctionData?.newValue || '';
+                const correctedAt = correctionData?.correctedAt ? new Date(correctionData.correctedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+                if (isCorrected) {
+                  // ═══ ÍTEM CORREGIDO (VERDE) ═══
+                  return `
+                  <div class="correction-item-card corrected" data-type="${cat}" data-key="${itemKey}" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; border-radius: 12px; padding: 14px 16px; position: relative;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                      <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #22c55e; border-radius: 50%; color: white; font-size: 16px; font-weight: bold;">✓</span>
+                      <span style="font-weight: 600; color: #166534; font-size: 14px; flex: 1;">${item.label}</span>
+                      <span style="font-size: 11px; color: #15803d; background: #bbf7d0; padding: 2px 8px; border-radius: 6px;">Corregido</span>
+                    </div>
+                    ${newValue ? `
+                    <div style="background: white; border: 1px solid #86efac; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
+                      <span style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase;">Nuevo valor:</span>
+                      <p style="margin: 4px 0 0; color: #15803d; font-size: 13px; line-height: 1.4;">${newValue.length > 100 ? newValue.substring(0, 100) + '...' : newValue}</p>
+                    </div>
+                    ` : ''}
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <button class="btn-toggle-details" data-target="details-${cat}-${itemKey.replace(/[^a-zA-Z0-9]/g, '_')}" style="padding: 6px 12px; background: #e0f2fe; color: #0369a1; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                        👁️ Ver detalles
+                      </button>
+                      <button class="btn-edit-correction" data-type="${cat}" data-key="${itemKey}" style="padding: 6px 12px; background: #f0fdf4; color: #166534; border: 1px solid #86efac; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;">
+                        ✏️ Modificar
+                      </button>
+                      ${correctedAt ? `<span style="font-size: 10px; color: #6b7280; margin-left: auto;">Corregido: ${correctedAt}</span>` : ''}
+                    </div>
+                    <div id="details-${cat}-${itemKey.replace(/[^a-zA-Z0-9]/g, '_')}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #86efac;">
+                      <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
+                        <span style="font-size: 11px; color: #854d0e; font-weight: 600;">Observación original del revisor:</span>
+                        <p style="margin: 4px 0 0; color: #713f12; font-size: 12px;">${item.message}</p>
+                      </div>
+                      <div class="correction-item-user-response" style="margin-top: 8px;">
+                        <label style="font-size: 11px; color: #166534; font-weight: 500;">Comentario adicional (opcional):</label>
+                        <input type="text" class="user-field-response" data-type="${cat}" data-key="${itemKey}"
+                               style="width: 100%; padding: 8px 10px; border: 1px solid #86efac; border-radius: 6px; font-size: 12px; margin-top: 4px; box-sizing: border-box;"
+                               placeholder="Agrega una nota sobre esta corrección...">
+                      </div>
+                    </div>
                   </div>
-                  <div class="correction-item-reviewer-comment">
-                    <span class="label">${isCorrected ? 'Observación atendida:' : 'Observación del revisor:'}</span>
-                    <p>${item.message}</p>
+                `;
+                } else {
+                  // ═══ ÍTEM PENDIENTE (ROJO/AMARILLO) ═══
+                  return `
+                  <div class="correction-item-card pending" data-type="${cat}" data-key="${itemKey}" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 2px solid #f87171; border-radius: 12px; padding: 14px 16px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                      <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #dc2626; border-radius: 50%; color: white; font-size: 14px;">!</span>
+                      <span style="font-weight: 600; color: #991b1b; font-size: 14px; flex: 1;">${item.label}</span>
+                      <button class="btn-edit-correction" data-type="${cat}" data-key="${itemKey}" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        ✏️ ${meta.action}
+                      </button>
+                    </div>
+                    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
+                      <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 16px;">⚠️</span>
+                        <div>
+                          <span style="font-size: 11px; color: #92400e; font-weight: 600;">Observación del revisor:</span>
+                          <p style="margin: 4px 0 0; color: #78350f; font-size: 13px; line-height: 1.4;">${item.message}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="correction-item-user-response">
+                      <label style="font-size: 11px; color: #991b1b; font-weight: 500;">Tu respuesta (opcional):</label>
+                      <input type="text" class="user-field-response" data-type="${cat}" data-key="${itemKey}"
+                             style="width: 100%; padding: 8px 10px; border: 1px solid #fca5a5; border-radius: 6px; font-size: 12px; margin-top: 4px; box-sizing: border-box;"
+                             placeholder="Agrega una nota sobre esta corrección...">
+                    </div>
                   </div>
-                  <div class="correction-item-user-response">
-                    <label>Tu respuesta (opcional):</label>
-                    <input type="text" class="user-field-response" data-type="${cat}" data-key="${itemKey}"
-                           placeholder="Agrega una nota sobre esta corrección...">
-                  </div>
-                </div>
-              `;}).join('')}
+                `;
+                }
+              }).join('')}
             </div>
           </div>
         `;
@@ -2588,6 +2651,20 @@ async function viewOrganization(orgId, forceRefresh = false) {
 
   // Event listeners para edición de correcciones
   if (isRejected && corrections) {
+    // Botones "Ver detalles" para expandir/colapsar ítems corregidos
+    modal.querySelectorAll('.btn-toggle-details').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          const isHidden = targetEl.style.display === 'none';
+          targetEl.style.display = isHidden ? 'block' : 'none';
+          btn.innerHTML = isHidden ? '🔽 Ocultar detalles' : '👁️ Ver detalles';
+        }
+      });
+    });
+
+    // Botones de edición
     modal.querySelectorAll('.btn-edit-correction').forEach(btn => {
       btn.addEventListener('click', () => {
         const type = btn.dataset.type;
