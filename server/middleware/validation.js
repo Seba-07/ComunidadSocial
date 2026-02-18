@@ -188,6 +188,8 @@ export const createOrganizationSchema = z.object({
   region: z.string().max(50).optional(),
   unidadVecinal: z.string().max(100).optional().or(z.literal('')),
   territory: z.string().max(100).optional().or(z.literal('')),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  objectives: z.string().max(2000).optional().or(z.literal('')),
   contactEmail: emailSchema.optional().or(z.literal('')),
   contactPhone: phoneSchema,
   contactPreference: z.enum(['phone', 'email']).optional(),
