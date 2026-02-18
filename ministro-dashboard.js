@@ -2194,7 +2194,54 @@ function formatDocumentContent(content) {
     return content;
   }
 
-  // Aplicar estilos a elementos HTML comunes
+  // Detectar si es texto plano (sin tags HTML significativos)
+  const hasHtmlTags = /<(p|div|h[1-6]|table|ul|ol|br)[^>]*>/i.test(content);
+
+  if (!hasHtmlTags) {
+    // Convertir texto plano a HTML estructurado
+    let formatted = content;
+
+    // Detectar y formatear secciones principales
+    // Títulos en mayúsculas al inicio (ej: "REPUBLICA DE CHILE...")
+    formatted = formatted.replace(/^([A-ZÁÉÍÓÚÑ\s"]+(?:CHILE|MUNICIPAL|RENCA)[A-ZÁÉÍÓÚÑ\s"]*)/m,
+      '<div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;"><h2 style="font-size: 14px; font-weight: 700; color: #1e40af; margin: 0; line-height: 1.6;">$1</h2></div>');
+
+    // Detectar secciones como "ACTA DE ASAMBLEA", "DIRECTIVA PROVISIONAL", etc.
+    formatted = formatted.replace(/(ACTA DE ASAMBLEA|DIRECTIVA PROVISIONAL|COMISION ELECTORAL|CED\. IDENTIDAD)/g,
+      '<br><br><strong style="color: #1e40af; font-size: 13px;">$1</strong>');
+
+    // Formatear cargos del directorio
+    formatted = formatted.replace(/(PRESIDENTE|VICEPRESIDENTE|SECRETARIO|TESORERO|DIRECTOR)\s*\(A\)/gi,
+      '<br><strong style="color: #065f46;">$1(A)</strong>');
+
+    // Separar por saltos de línea dobles existentes
+    if (formatted.includes('\n\n')) {
+      formatted = formatted
+        .split(/\n\n+/)
+        .map(para => `<p style="margin: 0 0 16px; text-align: justify; line-height: 1.8; text-indent: 2em;">${para.trim()}</p>`)
+        .join('');
+    } else if (formatted.includes('\n')) {
+      // Separar por saltos de línea simples
+      formatted = formatted
+        .split(/\n/)
+        .filter(line => line.trim())
+        .map(line => `<p style="margin: 0 0 12px; text-align: justify; line-height: 1.7;">${line.trim()}</p>`)
+        .join('');
+    } else {
+      // Es un bloque continuo - intentar separar por puntos seguidos de mayúscula
+      formatted = formatted
+        .replace(/\.\s+([A-ZÁÉÍÓÚÑ])/g, '.</p><p style="margin: 0 0 16px; text-align: justify; line-height: 1.8; text-indent: 2em;">$1')
+        .replace(/^/, '<p style="margin: 0 0 16px; text-align: justify; line-height: 1.8;">')
+        .replace(/$/, '</p>');
+    }
+
+    // Limpiar líneas con guiones bajos (campos a llenar)
+    formatted = formatted.replace(/_{3,}/g, '<span style="display: inline-block; min-width: 150px; border-bottom: 1px solid #9ca3af;"></span>');
+
+    return formatted;
+  }
+
+  // Si tiene HTML, aplicar estilos a elementos existentes
   let formatted = content
     // Títulos
     .replace(/<h1([^>]*)>/gi, '<h1$1 style="font-size: 24px; font-weight: 700; margin: 0 0 24px; text-align: center; color: #1e293b;">')
