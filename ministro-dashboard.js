@@ -2010,131 +2010,165 @@ function formatEstatutosContent(text) {
 }
 
 /**
- * Carga y muestra los documentos oficiales para el Ministro de Fe
- * Usa los endpoints de generación de PDF reales
+ * Carga y muestra los documentos generados para el Ministro de Fe
+ * Incluye documentos HTML del wizard y PDFs generables
  */
 async function loadGeneratedDocsForMF(modal, org) {
   const container = modal.querySelector('#generated-docs-container');
   if (!container) return;
 
-  // Documentos disponibles como PDF (generados por el servidor)
-  const availableDocs = [
-    {
-      id: 'acta',
-      label: 'Acta Constitutiva',
-      icon: '📜',
-      description: 'Documento oficial de constitución de la organización',
-      endpoint: `/documents/${org._id}/generate-acta`,
-      previewEndpoint: `/documents/${org._id}/preview-acta`
-    },
-    {
-      id: 'members',
-      label: 'Lista de Socios Fundadores',
-      icon: '📋',
-      description: 'Registro de miembros fundadores con firmas',
-      endpoint: `/documents/${org._id}/generate-members`,
-      previewEndpoint: null
-    }
-  ];
+  const DOC_TYPE_LABELS = {
+    'ACTA_CONSTITUTIVA': 'Acta Constitutiva',
+    'ESTATUTOS': 'Estatutos',
+    'REGISTRO_SOCIOS': 'Registro de Socios',
+    'CERTIFICADO_MINISTRO_FE': 'Certificado del Ministro de Fe',
+    'CERTIFICACION_MUNICIPAL': 'Certificación Municipal',
+    'DEPOSITO_ANTECEDENTES': 'Depósito de Antecedentes',
+    'DECLARACION_JURADA': 'Declaración Jurada'
+  };
+
+  const DOC_ICONS = {
+    'ACTA_CONSTITUTIVA': '📜',
+    'ESTATUTOS': '📘',
+    'REGISTRO_SOCIOS': '📋',
+    'CERTIFICADO_MINISTRO_FE': '🏛️',
+    'CERTIFICACION_MUNICIPAL': '🏢',
+    'DEPOSITO_ANTECEDENTES': '📁',
+    'DECLARACION_JURADA': '📄'
+  };
 
   try {
+    // Cargar documentos generados desde el servidor
+    const data = await apiService.get(`/organizations/${org._id}/generated-documents`);
+    const documents = Array.isArray(data) ? data : (data?.documents || []);
+
+    console.log('📁 [MF] Documentos generados cargados:', documents.length, documents);
+
+    if (!documents || documents.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #9ca3af;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.5;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <p style="margin: 0; font-weight: 600;">No hay documentos generados</p>
+          <p style="margin: 8px 0 0; font-size: 14px;">Los documentos se generarán durante el proceso de constitución</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Agrupar por tipo (algunos docs como declaraciones tienen múltiples)
+    const groupedDocs = {};
+    documents.forEach(doc => {
+      const baseType = doc.docType.startsWith('DECLARACION_JURADA') ? 'DECLARACION_JURADA' : doc.docType;
+      if (!groupedDocs[baseType]) {
+        groupedDocs[baseType] = [];
+      }
+      groupedDocs[baseType].push(doc);
+    });
+
     let html = '';
 
-    for (const doc of availableDocs) {
-      html += `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          <div style="display: flex; align-items: flex-start; gap: 16px;">
-            <div style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-              ${doc.icon}
-            </div>
-            <div style="flex: 1; min-width: 0;">
-              <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937;">${doc.label}</h4>
-              <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">${doc.description}</p>
-              <div style="display: flex; gap: 8px; margin-top: 12px;">
-                <button type="button" class="btn-view-pdf" data-doc-id="${doc.id}" data-endpoint="${doc.endpoint}" data-label="${doc.label}" style="
-                  padding: 8px 16px;
-                  background: linear-gradient(135deg, #3b82f6, #2563eb);
-                  color: white;
-                  border: none;
-                  border-radius: 8px;
-                  font-size: 12px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  gap: 6px;
-                ">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  Ver PDF
-                </button>
-                <button type="button" class="btn-download-pdf" data-doc-id="${doc.id}" data-endpoint="${doc.endpoint}" data-label="${doc.label}" style="
-                  padding: 8px 16px;
-                  background: #f1f5f9;
-                  color: #475569;
-                  border: none;
-                  border-radius: 8px;
-                  font-size: 12px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  gap: 6px;
-                ">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  Descargar PDF
-                </button>
+    for (const [baseType, docs] of Object.entries(groupedDocs)) {
+      docs.forEach((doc, idx) => {
+        const label = doc.docType.startsWith('DECLARACION_JURADA')
+          ? `Declaración Jurada${doc.cargoNombre ? ' - ' + doc.cargoNombre : ''}`
+          : (DOC_TYPE_LABELS[doc.docType] || doc.docType);
+        const icon = DOC_ICONS[baseType] || '📄';
+        const date = doc.generatedAt ? new Date(doc.generatedAt).toLocaleDateString('es-CL') : '';
+
+        html += `
+          <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                ${icon}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937;">${label}</h4>
+                ${date ? `<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Generado: ${date}</p>` : ''}
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                  <button type="button" class="btn-view-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" style="
+                    padding: 8px 16px;
+                    background: linear-gradient(135deg, #3b82f6, #2563eb);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                  ">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Ver
+                  </button>
+                  <button type="button" class="btn-download-doc" data-doc-type="${doc.docType}" data-doc-idx="${idx}" data-cargo-id="${doc.cargoId || ''}" data-label="${label}" style="
+                    padding: 8px 16px;
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                  ">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      });
     }
-
-    // Agregar nota informativa
-    html += `
-      <div style="grid-column: 1 / -1; padding: 16px; background: #fef3c7; border-radius: 12px; border: 1px solid #fde68a;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <span style="font-size: 20px;">ℹ️</span>
-          <div>
-            <p style="margin: 0; font-size: 13px; color: #92400e; font-weight: 600;">Documentos Oficiales</p>
-            <p style="margin: 4px 0 0; font-size: 12px; color: #a16207;">
-              Estos documentos se generan automáticamente con los datos de la organización.
-              Revise que la información sea correcta antes de la asamblea constitutiva.
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
 
     container.innerHTML = html;
 
-    // Event listeners para ver PDFs
-    container.querySelectorAll('.btn-view-pdf').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const endpoint = btn.getAttribute('data-endpoint');
-        const label = btn.getAttribute('data-label');
-        await viewPDFDocumentMF(endpoint, label, org);
+    // Guardar documentos para acceso posterior
+    container.dataset.documents = JSON.stringify(documents);
+
+    // Event listeners para ver documentos
+    container.querySelectorAll('.btn-view-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docType = btn.getAttribute('data-doc-type');
+        const cargoId = btn.getAttribute('data-cargo-id');
+        const docs = JSON.parse(container.dataset.documents || '[]');
+        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
+        if (doc) {
+          viewDocumentMF(doc, org);
+        }
       });
     });
 
-    // Event listeners para descargar PDFs
-    container.querySelectorAll('.btn-download-pdf').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const endpoint = btn.getAttribute('data-endpoint');
+    // Event listeners para descargar documentos
+    container.querySelectorAll('.btn-download-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docType = btn.getAttribute('data-doc-type');
+        const cargoId = btn.getAttribute('data-cargo-id');
         const label = btn.getAttribute('data-label');
-        await downloadPDFDocumentMF(endpoint, label, org);
+        const docs = JSON.parse(container.dataset.documents || '[]');
+        const doc = docs.find(d => d.docType === docType && (d.cargoId || '') === cargoId);
+        if (doc) {
+          downloadDocumentMF(doc, org, label);
+        }
       });
     });
 
   } catch (error) {
-    console.error('Error loading docs for MF:', error);
+    console.error('Error loading generated docs for MF:', error);
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px;">
