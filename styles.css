@@ -10243,7 +10243,7 @@ a.header-logo:hover {
 
 /* Modal de Solicitud de Ministro de Fe - Rediseñado */
 .admin-review-modal.ministro-request-modal {
-    max-width: 960px;
+    max-width: 1120px;
     max-height: 92vh;
     border-radius: 24px;
     overflow: hidden;

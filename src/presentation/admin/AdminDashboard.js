@@ -5272,6 +5272,40 @@ class AdminDashboard {
         container.innerHTML = html;
 
         // Event listeners para botones "Ver"
+        // Formatea texto plano del documento a HTML con estilos (replica el wizard)
+        const formatDocContent = (rawContent) => {
+          let html = rawContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          // Resaltar RUTs
+          html = html.replace(/(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/gi, '<span style="background: #dbeafe; padding: 1px 3px; border-radius: 3px; color: #1e40af;">$1</span>');
+          const lines = html.split('\n');
+          const formatted = [];
+          lines.forEach(line => {
+            const trimmed = line.trim();
+            // Separadores
+            if (/^[═─━\-=_]{4,}$/.test(trimmed)) {
+              formatted.push('<hr style="border: none; border-top: 1px solid #cbd5e1; margin: 12px 0;">');
+              return;
+            }
+            // BORRADOR
+            if (trimmed.includes('BORRADOR')) {
+              formatted.push('<p style="text-align: center; color: #dc2626; font-weight: bold; font-size: 14pt; margin: 10px 0; padding: 8px; background: #fef2f2; border: 1px dashed #dc2626; border-radius: 4px;">' + trimmed + '</p>');
+              return;
+            }
+            // Títulos (TODO MAYÚSCULAS, más de 3 chars con letras)
+            if (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && /[A-ZÁÉÍÓÚÑ]/.test(trimmed) && (!trimmed.includes(':') || trimmed.split(':')[0].length > 30)) {
+              formatted.push('<p style="font-weight: bold; font-size: 13pt; text-align: center; margin: 18px 0 8px; text-transform: uppercase;">' + trimmed + '</p>');
+              return;
+            }
+            // Líneas vacías
+            if (trimmed === '') { formatted.push('<br>'); return; }
+            // Líneas normales (preservar indentación)
+            const leading = line.match(/^\s*/)[0].length;
+            const indent = leading > 0 ? 'padding-left: ' + (leading * 7) + 'px;' : '';
+            formatted.push('<p style="margin: 3px 0; ' + indent + '">' + trimmed + '</p>');
+          });
+          return formatted.join('');
+        };
+
         container.querySelectorAll('.btn-view-gen-doc').forEach(btn => {
           btn.addEventListener('click', () => {
             const idx = parseInt(btn.dataset.docIdx);
@@ -5280,15 +5314,17 @@ class AdminDashboard {
             let label = getDocLabel(doc);
             const subModal = document.createElement('div');
             subModal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200001; display: flex; align-items: center; justify-content: center; padding: 20px;';
-            const escapedContent = doc.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            subModal.innerHTML = '<div style="background: #e2e8f0; border-radius: 12px; width: 100%; max-width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">'
-              + '<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: white; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e2e8f0;">'
-              + '<h4 style="margin: 0; font-size: 15px; color: #1e293b;">' + label + (doc.editedAt ? ' <span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4>'
-              + '<button class="close-sub-modal" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; color: #64748b; display: flex; align-items: center; justify-content: center;">&times;</button>'
+            const formattedContent = formatDocContent(doc.content.split('========== FIRMAS ==========')[0] || doc.content);
+            subModal.innerHTML = '<div style="background: #f1f5f9; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">'
+              + '<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 12px 12px 0 0;">'
+              + '<h4 style="margin: 0; font-size: 16px; color: white;">' + label + (doc.editedAt ? ' <span style="background: rgba(255,255,255,0.2); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Editado</span>' : '') + '</h4>'
+              + '<button class="close-sub-modal" style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; color: white; display: flex; align-items: center; justify-content: center;">&times;</button>'
               + '</div>'
-              + '<div style="flex: 1; overflow-y: auto; padding: 24px; display: flex; justify-content: center;">'
-              + '<div style="background: white; width: 100%; max-width: 700px; min-height: 900px; padding: 60px 60px 80px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #d1d5db;">'
-              + '<pre style="margin: 0; font-family: \'Times New Roman\', Times, Georgia, serif; font-size: 13px; line-height: 1.7; color: #1a1a1a; white-space: pre-wrap; word-wrap: break-word;">' + escapedContent + '</pre>'
+              + '<div style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; justify-content: center;">'
+              + '<div class="document-page" style="max-width: 816px; width: 100%; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden;">'
+              + '<img src="/doc-header.png" alt="" style="width: 100%; height: auto; display: block;" onerror="this.style.display=\'none\'">'
+              + '<div style="padding: 30px 40px; min-height: 600px; font-family: \'Times New Roman\', Times, serif; font-size: 12pt; line-height: 1.6; color: #1a1a1a;">' + formattedContent + '</div>'
+              + '<img src="/doc-footer.png" alt="" style="width: 100%; height: auto; display: block; margin-top: auto;" onerror="this.style.display=\'none\'">'
               + '</div></div></div>';
             document.body.appendChild(subModal);
             subModal.querySelector('.close-sub-modal').addEventListener('click', () => subModal.remove());
