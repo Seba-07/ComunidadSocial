@@ -1025,6 +1025,12 @@ export class WizardController {
       return;
     }
 
+    // ESPECIAL: Si vamos a pasar del paso 5 al 6, mostrar overlay de carga de documentos
+    if (this.currentStep === 5) {
+      await this.transitionToStep6WithLoading();
+      return;
+    }
+
     // Avanzar al siguiente paso
     this.currentStep++;
     this.updateUI();
@@ -1033,6 +1039,376 @@ export class WizardController {
 
     // Guardar progreso
     this.saveProgress();
+  }
+
+  /**
+   * Transición especial del paso 5 al 6 con pantalla de carga
+   * Espera a que todos los documentos se generen antes de mostrar el paso 6
+   */
+  async transitionToStep6WithLoading() {
+    // Mostrar overlay de carga
+    this.showDocumentLoadingOverlay();
+
+    try {
+      // Avanzar al paso 6
+      this.currentStep = 6;
+      this.updateUI();
+      this.updateProgressBar();
+
+      // Actualizar mensaje de progreso
+      this.updateLoadingProgress('Preparando generación de documentos...', 10);
+
+      // Generar todos los documentos
+      this.updateLoadingProgress('Generando Acta Constitutiva...', 20);
+      await this.generateAllDocuments();
+
+      // Validar que los documentos principales se generaron
+      this.updateLoadingProgress('Verificando documentos generados...', 80);
+      const docsValidation = this.validateGeneratedDocuments();
+
+      if (!docsValidation.success) {
+        // Reintentar una vez si falló
+        this.updateLoadingProgress('Reintentando generación de documentos...', 85);
+        await this.generateAllDocuments();
+
+        const retryValidation = this.validateGeneratedDocuments();
+        if (!retryValidation.success) {
+          throw new Error(`No se pudieron generar todos los documentos: ${retryValidation.missing.join(', ')}`);
+        }
+      }
+
+      // Aplicar firmas a los documentos
+      this.updateLoadingProgress('Aplicando firmas a documentos...', 90);
+      this.updateDocumentsWithSignatures();
+
+      // Renderizar lista de documentos
+      this.updateLoadingProgress('Preparando vista de documentos...', 95);
+      this.renderDocumentsList();
+      this.renderOtherDocumentsList();
+
+      // Configurar botones del paso 6
+      this.updateLoadingProgress('Finalizando...', 100);
+
+      // Pequeña pausa para mostrar el 100%
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Ocultar overlay
+      this.hideDocumentLoadingOverlay();
+
+      // Configurar event listeners del paso 6
+      this.setupStep6EventListeners();
+
+      // Guardar progreso
+      this.saveProgress();
+
+    } catch (error) {
+      console.error('Error generando documentos:', error);
+      this.hideDocumentLoadingOverlay();
+      showToast('Error al generar documentos: ' + error.message, 'error');
+
+      // Volver al paso 5
+      this.currentStep = 5;
+      this.updateUI();
+      this.updateProgressBar();
+    }
+  }
+
+  /**
+   * Valida que los documentos principales se hayan generado correctamente
+   */
+  validateGeneratedDocuments() {
+    const requiredDocs = [
+      'ACTA_CONSTITUTIVA',
+      'ESTATUTOS',
+      'REGISTRO_SOCIOS',
+      'CERTIFICADO_MINISTRO_FE',
+      'CERTIFICACION_MUNICIPAL',
+      'DEPOSITO_ANTECEDENTES'
+    ];
+
+    const missing = [];
+
+    for (const docType of requiredDocs) {
+      const doc = this.formData.documents[docType];
+      if (!doc || !doc.isGenerated || !doc.content) {
+        missing.push(docType);
+      }
+    }
+
+    return {
+      success: missing.length === 0,
+      missing: missing
+    };
+  }
+
+  /**
+   * Configura los event listeners del paso 6
+   */
+  setupStep6EventListeners() {
+    setTimeout(() => {
+      // Botón agregar otro documento
+      const btnAddDoc = document.getElementById('btn-add-other-document');
+      if (btnAddDoc) {
+        btnAddDoc.onclick = () => this.addOtherDocumentSlot();
+      }
+
+      // Asignar onclick a botones de documento
+      document.querySelectorAll('.btn-preview').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const docType = btn.dataset.docType;
+          if (docType) this.showDocumentPreview(docType);
+        };
+      });
+
+      document.querySelectorAll('.btn-edit-doc').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const docType = btn.dataset.docType;
+          if (docType) this.showEditDocumentModal(docType);
+        };
+      });
+
+      document.querySelectorAll('.btn-download').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const docType = btn.dataset.docType;
+          if (docType) this.downloadDocument(docType);
+        };
+      });
+    }, 100);
+  }
+
+  /**
+   * Muestra el overlay de carga de documentos
+   */
+  showDocumentLoadingOverlay() {
+    // Remover overlay existente si hay
+    const existing = document.getElementById('document-loading-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'document-loading-overlay';
+    overlay.innerHTML = `
+      <div class="document-loading-content">
+        <div class="document-loading-icon">
+          <svg class="document-spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+          </svg>
+          <div class="document-icon-stack">
+            <div class="doc-icon doc-1">📄</div>
+            <div class="doc-icon doc-2">📄</div>
+            <div class="doc-icon doc-3">📄</div>
+          </div>
+        </div>
+        <h3 class="loading-title">Generando Documentos</h3>
+        <p class="loading-message" id="loading-progress-message">Preparando la generación de documentos legales...</p>
+        <div class="loading-progress-bar">
+          <div class="loading-progress-fill" id="loading-progress-fill" style="width: 0%"></div>
+        </div>
+        <p class="loading-hint">Por favor espere, esto puede tomar unos segundos...</p>
+      </div>
+    `;
+
+    // Agregar estilos si no existen
+    if (!document.getElementById('document-loading-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'document-loading-styles';
+      styles.textContent = `
+        #document-loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .document-loading-content {
+          background: white;
+          border-radius: 16px;
+          padding: 40px 50px;
+          text-align: center;
+          max-width: 420px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .document-loading-icon {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          margin: 0 auto 24px;
+        }
+
+        .document-spinner {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          animation: rotate 1.5s linear infinite;
+        }
+
+        @keyframes rotate {
+          100% { transform: rotate(360deg); }
+        }
+
+        .document-spinner .path {
+          stroke: #2563eb;
+          stroke-linecap: round;
+          animation: dash 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dash {
+          0% {
+            stroke-dasharray: 1, 150;
+            stroke-dashoffset: 0;
+          }
+          50% {
+            stroke-dasharray: 90, 150;
+            stroke-dashoffset: -35;
+          }
+          100% {
+            stroke-dasharray: 90, 150;
+            stroke-dashoffset: -124;
+          }
+        }
+
+        .document-icon-stack {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+
+        .doc-icon {
+          font-size: 24px;
+          position: absolute;
+          animation: docPulse 2s ease-in-out infinite;
+        }
+
+        .doc-icon.doc-1 {
+          top: -15px;
+          left: -12px;
+          animation-delay: 0s;
+        }
+
+        .doc-icon.doc-2 {
+          top: -8px;
+          left: -6px;
+          animation-delay: 0.3s;
+        }
+
+        .doc-icon.doc-3 {
+          top: 0;
+          left: 0;
+          animation-delay: 0.6s;
+        }
+
+        @keyframes docPulse {
+          0%, 100% { opacity: 0.4; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .loading-title {
+          font-size: 22px;
+          font-weight: 700;
+          color: #1e293b;
+          margin: 0 0 12px 0;
+        }
+
+        .loading-message {
+          font-size: 14px;
+          color: #64748b;
+          margin: 0 0 20px 0;
+          min-height: 20px;
+        }
+
+        .loading-progress-bar {
+          width: 100%;
+          height: 8px;
+          background: #e2e8f0;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 16px;
+        }
+
+        .loading-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #2563eb, #3b82f6);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+        }
+
+        .loading-hint {
+          font-size: 12px;
+          color: #94a3b8;
+          margin: 0;
+        }
+      `;
+      document.head.appendChild(styles);
+    }
+
+    document.body.appendChild(overlay);
+  }
+
+  /**
+   * Actualiza el progreso del overlay de carga
+   */
+  updateLoadingProgress(message, percentage) {
+    const messageEl = document.getElementById('loading-progress-message');
+    const fillEl = document.getElementById('loading-progress-fill');
+
+    if (messageEl) messageEl.textContent = message;
+    if (fillEl) fillEl.style.width = `${percentage}%`;
+  }
+
+  /**
+   * Oculta el overlay de carga de documentos
+   */
+  hideDocumentLoadingOverlay() {
+    const overlay = document.getElementById('document-loading-overlay');
+    if (overlay) {
+      overlay.style.animation = 'fadeOut 0.3s ease forwards';
+      setTimeout(() => overlay.remove(), 300);
+
+      // Agregar keyframe de fadeOut si no existe
+      if (!document.querySelector('style[data-fadeout]')) {
+        const style = document.createElement('style');
+        style.setAttribute('data-fadeout', 'true');
+        style.textContent = `
+          @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
   }
 
   /**
@@ -1603,7 +1979,7 @@ export class WizardController {
         await this.initializeStep5_Comision(); // Comisión es paso 5 (async para cargar config)
         break;
       case 6:
-        this.initializeStep6_Documentos(); // Documentos es paso 6
+        await this.initializeStep6_Documentos(); // Documentos es paso 6
         break;
     }
   }
@@ -6821,13 +7197,44 @@ Secretaria Municipal`;
 
   /**
    * Inicializa paso 6: Documentos
+   * Si los documentos ya están generados, solo configura event listeners
+   * Si no, muestra overlay de carga y genera los documentos
    */
   async initializeStep6_Documentos() {
-    // Generar documentos automáticamente con las firmas ya incluidas
-    await this.generateAllDocuments();
+    // Verificar si los documentos principales ya están generados
+    const validation = this.validateGeneratedDocuments();
 
-    // Aplicar firmas a los documentos
-    this.updateDocumentsWithSignatures();
+    if (!validation.success) {
+      // Los documentos no están generados, usar flujo con overlay
+      this.showDocumentLoadingOverlay();
+
+      try {
+        this.updateLoadingProgress('Generando documentos...', 20);
+        await this.generateAllDocuments();
+
+        this.updateLoadingProgress('Verificando documentos...', 70);
+        const retryValidation = this.validateGeneratedDocuments();
+
+        if (!retryValidation.success) {
+          // Reintentar una vez
+          this.updateLoadingProgress('Reintentando...', 80);
+          await this.generateAllDocuments();
+        }
+
+        this.updateLoadingProgress('Aplicando firmas...', 90);
+        this.updateDocumentsWithSignatures();
+
+        this.updateLoadingProgress('Finalizando...', 100);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        this.hideDocumentLoadingOverlay();
+      } catch (error) {
+        console.error('Error generando documentos:', error);
+        this.hideDocumentLoadingOverlay();
+        showToast('Error al generar documentos: ' + error.message, 'error');
+        return;
+      }
+    }
 
     // Renderizar lista de documentos dinámicamente
     this.renderDocumentsList();
@@ -6835,42 +7242,8 @@ Secretaria Municipal`;
     // Generar lista inicial de otros documentos
     this.renderOtherDocumentsList();
 
-    // Usar setTimeout más largo para asegurar que el DOM esté listo
-    setTimeout(() => {
-      // Botón agregar otro documento
-      const btnAddDoc = document.getElementById('btn-add-other-document');
-      if (btnAddDoc) {
-        btnAddDoc.onclick = () => this.addOtherDocumentSlot();
-      }
-
-      // Asignar onclick directamente a cada botón de documento
-      document.querySelectorAll('.btn-preview').forEach(btn => {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const docType = btn.dataset.docType;
-          if (docType) this.showDocumentPreview(docType);
-        };
-      });
-
-      document.querySelectorAll('.btn-edit-doc').forEach(btn => {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const docType = btn.dataset.docType;
-          if (docType) this.showEditDocumentModal(docType);
-        };
-      });
-
-      document.querySelectorAll('.btn-download').forEach(btn => {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const docType = btn.dataset.docType;
-          if (docType) this.downloadDocument(docType);
-        };
-      });
-    }, 100);
+    // Configurar event listeners
+    this.setupStep6EventListeners();
   }
 
   /**
