@@ -3671,11 +3671,12 @@ export class WizardController {
   generateEstatutosComiteVivienda() {
     const org = this.formData.organization;
     const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+    const descripcionTexto = org.description ? `\nDescripción: ${org.description}\n` : '';
 
     return `ESTATUTOS TIPO
 COMITÉ DE VIVIENDA
 "${(org.name || '[NOMBRE DEL COMITÉ]').toUpperCase()}"
-
+${descripcionTexto}
 TÍTULO PRIMERO
 DENOMINACIÓN, DOMICILIO, DURACIÓN Y OBJETIVOS
 
@@ -3781,7 +3782,11 @@ Artículo 17°: La reforma de estos estatutos requerirá la aprobación de 2/3 d
 Artículo 18°: La disolución del Comité podrá acordarse por 2/3 de los socios en Asamblea Extraordinaria. Los bienes remanentes pasarán a otra organización comunitaria de la comuna.
 
 
-Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTO PRELIMINAR - Proyecto de estatutos generado el ${today}.
+Estos estatutos serán sometidos a votación y aprobación en la Asamblea Constitutiva.
+Una vez aprobados en Asamblea, se emitirá el documento definitivo con la fecha de aprobación.
+═══════════════════════════════════════════════════════════════════════════════`;
   }
 
   /**
@@ -3849,11 +3854,12 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     const org = this.formData.organization;
     const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
     const tipoOrg = org.type === 'JUNTA_VECINOS' ? 'Junta de Vecinos' : 'Comité de Vecinos';
+    const descripcionTexto = org.description ? `\nDescripción: ${org.description}\n` : '';
 
     return `ESTATUTOS TIPO
 ${tipoOrg.toUpperCase()}
 "${(org.name || '[NOMBRE]').toUpperCase()}"
-
+${descripcionTexto}
 TÍTULO PRIMERO
 DENOMINACIÓN, NATURALEZA JURÍDICA, DOMICILIO Y DURACIÓN
 
@@ -3972,7 +3978,11 @@ Artículo 22°: La reforma de estos estatutos requerirá la aprobación de 2/3 d
 Artículo 23°: La disolución requerirá acuerdo de 2/3 de los afiliados en Asamblea Extraordinaria. Los bienes se traspasarán a otra organización comunitaria de la comuna.
 
 
-Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTO PRELIMINAR - Proyecto de estatutos generado el ${today}.
+Estos estatutos serán sometidos a votación y aprobación en la Asamblea Constitutiva.
+Una vez aprobados en Asamblea, se emitirá el documento definitivo con la fecha de aprobación.
+═══════════════════════════════════════════════════════════════════════════════`;
   }
 
   /**
@@ -3981,11 +3991,12 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
   generateEstatutosCVPCC() {
     const org = this.formData.organization;
     const today = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+    const descripcionTexto = org.description ? `\nDescripción: ${org.description}\n` : '';
 
     return `ESTATUTOS TIPO
 COMITÉ VECINAL DE PREVENCIÓN Y CONVIVENCIA COMUNITARIA
 "${(org.name || '[NOMBRE DEL CVPCC]').toUpperCase()}"
-
+${descripcionTexto}
 TÍTULO PRIMERO
 DENOMINACIÓN, DOMICILIO Y DURACIÓN
 
@@ -4103,7 +4114,11 @@ Artículo 20°: La reforma de estatutos requerirá aprobación de 2/3 de los asi
 Artículo 21°: La disolución requerirá acuerdo de 2/3 de los socios. Los bienes pasarán a otra organización comunitaria de la comuna.
 
 
-Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTO PRELIMINAR - Proyecto de estatutos generado el ${today}.
+Estos estatutos serán sometidos a votación y aprobación en la Asamblea Constitutiva.
+Una vez aprobados en Asamblea, se emitirá el documento definitivo con la fecha de aprobación.
+═══════════════════════════════════════════════════════════════════════════════`;
   }
 
   /**
@@ -4130,11 +4145,14 @@ Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
     };
     const tipoNombre = tiposOrganizacion[org.type] || 'Organización Comunitaria Funcional';
 
+    // Construir descripción completa si existe
+    const descripcionTexto = org.description ? `\nDescripción: ${org.description}\n` : '';
+
     return `ESTATUTOS TIPO
 ORGANIZACIÓN COMUNITARIA FUNCIONAL
 ${tipoNombre.toUpperCase()}
 "${(org.name || '[NOMBRE DE LA ORGANIZACIÓN]').toUpperCase()}"
-
+${descripcionTexto}
 TÍTULO PRIMERO
 DENOMINACIÓN, DOMICILIO Y DURACIÓN
 
@@ -4149,7 +4167,7 @@ TÍTULO SEGUNDO
 OBJETIVOS Y FUNCIONES
 
 Artículo 4°: Los objetivos de la Organización son:
-${org.objectives || org.description || `a) Promover el desarrollo comunitario en el ámbito de su especialidad;
+${org.objectives || `a) Promover el desarrollo comunitario en el ámbito de su especialidad;
 b) Representar a sus socios ante autoridades y organismos;
 c) Fomentar la participación ciudadana y el trabajo colaborativo;
 d) Gestionar recursos para proyectos de beneficio común.`}
@@ -4243,7 +4261,11 @@ Artículo 18°: La Organización podrá modificar estos estatutos en Asamblea Ex
 Artículo 19°: La Organización podrá disolverse por acuerdo de 2/3 de los socios en Asamblea Extraordinaria especialmente convocada al efecto. En caso de disolución, los bienes pasarán a otra organización comunitaria de la misma comuna.
 
 
-Estatutos aprobados en Asamblea Constitutiva del ${today}.`;
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTO PRELIMINAR - Proyecto de estatutos generado el ${today}.
+Estos estatutos serán sometidos a votación y aprobación en la Asamblea Constitutiva.
+Una vez aprobados en Asamblea, se emitirá el documento definitivo con la fecha de aprobación.
+═══════════════════════════════════════════════════════════════════════════════`;
   }
 
   /**
