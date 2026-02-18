@@ -3065,44 +3065,93 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // CATEGORÍA: DIRECTORIO (president, secretary, treasurer, additionalMembers)
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'directorio') {
-    // El key puede ser "Presidente: Nombre Apellido" o similar
-    const roleMatch = key.match(/^(Presidente|Secretario|Tesorero|Director\s*\d*):\s*(.+)$/i);
-    let role = 'member';
-    let memberName = key;
+    // El key puede venir en diferentes formatos:
+    // 1. ID directo: "president", "secretary", "treasurer"
+    // 2. Formato label: "Presidente: Nombre Apellido"
 
-    if (roleMatch) {
-      const roleText = roleMatch[1].toLowerCase();
-      memberName = roleMatch[2];
-      if (roleText === 'presidente') role = 'president';
-      else if (roleText === 'secretario') role = 'secretary';
-      else if (roleText === 'tesorero') role = 'treasurer';
-      else if (roleText.startsWith('director')) role = 'director';
-    }
-
-    // Buscar el miembro en el directorio
     const dir = org.provisionalDirectorio || {};
     let member = null;
     let memberPath = '';
+    let role = 'member';
 
-    if (role === 'president' && dir.president) {
-      member = dir.president;
-      memberPath = 'president';
-    } else if (role === 'secretary' && dir.secretary) {
-      member = dir.secretary;
-      memberPath = 'secretary';
-    } else if (role === 'treasurer' && dir.treasurer) {
-      member = dir.treasurer;
-      memberPath = 'treasurer';
-    } else if (dir.additionalMembers) {
-      // Buscar en miembros adicionales
-      const idx = dir.additionalMembers.findIndex(m => extractMemberName(m).includes(memberName.split(' ')[0]));
-      if (idx !== -1) {
-        member = dir.additionalMembers[idx];
-        memberPath = `additionalMembers.${idx}`;
+    // Primero verificar si key es directamente el ID del rol (en inglés)
+    const directRoleMap = {
+      'president': 'president',
+      'secretary': 'secretary',
+      'treasurer': 'treasurer',
+      'presidente': 'president',
+      'secretario': 'secretary',
+      'tesorero': 'treasurer'
+    };
+
+    const keyLower = key.toLowerCase();
+
+    if (directRoleMap[keyLower]) {
+      // Key es directamente el rol
+      role = directRoleMap[keyLower];
+      memberPath = role;
+      member = dir[role];
+    } else {
+      // Intentar parsear formato "Rol: Nombre"
+      const roleMatch = key.match(/^(Presidente|Secretario|Tesorero|Director\s*\d*):\s*(.+)$/i);
+
+      if (roleMatch) {
+        const roleText = roleMatch[1].toLowerCase();
+        const memberName = roleMatch[2];
+
+        if (roleText === 'presidente') role = 'president';
+        else if (roleText === 'secretario') role = 'secretary';
+        else if (roleText === 'tesorero') role = 'treasurer';
+        else if (roleText.startsWith('director')) role = 'director';
+
+        if (role !== 'director' && dir[role]) {
+          member = dir[role];
+          memberPath = role;
+        } else if (dir.additionalMembers) {
+          // Buscar en miembros adicionales por nombre
+          const idx = dir.additionalMembers.findIndex(m => {
+            const name = extractMemberName(m);
+            return name.toLowerCase().includes(memberName.toLowerCase().split(' ')[0]);
+          });
+          if (idx !== -1) {
+            member = dir.additionalMembers[idx];
+            memberPath = `additionalMembers.${idx}`;
+          }
+        }
+      } else {
+        // Último intento: buscar por nombre en todos los miembros del directorio
+        const searchName = key.toLowerCase();
+
+        // Buscar en presidente, secretario, tesorero
+        for (const roleKey of ['president', 'secretary', 'treasurer']) {
+          if (dir[roleKey]) {
+            const name = extractMemberName(dir[roleKey]).toLowerCase();
+            if (name.includes(searchName) || searchName.includes(name.split(' ')[0])) {
+              member = dir[roleKey];
+              memberPath = roleKey;
+              role = roleKey;
+              break;
+            }
+          }
+        }
+
+        // Si no encontró, buscar en miembros adicionales
+        if (!member && dir.additionalMembers) {
+          const idx = dir.additionalMembers.findIndex(m => {
+            const name = extractMemberName(m).toLowerCase();
+            return name.includes(searchName) || searchName.includes(name.split(' ')[0]);
+          });
+          if (idx !== -1) {
+            member = dir.additionalMembers[idx];
+            memberPath = `additionalMembers.${idx}`;
+            role = 'director';
+          }
+        }
       }
     }
 
     if (!member) {
+      console.error('Miembro del directorio no encontrado. Key:', key, 'Directorio:', dir);
       showToast('Miembro del directorio no encontrado', 'error');
       return;
     }
