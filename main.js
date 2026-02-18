@@ -3521,7 +3521,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
       const subModal = document.createElement('div');
       subModal.className = 'correction-edit-modal-overlay';
-      subModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10002;';
+      subModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300001;';
       subModal.innerHTML = `
         <div style="background:white;border-radius:16px;width:95%;max-width:450px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
           <div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">

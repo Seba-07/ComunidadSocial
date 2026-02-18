@@ -6811,7 +6811,8 @@ body {
 }
 
 .org-detail-modal.has-corrections {
-    max-width: 600px;
+    max-width: 950px;
+    width: 95%;
 }
 
 /* Correction Edit Modal */
