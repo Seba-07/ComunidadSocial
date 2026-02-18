@@ -1675,6 +1675,9 @@ function viewDocumentation(assignmentId) {
           <button class="doc-tab" data-tab="estatutos" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
             📜 Estatutos
           </button>
+          <button class="doc-tab" data-tab="certificados" style="padding: 10px 20px; border: 2px solid #e5e7eb; background: white; color: #374151; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📄 Certificados
+          </button>
         </div>
 
         <!-- Contenido de tabs -->
@@ -1840,6 +1843,36 @@ function viewDocumentation(assignmentId) {
               `}
             </div>
           </div>
+
+          <!-- Tab: Certificados de Antecedentes -->
+          <div id="tab-certificados" class="tab-content" style="display: none;">
+            <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 24px;">
+              <h3 style="margin: 0 0 20px; color: #7e22ce; display: flex; align-items: center; gap: 10px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <path d="M9 15l2 2 4-4"></path>
+                </svg>
+                Certificados de Antecedentes
+              </h3>
+
+              <!-- Certificados del Directorio -->
+              <div style="margin-bottom: 24px;">
+                <h4 style="margin: 0 0 16px; color: #581c87; font-size: 15px; font-weight: 600;">Directorio Provisorio</h4>
+                <div id="certs-directorio" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                  <div style="text-align: center; padding: 20px; color: #9ca3af;">Cargando certificados...</div>
+                </div>
+              </div>
+
+              <!-- Certificados de Comisión Electoral -->
+              <div>
+                <h4 style="margin: 0 0 16px; color: #581c87; font-size: 15px; font-weight: 600;">Comisión Electoral</h4>
+                <div id="certs-comision" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                  <div style="text-align: center; padding: 20px; color: #9ca3af;">Cargando certificados...</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1877,6 +1910,356 @@ function viewDocumentation(assignmentId) {
         tabContent.style.display = 'block';
       }
     });
+  });
+
+  // Cargar certificados de antecedentes
+  loadCertificatesForMF(modal, org);
+}
+
+/**
+ * Carga y muestra los certificados de antecedentes para el Ministro de Fe
+ */
+async function loadCertificatesForMF(modal, org) {
+  const certsDirectorioContainer = modal.querySelector('#certs-directorio');
+  const certsComisionContainer = modal.querySelector('#certs-comision');
+
+  if (!certsDirectorioContainer || !certsComisionContainer) return;
+
+  const cargoLabels = {
+    presidente: 'Presidente/a',
+    secretario: 'Secretario/a',
+    tesorero: 'Tesorero/a',
+    vicepresidente: 'Vicepresidente/a',
+    director1: 'Director/a',
+    director2: 'Director/a',
+    director3: 'Director/a',
+    secretario_actas: 'Secretario/a de Actas',
+    pro_secretario: 'Pro-Secretario/a',
+    pro_tesorero: 'Pro-Tesorero/a',
+    director_finanzas: 'Director/a de Finanzas',
+    vocal1: 'Vocal',
+    vocal2: 'Vocal',
+    comision1: 'Miembro 1',
+    comision2: 'Miembro 2',
+    comision3: 'Miembro 3'
+  };
+
+  const extractName = (m) => {
+    if (!m) return 'Sin nombre';
+    if (m.primerNombre) {
+      const fn = [m.primerNombre, m.segundoNombre].filter(Boolean).join(' ');
+      const ln = [m.apellidoPaterno, m.apellidoMaterno].filter(Boolean).join(' ');
+      return (fn + ' ' + ln).trim() || 'Sin nombre';
+    }
+    if (m.firstName) return ((m.firstName || '') + ' ' + (m.lastName || '')).trim();
+    return m.name || m.nombre || 'Sin nombre';
+  };
+
+  try {
+    // Obtener certificados desde la API (colección separada)
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${window.API_BASE_URL || ''}/api/organizations/${org._id}/certificate-files`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const certFiles = response.ok ? await response.json() : [];
+
+    // También usar certificatesStep5 del org para metadata
+    const certsMeta = org.certificatesStep5 || {};
+
+    // Directorio Provisorio
+    const dir = org.provisionalDirectorio || {};
+    const directorioCards = [];
+
+    // Presidente
+    if (dir.president) {
+      const cert = certsMeta.presidente || certsMeta.president || certFiles.find(c => c.memberId === 'presidente');
+      directorioCards.push({
+        role: 'Presidente/a',
+        name: extractName(dir.president),
+        rut: dir.president.rut,
+        certKey: 'presidente',
+        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        cert: cert
+      });
+    }
+
+    // Secretario
+    if (dir.secretary) {
+      const cert = certsMeta.secretario || certsMeta.secretary || certFiles.find(c => c.memberId === 'secretario');
+      directorioCards.push({
+        role: 'Secretario/a',
+        name: extractName(dir.secretary),
+        rut: dir.secretary.rut,
+        certKey: 'secretario',
+        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        cert: cert
+      });
+    }
+
+    // Tesorero
+    if (dir.treasurer) {
+      const cert = certsMeta.tesorero || certsMeta.treasurer || certFiles.find(c => c.memberId === 'tesorero');
+      directorioCards.push({
+        role: 'Tesorero/a',
+        name: extractName(dir.treasurer),
+        rut: dir.treasurer.rut,
+        certKey: 'tesorero',
+        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        cert: cert
+      });
+    }
+
+    // Miembros adicionales del directorio
+    const additionalMembers = dir.additionalMembers || [];
+    additionalMembers.forEach((m, idx) => {
+      const cargoKey = m.cargo || m.role || `adicional${idx + 1}`;
+      const cert = certsMeta[cargoKey] || certFiles.find(c => c.memberId === cargoKey);
+      directorioCards.push({
+        role: cargoLabels[cargoKey] || cargoKey || 'Miembro Adicional',
+        name: extractName(m),
+        rut: m.rut,
+        certKey: cargoKey,
+        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        cert: cert
+      });
+    });
+
+    // Renderizar directorio
+    if (directorioCards.length === 0) {
+      certsDirectorioContainer.innerHTML = '<p style="margin: 0; color: #9ca3af; text-align: center; padding: 20px;">No hay miembros del directorio registrados</p>';
+    } else {
+      certsDirectorioContainer.innerHTML = directorioCards.map(item => `
+        <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid ${item.hasCert ? '#a855f7' : '#e5e7eb'};">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+              <div style="width: 40px; height: 40px; min-width: 40px; background: ${item.hasCert ? 'linear-gradient(135deg, #a855f7, #7e22ce)' : '#f3f4f6'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: ${item.hasCert ? 'white' : '#9ca3af'};">
+                ${item.hasCert ? `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                ` : `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                `}
+              </div>
+              <div style="min-width: 0; flex: 1;">
+                <p style="margin: 0; font-weight: 600; color: #1f2937; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</p>
+                <p style="margin: 2px 0 0; color: ${item.hasCert ? '#7e22ce' : '#6b7280'}; font-size: 12px; font-weight: 500;">${item.role}</p>
+                ${item.rut ? `<p style="margin: 2px 0 0; color: #9ca3af; font-size: 11px;">RUT: ${item.rut}</p>` : ''}
+              </div>
+            </div>
+            ${item.hasCert ? `
+              <button type="button" class="btn-view-cert" data-cert-key="${item.certKey}" data-member-name="${item.name}" data-role="${item.role}" style="
+                padding: 8px 14px;
+                background: linear-gradient(135deg, #a855f7, #7e22ce);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+              ">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Ver
+              </button>
+            ` : `
+              <span style="padding: 6px 12px; background: #f3f4f6; color: #9ca3af; border-radius: 6px; font-size: 11px; font-weight: 500;">Sin certificado</span>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Comisión Electoral
+    const comision = org.comisionElectoral || org.electoralCommission || [];
+    const comisionCards = [];
+
+    comision.forEach((m, idx) => {
+      const certKey = `comision${idx + 1}`;
+      const cert = certsMeta[certKey] || certFiles.find(c => c.memberId === certKey);
+      comisionCards.push({
+        role: `Miembro ${idx + 1}`,
+        name: extractName(m),
+        rut: m.rut,
+        certKey: certKey,
+        hasCert: !!(cert && (cert.certificate || cert.base64 || cert.data)),
+        cert: cert
+      });
+    });
+
+    // Renderizar comisión
+    if (comisionCards.length === 0) {
+      certsComisionContainer.innerHTML = '<p style="margin: 0; color: #9ca3af; text-align: center; padding: 20px;">No hay miembros de la comisión electoral registrados</p>';
+    } else {
+      certsComisionContainer.innerHTML = comisionCards.map(item => `
+        <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid ${item.hasCert ? '#a855f7' : '#e5e7eb'};">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+              <div style="width: 40px; height: 40px; min-width: 40px; background: ${item.hasCert ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#f3f4f6'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: ${item.hasCert ? 'white' : '#9ca3af'};">
+                ${item.hasCert ? `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                ` : `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                `}
+              </div>
+              <div style="min-width: 0; flex: 1;">
+                <p style="margin: 0; font-weight: 600; color: #1f2937; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</p>
+                <p style="margin: 2px 0 0; color: ${item.hasCert ? '#d97706' : '#6b7280'}; font-size: 12px; font-weight: 500;">${item.role}</p>
+                ${item.rut ? `<p style="margin: 2px 0 0; color: #9ca3af; font-size: 11px;">RUT: ${item.rut}</p>` : ''}
+              </div>
+            </div>
+            ${item.hasCert ? `
+              <button type="button" class="btn-view-cert" data-cert-key="${item.certKey}" data-member-name="${item.name}" data-role="${item.role}" style="
+                padding: 8px 14px;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+              ">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Ver
+              </button>
+            ` : `
+              <span style="padding: 6px 12px; background: #f3f4f6; color: #9ca3af; border-radius: 6px; font-size: 11px; font-weight: 500;">Sin certificado</span>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Event listeners para ver certificados
+    modal.querySelectorAll('.btn-view-cert').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const certKey = btn.getAttribute('data-cert-key');
+        const memberName = btn.getAttribute('data-member-name');
+        const role = btn.getAttribute('data-role');
+        await viewCertificateMF(org, certKey, memberName, role, certFiles, certsMeta);
+      });
+    });
+
+  } catch (error) {
+    console.error('Error loading certificates for MF:', error);
+    certsDirectorioContainer.innerHTML = '<p style="margin: 0; color: #ef4444; text-align: center; padding: 20px;">Error al cargar certificados</p>';
+    certsComisionContainer.innerHTML = '<p style="margin: 0; color: #ef4444; text-align: center; padding: 20px;">Error al cargar certificados</p>';
+  }
+}
+
+/**
+ * Muestra el modal de visualización de certificado para el MF
+ */
+async function viewCertificateMF(org, certKey, memberName, role, certFiles, certsMeta) {
+  // Buscar el certificado
+  let cert = certsMeta[certKey] || certFiles.find(c => c.memberId === certKey);
+
+  if (!cert) {
+    showToast('Certificado no disponible', 'error');
+    return;
+  }
+
+  // Normalizar formato del certificado
+  let certData = null;
+  if (cert.certificate) {
+    // Formato de certificate-files collection
+    certData = cert.certificate;
+  } else if (cert.base64) {
+    certData = `data:${cert.type || 'application/pdf'};base64,${cert.base64}`;
+  } else if (cert.data) {
+    certData = cert.data;
+  }
+
+  if (!certData) {
+    showToast('Datos del certificado no disponibles', 'error');
+    return;
+  }
+
+  // Determinar tipo de archivo
+  const isPDF = certData.includes('application/pdf') || (cert.type && cert.type.includes('pdf'));
+  const isImage = certData.includes('image/') || (cert.type && cert.type.startsWith('image/'));
+
+  const certModal = document.createElement('div');
+  certModal.className = 'cert-modal-overlay';
+  certModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px;';
+
+  certModal.innerHTML = `
+    <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Certificado de Antecedentes</h3>
+          <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${role}: ${memberName}</p>
+        </div>
+        <button type="button" class="close-cert-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div style="flex: 1; overflow: auto; padding: 24px; background: #f8fafc; display: flex; align-items: center; justify-content: center;">
+        ${isPDF ? `
+          <iframe src="${certData}" style="width: 100%; height: 70vh; border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>
+        ` : isImage ? `
+          <img src="${certData}" style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+        ` : `
+          <div style="text-align: center; padding: 40px; color: #64748b;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p style="margin: 0; font-weight: 600;">Formato no soportado para previsualización</p>
+            <p style="margin: 8px 0 0; font-size: 14px;">Descargue el archivo para verlo</p>
+          </div>
+        `}
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; background: white; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="close-cert-modal" style="padding: 10px 20px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(certModal);
+
+  // Event listeners
+  certModal.querySelectorAll('.close-cert-modal').forEach(btn => {
+    btn.addEventListener('click', () => certModal.remove());
+  });
+
+  certModal.addEventListener('click', (e) => {
+    if (e.target === certModal) certModal.remove();
   });
 }
 
