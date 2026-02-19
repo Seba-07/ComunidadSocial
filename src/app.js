@@ -107,8 +107,16 @@ class AppState {
       activePage.classList.add('active');
     }
 
-    // Actualizar navegación
+    // Actualizar navegación principal
     document.querySelectorAll('.nav-link, .nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.page === this.currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    // Actualizar navegación de organización
+    document.querySelectorAll('.nav-link-sub').forEach(item => {
       item.classList.remove('active');
       if (item.dataset.page === this.currentPage) {
         item.classList.add('active');

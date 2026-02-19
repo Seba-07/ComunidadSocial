@@ -4086,6 +4086,384 @@ ${comm.message || 'Sin contenido'}
       }
     });
   }
+
+  // ============================================================
+  // MÉTODOS PARA INTEGRACIÓN CON MENÚ LATERAL (PÁGINAS COMPLETAS)
+  // ============================================================
+
+  /**
+   * Establece la organización activa (para uso desde OrganizationMenuManager)
+   */
+  setOrganization(org) {
+    this.currentOrg = org;
+  }
+
+  /**
+   * Obtiene la organización activa
+   */
+  getOrganization() {
+    return this.currentOrg;
+  }
+
+  /**
+   * Renderiza contenido de un tab específico
+   */
+  renderTab(tabName) {
+    this.currentTab = tabName;
+    return this.renderTabContent();
+  }
+
+  /**
+   * Adjunta listeners a un contenedor genérico (para uso en páginas completas)
+   * Similar a attachContentListeners pero no requiere overlay del modal
+   */
+  attachContentListenersToContainer(container) {
+    if (!container) return;
+
+    // Botones de acción de alertas
+    container.querySelectorAll('.alert-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const alertType = btn.dataset.alertType;
+        this.handleAlertActionInPage(alertType, container);
+      });
+    });
+
+    // Agregar nuevo socio
+    const btnAddMember = container.querySelector('#btn-add-new-member');
+    if (btnAddMember) {
+      btnAddMember.addEventListener('click', () => this.openAddMemberModalInPage(container));
+    }
+
+    // Acciones rápidas
+    container.querySelectorAll('.quick-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        // Disparar evento personalizado para que OrganizationMenuManager maneje la navegación
+        window.dispatchEvent(new CustomEvent('org-quick-action', { detail: { action } }));
+      });
+    });
+
+    // Nueva asamblea
+    const btnNewAssembly = container.querySelector('#btn-new-assembly') || container.querySelector('#btn-first-assembly');
+    if (btnNewAssembly) {
+      btnNewAssembly.addEventListener('click', () => this.openNewAssemblyModalInPage(container));
+    }
+
+    // Nuevo proyecto
+    const btnNewProject = container.querySelector('#btn-new-project') || container.querySelector('#btn-first-project');
+    if (btnNewProject) {
+      btnNewProject.addEventListener('click', () => this.openNewProjectModalInPage(container));
+    }
+
+    // Nueva actividad
+    const btnNewActivity = container.querySelector('#btn-new-activity') || container.querySelector('#btn-first-activity');
+    if (btnNewActivity) {
+      btnNewActivity.addEventListener('click', () => this.openNewActivityModalInPage(container));
+    }
+
+    // Nueva transacción
+    const btnNewTransaction = container.querySelector('#btn-new-transaction');
+    if (btnNewTransaction) {
+      btnNewTransaction.addEventListener('click', () => this.openNewTransactionModalInPage(container));
+    }
+
+    // Editar directorio
+    const btnEditDirectorio = container.querySelector('#btn-edit-directorio');
+    if (btnEditDirectorio) {
+      btnEditDirectorio.addEventListener('click', () => this.openEditDirectorioModalInPage(container));
+    }
+
+    // Nueva elección
+    const btnNewElection = container.querySelector('#btn-new-election') || container.querySelector('#btn-urgent-election');
+    if (btnNewElection) {
+      btnNewElection.addEventListener('click', () => this.openNewElectionModalInPage(container));
+    }
+
+    // Editar elección
+    container.querySelectorAll('.btn-edit-election').forEach(btn => {
+      btn.addEventListener('click', () => this.showElectionDetailInPage(btn.dataset.id, container));
+    });
+
+    // Eliminar elección
+    container.querySelectorAll('.btn-delete-election').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItemInPage('elections', btn.dataset.id, 'elección', container));
+    });
+
+    // Nueva comunicación
+    const btnNewComm = container.querySelector('#btn-new-communication') || container.querySelector('#btn-first-communication');
+    if (btnNewComm) {
+      btnNewComm.addEventListener('click', () => this.openNewCommunicationModalInPage(container));
+    }
+
+    // Templates de comunicación
+    container.querySelectorAll('.template-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const template = btn.dataset.template;
+        const subjects = { asamblea: 'Citacion a Asamblea', actividad: 'Invitacion a Actividad', informe: 'Informe de Gestion', urgente: 'Aviso Urgente' };
+        this.openNewCommunicationModalInPage(container);
+        setTimeout(() => {
+          const modal = document.querySelector('.org-modal-overlay');
+          if (modal) {
+            const subjectInput = modal.querySelector('#comm-subject');
+            const typeSelect = modal.querySelector('#comm-type');
+            if (subjectInput) subjectInput.value = subjects[template] || '';
+            if (typeSelect) typeSelect.value = template || 'general';
+          }
+        }, 100);
+      });
+    });
+
+    // Editar y eliminar miembros
+    container.querySelectorAll('.btn-edit-member').forEach(btn => {
+      btn.addEventListener('click', () => this.openEditMemberModalInPage(btn.dataset.rut, container));
+    });
+    container.querySelectorAll('.btn-delete-member').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteMemberInPage(btn.dataset.rut, container));
+    });
+
+    // Filtro de actividades
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        container.querySelectorAll('.actividad-card').forEach(card => {
+          if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Ver detalle de asamblea
+    container.querySelectorAll('.btn-view-assembly').forEach(btn => {
+      btn.addEventListener('click', () => this.showAssemblyDetailInPage(btn.dataset.id, container));
+    });
+
+    // Eliminar asamblea
+    container.querySelectorAll('.btn-delete-assembly').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItemInPage('assemblies', btn.dataset.id, 'asamblea', container));
+    });
+
+    // Ver detalle de proyecto
+    container.querySelectorAll('.btn-view-project').forEach(btn => {
+      btn.addEventListener('click', () => this.showProjectDetailInPage(btn.dataset.id, container));
+    });
+
+    // Eliminar proyecto
+    container.querySelectorAll('.btn-delete-project').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItemInPage('projects', btn.dataset.id, 'proyecto', container));
+    });
+
+    // Ver comunicación
+    container.querySelectorAll('.btn-view-comm').forEach(btn => {
+      btn.addEventListener('click', () => this.showCommunicationDetailInPage(btn.dataset.id, container));
+    });
+
+    // Eliminar comunicación
+    container.querySelectorAll('.btn-delete-comm').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItemInPage('communications', btn.dataset.id, 'comunicación', container));
+    });
+
+    // Eliminar transacción
+    container.querySelectorAll('.btn-delete-tx').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteTransactionInPage(btn.dataset.id, container));
+    });
+
+    // Editar actividad
+    container.querySelectorAll('.btn-edit-activity').forEach(btn => {
+      btn.addEventListener('click', () => this.showActivityDetailInPage(btn.dataset.id, container));
+    });
+
+    // Eliminar actividad
+    container.querySelectorAll('.btn-delete-activity').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteItemInPage('activities', btn.dataset.id, 'actividad', container));
+    });
+
+    // Generar certificados
+    const btnCertResidencia = container.querySelector('#btn-cert-residencia');
+    if (btnCertResidencia) {
+      btnCertResidencia.addEventListener('click', () => this.generateCertificate('residencia'));
+    }
+    const btnCertSocio = container.querySelector('#btn-cert-socio');
+    if (btnCertSocio) {
+      btnCertSocio.addEventListener('click', () => this.generateCertificate('socio'));
+    }
+
+    // Ver balance anual
+    const btnAnnualBalance = container.querySelector('#btn-annual-balance');
+    if (btnAnnualBalance) {
+      btnAnnualBalance.addEventListener('click', () => this.showAnnualBalanceInPage(container));
+    }
+
+    // Exportar finanzas
+    const btnExportFinances = container.querySelector('#btn-export-finances');
+    if (btnExportFinances) {
+      btnExportFinances.addEventListener('click', () => this.exportFinancesCSV());
+    }
+
+    // Botón asignar en directorio (slots vacíos)
+    container.querySelectorAll('.btn-assign').forEach(btn => {
+      btn.addEventListener('click', () => this.openEditDirectorioModalInPage(container));
+    });
+
+    // Upload documento
+    const btnUploadDoc = container.querySelector('#btn-upload-doc');
+    if (btnUploadDoc) {
+      btnUploadDoc.addEventListener('click', () => this.showUploadModalInPage(container));
+    }
+
+    const btnUploadOrgDoc = container.querySelector('#btn-upload-org-doc');
+    if (btnUploadOrgDoc) {
+      btnUploadOrgDoc.addEventListener('click', () => this.showUploadModalInPage(container));
+      this.loadOrgDocuments().then(() => {
+        const listContainer = container.querySelector('#org-documents-list');
+        if (listContainer) {
+          listContainer.innerHTML = this.renderOrgDocuments();
+          this.attachOrgDocumentListenersToContainer(container);
+        }
+      });
+    }
+
+    this.attachOrgDocumentListenersToContainer(container);
+  }
+
+  /**
+   * Adjunta listeners de documentos a un contenedor
+   */
+  attachOrgDocumentListenersToContainer(container) {
+    container.querySelectorAll('.btn-view-org-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        this.viewOrgDocument(docId);
+      });
+    });
+    container.querySelectorAll('.btn-download-org-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        this.downloadOrgDocument(docId);
+      });
+    });
+    container.querySelectorAll('.btn-delete-org-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const docId = btn.dataset.docId;
+        this.deleteOrgDocumentInPage(docId, container);
+      });
+    });
+  }
+
+  /**
+   * Refresca el contenido en un contenedor de página
+   */
+  refreshContentInContainer(container, tabName) {
+    if (!container) return;
+    this.currentTab = tabName;
+    container.innerHTML = this.renderTabContent();
+    this.attachContentListenersToContainer(container);
+  }
+
+  // Métodos wrapper para modales en páginas (añaden modal a document.body)
+  openAddMemberModalInPage(container) {
+    this.openAddMemberModal({ querySelector: () => null, querySelectorAll: () => [] });
+    // Reemplazar el callback de refresh
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewAssemblyModalInPage(container) {
+    this.openNewAssemblyModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewProjectModalInPage(container) {
+    this.openNewProjectModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewActivityModalInPage(container) {
+    this.openNewActivityModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewTransactionModalInPage(container) {
+    this.openNewTransactionModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openEditDirectorioModalInPage(container) {
+    this.openEditDirectorioModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewElectionModalInPage(container) {
+    this.openNewElectionModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openNewCommunicationModalInPage(container) {
+    this.openNewCommunicationModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  openEditMemberModalInPage(rut, container) {
+    this.openEditMemberModal(rut, { querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  showUploadModalInPage(container) {
+    this.showUploadModal({ querySelector: () => null, querySelectorAll: () => [] });
+    this._pendingRefreshContainer = container;
+  }
+
+  handleAlertActionInPage(alertType, container) {
+    // Disparar evento para que OrganizationMenuManager maneje
+    window.dispatchEvent(new CustomEvent('org-alert-action', { detail: { alertType } }));
+  }
+
+  deleteMemberInPage(rut, container) {
+    this.deleteMember(rut, { querySelector: () => null, querySelectorAll: () => [] });
+    setTimeout(() => this.refreshContentInContainer(container, this.currentTab), 500);
+  }
+
+  deleteItemInPage(type, id, label, container) {
+    this.deleteItem(type, id, label, { querySelector: () => null, querySelectorAll: () => [] });
+    setTimeout(() => this.refreshContentInContainer(container, this.currentTab), 500);
+  }
+
+  deleteTransactionInPage(id, container) {
+    this.deleteTransaction(id, { querySelector: () => null, querySelectorAll: () => [] });
+    setTimeout(() => this.refreshContentInContainer(container, this.currentTab), 500);
+  }
+
+  deleteOrgDocumentInPage(docId, container) {
+    this.deleteOrgDocument(docId, { querySelector: () => null, querySelectorAll: () => [] });
+    setTimeout(() => this.refreshContentInContainer(container, this.currentTab), 500);
+  }
+
+  showAssemblyDetailInPage(id, container) {
+    this.showAssemblyDetail(id, document.body);
+  }
+
+  showProjectDetailInPage(id, container) {
+    this.showProjectDetail(id, document.body);
+  }
+
+  showCommunicationDetailInPage(id, container) {
+    this.showCommunicationDetail(id, document.body);
+  }
+
+  showElectionDetailInPage(id, container) {
+    this.showElectionDetail(id, document.body);
+  }
+
+  showActivityDetailInPage(id, container) {
+    this.showActivityDetail(id, document.body);
+  }
+
+  showAnnualBalanceInPage(container) {
+    this.showAnnualBalance(document.body);
+  }
 }
 
 // Instancia singleton

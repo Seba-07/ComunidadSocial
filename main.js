@@ -14,6 +14,7 @@ import { getUserRepository } from './src/infrastructure/config/container.js';
 import { organizationsService, ORG_STATUS, ORG_STATUS_LABELS, ORG_STATUS_COLORS } from './src/services/OrganizationsService.js';
 import { adminDashboard } from './src/presentation/admin/AdminDashboard.js';
 import { organizationDashboard } from './src/presentation/organization/OrganizationDashboard.js';
+import { organizationMenuManager } from './src/presentation/organization/OrganizationMenuManager.js';
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
@@ -4835,4 +4836,7 @@ function setupUserUI() {
   if (myOrgsSection) myOrgsSection.style.display = 'block';
 
   renderOrganizations();
+
+  // Inicializar menú de organizaciones aprobadas en sidebar
+  organizationMenuManager.init();
 }
