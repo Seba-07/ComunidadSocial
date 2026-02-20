@@ -13,7 +13,6 @@ import { CHILE_REGIONS, getComunasByRegion } from './src/data/chile-regions.js';
 import { getUserRepository } from './src/infrastructure/config/container.js';
 import { organizationsService, ORG_STATUS, ORG_STATUS_LABELS, ORG_STATUS_COLORS } from './src/services/OrganizationsService.js';
 import { adminDashboard } from './src/presentation/admin/AdminDashboard.js';
-import { organizationDashboard } from './src/presentation/organization/OrganizationDashboard.js';
 import { organizationMenuManager } from './src/presentation/organization/OrganizationMenuManager.js';
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
@@ -179,6 +178,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedPage = sessionStorage.getItem('app_current_page');
         if (savedPage && savedPage !== 'admin') {
           appState.navigateTo(savedPage);
+          if (savedPage === 'mis-organizaciones') {
+            renderOrganizations();
+          }
         }
       }
     } catch (error) {
@@ -511,6 +513,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cargar datos del perfil si se navega a esa página
         if (page === 'profile') {
           loadProfileData();
+        } else if (page === 'mis-organizaciones') {
+          renderOrganizations();
+        } else if (page === 'guia-constitucion') {
+          guiaConstitucionManager.init();
+        } else if (page === 'biblioteca') {
+          bibliotecaManager.init();
+        } else if (page === 'noticias') {
+          newsManager.init();
+        }
+      }
+    });
+  });
+
+  // Quick link cards en Home
+  document.querySelectorAll('.quick-link-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const page = card.dataset.page;
+      if (page) {
+        appState.navigateTo(page);
+        if (page === 'mis-organizaciones') {
+          renderOrganizations();
         } else if (page === 'guia-constitucion') {
           guiaConstitucionManager.init();
         } else if (page === 'biblioteca') {
@@ -1182,9 +1205,6 @@ function initProfile() {
 // ========================================
 
 function initOrganizations() {
-  // Renderizar organizaciones al cargar
-  renderOrganizations();
-
   // Botones para crear nueva organización
   const btnNuevaOrg = document.getElementById('btn-nueva-organizacion');
   const btnCrearPrimeraOrg = document.getElementById('btn-crear-primera-org');
@@ -1277,6 +1297,9 @@ async function renderOrganizations() {
     allOrganizations.unshift(savedProgress); // Agregar al inicio
   }
 
+  // Filtrar organizaciones aprobadas - esas solo se muestran en sidebar "Mi Organización"
+  allOrganizations = allOrganizations.filter(org => org.status !== ORG_STATUS.APPROVED);
+
   const hasOrgs = allOrganizations.length > 0;
   console.log('📋 Organizaciones cargadas:', allOrganizations.length, allOrganizations);
 
@@ -1307,11 +1330,6 @@ async function renderOrganizations() {
       card.querySelector('.btn-org-view')?.addEventListener('click', (e) => {
         e.stopPropagation();
         viewOrganization(orgId);
-      });
-
-      card.querySelector('.btn-org-dashboard')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openOrgDashboard(orgId);
       });
 
       card.querySelector('.btn-org-continue')?.addEventListener('click', (e) => {
@@ -1619,17 +1637,6 @@ function renderOrganizationCard(org) {
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
             Continuar Solicitud
-          </button>
-        ` : ''}
-        ${isApproved ? `
-          <button class="btn-org-dashboard">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            Gestionar
           </button>
         ` : ''}
       </div>
@@ -4095,17 +4102,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
   }
 }
 
-function openOrgDashboard(orgId) {
-  const org = organizationsService.getById(orgId);
-  if (!org || org.status !== ORG_STATUS.APPROVED) {
-    showToast('Esta organización aún no está aprobada', 'error');
-    return;
-  }
-
-  // Abrir el dashboard de administración de la organización
-  organizationDashboard.open(orgId);
-}
-
 /**
  * Continúa el wizard para una organización aprobada por el Ministro de Fe
  * @param {string} orgId - ID de la organización
@@ -4545,10 +4541,6 @@ function hideLoadingScreen() {
 function setupAdminUI() {
   console.log('🔑 Configurando UI de Administrador');
 
-  // Ocultar sección de "Mis Organizaciones" para admin
-  const myOrgsSection = document.getElementById('my-organizations-section');
-  if (myOrgsSection) myOrgsSection.style.display = 'none';
-
   // Ocultar hero section
   const heroSection = document.getElementById('hero-section');
   if (heroSection) heroSection.style.display = 'none';
@@ -4830,12 +4822,21 @@ function setupAdminUI() {
 
 function setupUserUI() {
   console.log('👤 Configurando UI de Usuario');
-  // La UI de usuario ya está configurada por defecto
-  // Solo asegurarnos de que las secciones correctas estén visibles
-  const myOrgsSection = document.getElementById('my-organizations-section');
-  if (myOrgsSection) myOrgsSection.style.display = 'block';
 
-  renderOrganizations();
+  // Personalizar saludo en Home
+  const greeting = document.getElementById('home-greeting');
+  if (greeting) {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        const firstName = user.firstName || user.profile?.firstName || '';
+        if (firstName) {
+          greeting.textContent = `Hola, ${firstName}`;
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }
 
   // Inicializar menú de organizaciones aprobadas en sidebar
   organizationMenuManager.init();
