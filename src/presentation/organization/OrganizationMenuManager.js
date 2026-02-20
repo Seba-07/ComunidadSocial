@@ -40,8 +40,32 @@ class OrganizationMenuManager {
    */
   async loadApprovedOrganizations() {
     try {
-      const allOrgs = await organizationsService.getCurrentUserOrganizations();
+      // Primero intentar usar datos ya cargados por renderOrganizations() / sync()
+      let allOrgs = organizationsService.getAll();
+      console.log('[OrganizationMenuManager] Cached orgs:', allOrgs?.length || 0);
+
+      // Si no hay datos cacheados, intentar API
+      if (!allOrgs || allOrgs.length === 0) {
+        allOrgs = await organizationsService.getCurrentUserOrganizations();
+        console.log('[OrganizationMenuManager] Orgs from API:', allOrgs?.length || 0);
+      }
+
+      // Último recurso: localStorage
+      if (!allOrgs || allOrgs.length === 0) {
+        try {
+          const lsData = localStorage.getItem('user_organizations');
+          if (lsData) {
+            allOrgs = JSON.parse(lsData);
+            console.log('[OrganizationMenuManager] Fallback to localStorage:', allOrgs?.length || 0);
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      if (!allOrgs) allOrgs = [];
+      console.log('[OrganizationMenuManager] All orgs statuses:', allOrgs.map(o => ({ name: o.organizationName || o.organization?.name, status: o.status })));
+
       this.approvedOrgs = allOrgs.filter(org => org.status === ORG_STATUS.APPROVED);
+      console.log('[OrganizationMenuManager] Approved orgs found:', this.approvedOrgs.length);
       return this.approvedOrgs;
     } catch (error) {
       console.error('[OrganizationMenuManager] Error loading organizations:', error);
