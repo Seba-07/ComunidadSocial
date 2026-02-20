@@ -265,6 +265,64 @@
                 </ul>
             </div>
 
+            <!-- Sección de Miembro - Solo visible para role MIEMBRO -->
+            <div id="member-nav-section" class="nav-org-section" style="display: none;">
+                <div class="nav-section-collapsible" style="cursor:default;">
+                    <span class="nav-section-title">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Mi Organización
+                    </span>
+                </div>
+                <ul class="nav-section-items" style="display:block;">
+                    <li><a href="#" data-page="member-overview" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Información</span>
+                    </a></li>
+                    <li><a href="#" data-page="member-directorio" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>Directorio</span>
+                    </a></li>
+                    <li><a href="#" data-page="member-documentos" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span>Documentos</span>
+                    </a></li>
+                    <li><a href="#" data-page="member-actividades" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>Actividades</span>
+                    </a></li>
+                    <li><a href="#" data-page="member-asambleas" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        </svg>
+                        <span>Asambleas</span>
+                    </a></li>
+                    <li><a href="#" data-page="member-password" class="nav-link-sub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <span>Cambiar Contraseña</span>
+                    </a></li>
+                </ul>
+            </div>
+
             <ul class="nav-list nav-list-secondary">
                 <li><a href="#" data-page="mis-organizaciones" class="nav-link">
                     <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1114,6 +1172,26 @@
                         <!-- Contenido renderizado dinámicamente -->
                     </div>
                 </div>
+            </div>
+
+            <!-- Member page views -->
+            <div id="page-member-overview" class="page-view">
+                <div class="org-page-container"><div id="member-overview-content"></div></div>
+            </div>
+            <div id="page-member-directorio" class="page-view">
+                <div class="org-page-container"><div id="member-directorio-content"></div></div>
+            </div>
+            <div id="page-member-documentos" class="page-view">
+                <div class="org-page-container"><div id="member-documentos-content"></div></div>
+            </div>
+            <div id="page-member-actividades" class="page-view">
+                <div class="org-page-container"><div id="member-actividades-content"></div></div>
+            </div>
+            <div id="page-member-asambleas" class="page-view">
+                <div class="org-page-container"><div id="member-asambleas-content"></div></div>
+            </div>
+            <div id="page-member-password" class="page-view">
+                <div class="org-page-container"><div id="member-password-content"></div></div>
             </div>
         </main>
 

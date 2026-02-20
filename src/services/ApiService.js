@@ -593,6 +593,56 @@ class ApiService {
     return this.get('/organizations/my-organization');
   }
 
+  // ==================== SOCIO LOGIN ====================
+
+  async loginSocio(lastName, rut) {
+    const data = await this.post('/auth/login-socio', { lastName, rut });
+    if (data.user) {
+      const safeUser = {
+        _id: data.user._id,
+        rut: data.user.rut || '',
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+        role: data.user.role,
+        organizationId: data.user.organizationId,
+        mustChangePassword: data.user.mustChangePassword
+      };
+      localStorage.setItem('currentUser', JSON.stringify(safeUser));
+    }
+    return data;
+  }
+
+  // ==================== ASSEMBLIES ====================
+
+  async createAssembly(orgId, assemblyData) {
+    return this.post(`/organizations/${orgId}/assemblies`, assemblyData);
+  }
+
+  async updateAssembly(orgId, assemblyId, data) {
+    return this.put(`/organizations/${orgId}/assemblies/${assemblyId}`, data);
+  }
+
+  async updateAssemblyStatus(orgId, assemblyId, action) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/status`, { action });
+  }
+
+  async addCandidates(orgId, assemblyId, agendaItemId, candidates) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/candidates`, { agendaItemId, candidates });
+  }
+
+  async castVote(orgId, assemblyId, agendaItemId, votes) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/vote`, { agendaItemId, votes });
+  }
+
+  async checkinAssembly(orgId, assemblyId, attendee) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/checkin`, attendee || {});
+  }
+
+  async toggleVoting(orgId, assemblyId, agendaItemId) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/toggle-voting`, { agendaItemId });
+  }
+
   // ==================== USERS ====================
 
   async getUsers() {

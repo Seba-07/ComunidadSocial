@@ -286,7 +286,8 @@
                     <p class="subtitle">Ingresa a tu cuenta o crea una nueva</p>
 
                     <div class="auth-tabs">
-                        <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+                        <button class="auth-tab active" data-tab="login">Organizador</button>
+                        <button class="auth-tab" data-tab="login-socio">Socio</button>
                         <button class="auth-tab" data-tab="register">Registrarse</button>
                     </div>
 
@@ -326,6 +327,48 @@
                             </a>
                             <div style="margin-top: 12px; color: #6b7280;">
                                 ¿No tienes cuenta? Haz clic en "Registrarse" arriba
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Login Socio Form -->
+                    <form id="login-socio-form" class="auth-form">
+                        <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 14px; color: #1e40af;">
+                            <strong>Acceso para Socios</strong>
+                            <p style="margin: 8px 0 0;">Si eres miembro de una organización comunitaria, ingresa con tu apellido paterno y tu RUT (sin puntos ni guión). La contraseña inicial es tu RUT.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="socio-lastname">Apellido Paterno</label>
+                            <input
+                                type="text"
+                                id="socio-lastname"
+                                name="lastName"
+                                placeholder="Pérez"
+                                required
+                            >
+                            <div class="error-message" id="socio-lastname-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="socio-rut">RUT (sin puntos ni guión)</label>
+                            <input
+                                type="text"
+                                id="socio-rut"
+                                name="rut"
+                                placeholder="123456789"
+                                required
+                            >
+                            <div class="error-message" id="socio-rut-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="login-socio-submit">
+                            Ingresar como Socio
+                        </button>
+
+                        <div class="form-footer">
+                            <div style="color: #6b7280;">
+                                Tu contraseña inicial es tu RUT sin puntos ni guión.
                             </div>
                         </div>
                     </form>

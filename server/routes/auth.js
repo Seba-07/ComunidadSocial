@@ -200,6 +200,58 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
   }
 });
 
+// Login de socio (miembro) - con apellido + RUT
+router.post('/login-socio', authLimiter, async (req, res) => {
+  try {
+    const { lastName, rut } = req.body;
+
+    if (!lastName || !rut) {
+      return res.status(400).json({ error: 'Apellido y RUT son requeridos' });
+    }
+
+    // Limpiar RUT (sin puntos ni guión)
+    const cleanRut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+
+    // Buscar usuario MIEMBRO por apellido (case-insensitive) y activo
+    const user = await User.findOne({
+      role: 'MIEMBRO',
+      lastName: { $regex: new RegExp(`^${lastName.trim()}$`, 'i') },
+      active: true
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu apellido paterno.' });
+    }
+
+    // Comparar password con RUT limpio
+    const isMatch = await user.comparePassword(cleanRut);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu RUT.' });
+    }
+
+    const token = generateToken(user);
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
+
+    res.json({
+      message: 'Inicio de sesión exitoso',
+      user: {
+        _id: user._id,
+        rut: user.rut,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId,
+        mustChangePassword: user.mustChangePassword
+      },
+      mustChangePassword: user.mustChangePassword
+    });
+  } catch (error) {
+    console.error('Login socio error:', error);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
 // Logout - Eliminar cookie de autenticación
 router.post('/logout', (req, res) => {
   res.clearCookie('auth_token', { path: '/' });

@@ -227,6 +227,70 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
+// Login Socio Form
+const loginSocioForm = document.getElementById('login-socio-form');
+if (loginSocioForm) {
+  loginSocioForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('login-socio-submit');
+    const originalText = submitBtn.textContent;
+
+    // Clear errors
+    document.querySelectorAll('#login-socio-form .error-message').forEach(el => {
+      el.classList.remove('show');
+      el.textContent = '';
+    });
+    document.querySelectorAll('#login-socio-form input').forEach(el => el.classList.remove('error'));
+
+    const lastName = document.getElementById('socio-lastname').value.trim();
+    const rut = document.getElementById('socio-rut').value.trim();
+
+    let hasErrors = false;
+    if (!lastName || lastName.length < 2) {
+      showError('socio-lastname', 'Ingresa tu apellido paterno');
+      hasErrors = true;
+    }
+    if (!rut || rut.length < 7) {
+      showError('socio-rut', 'Ingresa tu RUT sin puntos ni guión');
+      hasErrors = true;
+    }
+    if (hasErrors) return;
+
+    submitBtn.textContent = 'Ingresando...';
+    submitBtn.disabled = true;
+
+    try {
+      const result = await apiService.loginSocio(lastName, rut);
+      const user = result.user;
+
+      if (!user) throw new Error('Error de autenticación');
+
+      localStorage.setItem('isAuthenticated', 'true');
+      showToast(`¡Bienvenido ${user.firstName}!`, 'success');
+
+      setTimeout(() => {
+        if (user.mustChangePassword) {
+          window.location.href = '/?member=true&changePassword=true';
+        } else {
+          window.location.href = '/?member=true';
+        }
+      }, 500);
+    } catch (error) {
+      console.error('Login socio error:', error);
+      if (error.message.includes('Apellido') || error.message.includes('apellido')) {
+        showError('socio-lastname', error.message);
+      } else if (error.message.includes('RUT') || error.message.includes('rut')) {
+        showError('socio-rut', error.message);
+      } else {
+        showToast(error.message || 'Error al iniciar sesión', 'error');
+      }
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+}
+
 // Register Form
 const registerForm = document.getElementById('register-form');
 registerForm.addEventListener('submit', async (e) => {

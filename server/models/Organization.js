@@ -32,6 +32,75 @@ const statusHistorySchema = new mongoose.Schema({
   corrections: mongoose.Schema.Types.Mixed
 });
 
+// ============ SCHEMAS DE ASAMBLEAS ============
+
+const candidateSchema = new mongoose.Schema({
+  rut: String,
+  firstName: String,
+  lastName: String,
+  cargo: String, // para modo per_cargo
+  lista: String  // para modo per_lista (nombre de la lista)
+}, { _id: false });
+
+const voteSchema = new mongoose.Schema({
+  voterRut: String,
+  cargo: String,          // para modo per_cargo
+  candidateRut: String,   // para modo per_cargo
+  lista: String,          // para modo per_lista
+  votedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+const agendaItemSchema = new mongoose.Schema({
+  id: String,
+  title: { type: String, required: true },
+  type: {
+    type: String,
+    enum: ['eleccion_directorio', 'aprobacion_presupuesto', 'reforma_estatutos', 'memoria_anual', 'disolucion', 'custom'],
+    default: 'custom'
+  },
+  description: String,
+  votingMode: {
+    type: String,
+    enum: ['per_cargo', 'per_lista', null],
+    default: null
+  },
+  candidates: [candidateSchema],
+  votes: [voteSchema],
+  votingOpen: { type: Boolean, default: false },
+  votingClosedAt: Date,
+  result: mongoose.Schema.Types.Mixed
+}, { _id: false });
+
+const assemblyAttendeeSchema = new mongoose.Schema({
+  rut: String,
+  firstName: String,
+  lastName: String,
+  checkedInAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+const assemblySchema = new mongoose.Schema({
+  id: String,
+  type: { type: String, enum: ['ordinaria', 'extraordinaria'], default: 'ordinaria' },
+  date: String,
+  time: String,
+  title: String,
+  description: String,
+  status: {
+    type: String,
+    enum: ['draft', 'convocada', 'en_curso', 'finalizada', 'cancelada'],
+    default: 'draft'
+  },
+  quorumType: { type: String, enum: ['percentage', 'number'], default: 'percentage' },
+  quorumValue: { type: Number, default: 50 },
+  agendaItems: [agendaItemSchema],
+  attendance: Number,
+  attendees: [assemblyAttendeeSchema],
+  convokedAt: Date,
+  startedAt: Date,
+  finishedAt: Date,
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const organizationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -270,6 +339,14 @@ const organizationSchema = new mongoose.Schema({
   dissolvedAt: Date,
   dissolutionReason: String,
   dissolvedBy: String,
+
+  // Asambleas (sistema mejorado con votación)
+  assemblies: [assemblySchema],
+  lastDirectorioElection: {
+    assemblyId: String,
+    date: Date,
+    updatedAt: Date
+  },
 
   // Members account creation
   memberAccountsCreated: { type: Boolean, default: false },

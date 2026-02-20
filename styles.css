@@ -23277,3 +23277,141 @@ a.header-logo:hover {
     }
 }
 
+/* ============================================
+   ASSEMBLY STATUS BADGES
+   ============================================ */
+.assembly-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* ============================================
+   AGENDA ITEM ROW (Modal form)
+   ============================================ */
+.agenda-item-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+    margin-bottom: 10px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: border-color 0.2s;
+}
+
+.agenda-item-row:hover {
+    border-color: #93c5fd;
+}
+
+/* ============================================
+   VOTE OPTIONS (Radio buttons estilizados)
+   ============================================ */
+.vote-option,
+.vote-lista-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.vote-option:hover,
+.vote-lista-card:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
+
+.vote-option input[type="radio"]:checked + span,
+.vote-lista-card input[type="radio"]:checked + div strong {
+    color: #2563eb;
+}
+
+.vote-option:has(input:checked),
+.vote-lista-card:has(input:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+/* ============================================
+   QUORUM INDICATOR
+   ============================================ */
+.quorum-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ============================================
+   MEMBER NAV SECTION
+   ============================================ */
+#member-nav-section {
+    padding: 8px 0;
+}
+
+#member-nav-section .nav-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+}
+
+#member-nav-section .nav-section-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* ============================================
+   SCHEDULE ELECTION ASSEMBLY BUTTON
+   ============================================ */
+.btn-schedule-election-assembly {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #059669;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-schedule-election-assembly:hover {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+
+/* ============================================
+   RESPONSIVE - Assembly & Member views
+   ============================================ */
+@media (max-width: 640px) {
+    .vote-option,
+    .vote-lista-card {
+        padding: 8px 10px;
+    }
+
+    .agenda-item-row {
+        grid-template-columns: 1fr;
+    }
+
+    #member-nav-section .nav-section-items {
+        display: block !important;
+    }
+}
+

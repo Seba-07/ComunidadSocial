@@ -9,6 +9,7 @@ import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
 // import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { orgDocumentService } from '../../services/OrgDocumentService.js';
 import { pdfService } from '../../services/PDFService.js';
+import { apiService } from '../../services/ApiService.js';
 import { jsPDF } from 'jspdf';
 import { showToast } from '../../app.js';
 
@@ -449,8 +450,10 @@ class OrganizationDashboard {
     const orgType = org.organizationType || org.organization?.type;
     const config = this.getDirectorioConfig(orgType);
     const cargos = config.cargos;
-    const electionDate = org.commission?.electionDate;
     const isProvisional = !org.definitiveDirectorio;
+    const lastElection = org.lastDirectorioElection;
+    const lastElectionDate = lastElection?.date ? new Date(lastElection.date).toLocaleDateString('es-CL') : null;
+    const dirType = org.provisionalDirectorio?.type === 'ELECTO' ? 'Electo' : 'Provisorio';
 
     const roleDescriptions = {
       'presidente': 'Representa legal y judicialmente a la organización.',
@@ -466,20 +469,20 @@ class OrganizationDashboard {
     return `
       <div class="org-directorio-section">
         <div class="section-header">
-          <h3>Directorio ${isProvisional ? '<span style="background:#f59e0b20;color:#b45309;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-left:8px;">Provisorio</span>' : ''}</h3>
-          <button class="btn-edit-directorio" id="btn-edit-directorio">
+          <h3>Directorio ${isProvisional ? `<span style="background:#f59e0b20;color:#b45309;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-left:8px;">${dirType}</span>` : ''}</h3>
+          <button class="btn-schedule-election-assembly" id="btn-schedule-election-assembly">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
-            Editar Directorio
+            Agendar Elección
           </button>
         </div>
 
         <div class="directorio-info">
           <p>El directorio debe contar con al menos ${cargos.length} miembros titulares mayores de 18 años, elegidos por votación directa. Cada miembro dura <strong>3 años</strong> en su cargo, con posibilidad de reelección.</p>
-          ${isProvisional ? '<p style="color:#b45309;font-size:13px;">📌 Este es el directorio provisorio designado en la asamblea constitutiva. Convoque elecciones para definir el directorio definitivo.</p>' : ''}
-          ${electionDate ? `<p class="election-date">Fecha de elección: <strong>${new Date(electionDate).toLocaleDateString('es-CL')}</strong></p>` : ''}
+          ${isProvisional && dirType === 'Provisorio' ? '<p style="color:#b45309;font-size:13px;">Este es el directorio provisorio designado en la asamblea constitutiva. Agende una asamblea con elección para definir el directorio definitivo.</p>' : ''}
+          ${lastElectionDate ? `<p style="color:#059669;font-size:13px;">Ultima elección: <strong>${lastElectionDate}</strong></p>` : ''}
         </div>
 
         <div class="directorio-cards">
@@ -503,7 +506,6 @@ class OrganizationDashboard {
                 ` : `
                   <div class="empty-slot">
                     <span>Sin asignar</span>
-                    <button class="btn-assign" data-role="${cargo.id}">Asignar</button>
                   </div>
                 `}
               </div>
@@ -519,6 +521,13 @@ class OrganizationDashboard {
    */
   renderAsambleas() {
     const asambleas = this.currentOrg.assemblies || [];
+    const statusConfig = {
+      draft: { label: 'Borrador', color: '#6b7280', bg: '#f3f4f6' },
+      convocada: { label: 'Convocada', color: '#2563eb', bg: '#eff6ff' },
+      en_curso: { label: 'En Curso', color: '#059669', bg: '#ecfdf5' },
+      finalizada: { label: 'Finalizada', color: '#7c3aed', bg: '#f5f3ff' },
+      cancelada: { label: 'Cancelada', color: '#ef4444', bg: '#fef2f2' }
+    };
 
     return `
       <div class="org-asambleas-section">
@@ -548,20 +557,28 @@ class OrganizationDashboard {
           <h4>Historial de Asambleas</h4>
           ${asambleas.length > 0 ? `
             <div class="asambleas-table">
-              ${asambleas.map(asamblea => `
+              ${asambleas.map(asamblea => {
+                const st = statusConfig[asamblea.status] || statusConfig.draft;
+                const agendaCount = (asamblea.agendaItems || []).length;
+                return `
                 <div class="asamblea-item">
-                  <div class="asamblea-date">${new Date(asamblea.date).toLocaleDateString('es-CL')}</div>
+                  <div class="asamblea-date">${asamblea.date ? new Date(asamblea.date).toLocaleDateString('es-CL') : '-'}</div>
                   <div class="asamblea-info">
                     <span class="asamblea-type ${asamblea.type}">${asamblea.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</span>
                     <span class="asamblea-title">${asamblea.title || 'Sin título'}</span>
+                    <span class="assembly-status-badge" style="background:${st.bg};color:${st.color};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${st.label}</span>
+                    ${agendaCount > 0 ? `<span style="font-size:11px;color:#6b7280;">${agendaCount} punto${agendaCount > 1 ? 's' : ''}</span>` : ''}
                   </div>
-                  <div class="asamblea-attendance">${asamblea.attendance || 0} asistentes</div>
-                  <div style="display: flex; gap: 6px;">
+                  <div class="asamblea-attendance">${asamblea.attendance || 0} asist.</div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-view-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer;">Ver</button>
-                    <button class="btn-delete-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">Eliminar</button>
+                    ${asamblea.status === 'draft' ? `<button class="btn-convoke-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #2563eb; border-radius: 6px; background: #eff6ff; color: #2563eb; cursor: pointer; font-weight:600;">Convocar</button>` : ''}
+                    ${asamblea.status === 'convocada' ? `<button class="btn-start-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #059669; border-radius: 6px; background: #ecfdf5; color: #059669; cursor: pointer; font-weight:600;">Iniciar</button>` : ''}
+                    ${asamblea.status === 'en_curso' ? `<button class="btn-finish-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #7c3aed; border-radius: 6px; background: #f5f3ff; color: #7c3aed; cursor: pointer; font-weight:600;">Finalizar</button>` : ''}
+                    ${['draft', 'convocada'].includes(asamblea.status) ? `<button class="btn-delete-assembly" data-id="${asamblea.id}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #ef4444; cursor: pointer;">Eliminar</button>` : ''}
                   </div>
                 </div>
-              `).join('')}
+              `;}).join('')}
             </div>
           ` : `
             <div class="empty-state-card">
@@ -1647,41 +1664,76 @@ class OrganizationDashboard {
   }
 
   /**
-   * Modal para nueva asamblea
+   * Modal para nueva asamblea (con agenda dinámica y quórum)
    */
-  openNewAssemblyModal(parentOverlay) {
+  openNewAssemblyModal(parentOverlay, preselectedType) {
+    const agendaTypeOptions = `
+      <option value="custom">Tema General</option>
+      <option value="eleccion_directorio">Elección de Directorio</option>
+      <option value="aprobacion_presupuesto">Aprobación de Presupuesto</option>
+      <option value="reforma_estatutos">Reforma de Estatutos</option>
+      <option value="memoria_anual">Memoria Anual</option>
+      <option value="disolucion">Disolución</option>
+    `;
+
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
     modal.innerHTML = `
-      <div class="org-modal">
+      <div class="org-modal" style="max-width: 650px;">
         <div class="org-modal-header">
           <h3>Nueva Asamblea</h3>
           <button class="modal-close">&times;</button>
         </div>
-        <div class="org-modal-body">
+        <div class="org-modal-body" style="max-height: 70vh; overflow-y: auto;">
           <form id="form-new-assembly">
-            <div class="form-group">
-              <label>Tipo de Asamblea *</label>
-              <select id="assembly-type" required>
-                <option value="ordinaria">Ordinaria</option>
-                <option value="extraordinaria">Extraordinaria</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Fecha *</label>
-              <input type="date" id="assembly-date" required>
-            </div>
-            <div class="form-group">
-              <label>Hora</label>
-              <input type="time" id="assembly-time">
-            </div>
-            <div class="form-group">
-              <label>Título/Tema Principal *</label>
-              <input type="text" id="assembly-title" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-group">
+                <label>Tipo de Asamblea *</label>
+                <select id="assembly-type" required>
+                  <option value="ordinaria">Ordinaria</option>
+                  <option value="extraordinaria">Extraordinaria</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha *</label>
+                <input type="date" id="assembly-date" required>
+              </div>
+              <div class="form-group">
+                <label>Hora</label>
+                <input type="time" id="assembly-time">
+              </div>
+              <div class="form-group">
+                <label>Título *</label>
+                <input type="text" id="assembly-title" required placeholder="Ej: Elección de Directorio 2026">
+              </div>
             </div>
             <div class="form-group">
               <label>Descripción</label>
-              <textarea id="assembly-description" rows="3"></textarea>
+              <textarea id="assembly-description" rows="2" placeholder="Descripción breve de la asamblea"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Tipo de Quórum</label>
+                <select id="assembly-quorum-type">
+                  <option value="percentage">Porcentaje de socios</option>
+                  <option value="number">Número fijo</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Valor de Quórum</label>
+                <input type="number" id="assembly-quorum-value" value="50" min="1" max="100">
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <label style="font-weight: 600; margin-bottom:0;">Puntos de Agenda</label>
+                <button type="button" id="btn-add-agenda-item" style="padding: 4px 12px; font-size: 12px; border: 1px solid #2563eb; border-radius: 6px; background: #eff6ff; color: #2563eb; cursor: pointer; font-weight:600;">+ Agregar Punto</button>
+              </div>
+              <div id="agenda-items-container">
+                <!-- Agenda items added dynamically -->
+              </div>
             </div>
           </form>
         </div>
@@ -1694,30 +1746,91 @@ class OrganizationDashboard {
 
     document.body.appendChild(modal);
 
+    let agendaCounter = 0;
+    const agendaContainer = modal.querySelector('#agenda-items-container');
+
+    const addAgendaItem = (preType) => {
+      agendaCounter++;
+      const row = document.createElement('div');
+      row.className = 'agenda-item-row';
+      row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start;margin-bottom:10px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;';
+      row.dataset.index = agendaCounter;
+      row.innerHTML = `
+        <div>
+          <input type="text" placeholder="Título del punto" class="agenda-title" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-bottom:6px;" required>
+          <select class="agenda-type" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+            ${agendaTypeOptions}
+          </select>
+          <div class="voting-mode-container" style="display:none;margin-top:6px;">
+            <select class="agenda-voting-mode" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+              <option value="per_cargo">Votación por cargo individual</option>
+              <option value="per_lista">Votación por lista completa</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn-remove-agenda" style="padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:white;color:#ef4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>
+      `;
+      agendaContainer.appendChild(row);
+
+      const typeSelect = row.querySelector('.agenda-type');
+      const votingContainer = row.querySelector('.voting-mode-container');
+      if (preType) {
+        typeSelect.value = preType;
+        if (preType === 'eleccion_directorio') votingContainer.style.display = 'block';
+      }
+      typeSelect.addEventListener('change', () => {
+        votingContainer.style.display = typeSelect.value === 'eleccion_directorio' ? 'block' : 'none';
+      });
+
+      row.querySelector('.btn-remove-agenda').addEventListener('click', () => row.remove());
+    };
+
+    modal.querySelector('#btn-add-agenda-item').addEventListener('click', () => addAgendaItem());
+
+    // Pre-add election agenda item if coming from directorio
+    if (preselectedType === 'eleccion_directorio') {
+      addAgendaItem('eleccion_directorio');
+      modal.querySelector('#assembly-type').value = 'extraordinaria';
+      modal.querySelector('#assembly-title').value = 'Elección de Directorio';
+    }
+
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
 
-    modal.querySelector('#form-new-assembly').addEventListener('submit', (e) => {
+    modal.querySelector('#form-new-assembly').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const newAssembly = {
-        id: 'assembly_' + Date.now(),
+      // Collect agenda items
+      const agendaItems = [];
+      agendaContainer.querySelectorAll('.agenda-item-row').forEach(row => {
+        const title = row.querySelector('.agenda-title').value.trim();
+        const type = row.querySelector('.agenda-type').value;
+        const votingMode = type === 'eleccion_directorio' ? row.querySelector('.agenda-voting-mode').value : null;
+        if (title) agendaItems.push({ title, type, votingMode });
+      });
+
+      const assemblyData = {
         type: modal.querySelector('#assembly-type').value,
         date: modal.querySelector('#assembly-date').value,
         time: modal.querySelector('#assembly-time').value,
         title: modal.querySelector('#assembly-title').value.trim(),
         description: modal.querySelector('#assembly-description').value.trim(),
-        attendance: 0,
-        createdAt: new Date().toISOString()
+        quorumType: modal.querySelector('#assembly-quorum-type').value,
+        quorumValue: parseInt(modal.querySelector('#assembly-quorum-value').value) || 50,
+        agendaItems
       };
 
-      if (!this.currentOrg.assemblies) this.currentOrg.assemblies = [];
-      this.currentOrg.assemblies.push(newAssembly);
-      organizationsService.update(this.currentOrg.id, { assemblies: this.currentOrg.assemblies });
-
-      showToast('Asamblea creada correctamente', 'success');
-      modal.remove();
-      this.refreshContent(parentOverlay);
+      try {
+        const orgId = this.currentOrg._id || this.currentOrg.id;
+        const result = await apiService.createAssembly(orgId, assemblyData);
+        if (!this.currentOrg.assemblies) this.currentOrg.assemblies = [];
+        this.currentOrg.assemblies.push(result);
+        showToast('Asamblea creada correctamente', 'success');
+        modal.remove();
+        this.refreshContent(parentOverlay);
+      } catch (err) {
+        showToast(err.message || 'Error al crear asamblea', 'error');
+      }
     });
   }
 
@@ -2782,66 +2895,248 @@ class OrganizationDashboard {
     const assembly = (this.currentOrg.assemblies || []).find(a => a.id === assemblyId);
     if (!assembly) return;
 
+    const orgId = this.currentOrg._id || this.currentOrg.id;
+    const statusConfig = {
+      draft: { label: 'Borrador', color: '#6b7280', bg: '#f3f4f6' },
+      convocada: { label: 'Convocada', color: '#2563eb', bg: '#eff6ff' },
+      en_curso: { label: 'En Curso', color: '#059669', bg: '#ecfdf5' },
+      finalizada: { label: 'Finalizada', color: '#7c3aed', bg: '#f5f3ff' },
+      cancelada: { label: 'Cancelada', color: '#ef4444', bg: '#fef2f2' }
+    };
+    const st = statusConfig[assembly.status] || statusConfig.draft;
+    const members = this.currentOrg.members || [];
+    const totalMembers = members.length;
+    const quorumRequired = assembly.quorumType === 'percentage'
+      ? Math.ceil(totalMembers * (assembly.quorumValue || 50) / 100)
+      : (assembly.quorumValue || 0);
+    const attendeeCount = (assembly.attendees || []).length;
+    const quorumMet = attendeeCount >= quorumRequired;
+
+    const agendaTypeLabels = {
+      eleccion_directorio: 'Elección de Directorio',
+      aprobacion_presupuesto: 'Aprobación de Presupuesto',
+      reforma_estatutos: 'Reforma de Estatutos',
+      memoria_anual: 'Memoria Anual',
+      disolucion: 'Disolución',
+      custom: 'Tema General'
+    };
+
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
     modal.innerHTML = `
-      <div class="org-modal" style="max-width: 550px;">
+      <div class="org-modal" style="max-width: 700px; max-height: 90vh;">
         <div class="org-modal-header">
           <h3>${assembly.title || 'Detalle de Asamblea'}</h3>
           <button class="modal-close">&times;</button>
         </div>
-        <div class="org-modal-body" style="padding: 24px;">
-          <div style="display: grid; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
-              <span style="font-weight: 600;">Tipo</span>
-              <span>${assembly.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</span>
+        <div class="org-modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
+          <!-- Info general -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600; font-size:12px; color:#6b7280;">Estado</span>
+              <div style="margin-top:4px;"><span class="assembly-status-badge" style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:10px;font-size:13px;font-weight:600;">${st.label}</span></div>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
-              <span style="font-weight: 600;">Fecha</span>
-              <span>${new Date(assembly.date).toLocaleDateString('es-CL')}</span>
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600; font-size:12px; color:#6b7280;">Tipo</span>
+              <div style="margin-top:4px;">${assembly.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</div>
             </div>
-            ${assembly.time ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;">
-              <span style="font-weight: 600;">Hora</span>
-              <span>${assembly.time}</span>
-            </div>` : ''}
-            ${assembly.description ? `<div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
-              <span style="font-weight: 600; display: block; margin-bottom: 4px;">Descripción</span>
-              <p style="margin: 0; color: #4b5563;">${assembly.description}</p>
-            </div>` : ''}
-          </div>
-          <div style="margin-top: 20px;">
-            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Asistencia</label>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <input type="number" id="edit-attendance" value="${assembly.attendance || 0}" min="0" style="width: 100px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
-              <span style="color: #6b7280;">asistentes</span>
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <span style="font-weight: 600; font-size:12px; color:#6b7280;">Fecha</span>
+              <div style="margin-top:4px;">${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL') : '-'} ${assembly.time || ''}</div>
+            </div>
+            <div style="padding: 12px; border-radius: 8px; background: ${quorumMet ? '#ecfdf5' : '#fef2f2'};">
+              <span style="font-weight: 600; font-size:12px; color:#6b7280;">Quórum</span>
+              <div class="quorum-indicator" style="margin-top:4px;">
+                <span style="font-weight:600;color:${quorumMet ? '#059669' : '#ef4444'};">${attendeeCount} / ${quorumRequired}</span>
+                <span style="font-size:11px;color:#6b7280;"> (${assembly.quorumValue || 50}${assembly.quorumType === 'percentage' ? '%' : ' pers.'})</span>
+              </div>
             </div>
           </div>
+
+          ${assembly.description ? `<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:16px;"><span style="font-weight:600;display:block;margin-bottom:4px;">Descripción</span><p style="margin:0;color:#4b5563;">${assembly.description}</p></div>` : ''}
+
+          <!-- Agenda Items -->
+          <h4 style="margin:16px 0 8px;">Puntos de Agenda</h4>
+          ${(assembly.agendaItems || []).length > 0 ? assembly.agendaItems.map((item, idx) => {
+            const typeLabel = agendaTypeLabels[item.type] || item.type;
+            const isElection = item.type === 'eleccion_directorio';
+            const candidateCount = (item.candidates || []).length;
+            const voteCount = (item.votes || []).length;
+            return `
+            <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;${item.votingOpen ? 'border-color:#059669;background:#f0fdf4;' : ''}">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <strong>${idx + 1}. ${item.title}</strong>
+                  <span style="font-size:11px;color:#6b7280;margin-left:8px;">${typeLabel}</span>
+                  ${item.votingMode ? `<span style="font-size:11px;color:#2563eb;margin-left:6px;">(${item.votingMode === 'per_cargo' ? 'Por cargo' : 'Por lista'})</span>` : ''}
+                </div>
+                <div style="display:flex;gap:6px;">
+                  ${isElection && assembly.status !== 'finalizada' && assembly.status !== 'cancelada' ? `<button class="btn-manage-candidates" data-agenda-id="${item.id}" style="padding:4px 10px;font-size:11px;border:1px solid #2563eb;border-radius:6px;background:#eff6ff;color:#2563eb;cursor:pointer;">Candidatos (${candidateCount})</button>` : ''}
+                  ${assembly.status === 'en_curso' ? `<button class="btn-toggle-voting" data-agenda-id="${item.id}" style="padding:4px 10px;font-size:11px;border:1px solid ${item.votingOpen ? '#ef4444' : '#059669'};border-radius:6px;background:${item.votingOpen ? '#fef2f2' : '#ecfdf5'};color:${item.votingOpen ? '#ef4444' : '#059669'};cursor:pointer;font-weight:600;">${item.votingOpen ? 'Cerrar Votación' : 'Abrir Votación'}</button>` : ''}
+                </div>
+              </div>
+              ${isElection ? `<div style="font-size:12px;color:#6b7280;margin-top:6px;">${candidateCount} candidatos | ${voteCount} votos registrados</div>` : ''}
+              ${item.result ? `<div style="margin-top:8px;padding:8px 12px;background:#f5f3ff;border-radius:6px;font-size:12px;color:#7c3aed;">
+                <strong>Resultado:</strong> ${item.result.mode === 'per_lista' ? `Lista ganadora: ${item.result.winningLista || '-'} con ${item.result.votesByLista?.[item.result.winningLista] || 0} votos` : Object.entries(item.result.winners || {}).map(([cargo, w]) => `${cargo}: ${w.firstName} ${w.lastName} (${w.votes} votos)`).join(' | ')}
+              </div>` : ''}
+            </div>`;
+          }).join('') : '<p style="color:#6b7280;font-size:13px;">No hay puntos de agenda definidos.</p>'}
+
+          <!-- Attendees -->
+          <h4 style="margin:16px 0 8px;">Asistencia (${attendeeCount})</h4>
+          ${attendeeCount > 0 ? `
+            <div style="max-height:150px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
+              ${(assembly.attendees || []).map(a => `
+                <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;">
+                  <span>${a.firstName} ${a.lastName}</span>
+                  <span style="color:#6b7280;">${a.rut || ''}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p style="color:#6b7280;font-size:13px;">Sin asistentes registrados.</p>'}
+
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
-            <button class="btn-save-attendance" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Asistencia</button>
           </div>
         </div>
       </div>
     `;
 
-    parentOverlay.appendChild(modal);
+    const appendTarget = parentOverlay || document.body;
+    appendTarget.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
-    modal.querySelector('.btn-save-attendance').addEventListener('click', async () => {
-      const attendance = parseInt(modal.querySelector('#edit-attendance').value) || 0;
-      const idx = this.currentOrg.assemblies.findIndex(a => a.id === assemblyId);
-      if (idx !== -1) {
-        this.currentOrg.assemblies[idx].attendance = attendance;
+    // Toggle voting buttons
+    modal.querySelectorAll('.btn-toggle-voting').forEach(btn => {
+      btn.addEventListener('click', async () => {
         try {
-          await organizationsService.update(this.currentOrg.id, { assemblies: this.currentOrg.assemblies });
-          showToast('Asistencia actualizada', 'success');
+          await apiService.toggleVoting(orgId, assemblyId, btn.dataset.agendaId);
+          // Refresh org data and re-open detail
+          const updatedOrg = await apiService.getOrganization(orgId);
+          Object.assign(this.currentOrg, updatedOrg);
           modal.remove();
-          this.refreshContent(parentOverlay);
+          this.showAssemblyDetail(assemblyId, parentOverlay);
+          showToast('Estado de votación actualizado', 'success');
         } catch (err) {
-          showToast('Error al guardar', 'error');
+          showToast(err.message || 'Error', 'error');
         }
+      });
+    });
+
+    // Manage candidates buttons
+    modal.querySelectorAll('.btn-manage-candidates').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.remove();
+        this.showCandidatesManager(assemblyId, btn.dataset.agendaId, parentOverlay);
+      });
+    });
+  }
+
+  /**
+   * Modal para gestionar candidatos de un punto de elección
+   */
+  showCandidatesManager(assemblyId, agendaItemId, parentOverlay) {
+    const assembly = (this.currentOrg.assemblies || []).find(a => a.id === assemblyId);
+    if (!assembly) return;
+    const agendaItem = (assembly.agendaItems || []).find(i => i.id === agendaItemId);
+    if (!agendaItem) return;
+
+    const orgId = this.currentOrg._id || this.currentOrg.id;
+    const members = this.currentOrg.members || [];
+    const currentCandidates = agendaItem.candidates || [];
+    const votingMode = agendaItem.votingMode || 'per_cargo';
+    const cargos = ['presidente', 'secretario', 'tesorero', 'director'];
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 600px;">
+        <div class="org-modal-header">
+          <h3>Gestionar Candidatos</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px; max-height:65vh; overflow-y:auto;">
+          <p style="color:#6b7280;font-size:13px;margin-bottom:16px;">Modo: <strong>${votingMode === 'per_cargo' ? 'Por cargo individual' : 'Por lista completa'}</strong></p>
+
+          <div id="candidates-list">
+            ${currentCandidates.map((c, i) => `
+              <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
+                <span style="flex:1;">${c.firstName} ${c.lastName} (${c.rut})</span>
+                ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;">${c.lista || '-'}</span>`}
+              </div>
+            `).join('')}
+          </div>
+
+          <h4 style="margin:16px 0 8px;">Agregar Candidato</h4>
+          <div style="display:grid;gap:8px;">
+            <select id="candidate-member" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+              <option value="">Seleccionar socio...</option>
+              ${members.map(m => `<option value="${m.rut}">${m.firstName} ${m.lastName} (${m.rut})</option>`).join('')}
+            </select>
+            ${votingMode === 'per_cargo' ? `
+              <select id="candidate-cargo" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+                ${cargos.map(c => `<option value="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('')}
+              </select>
+            ` : `
+              <input type="text" id="candidate-lista" placeholder="Nombre de la lista" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+            `}
+            <button id="btn-add-candidate" style="padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Agregar</button>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+            <button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cerrar</button>
+            <button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">Guardar Candidatos</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const appendTarget = parentOverlay || document.body;
+    appendTarget.appendChild(modal);
+
+    let candidates = [...currentCandidates];
+
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+
+    modal.querySelector('#btn-add-candidate').addEventListener('click', () => {
+      const rut = modal.querySelector('#candidate-member').value;
+      if (!rut) return showToast('Selecciona un socio', 'error');
+      const member = members.find(m => m.rut === rut);
+      if (!member) return;
+
+      const newCandidate = {
+        rut: member.rut,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        cargo: votingMode === 'per_cargo' ? modal.querySelector('#candidate-cargo')?.value : null,
+        lista: votingMode === 'per_lista' ? modal.querySelector('#candidate-lista')?.value : null
+      };
+      candidates.push(newCandidate);
+
+      // Update list display
+      const listEl = modal.querySelector('#candidates-list');
+      listEl.innerHTML += `
+        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
+          <span style="flex:1;">${newCandidate.firstName} ${newCandidate.lastName} (${newCandidate.rut})</span>
+          <span style="font-size:12px;color:#2563eb;">${newCandidate.cargo || newCandidate.lista || '-'}</span>
+        </div>
+      `;
+      showToast('Candidato agregado', 'success');
+    });
+
+    modal.querySelector('#btn-save-candidates').addEventListener('click', async () => {
+      try {
+        await apiService.addCandidates(orgId, assemblyId, agendaItemId, candidates);
+        // Update local data
+        agendaItem.candidates = candidates;
+        showToast('Candidatos guardados', 'success');
+        modal.remove();
+        this.showAssemblyDetail(assemblyId, parentOverlay);
+      } catch (err) {
+        showToast(err.message || 'Error al guardar', 'error');
       }
     });
   }
@@ -4017,11 +4312,59 @@ ${comm.message || 'Sin contenido'}
       btnNewTransaction.addEventListener('click', () => this.openNewTransactionModalInPage(container));
     }
 
-    // Editar directorio
-    const btnEditDirectorio = container.querySelector('#btn-edit-directorio');
-    if (btnEditDirectorio) {
-      btnEditDirectorio.addEventListener('click', () => this.openEditDirectorioModalInPage(container));
+    // Agendar elección desde directorio
+    const btnScheduleElection = container.querySelector('#btn-schedule-election-assembly');
+    if (btnScheduleElection) {
+      btnScheduleElection.addEventListener('click', () => {
+        // Navigate to asambleas tab and open modal with election pre-selected
+        window.dispatchEvent(new CustomEvent('org-quick-action', { detail: { action: 'asambleas' } }));
+        setTimeout(() => {
+          const asambleasContainer = document.getElementById('org-asambleas-content');
+          this.openNewAssemblyModal({ querySelector: () => null, querySelectorAll: () => [] }, 'eleccion_directorio');
+          this._pendingRefreshContainer = asambleasContainer || container;
+        }, 300);
+      });
     }
+
+    // Assembly status action buttons
+    container.querySelectorAll('.btn-convoke-assembly').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orgId = this.currentOrg._id || this.currentOrg.id;
+        try {
+          await apiService.updateAssemblyStatus(orgId, btn.dataset.id, 'convocar');
+          const asm = this.currentOrg.assemblies.find(a => a.id === btn.dataset.id);
+          if (asm) { asm.status = 'convocada'; asm.convokedAt = new Date().toISOString(); }
+          showToast('Asamblea convocada', 'success');
+          this.refreshContentInContainer(container, this.currentTab);
+        } catch (err) { showToast(err.message || 'Error', 'error'); }
+      });
+    });
+    container.querySelectorAll('.btn-start-assembly').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orgId = this.currentOrg._id || this.currentOrg.id;
+        try {
+          await apiService.updateAssemblyStatus(orgId, btn.dataset.id, 'iniciar');
+          const asm = this.currentOrg.assemblies.find(a => a.id === btn.dataset.id);
+          if (asm) { asm.status = 'en_curso'; asm.startedAt = new Date().toISOString(); }
+          showToast('Asamblea iniciada', 'success');
+          this.refreshContentInContainer(container, this.currentTab);
+        } catch (err) { showToast(err.message || 'Error', 'error'); }
+      });
+    });
+    container.querySelectorAll('.btn-finish-assembly').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Finalizar esta asamblea? Se cerrarán todas las votaciones y se procesarán los resultados.')) return;
+        const orgId = this.currentOrg._id || this.currentOrg.id;
+        try {
+          const result = await apiService.updateAssemblyStatus(orgId, btn.dataset.id, 'finalizar');
+          // Refresh entire org to get updated directorio
+          const updatedOrg = await apiService.getOrganization(orgId);
+          Object.assign(this.currentOrg, updatedOrg);
+          showToast('Asamblea finalizada', 'success');
+          this.refreshContentInContainer(container, this.currentTab);
+        } catch (err) { showToast(err.message || 'Error', 'error'); }
+      });
+    });
 
     // Nueva elección
     const btnNewElection = container.querySelector('#btn-new-election') || container.querySelector('#btn-urgent-election');

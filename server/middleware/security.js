@@ -240,7 +240,8 @@ export const ALLOWED_FIELDS = {
     'contactPreference', 'members', 'minMembers', 'electoralCommission',
     'provisionalDirectorio', 'electionDate', 'electionTime', 'assemblyAddress',
     'comments', 'estatutos', 'corrections',
-    'description', 'objectives', 'userCorrectedFields'
+    'description', 'objectives', 'userCorrectedFields',
+    'assemblies', 'lastDirectorioElection'
   ],
 
   // Campos que solo admin puede modificar en organización

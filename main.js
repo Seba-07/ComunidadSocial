@@ -172,9 +172,55 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Pre-cargar datos del perfil por si el usuario navega allí
       loadProfileData();
 
-      // Restaurar página guardada al recargar (solo para usuarios no-admin)
+      // Setup para usuarios MIEMBRO
+      if (user.role === 'MIEMBRO') {
+        try {
+          // Ocultar secciones de organizador
+          const orgNavSection = document.getElementById('org-nav-section');
+          if (orgNavSection) orgNavSection.style.display = 'none';
+          const navSecondary = document.querySelector('.nav-list-secondary');
+          if (navSecondary) navSecondary.style.display = 'none';
+
+          // Mostrar sección de miembro
+          const memberNav = document.getElementById('member-nav-section');
+          if (memberNav) memberNav.style.display = 'block';
+
+          // Import dinámico de MemberDashboard
+          const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
+          await memberDashboard.init();
+
+          // Listeners para navegación de miembro
+          document.querySelectorAll('[data-page^="member-"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              const page = link.dataset.page;
+              appState.navigateTo(page);
+              const pageName = page.replace('member-', '');
+              memberDashboard.renderPage(pageName);
+              // Update active state
+              document.querySelectorAll('#member-nav-section .nav-link-sub').forEach(l => l.classList.remove('active'));
+              link.classList.add('active');
+            });
+          });
+
+          // Check for mustChangePassword
+          const params = new URLSearchParams(window.location.search);
+          if (user.mustChangePassword || params.get('changePassword') === 'true') {
+            appState.navigateTo('member-password');
+            memberDashboard.renderPage('password');
+          } else {
+            // Navigate to overview
+            appState.navigateTo('member-overview');
+            memberDashboard.renderPage('overview');
+          }
+        } catch (memberErr) {
+          console.error('Error setting up member dashboard:', memberErr);
+        }
+      }
+
+      // Restaurar página guardada al recargar (solo para usuarios no-admin y no-miembro)
       // Los admin se restauran en el bloque de admin setup
-      if (user.role !== 'MUNICIPALIDAD') {
+      if (user.role !== 'MUNICIPALIDAD' && user.role !== 'MIEMBRO') {
         const savedPage = sessionStorage.getItem('app_current_page');
         if (savedPage && savedPage !== 'admin') {
           appState.navigateTo(savedPage);

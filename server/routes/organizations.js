@@ -69,8 +69,8 @@ async function createMemberAccounts(organization) {
         continue;
       }
 
-      // Crear nuevo usuario MIEMBRO
-      const tempPassword = generateTempPassword();
+      // Crear nuevo usuario MIEMBRO — password = RUT limpio (sin puntos ni guión)
+      const tempPassword = member.rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
       const newUser = new User({
         rut: member.rut,
         firstName: member.firstName,
@@ -242,8 +242,11 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    // Check permission: owner or admin
-    if (organization.userId._id.toString() !== req.userId.toString() && req.user.role !== 'MUNICIPALIDAD') {
+    // Check permission: owner, admin, or member of the org
+    const isOwner = organization.userId._id.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isMember = req.user.role === 'MIEMBRO' && req.user.organizationId?.toString() === organization._id.toString();
+    if (!isOwner && !isAdmin && !isMember) {
       return res.status(403).json({ error: 'No tienes permisos para ver esta organización' });
     }
 
@@ -1390,6 +1393,383 @@ router.get('/my-organization', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Get my organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
+  }
+});
+
+// ==================== GESTIÓN DE ASAMBLEAS ====================
+
+// Crear asamblea
+router.post('/:id/assemblies', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const { type, date, time, title, description, quorumType, quorumValue, agendaItems } = req.body;
+
+    const newAssembly = {
+      id: 'assembly_' + Date.now(),
+      type: type || 'ordinaria',
+      date,
+      time,
+      title,
+      description,
+      status: 'draft',
+      quorumType: quorumType || 'percentage',
+      quorumValue: quorumValue || 50,
+      agendaItems: (agendaItems || []).map((item, i) => ({
+        id: `agenda_${Date.now()}_${i}`,
+        title: item.title,
+        type: item.type || 'custom',
+        description: item.description || '',
+        votingMode: item.votingMode || null,
+        candidates: [],
+        votes: [],
+        votingOpen: false
+      })),
+      attendance: 0,
+      attendees: [],
+      createdAt: new Date()
+    };
+
+    if (!org.assemblies) org.assemblies = [];
+    org.assemblies.push(newAssembly);
+    await org.save();
+
+    res.status(201).json(newAssembly);
+  } catch (error) {
+    console.error('Create assembly error:', error);
+    res.status(500).json({ error: 'Error al crear asamblea' });
+  }
+});
+
+// Actualizar asamblea
+router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
+    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const assembly = org.assemblies[idx];
+    if (assembly.status === 'finalizada' || assembly.status === 'cancelada') {
+      return res.status(400).json({ error: 'No se puede editar una asamblea finalizada o cancelada' });
+    }
+
+    const { type, date, time, title, description, quorumType, quorumValue, agendaItems } = req.body;
+    if (type) assembly.type = type;
+    if (date) assembly.date = date;
+    if (time !== undefined) assembly.time = time;
+    if (title) assembly.title = title;
+    if (description !== undefined) assembly.description = description;
+    if (quorumType) assembly.quorumType = quorumType;
+    if (quorumValue !== undefined) assembly.quorumValue = quorumValue;
+    if (agendaItems) {
+      assembly.agendaItems = agendaItems.map((item, i) => ({
+        id: item.id || `agenda_${Date.now()}_${i}`,
+        title: item.title,
+        type: item.type || 'custom',
+        description: item.description || '',
+        votingMode: item.votingMode || null,
+        candidates: item.candidates || [],
+        votes: item.votes || [],
+        votingOpen: item.votingOpen || false,
+        votingClosedAt: item.votingClosedAt || null,
+        result: item.result || null
+      }));
+    }
+
+    await org.save();
+    res.json(org.assemblies[idx]);
+  } catch (error) {
+    console.error('Update assembly error:', error);
+    res.status(500).json({ error: 'Error al actualizar asamblea' });
+  }
+});
+
+// Cambiar estado de asamblea
+router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
+    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const assembly = org.assemblies[idx];
+    const { action } = req.body; // convocar, iniciar, finalizar, cancelar
+
+    const transitions = {
+      convocar: { from: ['draft'], to: 'convocada' },
+      iniciar: { from: ['convocada'], to: 'en_curso' },
+      finalizar: { from: ['en_curso'], to: 'finalizada' },
+      cancelar: { from: ['draft', 'convocada'], to: 'cancelada' }
+    };
+
+    const transition = transitions[action];
+    if (!transition) return res.status(400).json({ error: 'Acción no válida' });
+    if (!transition.from.includes(assembly.status)) {
+      return res.status(400).json({ error: `No se puede ${action} una asamblea en estado ${assembly.status}` });
+    }
+
+    assembly.status = transition.to;
+    if (action === 'convocar') assembly.convokedAt = new Date();
+    if (action === 'iniciar') assembly.startedAt = new Date();
+    if (action === 'finalizar') {
+      assembly.finishedAt = new Date();
+      // Cerrar todas las votaciones abiertas
+      assembly.agendaItems.forEach(item => {
+        if (item.votingOpen) {
+          item.votingOpen = false;
+          item.votingClosedAt = new Date();
+        }
+      });
+
+      // Procesar resultados de elección de directorio
+      const electionItem = assembly.agendaItems.find(item => item.type === 'eleccion_directorio');
+      if (electionItem && electionItem.votes.length > 0) {
+        if (electionItem.votingMode === 'per_cargo') {
+          // Contar votos por cargo y determinar ganadores
+          const votesByCargo = {};
+          electionItem.votes.forEach(v => {
+            if (!votesByCargo[v.cargo]) votesByCargo[v.cargo] = {};
+            votesByCargo[v.cargo][v.candidateRut] = (votesByCargo[v.cargo][v.candidateRut] || 0) + 1;
+          });
+
+          const winners = {};
+          for (const [cargo, candidates] of Object.entries(votesByCargo)) {
+            const sorted = Object.entries(candidates).sort((a, b) => b[1] - a[1]);
+            if (sorted.length > 0) {
+              const winnerRut = sorted[0][0];
+              const candidate = electionItem.candidates.find(c => c.rut === winnerRut);
+              winners[cargo] = { rut: winnerRut, firstName: candidate?.firstName, lastName: candidate?.lastName, votes: sorted[0][1] };
+            }
+          }
+
+          electionItem.result = { mode: 'per_cargo', winners, votesByCargo };
+
+          // Actualizar directorio de la organización
+          const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
+          if (org.provisionalDirectorio) {
+            for (const [cargo, winner] of Object.entries(winners)) {
+              const schemaRole = roleMap[cargo] || cargo;
+              if (org.provisionalDirectorio[schemaRole] !== undefined) {
+                org.provisionalDirectorio[schemaRole] = { rut: winner.rut, firstName: winner.firstName, lastName: winner.lastName };
+              }
+            }
+            org.provisionalDirectorio.designatedAt = new Date();
+            org.provisionalDirectorio.type = 'ELECTO';
+          }
+        } else if (electionItem.votingMode === 'per_lista') {
+          // Contar votos por lista
+          const votesByLista = {};
+          electionItem.votes.forEach(v => {
+            votesByLista[v.lista] = (votesByLista[v.lista] || 0) + 1;
+          });
+          const sorted = Object.entries(votesByLista).sort((a, b) => b[1] - a[1]);
+          const winningLista = sorted.length > 0 ? sorted[0][0] : null;
+          const winningCandidates = winningLista ? electionItem.candidates.filter(c => c.lista === winningLista) : [];
+
+          electionItem.result = { mode: 'per_lista', winningLista, votesByLista, winningCandidates };
+
+          // Actualizar directorio con la lista ganadora
+          if (winningCandidates.length > 0 && org.provisionalDirectorio) {
+            const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
+            winningCandidates.forEach(c => {
+              if (c.cargo) {
+                const schemaRole = roleMap[c.cargo] || c.cargo;
+                if (org.provisionalDirectorio[schemaRole] !== undefined) {
+                  org.provisionalDirectorio[schemaRole] = { rut: c.rut, firstName: c.firstName, lastName: c.lastName };
+                }
+              }
+            });
+            org.provisionalDirectorio.designatedAt = new Date();
+            org.provisionalDirectorio.type = 'ELECTO';
+          }
+        }
+
+        org.lastDirectorioElection = {
+          assemblyId: assembly.id,
+          date: new Date(),
+          updatedAt: new Date()
+        };
+      }
+    }
+
+    await org.save();
+    res.json(org.assemblies[idx]);
+  } catch (error) {
+    console.error('Update assembly status error:', error);
+    res.status(500).json({ error: 'Error al cambiar estado de asamblea' });
+  }
+});
+
+// Agregar candidatos a un punto de agenda de elección
+router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const { agendaItemId, candidates } = req.body;
+    const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
+    if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+    if (agendaItem.type !== 'eleccion_directorio') {
+      return res.status(400).json({ error: 'Solo se pueden agregar candidatos a puntos de elección' });
+    }
+
+    agendaItem.candidates = candidates.map(c => ({
+      rut: c.rut,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      cargo: c.cargo || null,
+      lista: c.lista || null
+    }));
+
+    await org.save();
+    res.json(agendaItem);
+  } catch (error) {
+    console.error('Add candidates error:', error);
+    res.status(500).json({ error: 'Error al agregar candidatos' });
+  }
+});
+
+// Registrar voto
+router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    if (req.user.role !== 'MIEMBRO') {
+      return res.status(403).json({ error: 'Solo los miembros pueden votar' });
+    }
+
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    // Verificar que el miembro pertenece a esta organización
+    if (req.user.organizationId?.toString() !== org._id.toString()) {
+      return res.status(403).json({ error: 'No perteneces a esta organización' });
+    }
+
+    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea no está en curso' });
+
+    const { agendaItemId, votes } = req.body; // votes: [{cargo, candidateRut}] o [{lista}]
+    const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
+    if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+    if (!agendaItem.votingOpen) return res.status(400).json({ error: 'La votación no está abierta' });
+
+    const voterRut = req.user.rut;
+
+    // Verificar que no haya votado ya en este punto
+    const alreadyVoted = agendaItem.votes.some(v => v.voterRut === voterRut);
+    if (alreadyVoted) return res.status(400).json({ error: 'Ya has votado en este punto' });
+
+    // Registrar votos
+    for (const vote of votes) {
+      agendaItem.votes.push({
+        voterRut,
+        cargo: vote.cargo || null,
+        candidateRut: vote.candidateRut || null,
+        lista: vote.lista || null,
+        votedAt: new Date()
+      });
+    }
+
+    // Auto-checkin si no está en la lista de asistentes
+    const isCheckedIn = assembly.attendees.some(a => a.rut === voterRut);
+    if (!isCheckedIn) {
+      assembly.attendees.push({
+        rut: voterRut,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        checkedInAt: new Date()
+      });
+      assembly.attendance = assembly.attendees.length;
+    }
+
+    await org.save();
+    res.json({ message: 'Voto registrado exitosamente' });
+  } catch (error) {
+    console.error('Cast vote error:', error);
+    res.status(500).json({ error: 'Error al registrar voto' });
+  }
+});
+
+// Registrar asistencia (checkin)
+router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const { rut, firstName, lastName } = req.body;
+    const attendeeRut = rut || req.user.rut;
+
+    const already = assembly.attendees.some(a => a.rut === attendeeRut);
+    if (already) return res.status(400).json({ error: 'Ya registrado' });
+
+    assembly.attendees.push({
+      rut: attendeeRut,
+      firstName: firstName || req.user.firstName,
+      lastName: lastName || req.user.lastName,
+      checkedInAt: new Date()
+    });
+    assembly.attendance = assembly.attendees.length;
+
+    await org.save();
+    res.json({ message: 'Asistencia registrada', attendance: assembly.attendance });
+  } catch (error) {
+    console.error('Checkin error:', error);
+    res.status(500).json({ error: 'Error al registrar asistencia' });
+  }
+});
+
+// Abrir/cerrar votación de un punto de agenda
+router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea debe estar en curso' });
+
+    const { agendaItemId } = req.body;
+    const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
+    if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+
+    agendaItem.votingOpen = !agendaItem.votingOpen;
+    if (!agendaItem.votingOpen) agendaItem.votingClosedAt = new Date();
+
+    await org.save();
+    res.json({ votingOpen: agendaItem.votingOpen });
+  } catch (error) {
+    console.error('Toggle voting error:', error);
+    res.status(500).json({ error: 'Error al cambiar estado de votación' });
   }
 });
 
