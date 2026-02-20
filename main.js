@@ -178,9 +178,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedPage = sessionStorage.getItem('app_current_page');
         if (savedPage && savedPage !== 'admin') {
           appState.navigateTo(savedPage);
-          if (savedPage === 'mis-organizaciones') {
-            renderOrganizations();
-          }
         }
       }
     } catch (error) {
@@ -4845,6 +4842,9 @@ function setupUserUI() {
       } catch (e) { /* ignore */ }
     }
   }
+
+  // Pre-cargar organizaciones en la página Mis Organizaciones
+  renderOrganizations();
 
   // Inicializar menú de organizaciones aprobadas en sidebar
   organizationMenuManager.init();
