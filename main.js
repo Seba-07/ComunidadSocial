@@ -1290,8 +1290,39 @@ async function syncCertificatesFromIndexedDB(organizations) {
 }
 
 async function renderOrganizations() {
-  // Usar getCurrentUserOrganizations para mostrar solo las del usuario actual
-  const organizations = await organizationsService.getCurrentUserOrganizations();
+  console.log('🔄 renderOrganizations() iniciado');
+
+  let organizations;
+  try {
+    organizations = await organizationsService.getCurrentUserOrganizations();
+  } catch (e) {
+    console.error('❌ Error en getCurrentUserOrganizations:', e);
+    organizations = [];
+  }
+
+  // Si la API no retornó datos, intentar usar datos cacheados del sync() inicial
+  if (!organizations || organizations.length === 0) {
+    const cached = organizationsService.getAll();
+    if (cached && cached.length > 0) {
+      console.log('📦 Usando datos cacheados (memory):', cached.length);
+      organizations = cached;
+    } else {
+      // Último recurso: localStorage cache
+      try {
+        const lsData = localStorage.getItem('user_organizations');
+        if (lsData) {
+          const lsOrgs = JSON.parse(lsData);
+          if (Array.isArray(lsOrgs) && lsOrgs.length > 0) {
+            console.log('📦 Usando datos cacheados (localStorage):', lsOrgs.length);
+            organizations = lsOrgs;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  if (!organizations) organizations = [];
+  console.log('📋 Organizaciones obtenidas del servidor:', organizations.length);
 
   // Verificar si hay un progreso guardado en localStorage
   const savedProgress = getSavedWizardProgress();
@@ -1306,7 +1337,7 @@ async function renderOrganizations() {
   allOrganizations = allOrganizations.filter(org => org.status !== ORG_STATUS.APPROVED);
 
   const hasOrgs = allOrganizations.length > 0;
-  console.log('📋 Organizaciones cargadas:', allOrganizations.length, allOrganizations);
+  console.log('📋 Organizaciones a mostrar (sin aprobadas):', allOrganizations.length, allOrganizations);
 
   // Auto-sync certificados desde IndexedDB para orgs que no los tienen en server
   syncCertificatesFromIndexedDB(organizations);
@@ -1316,11 +1347,16 @@ async function renderOrganizations() {
   const heroSection = document.getElementById('hero-section');
   const btnNuevaOrg = document.getElementById('btn-nueva-organizacion');
 
-  if (!orgsList) return;
+  console.log('🔍 DOM elements:', { noOrgsSection: !!noOrgsSection, orgsList: !!orgsList, heroSection: !!heroSection, btnNuevaOrg: !!btnNuevaOrg });
+
+  if (!orgsList) {
+    console.warn('⚠️ organizations-list element not found in DOM');
+    return;
+  }
 
   if (hasOrgs) {
     // Mostrar lista, ocultar mensaje vacío
-    noOrgsSection.style.display = 'none';
+    if (noOrgsSection) noOrgsSection.style.display = 'none';
     orgsList.style.display = 'grid';
     if (heroSection) heroSection.style.display = 'none';
     if (btnNuevaOrg) btnNuevaOrg.style.display = 'flex';
@@ -1365,11 +1401,12 @@ async function renderOrganizations() {
     });
   } else {
     // Mostrar mensaje vacío
-    noOrgsSection.style.display = 'flex';
+    if (noOrgsSection) noOrgsSection.style.display = 'flex';
     orgsList.style.display = 'none';
     if (heroSection) heroSection.style.display = 'block';
     if (btnNuevaOrg) btnNuevaOrg.style.display = 'none';
   }
+  console.log('✅ renderOrganizations() completado');
 }
 
 // Helper: Obtener progreso guardado del wizard como objeto de organización
@@ -4825,7 +4862,7 @@ function setupAdminUI() {
   }
 }
 
-function setupUserUI() {
+async function setupUserUI() {
   console.log('👤 Configurando UI de Usuario');
 
   // Personalizar saludo en Home
@@ -4844,8 +4881,16 @@ function setupUserUI() {
   }
 
   // Pre-cargar organizaciones en la página Mis Organizaciones
-  renderOrganizations();
+  try {
+    await renderOrganizations();
+  } catch (e) {
+    console.error('❌ Error pre-cargando organizaciones:', e);
+  }
 
   // Inicializar menú de organizaciones aprobadas en sidebar
-  organizationMenuManager.init();
+  try {
+    await organizationMenuManager.init();
+  } catch (e) {
+    console.error('❌ Error inicializando menú organizaciones:', e);
+  }
 }

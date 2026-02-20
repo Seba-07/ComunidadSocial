@@ -2211,9 +2211,8 @@ class OrganizationDashboard {
         showToast('✅ Firmas validadas exitosamente', 'success');
         modal.remove();
 
-        // Refrescar dashboard
-        parentOverlay.querySelector('.org-dashboard-content').innerHTML = this.renderTabContent();
-        this.attachContentListeners(parentOverlay);
+        // Refrescar dashboard (usando método full-page)
+        this.refreshContent();
       } catch (error) {
         showToast(error.message, 'error');
       }
