@@ -8,6 +8,8 @@ import { alertsService, ALERT_PRIORITY } from '../../services/AlertsService.js';
 // ministroAssignmentService ya no se usa - Ministro de Fe solo es para constitución
 // import { ministroAssignmentService } from '../../services/MinistroAssignmentService.js';
 import { orgDocumentService } from '../../services/OrgDocumentService.js';
+import { pdfService } from '../../services/PDFService.js';
+import { jsPDF } from 'jspdf';
 import { showToast } from '../../app.js';
 
 // Importar utilidades compartidas
@@ -170,23 +172,23 @@ class OrganizationDashboard {
           <div class="org-info-grid">
             <div class="info-item">
               <span class="info-label">Nombre Legal</span>
-              <span class="info-value">${org.organization?.name || '-'}</span>
+              <span class="info-value">${org.organizationName || org.organization?.name || '-'}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Tipo</span>
-              <span class="info-value">${getOrgTypeName(org.organization?.type)}</span>
+              <span class="info-value">${getOrgTypeName(org.organizationType || org.organization?.type)}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Dirección</span>
-              <span class="info-value">${org.organization?.address || '-'}</span>
+              <span class="info-value">${org.address || org.organization?.address || '-'}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Comuna</span>
-              <span class="info-value">${org.organization?.commune || '-'}</span>
+              <span class="info-value">${org.comuna || org.organization?.commune || '-'}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Unidad Vecinal</span>
-              <span class="info-value">${org.organization?.neighborhood || '-'}</span>
+              <span class="info-value">${org.unidadVecinal || org.organization?.neighborhood || '-'}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Fecha de Aprobación</span>
@@ -194,11 +196,11 @@ class OrganizationDashboard {
             </div>
             <div class="info-item">
               <span class="info-label">Email</span>
-              <span class="info-value">${org.organization?.email || '-'}</span>
+              <span class="info-value">${org.contactEmail || org.organization?.email || '-'}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Teléfono</span>
-              <span class="info-value">${org.organization?.phone || '-'}</span>
+              <span class="info-value">${org.contactPhone || org.organization?.phone || '-'}</span>
             </div>
           </div>
         </div>
@@ -350,20 +352,121 @@ class OrganizationDashboard {
   /**
    * Directorio de la organización
    */
+  /**
+   * Obtiene la configuración de cargos del directorio según el tipo de organización
+   */
+  getDirectorioConfig(orgType) {
+    const configs = {
+      JUNTA_VECINOS: { cargos: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+      ]},
+      COMITE_VECINOS: { cargos: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+      ]},
+      COMITE_VIVIENDA: { cargos: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a 1', color: '#6366f1' },
+        { id: 'director2', nombre: 'Director/a 2', color: '#ec4899' }
+      ]},
+      CENTRO_PADRES: { cargos: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'secretario', nombre: 'Secretario General', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+      ]},
+      COMITE_CONVIVENCIA: { cargos: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'directorPrevencion', nombre: 'Director/a de Prevención', color: '#ef4444' },
+        { id: 'directorConvivencia', nombre: 'Director/a de Convivencia', color: '#06b6d4' }
+      ]}
+    };
+    // Default para la mayoría de tipos
+    const defaultConfig = { cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+    ]};
+    // Intentar desde estatutosSnapshot primero, luego config local
+    const snapshotCargos = this.currentOrg.estatutosSnapshot?.directorio?.cargos;
+    if (snapshotCargos && snapshotCargos.length > 0) return { cargos: snapshotCargos };
+    return configs[orgType] || defaultConfig;
+  }
+
+  /**
+   * Obtiene el miembro del directorio provisorio para un cargo dado
+   */
+  getProvisionalMember(org, cargoId) {
+    const prov = org.provisionalDirectorio || org.directorioProvisorio;
+    if (!prov) return null;
+    // Mapeo de id de cargo a campo del provisionalDirectorio
+    const fieldMap = {
+      'presidente': 'president',
+      'vicepresidente': 'vicePresident',
+      'secretario': 'secretary',
+      'tesorero': 'treasurer',
+      'director1': null,
+      'director2': null,
+      'directorPrevencion': null,
+      'directorConvivencia': null
+    };
+    const field = fieldMap[cargoId];
+    if (field && prov[field]) return prov[field];
+    // También buscar con nombre en español directamente
+    if (prov[cargoId]) return prov[cargoId];
+    // Buscar en additionalMembers para directores
+    if (cargoId.startsWith('director') && prov.additionalMembers) {
+      const idx = cargoId === 'director1' ? 0 : cargoId === 'director2' ? 1 : null;
+      if (idx !== null && prov.additionalMembers[idx]) return prov.additionalMembers[idx];
+    }
+    // Buscar en miembros del org por role
+    const roleMap = { 'presidente': 'president', 'vicepresidente': 'vice_president', 'secretario': 'secretary', 'tesorero': 'treasurer', 'director1': 'director', 'director2': 'director' };
+    const memberRole = roleMap[cargoId];
+    if (memberRole && org.members) {
+      const found = org.members.filter(m => m.role === memberRole);
+      if (cargoId === 'director2') return found[1] || null;
+      return found[0] || null;
+    }
+    return null;
+  }
+
   renderDirectorio() {
-    const commission = this.currentOrg.commission?.members || [];
-    const electionDate = this.currentOrg.commission?.electionDate;
-    const roles = ['Presidente', 'Secretario', 'Tesorero'];
+    const org = this.currentOrg;
+    const orgType = org.organizationType || org.organization?.type;
+    const config = this.getDirectorioConfig(orgType);
+    const cargos = config.cargos;
+    const electionDate = org.commission?.electionDate;
+    const isProvisional = !org.definitiveDirectorio;
+
     const roleDescriptions = {
-      'Presidente': 'Representa legal y judicialmente a la organización. Administra el patrimonio y ejecuta los acuerdos de la asamblea.',
-      'Secretario': 'Administra los libros de socios y actas. Emite certificados y citaciones a asambleas.',
-      'Tesorero': 'Lleva la contabilidad y administra los recursos financieros de la organización.'
+      'presidente': 'Representa legal y judicialmente a la organización.',
+      'vicepresidente': 'Reemplaza al presidente y colabora en la gestión.',
+      'secretario': 'Administra los libros de socios y actas.',
+      'tesorero': 'Lleva la contabilidad y administra los recursos.',
+      'director1': 'Colabora en la gestión y toma de decisiones.',
+      'director2': 'Colabora en la gestión y toma de decisiones.',
+      'directorPrevencion': 'Coordina acciones de prevención comunitaria.',
+      'directorConvivencia': 'Promueve la convivencia y resolución de conflictos.'
     };
 
     return `
       <div class="org-directorio-section">
         <div class="section-header">
-          <h3>Directorio</h3>
+          <h3>Directorio ${isProvisional ? '<span style="background:#f59e0b20;color:#b45309;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-left:8px;">Provisorio</span>' : ''}</h3>
           <button class="btn-edit-directorio" id="btn-edit-directorio">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -374,29 +477,33 @@ class OrganizationDashboard {
         </div>
 
         <div class="directorio-info">
-          <p>El directorio debe contar con al menos 3 miembros titulares mayores de 18 años, elegidos por votación directa. Cada miembro dura <strong>3 años</strong> en su cargo, con posibilidad de reelección.</p>
+          <p>El directorio debe contar con al menos ${cargos.length} miembros titulares mayores de 18 años, elegidos por votación directa. Cada miembro dura <strong>3 años</strong> en su cargo, con posibilidad de reelección.</p>
+          ${isProvisional ? '<p style="color:#b45309;font-size:13px;">📌 Este es el directorio provisorio designado en la asamblea constitutiva. Convoque elecciones para definir el directorio definitivo.</p>' : ''}
           ${electionDate ? `<p class="election-date">Fecha de elección: <strong>${new Date(electionDate).toLocaleDateString('es-CL')}</strong></p>` : ''}
         </div>
 
         <div class="directorio-cards">
-          ${roles.map((role, index) => {
-            const member = commission[index];
+          ${cargos.map(cargo => {
+            const member = this.getProvisionalMember(org, cargo.id);
+            const memberName = member ? `${member.firstName || member.name || ''} ${member.lastName || member.apellidoPaterno || ''}`.trim() : null;
+            const memberRut = member?.rut || '-';
+            const initial = memberName ? memberName[0]?.toUpperCase() : '?';
             return `
-              <div class="directorio-card ${member ? '' : 'empty'}">
-                <div class="directorio-role">${role}</div>
+              <div class="directorio-card ${member ? '' : 'empty'}" style="border-top: 3px solid ${cargo.color}">
+                <div class="directorio-role" style="color:${cargo.color}">${cargo.nombre}</div>
                 ${member ? `
                   <div class="directorio-member">
-                    <div class="member-avatar large">${member.firstName?.[0]?.toUpperCase() || '?'}</div>
+                    <div class="member-avatar large" style="background:${cargo.color}20;color:${cargo.color}">${initial}</div>
                     <div class="member-details">
-                      <span class="member-name">${member.firstName} ${member.lastName}</span>
-                      <span class="member-rut">${member.rut || '-'}</span>
+                      <span class="member-name">${memberName}</span>
+                      <span class="member-rut">${memberRut}</span>
                     </div>
                   </div>
-                  <div class="directorio-description">${roleDescriptions[role]}</div>
+                  <div class="directorio-description">${roleDescriptions[cargo.id] || ''}</div>
                 ` : `
                   <div class="empty-slot">
                     <span>Sin asignar</span>
-                    <button class="btn-assign" data-role="${role}">Asignar</button>
+                    <button class="btn-assign" data-role="${cargo.id}">Asignar</button>
                   </div>
                 `}
               </div>
@@ -853,17 +960,26 @@ class OrganizationDashboard {
               <div class="doc-item">
                 <span class="doc-icon">📄</span>
                 <span class="doc-name">Estatutos</span>
-                <button class="btn-view-doc">Ver</button>
+                <div class="doc-actions">
+                  <button class="btn-view-legal-doc" data-doc-type="estatutos">Ver</button>
+                  <button class="btn-download-legal-doc" data-doc-type="estatutos">⬇</button>
+                </div>
               </div>
               <div class="doc-item">
                 <span class="doc-icon">📄</span>
                 <span class="doc-name">Acta Constitutiva</span>
-                <button class="btn-view-doc">Ver</button>
+                <div class="doc-actions">
+                  <button class="btn-view-legal-doc" data-doc-type="acta">Ver</button>
+                  <button class="btn-download-legal-doc" data-doc-type="acta">⬇</button>
+                </div>
               </div>
               <div class="doc-item">
                 <span class="doc-icon">📄</span>
-                <span class="doc-name">Personalidad Jurídica</span>
-                <button class="btn-view-doc">Ver</button>
+                <span class="doc-name">Certificación Municipal</span>
+                <div class="doc-actions">
+                  <button class="btn-view-legal-doc" data-doc-type="certificacion">Ver</button>
+                  <button class="btn-download-legal-doc" data-doc-type="certificacion">⬇</button>
+                </div>
               </div>
             </div>
           </div>
@@ -3708,6 +3824,146 @@ ${comm.message || 'Sin contenido'}
   }
 
   /**
+   * Genera un PDF legal y lo muestra en un modal de previsualización
+   */
+  viewLegalDocument(docType) {
+    try {
+      const org = this.currentOrg;
+      if (!org) { showToast('No hay organización seleccionada', 'error'); return; }
+
+      let doc, title;
+      if (docType === 'estatutos') {
+        // Si hay contenido de estatutos, generar PDF desde texto
+        if (org.estatutos) {
+          doc = this._generateEstatutosPDF(org);
+          title = 'Estatutos';
+        } else {
+          showToast('No hay estatutos disponibles para esta organización', 'error');
+          return;
+        }
+      } else if (docType === 'acta') {
+        doc = pdfService.generateActaAsamblea(org);
+        title = 'Acta Constitutiva';
+      } else if (docType === 'certificacion') {
+        doc = pdfService.generateCertificacion(org, org.certificNumber || '');
+        title = 'Certificación Municipal';
+      } else {
+        showToast('Tipo de documento no reconocido', 'error');
+        return;
+      }
+
+      const blobUrl = pdfService.getPDFDataURL(doc);
+      this._showPDFPreviewModal(blobUrl, title, doc);
+    } catch (error) {
+      console.error('Error generando documento:', error);
+      showToast('Error al generar el documento: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Descarga un PDF legal directamente
+   */
+  downloadLegalDocument(docType) {
+    try {
+      const org = this.currentOrg;
+      if (!org) { showToast('No hay organización seleccionada', 'error'); return; }
+      const orgName = (org.organizationName || org.organization?.name || 'Organizacion').replace(/\s+/g, '_');
+
+      let doc, filename;
+      if (docType === 'estatutos') {
+        if (org.estatutos) {
+          doc = this._generateEstatutosPDF(org);
+          filename = `Estatutos_${orgName}.pdf`;
+        } else {
+          showToast('No hay estatutos disponibles', 'error');
+          return;
+        }
+      } else if (docType === 'acta') {
+        doc = pdfService.generateActaAsamblea(org);
+        filename = `Acta_Constitutiva_${orgName}.pdf`;
+      } else if (docType === 'certificacion') {
+        doc = pdfService.generateCertificacion(org, org.certificNumber || '');
+        filename = `Certificacion_Municipal_${orgName}.pdf`;
+      } else {
+        showToast('Tipo de documento no reconocido', 'error');
+        return;
+      }
+
+      pdfService.downloadPDF(doc, filename);
+      showToast(`${filename} descargado`, 'success');
+    } catch (error) {
+      console.error('Error descargando documento:', error);
+      showToast('Error al descargar: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Genera un PDF a partir del contenido de estatutos (texto plano)
+   */
+  _generateEstatutosPDF(org) {
+    const doc = new jsPDF();
+    const orgName = org.organizationName || org.organization?.name || 'Organización';
+    const content = org.estatutos || '';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ESTATUTOS', 105, 20, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text(orgName, 105, 28, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    const lines = doc.splitTextToSize(content, 170);
+    let y = 40;
+    const pageHeight = 280;
+
+    for (const line of lines) {
+      if (y > pageHeight) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, 20, y);
+      y += 5;
+    }
+
+    return doc;
+  }
+
+  /**
+   * Muestra un modal con previsualización de PDF
+   */
+  _showPDFPreviewModal(blobUrl, title, doc) {
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:200000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `
+      <div style="background:white;border-radius:16px;width:100%;max-width:800px;height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="margin:0;font-size:18px;color:#1e293b;">${title}</h3>
+          <div style="display:flex;gap:8px;">
+            <button id="modal-download-pdf" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;">
+              ⬇ Descargar PDF
+            </button>
+            <button id="modal-close-pdf" style="background:#f1f5f9;border:none;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <iframe src="${blobUrl}" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('#modal-close-pdf').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    modal.querySelector('#modal-download-pdf').addEventListener('click', () => {
+      const orgName = (this.currentOrg.organizationName || this.currentOrg.organization?.name || 'Doc').replace(/\s+/g, '_');
+      pdfService.downloadPDF(doc, `${title.replace(/\s+/g, '_')}_${orgName}.pdf`);
+    });
+  }
+
+  /**
    * Adjunta listeners a un contenedor genérico (para uso en páginas completas)
    * Similar a attachContentListeners pero no requiere overlay del modal
    */
@@ -3901,6 +4157,14 @@ ${comm.message || 'Sin contenido'}
     // Botón asignar en directorio (slots vacíos)
     container.querySelectorAll('.btn-assign').forEach(btn => {
       btn.addEventListener('click', () => this.openEditDirectorioModalInPage(container));
+    });
+
+    // Ver documentos legales (Estatutos, Acta, Certificación)
+    container.querySelectorAll('.btn-view-legal-doc').forEach(btn => {
+      btn.addEventListener('click', () => this.viewLegalDocument(btn.dataset.docType));
+    });
+    container.querySelectorAll('.btn-download-legal-doc').forEach(btn => {
+      btn.addEventListener('click', () => this.downloadLegalDocument(btn.dataset.docType));
     });
 
     // Upload documento

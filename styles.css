@@ -12701,7 +12701,9 @@ a.header-logo:hover {
 .btn-new-project,
 .btn-new-activity,
 .btn-new-transaction,
-.btn-upload-doc {
+.btn-upload-doc,
+.btn-new-election,
+.btn-new-communication {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -12722,8 +12724,82 @@ a.header-logo:hover {
 .btn-new-project:hover,
 .btn-new-activity:hover,
 .btn-new-transaction:hover,
-.btn-upload-doc:hover {
+.btn-upload-doc:hover,
+.btn-new-election:hover,
+.btn-new-communication:hover {
     background: var(--primary-dark);
+}
+
+/* Communication Template Buttons */
+.template-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.template-btn:hover {
+    background: #f0f4ff;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
+.template-btn .template-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.template-btn .template-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Legal Document View/Download Buttons */
+.doc-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-view-legal-doc {
+    padding: 6px 14px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-view-legal-doc:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-download-legal-doc {
+    padding: 6px 10px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-download-legal-doc:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
 }
 
 /* Members Table */
