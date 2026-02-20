@@ -766,6 +766,14 @@ window.addEventListener('page-navigate', (e) => {
   const { page } = e.detail;
   if (page === 'profile') {
     loadProfileData();
+  } else if (page === 'mis-organizaciones') {
+    renderOrganizations();
+  } else if (page === 'guia-constitucion') {
+    guiaConstitucionManager.init();
+  } else if (page === 'biblioteca') {
+    bibliotecaManager.init();
+  } else if (page === 'noticias') {
+    newsManager.init();
   }
 });
 
