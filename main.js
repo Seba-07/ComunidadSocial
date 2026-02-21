@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Reemplazar Home con contenido de miembro
           const pageHome = document.getElementById('page-home');
           if (pageHome) {
-            const orgName = user.organizationName || 'tu organización';
+            const orgName = (user.organizations && user.organizations[0]?.name) || user.organizationName || 'tu organización';
             const firstName = user.firstName || user.name || 'Socio/a';
             pageHome.innerHTML = `
               <section class="home-welcome-section">
@@ -285,22 +285,60 @@ document.addEventListener('DOMContentLoaded', async () => {
           const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
           await memberDashboard.init();
 
-          // Actualizar nombre de la organización en sidebar y home
-          if (memberDashboard.org) {
-            const realOrgName = memberDashboard.org.organizationName || '';
-            if (realOrgName) {
-              // Sidebar title
-              const sidebarTitle = document.querySelector('#member-nav-section .nav-section-title');
-              if (sidebarTitle) {
-                const svgIcon = sidebarTitle.querySelector('svg');
-                sidebarTitle.textContent = '';
-                if (svgIcon) sidebarTitle.appendChild(svgIcon);
-                sidebarTitle.append(` ${realOrgName}`);
+          // Actualizar sidebar con organizaciones del miembro
+          if (memberDashboard.orgs.length > 0) {
+            const memberNavSection = document.getElementById('member-nav-section');
+            if (memberNavSection) {
+              const collapsibleDiv = memberNavSection.querySelector('.nav-section-collapsible');
+              if (collapsibleDiv) {
+                if (memberDashboard.orgs.length === 1) {
+                  // Una sola org: mostrar nombre directamente
+                  const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
+                  if (sidebarTitle) {
+                    const svgIcon = sidebarTitle.querySelector('svg');
+                    sidebarTitle.textContent = '';
+                    if (svgIcon) sidebarTitle.appendChild(svgIcon);
+                    sidebarTitle.append(` ${memberDashboard.org.organizationName}`);
+                  }
+                } else {
+                  // Múltiples orgs: agregar selector dropdown
+                  const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
+                  if (sidebarTitle) {
+                    const svgIcon = sidebarTitle.querySelector('svg');
+                    sidebarTitle.innerHTML = '';
+                    if (svgIcon) sidebarTitle.appendChild(svgIcon);
+
+                    const select = document.createElement('select');
+                    select.id = 'member-org-selector';
+                    select.style.cssText = 'margin-left:8px;padding:4px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;background:white;color:#1e293b;max-width:180px;cursor:pointer;';
+                    memberDashboard.orgs.forEach(o => {
+                      const opt = document.createElement('option');
+                      opt.value = o._id || o.id;
+                      opt.textContent = o.organizationName;
+                      if ((o._id || o.id) === memberDashboard.getActiveOrgId()) opt.selected = true;
+                      select.appendChild(opt);
+                    });
+                    select.addEventListener('change', () => {
+                      memberDashboard.selectOrg(select.value);
+                      // Re-render la página actual
+                      const currentPage = document.querySelector('.page-view[style*="display: block"], .page-view:not([style*="display: none"])');
+                      if (currentPage) {
+                        const pageId = currentPage.id.replace('page-', '').replace('member-', '');
+                        memberDashboard.renderPage(pageId);
+                      }
+                      // Actualizar home welcome subtitle
+                      const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+                      if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
+                    });
+                    sidebarTitle.appendChild(select);
+                  }
+                }
               }
-              // Home welcome subtitle
-              const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
-              if (homeWelcome) homeWelcome.textContent = realOrgName;
             }
+
+            // Home welcome subtitle
+            const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+            if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
           }
 
           // Listeners para navegación de miembro (sidebar + home quick links + bottom nav)

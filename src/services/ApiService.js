@@ -605,8 +605,8 @@ class ApiService {
         lastName: data.user.lastName,
         email: data.user.email,
         role: data.user.role,
-        organizationId: data.user.organizationId,
-        organizationName: data.user.organizationName || '',
+        organizationIds: data.user.organizationIds || [],
+        organizations: data.user.organizations || [],
         mustChangePassword: data.user.mustChangePassword
       };
       localStorage.setItem('currentUser', JSON.stringify(safeUser));

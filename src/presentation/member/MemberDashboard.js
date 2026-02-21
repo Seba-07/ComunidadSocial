@@ -8,7 +8,8 @@ import { showToast } from '../../app.js';
 
 class MemberDashboard {
   constructor() {
-    this.org = null;
+    this.org = null;       // Organización activa
+    this.orgs = [];        // Todas las organizaciones del miembro
     this.user = null;
   }
 
@@ -17,18 +18,42 @@ class MemberDashboard {
       const userData = localStorage.getItem('currentUser');
       if (userData) this.user = JSON.parse(userData);
 
-      const org = await apiService.getMyOrganization();
-      this.org = org;
-      return org;
+      const data = await apiService.getMyOrganization();
+      // El endpoint ahora devuelve { organizations: [...] }
+      if (data && data.organizations) {
+        this.orgs = data.organizations;
+        this.org = this.orgs[0] || null;
+      } else if (data && !data.organizations) {
+        // Backward compat: si devuelve un solo objeto org (legacy)
+        this.orgs = [data];
+        this.org = data;
+      }
+      return this.org;
     } catch (err) {
       console.error('MemberDashboard init error:', err);
       return null;
     }
   }
 
+  selectOrg(orgId) {
+    const found = this.orgs.find(o => (o._id || o.id) === orgId);
+    if (found) {
+      this.org = found;
+    }
+  }
+
+  getActiveOrgId() {
+    return this.org ? (this.org._id || this.org.id) : null;
+  }
+
   async refreshOrg() {
     try {
-      this.org = await apiService.getMyOrganization();
+      const data = await apiService.getMyOrganization();
+      if (data && data.organizations) {
+        this.orgs = data.organizations;
+        const activeId = this.getActiveOrgId();
+        this.org = this.orgs.find(o => (o._id || o.id) === activeId) || this.orgs[0] || null;
+      }
     } catch (err) {
       console.error('Error refreshing org:', err);
     }

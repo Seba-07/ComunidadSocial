@@ -50,7 +50,12 @@ const userSchema = new mongoose.Schema({
     enum: ['ORGANIZADOR', 'MUNICIPALIDAD', 'MINISTRO_FE', 'MIEMBRO'],
     default: 'ORGANIZADOR'
   },
-  // Para usuarios MIEMBRO: ID de la organización a la que pertenecen
+  // Para usuarios MIEMBRO: IDs de las organizaciones a las que pertenecen
+  organizationIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization'
+  }],
+  // Legacy: campo anterior (single org) — mantener para migración
   organizationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
@@ -120,6 +125,15 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Helper: devuelve todos los IDs de organización (migra legacy organizationId)
+userSchema.methods.getAllOrgIds = function() {
+  const ids = (this.organizationIds || []).map(id => id.toString());
+  if (this.organizationId && !ids.includes(this.organizationId.toString())) {
+    ids.push(this.organizationId.toString());
+  }
+  return ids;
+};
+
 // Remove password from JSON output
 userSchema.methods.toJSON = function() {
   const obj = this.toObject();
@@ -130,7 +144,8 @@ userSchema.methods.toJSON = function() {
 // Indexes para queries eficientes
 userSchema.index({ role: 1 });
 userSchema.index({ role: 1, active: 1 });
-userSchema.index({ organizationId: 1 }); // Para buscar miembros de una org
+userSchema.index({ organizationIds: 1 }); // Para buscar miembros de una org
+userSchema.index({ organizationId: 1 }); // Legacy index
 userSchema.index({ createdAt: -1 });
 
 export default mongoose.model('User', userSchema);

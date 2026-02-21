@@ -48,9 +48,16 @@ async function createMemberAccounts(organization) {
       });
 
       if (existingUser) {
-        // Si ya existe, simplemente lo asociamos a la organización si es MIEMBRO
+        // Si ya existe, asociar a la organización si es MIEMBRO (soporta múltiples orgs)
         if (existingUser.role === 'MIEMBRO') {
-          existingUser.organizationId = organization._id;
+          // Agregar al array organizationIds sin duplicar
+          if (!existingUser.organizationIds) existingUser.organizationIds = [];
+          const orgIdStr = organization._id.toString();
+          if (!existingUser.organizationIds.some(id => id.toString() === orgIdStr)) {
+            existingUser.organizationIds.push(organization._id);
+          }
+          // Mantener legacy organizationId para backward compat
+          if (!existingUser.organizationId) existingUser.organizationId = organization._id;
           await existingUser.save();
           createdAccounts.push({
             rut: member.rut,
@@ -80,6 +87,7 @@ async function createMemberAccounts(organization) {
         phone: member.phone,
         address: member.address,
         role: 'MIEMBRO',
+        organizationIds: [organization._id],
         organizationId: organization._id,
         mustChangePassword: true,
         active: true
@@ -238,19 +246,24 @@ router.get('/my-organization', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Esta ruta es solo para miembros' });
     }
 
-    if (!req.user.organizationId) {
+    // Obtener todos los IDs de organizaciones (nuevo array + legacy)
+    const orgIds = req.user.getAllOrgIds();
+
+    if (orgIds.length === 0) {
       return res.status(404).json({ error: 'No estás asociado a ninguna organización' });
     }
 
-    const organization = await Organization.findById(req.user.organizationId)
+    const organizations = await Organization.find({ _id: { $in: orgIds } })
       .select('-corrections -validationData -ministroSignature')
       .lean();
 
-    if (!organization) {
-      return res.status(404).json({ error: 'Organización no encontrada' });
+    if (organizations.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron organizaciones' });
     }
 
-    res.json(organization);
+    // Devolver array de organizaciones (retrocompatible: si se pide una sola, devolver la primera)
+    // Pero ahora siempre devolvemos el array completo
+    res.json({ organizations });
   } catch (error) {
     console.error('Get my organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
@@ -271,7 +284,7 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
     // Check permission: owner, admin, or member of the org
     const isOwner = organization.userId._id.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    const isMember = req.user.role === 'MIEMBRO' && req.user.organizationId?.toString() === organization._id.toString();
+    const isMember = req.user.role === 'MIEMBRO' && req.user.getAllOrgIds().includes(organization._id.toString());
     if (!isOwner && !isAdmin && !isMember) {
       return res.status(403).json({ error: 'No tienes permisos para ver esta organización' });
     }
@@ -1388,10 +1401,13 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    // Obtener usuarios MIEMBRO asociados a esta organización
+    // Obtener usuarios MIEMBRO asociados a esta organización (buscar en ambos campos)
     const memberUsers = await User.find({
       role: 'MIEMBRO',
-      organizationId: organization._id
+      $or: [
+        { organizationIds: organization._id },
+        { organizationId: organization._id }
+      ]
     }).select('-password').lean();
 
     // Combinar con datos de members (ya son objetos planos por .lean())
@@ -1692,7 +1708,8 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
     // Verificar que el miembro pertenece a esta organización
-    if (req.user.organizationId?.toString() !== org._id.toString()) {
+    const memberOrgIds = req.user.getAllOrgIds();
+    if (!memberOrgIds.includes(org._id.toString())) {
       return res.status(403).json({ error: 'No perteneces a esta organización' });
     }
 

@@ -112,23 +112,26 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 // Get current user - devuelve datos completos del perfil (sin password)
 router.get('/me', authenticate, async (req, res) => {
   const user = req.user;
-  res.json({
-    user: {
-      _id: user._id,
-      rut: user.rut || '',
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone || '',
-      address: user.address || '',
-      region: user.region || '',
-      commune: user.commune || '',
-      role: user.role,
-      active: user.active,
-      createdAt: user.createdAt,
-      mustChangePassword: user.mustChangePassword
-    }
-  });
+  const responseUser = {
+    _id: user._id,
+    rut: user.rut || '',
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phone: user.phone || '',
+    address: user.address || '',
+    region: user.region || '',
+    commune: user.commune || '',
+    role: user.role,
+    active: user.active,
+    createdAt: user.createdAt,
+    mustChangePassword: user.mustChangePassword
+  };
+  // Incluir organizationIds para MIEMBRO
+  if (user.role === 'MIEMBRO') {
+    responseUser.organizationIds = user.getAllOrgIds();
+  }
+  res.json({ user: responseUser });
 });
 
 // Update profile - actualizar datos personales del usuario autenticado
@@ -230,11 +233,12 @@ router.post('/login-socio', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu RUT.' });
     }
 
-    // Obtener nombre de la organización
-    let organizationName = '';
-    if (user.organizationId) {
-      const org = await Organization.findById(user.organizationId).select('organizationName').lean();
-      if (org) organizationName = org.organizationName;
+    // Obtener todas las organizaciones del miembro
+    const orgIds = user.getAllOrgIds();
+    let organizations = [];
+    if (orgIds.length > 0) {
+      const orgs = await Organization.find({ _id: { $in: orgIds } }).select('organizationName').lean();
+      organizations = orgs.map(o => ({ _id: o._id, name: o.organizationName }));
     }
 
     const token = generateToken(user);
@@ -249,8 +253,8 @@ router.post('/login-socio', authLimiter, async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        organizationId: user.organizationId,
-        organizationName: organizationName,
+        organizationIds: orgIds,
+        organizations: organizations,
         mustChangePassword: user.mustChangePassword
       },
       mustChangePassword: user.mustChangePassword
