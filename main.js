@@ -122,6 +122,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const currentUserData = localStorage.getItem('currentUser');
   const isAuthenticated = localStorage.getItem('isAuthenticated');
 
+  // DEBUG: mostrar qué role tiene el usuario
+  try {
+    const _dbg = JSON.parse(currentUserData || '{}');
+    document.title = 'ROLE:' + (_dbg.role || 'NONE') + '|AUTH:' + (isAuthenticated || 'NO');
+  } catch(_e) { document.title = 'PARSE_ERROR'; }
+
   if (currentUserData && isAuthenticated) {
     try {
       const user = JSON.parse(currentUserData);
