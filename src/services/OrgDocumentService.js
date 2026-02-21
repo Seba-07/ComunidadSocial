@@ -67,12 +67,17 @@ class OrgDocumentService {
    */
   async downloadDocument(orgId, docId) {
     const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
-    const url = `${baseUrl}/org-documents/${orgId}/${docId}`;
+    const url = `${baseUrl}/org-documents/${orgId}/${docId}/download`;
 
     try {
+      const headers = {};
+      const token = localStorage.getItem('auth_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers
       });
 
       if (!response.ok) {

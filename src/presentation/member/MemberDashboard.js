@@ -4,6 +4,7 @@
  */
 
 import { apiService } from '../../services/ApiService.js';
+import { orgDocumentService } from '../../services/OrgDocumentService.js';
 import { showToast } from '../../app.js';
 
 class MemberDashboard {
@@ -217,15 +218,87 @@ class MemberDashboard {
 
   // ==================== DIRECTORIO ====================
 
+  /**
+   * Obtiene la configuración de cargos según tipo de org o estatutosSnapshot
+   */
+  _getDirectorioConfig() {
+    const org = this.org;
+    const orgType = org.organizationType || '';
+
+    // Primero intentar desde estatutosSnapshot
+    const snapshotCargos = org.estatutosSnapshot?.directorio?.cargos;
+    if (snapshotCargos && snapshotCargos.length > 0) return snapshotCargos;
+
+    const configs = {
+      JUNTA_VECINOS: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+      ],
+      COMITE_VIVIENDA: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'director1', nombre: 'Director/a 1', color: '#6366f1' },
+        { id: 'director2', nombre: 'Director/a 2', color: '#ec4899' }
+      ],
+      COMITE_CONVIVENCIA: [
+        { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+        { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+        { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+        { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+        { id: 'directorPrevencion', nombre: 'Director/a de Prevención', color: '#ef4444' },
+        { id: 'directorConvivencia', nombre: 'Director/a de Convivencia', color: '#06b6d4' }
+      ]
+    };
+
+    return configs[orgType] || [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#2563eb' },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6' },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981' },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b' },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1' }
+    ];
+  }
+
+  /**
+   * Obtiene el miembro del directorio para un cargo dado (misma lógica que OrganizationDashboard)
+   */
+  _getProvisionalMember(cargoId) {
+    const org = this.org;
+    const prov = org.provisionalDirectorio || {};
+    const fieldMap = {
+      'presidente': 'president',
+      'vicepresidente': 'vicePresident',
+      'secretario': 'secretary',
+      'tesorero': 'treasurer'
+    };
+    const field = fieldMap[cargoId];
+    if (field && prov[field]) return prov[field];
+    // Buscar con nombre en español directamente
+    if (prov[cargoId]) return prov[cargoId];
+    // Buscar en additionalMembers para directores
+    if (cargoId.startsWith('director') && prov.additionalMembers) {
+      const idx = cargoId === 'director1' ? 0 : cargoId === 'director2' ? 1 : null;
+      if (idx !== null && prov.additionalMembers[idx]) return prov.additionalMembers[idx];
+    }
+    // Buscar en miembros del org por role
+    const roleMap = { 'presidente': 'president', 'vicepresidente': 'vice_president', 'secretario': 'secretary', 'tesorero': 'treasurer', 'director1': 'director', 'director2': 'director' };
+    const memberRole = roleMap[cargoId];
+    if (memberRole && org.members) {
+      const found = org.members.filter(m => m.role === memberRole);
+      if (cargoId === 'director2') return found[1] || null;
+      return found[0] || null;
+    }
+    return null;
+  }
+
   renderDirectorio() {
     const pd = this.org.provisionalDirectorio || {};
     const dirType = pd.type === 'ELECTO' ? 'Electo' : 'Provisorio';
-    const mainCargos = [
-      { key: 'president', label: 'Presidente', color: '#2563eb', bg: '#eff6ff' },
-      { key: 'secretary', label: 'Secretario/a', color: '#059669', bg: '#ecfdf5' },
-      { key: 'treasurer', label: 'Tesorero/a', color: '#d97706', bg: '#fefce8' }
-    ];
-    const additionalMembers = pd.additionalMembers || [];
+    const cargos = this._getDirectorioConfig();
 
     return `
       <div class="org-content-area">
@@ -236,41 +309,25 @@ class MemberDashboard {
         <p style="color:#6b7280;margin:0 0 24px;font-size:14px;">Miembros del directorio actual de tu organización.</p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
-          ${mainCargos.map(c => {
-            const m = pd[c.key];
+          ${cargos.map(cargo => {
+            const m = this._getProvisionalMember(cargo.id);
             const name = this._getDirName(m);
             const initial = this._getDirInitial(m);
             const rut = m?.rut || '';
+            const color = cargo.color || '#6366f1';
+            const bg = color + '15';
             return `
-              <div style="padding:20px;background:white;border-radius:12px;border:1px solid #e5e7eb;border-left:4px solid ${c.color};transition:box-shadow 0.2s;">
-                <div style="font-size:12px;font-weight:700;color:${c.color};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">${c.label}</div>
+              <div style="padding:20px;background:white;border-radius:12px;border:1px solid #e5e7eb;border-left:4px solid ${color};transition:box-shadow 0.2s;">
+                <div style="font-size:12px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">${cargo.nombre}</div>
                 ${m ? `
                 <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:44px;height:44px;border-radius:50%;background:${c.bg};color:${c.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">${initial}</div>
+                  <div style="width:44px;height:44px;border-radius:50%;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">${initial}</div>
                   <div>
                     <div style="font-weight:600;font-size:15px;color:#1e293b;">${name}</div>
                     <div style="font-size:13px;color:#6b7280;margin-top:2px;">${rut}</div>
                   </div>
                 </div>` : `
                 <div style="color:#9ca3af;font-style:italic;">Sin asignar</div>`}
-              </div>
-            `;
-          }).join('')}
-
-          ${additionalMembers.map((m, i) => {
-            const name = this._getDirName(m);
-            const initial = this._getDirInitial(m);
-            const rut = m?.rut || '';
-            return `
-              <div style="padding:20px;background:white;border-radius:12px;border:1px solid #e5e7eb;border-left:4px solid #8b5cf6;transition:box-shadow 0.2s;">
-                <div style="font-size:12px;font-weight:700;color:#8b5cf6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Director/a ${i + 1}</div>
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:44px;height:44px;border-radius:50%;background:#f5f3ff;color:#8b5cf6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">${initial}</div>
-                  <div>
-                    <div style="font-weight:600;font-size:15px;color:#1e293b;">${name}</div>
-                    <div style="font-size:13px;color:#6b7280;margin-top:2px;">${rut}</div>
-                  </div>
-                </div>
               </div>
             `;
           }).join('')}
@@ -284,45 +341,15 @@ class MemberDashboard {
   renderDocumentos() {
     const org = this.org;
     const hasEstatutos = !!org.estatutos;
-    const myCerts = (org.certificatesStep5 || []);
-    const userRut = this.user?.rut;
-    const myCert = myCerts.find(c => c.memberId === userRut || c.memberName?.includes(this.user?.firstName));
 
-    const docItems = [];
-
-    if (hasEstatutos) {
-      docItems.push({
-        title: 'Estatutos de la Organización',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-        color: '#2563eb',
-        bg: '#eff6ff',
-        action: 'view-estatutos',
-        actionLabel: 'Ver'
-      });
-    }
-
-    if (myCert) {
-      docItems.push({
-        title: 'Mi Certificado de Residencia',
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-        color: '#059669',
-        bg: '#ecfdf5',
-        action: 'view-cert',
-        actionLabel: 'Ver'
-      });
-    }
-
-    // Mostrar todos los certificados si hay mas de uno (para transparencia)
-    if (myCerts.length > 0 && !myCert) {
-      docItems.push({
-        title: `Certificados de Socios (${myCerts.length})`,
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-        color: '#059669',
-        bg: '#ecfdf5',
-        action: null,
-        actionLabel: `${myCerts.length} disponibles`
-      });
-    }
+    const categoryLabels = {
+      ACTA_ASAMBLEA: 'Acta de Asamblea',
+      BALANCE: 'Balance Financiero',
+      INFORME: 'Informe',
+      CERTIFICADO: 'Certificado',
+      CORRESPONDENCIA: 'Correspondencia',
+      OTRO: 'Otro'
+    };
 
     return `
       <div class="org-content-area">
@@ -330,34 +357,29 @@ class MemberDashboard {
           <h2 class="org-section-title">Documentos</h2>
         </div>
 
-        ${docItems.length > 0 ? `
-        <div style="display:grid;gap:12px;">
-          ${docItems.map(doc => `
-            <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;transition:box-shadow 0.2s;">
-              <div style="display:flex;align-items:center;gap:14px;">
-                <div style="width:40px;height:40px;border-radius:10px;background:${doc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  ${doc.icon}
-                </div>
-                <div>
-                  <div style="font-weight:600;color:#1e293b;">${doc.title}</div>
-                </div>
+        ${hasEstatutos ? `
+        <div style="margin-bottom:20px;">
+          <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Documentos Legales</h3>
+          <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </div>
-              ${doc.action ? `
-              <button class="btn-member-doc" data-action="${doc.action}" style="padding:8px 20px;border:1px solid ${doc.color};border-radius:8px;background:${doc.bg};color:${doc.color};cursor:pointer;font-weight:600;font-size:13px;transition:all 0.2s;">${doc.actionLabel}</button>
-              ` : `
-              <span style="color:#6b7280;font-size:13px;font-weight:500;">${doc.actionLabel}</span>
-              `}
+              <div>
+                <div style="font-weight:600;color:#1e293b;">Estatutos de la Organización</div>
+              </div>
             </div>
-          `).join('')}
+            <button class="btn-member-doc" data-action="view-estatutos" style="padding:8px 20px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;">Ver</button>
+          </div>
         </div>
-        ` : `
-        <div class="org-empty-state" style="padding:48px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" style="margin:0 auto 12px;">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-          </svg>
-          <p style="color:#6b7280;margin:0;">No hay documentos disponibles aún.</p>
+        ` : ''}
+
+        <div>
+          <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Documentos de la Organización</h3>
+          <div id="member-org-documents-list" style="display:grid;gap:12px;">
+            <div style="padding:32px;text-align:center;color:#9ca3af;font-size:14px;">Cargando documentos...</div>
+          </div>
         </div>
-        `}
       </div>
     `;
   }
@@ -365,11 +387,112 @@ class MemberDashboard {
   attachDocumentosListeners(container) {
     container.querySelectorAll('.btn-member-doc').forEach(btn => {
       btn.addEventListener('click', () => {
-        const action = btn.dataset.action;
-        if (action === 'view-estatutos') this.viewEstatutos();
-        if (action === 'view-cert') this.viewMyCertificate();
+        if (btn.dataset.action === 'view-estatutos') this.viewEstatutos();
       });
     });
+
+    // Load org documents asynchronously
+    this._loadOrgDocuments(container);
+  }
+
+  async _loadOrgDocuments(container) {
+    const orgId = this.getActiveOrgId();
+    const listEl = container.querySelector('#member-org-documents-list');
+    if (!listEl || !orgId) return;
+
+    const categoryLabels = {
+      ACTA_ASAMBLEA: 'Acta de Asamblea',
+      BALANCE: 'Balance Financiero',
+      INFORME: 'Informe',
+      CERTIFICADO: 'Certificado',
+      CORRESPONDENCIA: 'Correspondencia',
+      OTRO: 'Otro'
+    };
+
+    const categoryColors = {
+      ACTA_ASAMBLEA: { color: '#7c3aed', bg: '#f5f3ff' },
+      BALANCE: { color: '#059669', bg: '#ecfdf5' },
+      INFORME: { color: '#2563eb', bg: '#eff6ff' },
+      CERTIFICADO: { color: '#d97706', bg: '#fefce8' },
+      CORRESPONDENCIA: { color: '#6b7280', bg: '#f3f4f6' },
+      OTRO: { color: '#6b7280', bg: '#f3f4f6' }
+    };
+
+    try {
+      const docs = await orgDocumentService.getDocuments(orgId);
+
+      if (!docs || docs.length === 0) {
+        listEl.innerHTML = `
+          <div style="padding:48px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" style="margin:0 auto 12px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p style="color:#6b7280;margin:0;">No hay documentos subidos aún.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = docs.map(doc => {
+        const cat = categoryColors[doc.category] || categoryColors.OTRO;
+        const catLabel = categoryLabels[doc.category] || doc.category || 'Otro';
+        const fileSize = this._formatFileSize(doc.fileSize);
+        const date = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('es-CL') : '';
+
+        return `
+          <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;transition:box-shadow 0.2s;">
+            <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+              <div style="width:40px;height:40px;border-radius:10px;background:${cat.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div style="min-width:0;">
+                <div style="font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${doc.name}</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                  <span style="background:${cat.bg};color:${cat.color};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">${catLabel}</span>
+                  ${fileSize ? `<span style="font-size:12px;color:#9ca3af;">${fileSize}</span>` : ''}
+                  ${date ? `<span style="font-size:12px;color:#9ca3af;">${date}</span>` : ''}
+                </div>
+                ${doc.description ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${doc.description}</div>` : ''}
+              </div>
+            </div>
+            <button class="btn-member-download-doc" data-doc-id="${doc._id}" style="padding:8px 16px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;margin-left:12px;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      // Attach download listeners
+      listEl.querySelectorAll('.btn-member-download-doc').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const docId = btn.dataset.docId;
+          btn.disabled = true;
+          btn.innerHTML = '<span>Descargando...</span>';
+          try {
+            await orgDocumentService.downloadDocument(orgId, docId);
+          } catch (err) {
+            showToast(err.message || 'Error al descargar', 'error');
+          }
+          btn.disabled = false;
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar`;
+        });
+      });
+
+    } catch (err) {
+      listEl.innerHTML = `
+        <div style="padding:24px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;">
+          <p style="color:#ef4444;margin:0;font-size:14px;">Error al cargar documentos: ${err.message || 'Error desconocido'}</p>
+        </div>
+      `;
+    }
+  }
+
+  _formatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   viewEstatutos() {
@@ -386,31 +509,6 @@ class MemberDashboard {
         </div>
         <div class="org-modal-body" style="padding:24px;overflow-y:auto;max-height:70vh;">
           <div style="line-height:1.8;color:#374151;white-space:pre-wrap;font-size:14px;">${estatutos}</div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-  }
-
-  viewMyCertificate() {
-    const certs = this.org.certificatesStep5 || [];
-    const userRut = this.user?.rut;
-    const cert = certs.find(c => c.memberId === userRut || c.memberName?.includes(this.user?.firstName));
-    if (!cert || !cert.certificate) { showToast('Certificado no encontrado', 'error'); return; }
-
-    const modal = document.createElement('div');
-    modal.className = 'org-modal-overlay';
-    modal.innerHTML = `
-      <div class="org-modal" style="max-width:700px;max-height:90vh;">
-        <div class="org-modal-header">
-          <h3>Mi Certificado</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="org-modal-body" style="padding:24px;overflow-y:auto;max-height:70vh;text-align:center;">
-          <img src="${cert.certificate}" alt="Certificado" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">
-          <p style="margin-top:12px;font-size:13px;color:#6b7280;">${cert.memberName || ''}</p>
         </div>
       </div>
     `;

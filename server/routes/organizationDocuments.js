@@ -114,7 +114,15 @@ async function checkOrgPermission(req, res) {
   const isOwner = organization.userId.toString() === req.userId.toString();
   const isMunicipalidad = req.user.role === 'MUNICIPALIDAD';
 
-  if (!isOwner && !isMunicipalidad) {
+  // Allow MIEMBRO users who belong to this organization
+  let isMember = false;
+  if (req.user.role === 'MIEMBRO') {
+    const orgIdStr = orgId.toString();
+    const allOrgIds = req.user.getAllOrgIds ? req.user.getAllOrgIds() : [];
+    isMember = allOrgIds.includes(orgIdStr);
+  }
+
+  if (!isOwner && !isMunicipalidad && !isMember) {
     res.status(403).json({ error: 'No tienes permisos para acceder a los documentos de esta organización' });
     return null;
   }
