@@ -122,17 +122,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   const currentUserData = localStorage.getItem('currentUser');
   const isAuthenticated = localStorage.getItem('isAuthenticated');
 
-  // DEBUG: mostrar qué role tiene el usuario
-  try {
-    const _dbg = JSON.parse(currentUserData || '{}');
-    document.title = 'ROLE:' + (_dbg.role || 'NONE') + '|AUTH:' + (isAuthenticated || 'NO');
-  } catch(_e) { document.title = 'PARSE_ERROR'; }
-
   if (currentUserData && isAuthenticated) {
     try {
       const user = JSON.parse(currentUserData);
       appState.setCurrentUser(user);
       appState.initializeAuthService();
+
+      // INMEDIATO: Si es MIEMBRO, ocultar nav del organizador ANTES de cualquier await
+      if (user.role === 'MIEMBRO') {
+        const _navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
+        if (_navPrimary) _navPrimary.style.display = 'none';
+        const _navSecondary = document.querySelector('.nav-list-secondary');
+        if (_navSecondary) _navSecondary.style.display = 'none';
+        const _orgNav = document.getElementById('org-nav-section');
+        if (_orgNav) _orgNav.style.display = 'none';
+        const _bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
+        if (_bottomNav) _bottomNav.style.display = 'none';
+        const _memberBottomNav = document.getElementById('member-bottom-nav');
+        if (_memberBottomNav) _memberBottomNav.style.display = '';
+        const _memberNav = document.getElementById('member-nav-section');
+        if (_memberNav) _memberNav.style.display = 'block';
+      }
 
       // Actualizar nombre en header
       const userName = document.getElementById('user-name');
@@ -160,19 +170,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       console.log('✅ Usuario cargado:', user);
 
-      // Sincronizar datos desde el servidor
-      try {
-        await Promise.all([
-          organizationsService.sync(),
-          notificationService.sync()
-        ]);
-        console.log('✅ Datos sincronizados desde el servidor');
-        // Iniciar polling de notificaciones
-        notificationService.startPolling();
-      } catch (syncError) {
-        console.warn('Error sincronizando datos:', syncError);
-        // Aún así iniciar polling
-        notificationService.startPolling();
+      // Sincronizar datos desde el servidor (no bloquear para MIEMBRO)
+      if (user.role !== 'MIEMBRO') {
+        try {
+          await Promise.all([
+            organizationsService.sync(),
+            notificationService.sync()
+          ]);
+          notificationService.startPolling();
+        } catch (syncError) {
+          console.warn('Error sincronizando datos:', syncError);
+          notificationService.startPolling();
+        }
+      } else {
+        // MIEMBRO: sync en background sin bloquear
+        notificationService.sync().then(() => notificationService.startPolling()).catch(() => notificationService.startPolling());
       }
 
       // Pre-cargar datos del perfil por si el usuario navega allí
@@ -180,28 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Setup para usuarios MIEMBRO
       if (user.role === 'MIEMBRO') {
-        document.title = 'MIEMBRO_BLOCK_RUNNING';
         try {
-          // Ocultar secciones de organizador
-          const orgNavSection = document.getElementById('org-nav-section');
-          if (orgNavSection) orgNavSection.style.display = 'none';
-          const navSecondary = document.querySelector('.nav-list-secondary');
-          if (navSecondary) navSecondary.style.display = 'none';
-
-          // Ocultar nav primaria (link Inicio del organizador)
-          const navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
-          if (navPrimary) navPrimary.style.display = 'none';
-
-          // Ocultar bottom nav del organizador y mostrar el de miembro
-          const bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
-          if (bottomNav) bottomNav.style.display = 'none';
-          const memberBottomNav = document.getElementById('member-bottom-nav');
-          if (memberBottomNav) memberBottomNav.style.display = '';
-
-          // Mostrar sección de miembro
-          const memberNav = document.getElementById('member-nav-section');
-          if (memberNav) memberNav.style.display = 'block';
-
           // Reemplazar Home con contenido de miembro
           const pageHome = document.getElementById('page-home');
           if (pageHome) {
