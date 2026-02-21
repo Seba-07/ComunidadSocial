@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comunidad-renca-v3';
+const CACHE_NAME = 'comunidad-renca-v4';
 const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 // ============ PRECACHE ASSETS ============
