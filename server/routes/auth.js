@@ -36,13 +36,11 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
     await user.save();
     const token = generateToken(user);
 
-    // Enviar token SOLO en cookie HttpOnly (seguro)
-    // SEGURIDAD: NO enviar token en body para prevenir exposición
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
-    // Respuesta sin token - solo datos de usuario necesarios para UI
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -81,13 +79,11 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 
     const token = generateToken(user);
 
-    // Enviar token SOLO en cookie HttpOnly (seguro)
-    // SEGURIDAD: NO enviar token en body para prevenir exposición
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
-    // Respuesta sin token - solo datos de usuario necesarios para UI
     res.json({
       message: 'Inicio de sesión exitoso',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -246,6 +242,7 @@ router.post('/login-socio', authLimiter, async (req, res) => {
 
     res.json({
       message: 'Inicio de sesión exitoso',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,

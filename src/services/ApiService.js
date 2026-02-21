@@ -166,13 +166,19 @@ class ApiService {
 
   /**
    * Build headers for request
-   * SEGURIDAD: No enviamos Authorization header, usamos cookies HttpOnly exclusivamente
-   * El token se envía automáticamente con credentials: 'include'
+   * Cookie HttpOnly es el método principal, pero si el navegador bloquea
+   * cookies de terceros (cross-origin), se usa Authorization header como fallback.
    */
   getHeaders() {
-    return {
+    const headers = {
       'Content-Type': 'application/json'
     };
+    // Fallback: enviar token como Authorization header si está guardado
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   /**
@@ -296,9 +302,10 @@ class ApiService {
    */
   async login(email, password) {
     const data = await this.post('/auth/login', { email, password });
+    // Guardar token para fallback de Authorization header
+    if (data.token) localStorage.setItem('auth_token', data.token);
     // Guardar datos de usuario para UI (sin información sensible)
     if (data.user && data.user.role !== 'MINISTRO_FE') {
-      // Crear copia sin datos sensibles
       const safeUser = {
         _id: data.user._id,
         rut: data.user.rut || '',
@@ -323,7 +330,7 @@ class ApiService {
    */
   async register(userData) {
     const data = await this.post('/auth/register', userData);
-    // Guardar datos de usuario para UI (sin información sensible)
+    if (data.token) localStorage.setItem('auth_token', data.token);
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
@@ -479,7 +486,7 @@ class ApiService {
    */
   async loginMinistro(email, password) {
     const data = await this.post('/ministros/login', { email, password });
-    // Guardar datos de ministro para UI (sin información sensible)
+    if (data.token) localStorage.setItem('auth_token', data.token);
     if (data.ministro) {
       const safeMinistro = {
         _id: data.ministro._id,
@@ -597,6 +604,8 @@ class ApiService {
 
   async loginSocio(lastName, rut) {
     const data = await this.post('/auth/login-socio', { lastName, rut });
+    // Guardar token para fallback de Authorization header
+    if (data.token) localStorage.setItem('auth_token', data.token);
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
