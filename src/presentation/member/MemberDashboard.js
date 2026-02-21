@@ -71,7 +71,12 @@ class MemberDashboard {
     }
 
     switch (pageName) {
-      case 'overview': container.innerHTML = this.renderOverview(); break;
+      case 'overview':
+        container.innerHTML = this.renderOverview();
+        container.querySelectorAll('.btn-overview-assembly').forEach(btn => {
+          btn.addEventListener('click', () => this.showAssemblyDetail(btn.dataset.id));
+        });
+        break;
       case 'directorio': container.innerHTML = this.renderDirectorio(); break;
       case 'documentos':
         container.innerHTML = this.renderDocumentos();
@@ -149,70 +154,84 @@ class MemberDashboard {
     const pd = org.provisionalDirectorio || {};
     const dirType = pd.type === 'ELECTO' ? 'Electo' : 'Provisorio';
 
+    // Upcoming/active assemblies for notification
+    const activeAssemblies = (org.assemblies || []).filter(a =>
+      ['convocada', 'en_curso'].includes(a.status)
+    );
+
     return `
       <div class="org-content-area">
         <div class="org-section-header">
           <h2 class="org-section-title">${org.organizationName || 'Mi Organización'}</h2>
         </div>
 
+        ${activeAssemblies.length > 0 ? `
+        <div style="margin-bottom:20px;display:grid;gap:10px;">
+          ${activeAssemblies.map(a => {
+            const isEnCurso = a.status === 'en_curso';
+            const hasOpenVoting = (a.agendaItems || []).some(i => i.votingOpen);
+            const borderColor = isEnCurso ? '#059669' : '#2563eb';
+            const bgColor = isEnCurso ? '#ecfdf5' : '#eff6ff';
+            const iconColor = isEnCurso ? '#059669' : '#2563eb';
+            return `
+            <div style="padding:16px 20px;background:${bgColor};border:2px solid ${borderColor};border-radius:12px;display:flex;align-items:center;gap:14px;">
+              <div style="width:42px;height:42px;border-radius:50%;background:${borderColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M15 17h5l-1.4-1.4A6.97 6.97 0 0 0 21 11a7 7 0 1 0-14 0c0 1.7.6 3.3 1.6 4.6L7 17h5"/><path d="M12 21a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2z"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700;color:${iconColor};font-size:15px;">
+                  ${isEnCurso ? 'Asamblea en curso' : 'Convocatoria a Asamblea'}
+                  ${hasOpenVoting ? ' - Votacion abierta' : ''}
+                </div>
+                <div style="font-size:14px;color:#374151;margin-top:2px;">${a.title || 'Asamblea'} ${a.date ? '- ' + new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : ''} ${a.time || ''}</div>
+              </div>
+              <button class="btn-overview-assembly" data-id="${a.id}" style="padding:8px 16px;border:2px solid ${borderColor};border-radius:8px;background:white;color:${borderColor};cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;">Ver Detalle</button>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
         <div class="org-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;">
-          <div class="org-stat-card" style="padding:16px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:12px;text-align:center;">
+          <div style="padding:16px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:12px;text-align:center;">
             <div style="font-size:28px;font-weight:700;color:#2563eb;">${memberCount}</div>
             <div style="font-size:12px;color:#6b7280;font-weight:600;margin-top:4px;">Socios</div>
           </div>
-          <div class="org-stat-card" style="padding:16px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:12px;text-align:center;">
+          <div style="padding:16px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:12px;text-align:center;">
             <div style="font-size:28px;font-weight:700;color:#059669;">${assemblyCount}</div>
             <div style="font-size:12px;color:#6b7280;font-weight:600;margin-top:4px;">Asambleas</div>
           </div>
-          <div class="org-stat-card" style="padding:16px;background:linear-gradient(135deg,#fefce8,#fef3c7);border-radius:12px;text-align:center;">
+          <div style="padding:16px;background:linear-gradient(135deg,#fefce8,#fef3c7);border-radius:12px;text-align:center;">
             <div style="font-size:14px;font-weight:700;color:#b45309;margin-top:4px;">${dirType}</div>
             <div style="font-size:12px;color:#6b7280;font-weight:600;margin-top:4px;">Directorio</div>
           </div>
-          <div class="org-stat-card" style="padding:16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:12px;text-align:center;">
+          <div style="padding:16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:12px;text-align:center;">
             <div style="font-size:14px;font-weight:700;color:${statusColor};margin-top:4px;">${statusLabel}</div>
             <div style="font-size:12px;color:#6b7280;font-weight:600;margin-top:4px;">Estado</div>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+          <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Tipo de Organización</span>
             <div style="margin-top:6px;font-weight:600;color:#1e293b;">${typeName}</div>
           </div>
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+          <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Dirección</span>
             <div style="margin-top:6px;color:#1e293b;">${org.address || '-'}</div>
           </div>
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+          <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Comuna</span>
             <div style="margin-top:6px;color:#1e293b;">${org.comuna || 'Renca'}</div>
           </div>
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+          <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Unidad Vecinal</span>
             <div style="margin-top:6px;color:#1e293b;">${org.unidadVecinal || '-'}</div>
           </div>
-          ${org.contactEmail ? `
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-            <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Email de Contacto</span>
-            <div style="margin-top:6px;color:#1e293b;">${org.contactEmail}</div>
-          </div>` : ''}
-          ${org.contactPhone ? `
-          <div class="org-info-card" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-            <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Teléfono de Contacto</span>
-            <div style="margin-top:6px;color:#1e293b;">${org.contactPhone}</div>
-          </div>` : ''}
         </div>
 
         ${org.description ? `
         <div style="margin-top:16px;padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
           <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Descripción</span>
           <p style="margin:8px 0 0;color:#374151;line-height:1.6;">${org.description}</p>
-        </div>` : ''}
-
-        ${org.objectives ? `
-        <div style="margin-top:16px;padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-          <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Objetivos</span>
-          <p style="margin:8px 0 0;color:#374151;line-height:1.6;">${org.objectives}</p>
         </div>` : ''}
       </div>
     `;
@@ -658,54 +677,98 @@ class MemberDashboard {
   renderAsambleas() {
     const asambleas = this.org.assemblies || [];
     const statusConfig = {
-      draft: { label: 'Borrador', color: '#6b7280', bg: '#f3f4f6' },
-      convocada: { label: 'Convocada', color: '#2563eb', bg: '#eff6ff' },
-      en_curso: { label: 'En Curso', color: '#059669', bg: '#ecfdf5' },
-      finalizada: { label: 'Finalizada', color: '#7c3aed', bg: '#f5f3ff' },
-      cancelada: { label: 'Cancelada', color: '#ef4444', bg: '#fef2f2' }
+      draft: { label: 'Borrador', color: '#6b7280', bg: '#f3f4f6', icon: '&#128221;' },
+      convocada: { label: 'Convocada', color: '#2563eb', bg: '#eff6ff', icon: '&#128227;' },
+      en_curso: { label: 'En Curso', color: '#059669', bg: '#ecfdf5', icon: '&#9989;' },
+      finalizada: { label: 'Finalizada', color: '#7c3aed', bg: '#f5f3ff', icon: '&#9989;' },
+      cancelada: { label: 'Cancelada', color: '#ef4444', bg: '#fef2f2', icon: '&#10060;' }
+    };
+
+    const activeOnes = asambleas.filter(a => ['convocada', 'en_curso'].includes(a.status));
+    const pastOnes = asambleas.filter(a => ['finalizada', 'cancelada'].includes(a.status));
+    const draftOnes = asambleas.filter(a => a.status === 'draft');
+
+    const renderCard = (a) => {
+      const st = statusConfig[a.status] || statusConfig.draft;
+      const hasOpenVoting = (a.agendaItems || []).some(item => item.votingOpen);
+      const isActive = ['convocada', 'en_curso'].includes(a.status);
+      const agendaTypes = (a.agendaItems || []).map(i => {
+        if (i.type === 'eleccion_directorio') return 'Eleccion de Directorio';
+        if (i.type === 'aprobacion_presupuesto') return 'Presupuesto';
+        if (i.type === 'reforma_estatutos') return 'Reforma Estatutos';
+        return i.title;
+      });
+      return `
+        <div style="padding:20px;background:white;border-radius:14px;border:1px solid ${isActive ? st.color : '#e5e7eb'};${isActive ? `box-shadow:0 0 0 1px ${st.color},0 4px 12px rgba(0,0,0,0.06);` : 'box-shadow:0 2px 8px rgba(0,0,0,0.04);'}transition:all 0.2s;cursor:pointer;" class="btn-member-view-assembly" data-id="${a.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <span style="font-size:16px;font-weight:700;color:#1e293b;">${a.title || 'Asamblea'}</span>
+                <span style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">${st.label}</span>
+                ${hasOpenVoting ? '<span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;animation:pulse 2s infinite;">Votacion Abierta</span>' : ''}
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                ${a.date ? `<span style="font-size:13px;color:#6b7280;display:flex;align-items:center;gap:5px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  ${new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}${a.time ? ' ' + a.time : ''}
+                </span>` : ''}
+                <span style="font-size:13px;color:#6b7280;display:flex;align-items:center;gap:5px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  ${(a.attendees || []).length} asistentes
+                </span>
+                <span style="font-size:13px;color:#6b7280;">${(a.agendaItems || []).length} punto(s)</span>
+              </div>
+              ${agendaTypes.length > 0 ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${agendaTypes.map(t => `<span style="font-size:11px;background:#f3f4f6;color:#4b5563;padding:3px 8px;border-radius:6px;">${t}</span>`).join('')}</div>` : ''}
+            </div>
+            <div style="color:#2563eb;flex-shrink:0;margin-top:4px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>`;
     };
 
     return `
       <div class="org-content-area">
-        <div class="org-section-header">
-          <h2 class="org-section-title">Asambleas</h2>
+        <div class="org-section-header" style="margin-bottom:20px;">
+          <h2 class="org-section-title" style="font-size:22px;font-weight:700;color:#1e293b;">Asambleas</h2>
         </div>
-        ${asambleas.length > 0 ? `
-          <div style="display:grid;gap:12px;">
-            ${asambleas.map(a => {
-              const st = statusConfig[a.status] || statusConfig.draft;
-              const hasOpenVoting = (a.agendaItems || []).some(item => item.votingOpen);
-              return `
-              <div style="padding:16px 20px;background:white;border-radius:12px;border:1px solid #e5e7eb;${hasOpenVoting ? 'border-color:#059669;box-shadow:0 0 0 1px #059669;' : ''}transition:box-shadow 0.2s;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-                  <div style="flex:1;">
-                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                      <strong style="font-size:15px;color:#1e293b;">${a.title || 'Asamblea'}</strong>
-                      <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">${st.label}</span>
-                      ${hasOpenVoting ? '<span style="background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">Votación Abierta</span>' : ''}
-                    </div>
-                    <div style="display:flex;align-items:center;gap:16px;margin-top:10px;">
-                      ${a.date ? `<span style="font-size:13px;color:#6b7280;display:flex;align-items:center;gap:4px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        ${new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}
-                      </span>` : ''}
-                      <span style="font-size:13px;color:#6b7280;">${(a.agendaItems || []).length} punto(s)</span>
-                      <span style="font-size:13px;color:#6b7280;">${(a.attendees || []).length} asistentes</span>
-                    </div>
-                  </div>
-                  <button class="btn-member-view-assembly" data-id="${a.id}" style="padding:8px 20px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;transition:all 0.2s;">Ver Detalle</button>
-                </div>
-              </div>
-            `;}).join('')}
+
+        ${activeOnes.length > 0 ? `
+          <div style="margin-bottom:24px;">
+            <h3 style="font-size:14px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Proximas / En Curso
+            </h3>
+            <div style="display:grid;gap:12px;">${activeOnes.map(renderCard).join('')}</div>
           </div>
-        ` : `
-        <div class="org-empty-state" style="padding:48px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" style="margin:0 auto 12px;">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        ` : ''}
+
+        ${pastOnes.length > 0 ? `
+          <div style="margin-bottom:24px;">
+            <h3 style="font-size:14px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Historial
+            </h3>
+            <div style="display:grid;gap:12px;">${pastOnes.map(renderCard).join('')}</div>
+          </div>
+        ` : ''}
+
+        ${draftOnes.length > 0 ? `
+          <div style="margin-bottom:24px;">
+            <h3 style="font-size:14px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Borradores</h3>
+            <div style="display:grid;gap:12px;">${draftOnes.map(renderCard).join('')}</div>
+          </div>
+        ` : ''}
+
+        ${asambleas.length === 0 ? `
+        <div style="padding:60px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:16px;">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" style="margin:0 auto 16px;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
-          <p style="color:#6b7280;margin:0;">No hay asambleas registradas.</p>
+          <p style="color:#6b7280;margin:0;font-size:15px;">No hay asambleas registradas aun.</p>
+          <p style="color:#9ca3af;margin:8px 0 0;font-size:13px;">Las asambleas seran visibles aqui cuando el directorio las convoque.</p>
         </div>
-        `}
+        ` : ''}
       </div>
     `;
   }
@@ -738,11 +801,11 @@ class MemberDashboard {
     const quorumMet = attendeeCount >= quorumRequired;
 
     const agendaTypeLabels = {
-      eleccion_directorio: 'Elección de Directorio',
-      aprobacion_presupuesto: 'Aprobación de Presupuesto',
+      eleccion_directorio: 'Eleccion de Directorio',
+      aprobacion_presupuesto: 'Aprobacion de Presupuesto',
       reforma_estatutos: 'Reforma de Estatutos',
       memoria_anual: 'Memoria Anual',
-      disolucion: 'Disolución',
+      disolucion: 'Disolucion',
       custom: 'Tema General'
     };
 
@@ -755,100 +818,164 @@ class MemberDashboard {
           <button class="modal-close">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
+          <!-- Info grid -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
-            <div style="padding:12px;background:#f8fafc;border-radius:8px;">
-              <span style="font-size:12px;color:#6b7280;">Estado</span>
-              <div style="margin-top:4px;"><span style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:10px;font-size:13px;font-weight:600;">${st.label}</span></div>
+            <div style="padding:14px;background:#f8fafc;border-radius:10px;">
+              <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Estado</span>
+              <div style="margin-top:6px;"><span style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:10px;font-size:13px;font-weight:600;">${st.label}</span></div>
             </div>
-            <div style="padding:12px;border-radius:8px;background:${quorumMet ? '#ecfdf5' : '#fef2f2'};">
-              <span style="font-size:12px;color:#6b7280;">Quórum</span>
-              <div style="margin-top:4px;font-weight:600;color:${quorumMet ? '#059669' : '#ef4444'};">${attendeeCount} / ${quorumRequired}</div>
+            <div style="padding:14px;background:#f8fafc;border-radius:10px;">
+              <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Tipo</span>
+              <div style="margin-top:6px;font-weight:600;color:#1e293b;">${assembly.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</div>
+            </div>
+            <div style="padding:14px;background:#f8fafc;border-radius:10px;">
+              <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Fecha</span>
+              <div style="margin-top:6px;font-weight:600;color:#1e293b;">${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : '-'} ${assembly.time || ''}</div>
+            </div>
+            <div style="padding:14px;border-radius:10px;background:${quorumMet ? '#ecfdf5' : '#fef2f2'};">
+              <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Quorum</span>
+              <div style="margin-top:6px;font-weight:600;color:${quorumMet ? '#059669' : '#ef4444'};">${attendeeCount} / ${quorumRequired}
+                <span style="font-size:11px;font-weight:400;color:#6b7280;">(${assembly.quorumValue || 50}${assembly.quorumType === 'percentage' ? '%' : ' pers.'})</span>
+              </div>
             </div>
           </div>
 
-          <h4 style="margin:16px 0 8px;">Puntos de Agenda</h4>
+          ${assembly.description ? `<div style="padding:14px;background:#f8fafc;border-radius:10px;margin-bottom:20px;"><span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Descripcion</span><p style="margin:6px 0 0;color:#374151;font-size:14px;line-height:1.5;">${assembly.description}</p></div>` : ''}
+
+          <h4 style="margin:0 0 12px;font-size:16px;color:#1e293b;">Puntos de Agenda</h4>
           ${(assembly.agendaItems || []).map((item, idx) => {
             const typeLabel = agendaTypeLabels[item.type] || item.type;
             const isElection = item.type === 'eleccion_directorio';
             const alreadyVoted = (item.votes || []).some(v => v.voterRut === voterRut);
             const canVote = assembly.status === 'en_curso' && item.votingOpen && !alreadyVoted;
+            const candidates = item.candidates || [];
 
+            // Candidates display for elections (read-only, when not voting)
+            let candidatesUI = '';
+            if (isElection && candidates.length > 0 && !canVote) {
+              if (item.votingMode === 'per_cargo') {
+                const byCargo = {};
+                candidates.forEach(c => {
+                  const key = c.cargo || 'Sin cargo';
+                  if (!byCargo[key]) byCargo[key] = [];
+                  byCargo[key].push(c);
+                });
+                candidatesUI = `
+                  <div style="margin-top:12px;">
+                    <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Candidatos (${candidates.length})</div>
+                    <div style="display:grid;gap:6px;">
+                      ${Object.entries(byCargo).map(([cargo, cands]) => `
+                        <div style="padding:10px 14px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0;">
+                          <div style="font-size:11px;font-weight:600;color:#2563eb;text-transform:capitalize;margin-bottom:4px;">${cargo}</div>
+                          ${cands.map(c => `<div style="font-size:13px;color:#374151;">${c.firstName} ${c.lastName}</div>`).join('')}
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>`;
+              } else {
+                const listas = {};
+                candidates.forEach(c => {
+                  const key = c.lista || 'Sin lista';
+                  if (!listas[key]) listas[key] = [];
+                  listas[key].push(c);
+                });
+                candidatesUI = `
+                  <div style="margin-top:12px;">
+                    <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Listas (${Object.keys(listas).length})</div>
+                    <div style="display:grid;gap:6px;">
+                      ${Object.entries(listas).map(([lista, cands]) => `
+                        <div style="padding:10px 14px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0;">
+                          <div style="font-size:13px;font-weight:600;color:#2563eb;margin-bottom:4px;">${lista}</div>
+                          <div style="font-size:12px;color:#6b7280;">${cands.map(c => `${c.cargo ? c.cargo + ': ' : ''}${c.firstName} ${c.lastName}`).join(', ')}</div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>`;
+              }
+            }
+
+            // Voting UI
             let votingUI = '';
             if (canVote && isElection) {
               if (item.votingMode === 'per_cargo') {
                 const byCargo = {};
-                (item.candidates || []).forEach(c => {
+                candidates.forEach(c => {
                   if (!byCargo[c.cargo]) byCargo[c.cargo] = [];
                   byCargo[c.cargo].push(c);
                 });
                 votingUI = `
-                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_cargo" style="margin-top:12px;">
+                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_cargo" style="margin-top:14px;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                    <div style="font-size:14px;font-weight:600;color:#15803d;margin-bottom:12px;">Emitir tu voto</div>
                     ${Object.entries(byCargo).map(([cargo, cands]) => `
-                      <div style="margin-bottom:12px;">
-                        <strong style="font-size:13px;text-transform:capitalize;">${cargo}</strong>
-                        <div style="display:grid;gap:6px;margin-top:6px;">
+                      <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;font-weight:600;color:#374151;text-transform:capitalize;margin-bottom:6px;">${cargo}</div>
+                        <div style="display:grid;gap:6px;">
                           ${cands.map(c => `
-                            <label style="display:flex;align-items:center;gap:10px;padding:10px;background:#f9fafb;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s;">
-                              <input type="radio" name="vote-${item.id}-${cargo}" value="${c.rut}" style="width:18px;height:18px;">
-                              <span>${c.firstName} ${c.lastName}</span>
+                            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:white;border-radius:8px;cursor:pointer;border:2px solid #e5e7eb;transition:all 0.2s;">
+                              <input type="radio" name="vote-${item.id}-${cargo}" value="${c.rut}" style="width:18px;height:18px;accent-color:#2563eb;">
+                              <span style="font-size:14px;">${c.firstName} ${c.lastName}</span>
                             </label>
                           `).join('')}
                         </div>
                       </div>
                     `).join('')}
-                    <button class="btn-submit-vote" data-agenda-id="${item.id}" style="margin-top:8px;padding:10px 24px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Votar</button>
+                    <button class="btn-submit-vote" data-agenda-id="${item.id}" style="margin-top:4px;padding:12px 28px;border:none;border-radius:10px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s;">Emitir Voto</button>
                   </div>
                 `;
               } else if (item.votingMode === 'per_lista') {
                 const listas = {};
-                (item.candidates || []).forEach(c => {
+                candidates.forEach(c => {
                   if (!listas[c.lista]) listas[c.lista] = [];
                   listas[c.lista].push(c);
                 });
                 votingUI = `
-                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_lista" style="margin-top:12px;">
+                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_lista" style="margin-top:14px;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                    <div style="font-size:14px;font-weight:600;color:#15803d;margin-bottom:12px;">Emitir tu voto</div>
                     <div style="display:grid;gap:8px;">
                       ${Object.entries(listas).map(([lista, cands]) => `
-                        <label style="display:flex;align-items:start;gap:12px;padding:14px;background:#f9fafb;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s;">
-                          <input type="radio" name="vote-lista-${item.id}" value="${lista}" style="width:18px;height:18px;margin-top:2px;">
+                        <label style="display:flex;align-items:start;gap:12px;padding:14px;background:white;border-radius:10px;cursor:pointer;border:2px solid #e5e7eb;transition:all 0.2s;">
+                          <input type="radio" name="vote-lista-${item.id}" value="${lista}" style="width:18px;height:18px;margin-top:2px;accent-color:#2563eb;">
                           <div>
-                            <strong>${lista}</strong>
+                            <strong style="font-size:14px;">${lista}</strong>
                             <div style="font-size:12px;color:#6b7280;margin-top:4px;">${cands.map(c => `${c.cargo ? c.cargo + ': ' : ''}${c.firstName} ${c.lastName}`).join(', ')}</div>
                           </div>
                         </label>
                       `).join('')}
                     </div>
-                    <button class="btn-submit-vote" data-agenda-id="${item.id}" style="margin-top:8px;padding:10px 24px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Votar</button>
+                    <button class="btn-submit-vote" data-agenda-id="${item.id}" style="margin-top:10px;padding:12px 28px;border:none;border-radius:10px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:14px;">Emitir Voto</button>
                   </div>
                 `;
               }
             }
 
+            // Results UI
             let resultUI = '';
             if (item.result && assembly.status === 'finalizada') {
               if (item.result.mode === 'per_cargo') {
-                resultUI = `<div style="margin-top:8px;padding:10px;background:#f5f3ff;border-radius:8px;font-size:13px;">
-                  <strong style="color:#7c3aed;">Resultados:</strong>
-                  ${Object.entries(item.result.winners || {}).map(([cargo, w]) => `<div style="margin-top:4px;">${cargo}: <strong>${w.firstName} ${w.lastName}</strong> (${w.votes} votos)</div>`).join('')}
+                resultUI = `<div style="margin-top:12px;padding:14px;background:#f5f3ff;border-radius:10px;border:1px solid #e9d5ff;">
+                  <div style="font-size:13px;font-weight:600;color:#7c3aed;margin-bottom:8px;">Resultados</div>
+                  ${Object.entries(item.result.winners || {}).map(([cargo, w]) => `<div style="margin-top:4px;font-size:13px;"><span style="text-transform:capitalize;color:#6b7280;">${cargo}:</span> <strong>${w.firstName} ${w.lastName}</strong> <span style="color:#6b7280;">(${w.votes} votos)</span></div>`).join('')}
                 </div>`;
               } else if (item.result.mode === 'per_lista') {
-                resultUI = `<div style="margin-top:8px;padding:10px;background:#f5f3ff;border-radius:8px;font-size:13px;">
-                  <strong style="color:#7c3aed;">Lista ganadora: ${item.result.winningLista || '-'}</strong>
-                  (${item.result.votesByLista?.[item.result.winningLista] || 0} votos)
+                resultUI = `<div style="margin-top:12px;padding:14px;background:#f5f3ff;border-radius:10px;border:1px solid #e9d5ff;">
+                  <div style="font-size:13px;font-weight:600;color:#7c3aed;">Lista ganadora: ${item.result.winningLista || '-'}</div>
+                  <div style="font-size:12px;color:#6b7280;margin-top:4px;">${item.result.votesByLista?.[item.result.winningLista] || 0} votos</div>
                 </div>`;
               }
             }
 
             return `
-            <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;${item.votingOpen ? 'border-color:#059669;background:#f0fdf4;' : ''}">
+            <div style="border:1px solid ${item.votingOpen ? '#86efac' : '#e5e7eb'};border-radius:12px;padding:16px;margin-bottom:12px;${item.votingOpen ? 'background:#f0fdf4;box-shadow:0 0 0 1px #86efac;' : 'background:white;'}">
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                  <strong>${idx + 1}. ${item.title}</strong>
-                  <span style="font-size:11px;color:#6b7280;margin-left:8px;">${typeLabel}</span>
+                  <strong style="font-size:15px;color:#1e293b;">${idx + 1}. ${item.title}</strong>
+                  <span style="font-size:11px;color:#6b7280;margin-left:8px;background:#f3f4f6;padding:2px 8px;border-radius:6px;">${typeLabel}</span>
+                  ${isElection && item.votingMode ? `<span style="font-size:11px;color:#2563eb;margin-left:4px;">(${item.votingMode === 'per_cargo' ? 'Por cargo' : 'Por lista'})</span>` : ''}
                 </div>
-                ${item.votingOpen ? '<span style="background:#ecfdf5;color:#059669;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Votación Abierta</span>' : ''}
+                ${item.votingOpen ? '<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;">Votacion Abierta</span>' : ''}
               </div>
-              ${alreadyVoted && !item.result ? '<div style="margin-top:8px;color:#059669;font-size:13px;font-weight:600;">Tu voto ha sido registrado.</div>' : ''}
+              ${alreadyVoted && !item.result ? '<div style="margin-top:10px;padding:10px 14px;background:#ecfdf5;border-radius:8px;color:#059669;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Tu voto ha sido registrado.</div>' : ''}
+              ${candidatesUI}
               ${votingUI}
               ${resultUI}
             </div>`;
@@ -898,7 +1025,7 @@ class MemberDashboard {
         } catch (err) {
           showToast(err.message || 'Error al votar', 'error');
           btn.disabled = false;
-          btn.textContent = 'Votar';
+          btn.textContent = 'Emitir Voto';
         }
       });
     });

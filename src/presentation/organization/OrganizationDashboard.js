@@ -4308,10 +4308,9 @@ ${comm.message || 'Sin contenido'}
     });
 
     // Nueva asamblea
-    const btnNewAssembly = container.querySelector('#btn-new-assembly') || container.querySelector('#btn-first-assembly');
-    if (btnNewAssembly) {
-      btnNewAssembly.addEventListener('click', () => this.openNewAssemblyModalInPage(container));
-    }
+    container.querySelectorAll('#btn-new-assembly, #btn-first-assembly').forEach(btn => {
+      btn.addEventListener('click', () => this.openNewAssemblyModalInPage(container));
+    });
 
     // Nuevo proyecto
     const btnNewProject = container.querySelector('#btn-new-project') || container.querySelector('#btn-first-project');
