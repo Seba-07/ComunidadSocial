@@ -287,6 +287,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
           await memberDashboard.init();
 
+          // Actualizar nombre de la organización en sidebar y home
+          if (memberDashboard.org) {
+            const realOrgName = memberDashboard.org.organizationName || '';
+            if (realOrgName) {
+              // Sidebar title
+              const sidebarTitle = document.querySelector('#member-nav-section .nav-section-title');
+              if (sidebarTitle) {
+                const svgIcon = sidebarTitle.querySelector('svg');
+                sidebarTitle.textContent = '';
+                if (svgIcon) sidebarTitle.appendChild(svgIcon);
+                sidebarTitle.append(` ${realOrgName}`);
+              }
+              // Home welcome subtitle
+              const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+              if (homeWelcome) homeWelcome.textContent = realOrgName;
+            }
+          }
+
           // Listeners para navegación de miembro (sidebar + home quick links + bottom nav)
           const setupMemberNavListeners = () => {
             document.querySelectorAll('[data-page^="member-"]').forEach(link => {

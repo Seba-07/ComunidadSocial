@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Organization from '../models/Organization.js';
 import { generateToken, authenticate, COOKIE_OPTIONS } from '../middleware/auth.js';
 import { authLimiter, registerLimiter, sensitiveLimiter } from '../middleware/security.js';
 import { validate, registerSchema, loginSchema, changePasswordSchema } from '../middleware/validation.js';
@@ -229,6 +230,13 @@ router.post('/login-socio', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu RUT.' });
     }
 
+    // Obtener nombre de la organización
+    let organizationName = '';
+    if (user.organizationId) {
+      const org = await Organization.findById(user.organizationId).select('organizationName').lean();
+      if (org) organizationName = org.organizationName;
+    }
+
     const token = generateToken(user);
     res.cookie('auth_token', token, COOKIE_OPTIONS);
 
@@ -242,6 +250,7 @@ router.post('/login-socio', authLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         organizationId: user.organizationId,
+        organizationName: organizationName,
         mustChangePassword: user.mustChangePassword
       },
       mustChangePassword: user.mustChangePassword
