@@ -4456,7 +4456,7 @@ ${comm.message || 'Sin contenido'}
 
     // Eliminar asamblea
     container.querySelectorAll('.btn-delete-assembly').forEach(btn => {
-      btn.addEventListener('click', () => this.deleteItemInPage('assemblies', btn.dataset.id, 'asamblea', container));
+      btn.addEventListener('click', () => this.deleteAssemblyInPage(btn.dataset.id, container));
     });
 
     // Ver detalle de proyecto
@@ -4649,6 +4649,19 @@ ${comm.message || 'Sin contenido'}
   deleteItemInPage(type, id, label, container) {
     this.deleteItem(type, id, label, { querySelector: () => null, querySelectorAll: () => [] });
     setTimeout(() => this.refreshContentInContainer(container, this.currentTab), 500);
+  }
+
+  async deleteAssemblyInPage(assemblyId, container) {
+    if (!confirm('¿Está seguro de eliminar esta asamblea? Esta acción no se puede deshacer.')) return;
+    const orgId = this.currentOrg._id || this.currentOrg.id;
+    try {
+      await apiService.deleteAssembly(orgId, assemblyId);
+      this.currentOrg.assemblies = (this.currentOrg.assemblies || []).filter(a => a.id !== assemblyId);
+      showToast('Asamblea eliminada', 'success');
+      this.refreshContentInContainer(container, this.currentTab);
+    } catch (err) {
+      showToast('Error al eliminar asamblea', 'error');
+    }
   }
 
   deleteTransactionInPage(id, container) {

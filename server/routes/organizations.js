@@ -1540,6 +1540,33 @@ router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), asyn
   }
 });
 
+// Eliminar asamblea
+router.delete('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
+    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const assembly = org.assemblies[idx];
+    if (!['draft', 'convocada'].includes(assembly.status)) {
+      return res.status(400).json({ error: 'Solo se pueden eliminar asambleas en estado borrador o convocada' });
+    }
+
+    org.assemblies.splice(idx, 1);
+    await org.save();
+    res.json({ message: 'Asamblea eliminada correctamente' });
+  } catch (error) {
+    console.error('Delete assembly error:', error);
+    res.status(500).json({ error: 'Error al eliminar asamblea' });
+  }
+});
+
 // Cambiar estado de asamblea
 router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId(), async (req, res) => {
   try {
