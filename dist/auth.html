@@ -11,6 +11,7 @@
         .auth-page {
             min-height: 100vh;
             display: flex;
+            align-items: flex-start;
             background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%);
             position: relative;
             overflow: hidden;
@@ -143,19 +144,12 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .auth-forms-wrapper {
-            display: grid;
-        }
-
         .auth-form {
-            grid-area: 1 / 1;
-            visibility: hidden;
-            pointer-events: none;
+            display: none;
         }
 
         .auth-form.active {
-            visibility: visible;
-            pointer-events: auto;
+            display: block;
         }
 
         .form-group {
