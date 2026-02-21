@@ -5,6 +5,8 @@
 
 import { apiService } from '../../services/ApiService.js';
 import { orgDocumentService } from '../../services/OrgDocumentService.js';
+import { pdfService } from '../../services/PDFService.js';
+import { jsPDF } from 'jspdf';
 import { showToast } from '../../app.js';
 
 class MemberDashboard {
@@ -342,14 +344,14 @@ class MemberDashboard {
     const org = this.org;
     const hasEstatutos = !!org.estatutos;
 
-    const categoryLabels = {
-      ACTA_ASAMBLEA: 'Acta de Asamblea',
-      BALANCE: 'Balance Financiero',
-      INFORME: 'Informe',
-      CERTIFICADO: 'Certificado',
-      CORRESPONDENCIA: 'Correspondencia',
-      OTRO: 'Otro'
-    };
+    // Build legal document items
+    const legalDocs = [];
+    if (hasEstatutos) {
+      legalDocs.push({ type: 'estatutos', title: 'Estatutos', color: '#2563eb', bg: '#eff6ff' });
+    }
+    // Acta Constitutiva is always available (generated from org data)
+    legalDocs.push({ type: 'acta', title: 'Acta Constitutiva', color: '#7c3aed', bg: '#f5f3ff' });
+    legalDocs.push({ type: 'certificacion', title: 'Certificación Municipal', color: '#059669', bg: '#ecfdf5' });
 
     return `
       <div class="org-content-area">
@@ -357,25 +359,52 @@ class MemberDashboard {
           <h2 class="org-section-title">Documentos</h2>
         </div>
 
-        ${hasEstatutos ? `
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
           <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Documentos Legales</h3>
-          <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div style="display:grid;gap:12px;">
+            ${legalDocs.map(doc => `
+              <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <div style="width:40px;height:40px;border-radius:10px;background:${doc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${doc.color}" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div style="font-weight:600;color:#1e293b;">${doc.title}</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn-member-legal-doc" data-doc-type="${doc.type}" data-action="view" style="padding:8px 16px;border:1px solid ${doc.color};border-radius:8px;background:${doc.bg};color:${doc.color};cursor:pointer;font-weight:600;font-size:13px;">Ver</button>
+                  <button class="btn-member-legal-doc" data-doc-type="${doc.type}" data-action="download" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;color:#374151;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    PDF
+                  </button>
+                </div>
               </div>
-              <div>
-                <div style="font-weight:600;color:#1e293b;">Estatutos de la Organización</div>
+            `).join('')}
+          </div>
+        </div>
+
+        ${(org.assemblies || []).length > 0 ? `
+        <div style="margin-bottom:24px;">
+          <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Actas de Asamblea</h3>
+          <div style="display:grid;gap:12px;">
+            ${org.assemblies.map(a => `
+              <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-weight:600;color:#1e293b;">${a.title || 'Asamblea'}</div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:2px;">${a.date ? new Date(a.date).toLocaleDateString('es-CL') : ''}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <button class="btn-member-doc" data-action="view-estatutos" style="padding:8px 20px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;">Ver</button>
+            `).join('')}
           </div>
         </div>
         ` : ''}
 
         <div>
-          <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Documentos de la Organización</h3>
+          <h3 style="font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Documentos Subidos</h3>
           <div id="member-org-documents-list" style="display:grid;gap:12px;">
             <div style="padding:32px;text-align:center;color:#9ca3af;font-size:14px;">Cargando documentos...</div>
           </div>
@@ -385,14 +414,120 @@ class MemberDashboard {
   }
 
   attachDocumentosListeners(container) {
-    container.querySelectorAll('.btn-member-doc').forEach(btn => {
+    // Legal document buttons (view/download PDF)
+    container.querySelectorAll('.btn-member-legal-doc').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.action === 'view-estatutos') this.viewEstatutos();
+        const docType = btn.dataset.docType;
+        const action = btn.dataset.action;
+        if (action === 'view') this._viewLegalDocument(docType);
+        else if (action === 'download') this._downloadLegalDocument(docType);
       });
     });
 
-    // Load org documents asynchronously
+    // Load uploaded org documents asynchronously
     this._loadOrgDocuments(container);
+  }
+
+  _viewLegalDocument(docType) {
+    try {
+      const org = this.org;
+      let doc, title;
+
+      if (docType === 'estatutos') {
+        if (!org.estatutos) { showToast('No hay estatutos disponibles', 'error'); return; }
+        doc = this._generateEstatutosPDF(org);
+        title = 'Estatutos';
+      } else if (docType === 'acta') {
+        doc = pdfService.generateActaAsamblea(org);
+        title = 'Acta Constitutiva';
+      } else if (docType === 'certificacion') {
+        doc = pdfService.generateCertificacion(org, org.certificNumber || '');
+        title = 'Certificación Municipal';
+      } else { return; }
+
+      const blobUrl = pdfService.getPDFDataURL(doc);
+      this._showPDFModal(blobUrl, title, doc);
+    } catch (err) {
+      showToast('Error al generar el documento: ' + (err.message || ''), 'error');
+    }
+  }
+
+  _downloadLegalDocument(docType) {
+    try {
+      const org = this.org;
+      const orgName = (org.organizationName || 'Organizacion').replace(/\s+/g, '_');
+      let doc, filename;
+
+      if (docType === 'estatutos') {
+        if (!org.estatutos) { showToast('No hay estatutos disponibles', 'error'); return; }
+        doc = this._generateEstatutosPDF(org);
+        filename = `Estatutos_${orgName}.pdf`;
+      } else if (docType === 'acta') {
+        doc = pdfService.generateActaAsamblea(org);
+        filename = `Acta_Constitutiva_${orgName}.pdf`;
+      } else if (docType === 'certificacion') {
+        doc = pdfService.generateCertificacion(org, org.certificNumber || '');
+        filename = `Certificacion_Municipal_${orgName}.pdf`;
+      } else { return; }
+
+      pdfService.downloadPDF(doc, filename);
+      showToast(`${filename} descargado`, 'success');
+    } catch (err) {
+      showToast('Error al descargar: ' + (err.message || ''), 'error');
+    }
+  }
+
+  _generateEstatutosPDF(org) {
+    const doc = new jsPDF();
+    const orgName = org.organizationName || 'Organización';
+    const content = org.estatutos || '';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ESTATUTOS', 105, 20, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text(orgName, 105, 28, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    const lines = doc.splitTextToSize(content, 170);
+    let y = 40;
+    const pageHeight = 280;
+
+    for (const line of lines) {
+      if (y > pageHeight) { doc.addPage(); y = 20; }
+      doc.text(line, 20, y);
+      y += 5;
+    }
+
+    return doc;
+  }
+
+  _showPDFModal(blobUrl, title, doc) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:200000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `
+      <div style="background:white;border-radius:16px;width:100%;max-width:800px;height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="margin:0;font-size:18px;color:#1e293b;">${title}</h3>
+          <div style="display:flex;gap:8px;">
+            <button id="modal-download-pdf" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">Descargar PDF</button>
+            <button id="modal-close-pdf" style="background:#f1f5f9;border:none;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;">
+          <iframe src="${blobUrl}" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#modal-close-pdf').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    modal.querySelector('#modal-download-pdf').addEventListener('click', () => {
+      const orgName = (this.org.organizationName || 'Doc').replace(/\s+/g, '_');
+      pdfService.downloadPDF(doc, `${title.replace(/\s+/g, '_')}_${orgName}.pdf`);
+    });
   }
 
   async _loadOrgDocuments(container) {
@@ -401,14 +536,10 @@ class MemberDashboard {
     if (!listEl || !orgId) return;
 
     const categoryLabels = {
-      ACTA_ASAMBLEA: 'Acta de Asamblea',
-      BALANCE: 'Balance Financiero',
-      INFORME: 'Informe',
-      CERTIFICADO: 'Certificado',
-      CORRESPONDENCIA: 'Correspondencia',
-      OTRO: 'Otro'
+      ACTA_ASAMBLEA: 'Acta de Asamblea', BALANCE: 'Balance Financiero',
+      INFORME: 'Informe', CERTIFICADO: 'Certificado',
+      CORRESPONDENCIA: 'Correspondencia', OTRO: 'Otro'
     };
-
     const categoryColors = {
       ACTA_ASAMBLEA: { color: '#7c3aed', bg: '#f5f3ff' },
       BALANCE: { color: '#059669', bg: '#ecfdf5' },
@@ -423,11 +554,8 @@ class MemberDashboard {
 
       if (!docs || docs.length === 0) {
         listEl.innerHTML = `
-          <div style="padding:48px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:12px;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" style="margin:0 auto 12px;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-            </svg>
-            <p style="color:#6b7280;margin:0;">No hay documentos subidos aún.</p>
+          <div style="padding:36px 24px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:12px;">
+            <p style="color:#9ca3af;margin:0;font-size:14px;">No hay documentos subidos adicionales.</p>
           </div>
         `;
         return;
@@ -440,22 +568,21 @@ class MemberDashboard {
         const date = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('es-CL') : '';
 
         return `
-          <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;transition:box-shadow 0.2s;">
+          <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
               <div style="width:40px;height:40px;border-radius:10px;background:${cat.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </div>
               <div style="min-width:0;">
-                <div style="font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${doc.name}</div>
+                <div style="font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${doc.name}</div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
                   <span style="background:${cat.bg};color:${cat.color};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">${catLabel}</span>
                   ${fileSize ? `<span style="font-size:12px;color:#9ca3af;">${fileSize}</span>` : ''}
                   ${date ? `<span style="font-size:12px;color:#9ca3af;">${date}</span>` : ''}
                 </div>
-                ${doc.description ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${doc.description}</div>` : ''}
               </div>
             </div>
-            <button class="btn-member-download-doc" data-doc-id="${doc._id}" style="padding:8px 16px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;margin-left:12px;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+            <button class="btn-member-download-doc" data-doc-id="${doc._id}" style="padding:8px 16px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;margin-left:12px;display:flex;align-items:center;gap:6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Descargar
             </button>
@@ -463,12 +590,11 @@ class MemberDashboard {
         `;
       }).join('');
 
-      // Attach download listeners
       listEl.querySelectorAll('.btn-member-download-doc').forEach(btn => {
         btn.addEventListener('click', async () => {
           const docId = btn.dataset.docId;
           btn.disabled = true;
-          btn.innerHTML = '<span>Descargando...</span>';
+          btn.textContent = 'Descargando...';
           try {
             await orgDocumentService.downloadDocument(orgId, docId);
           } catch (err) {
@@ -478,11 +604,10 @@ class MemberDashboard {
           btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar`;
         });
       });
-
     } catch (err) {
       listEl.innerHTML = `
         <div style="padding:24px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;">
-          <p style="color:#ef4444;margin:0;font-size:14px;">Error al cargar documentos: ${err.message || 'Error desconocido'}</p>
+          <p style="color:#ef4444;margin:0;font-size:14px;">Error al cargar documentos</p>
         </div>
       `;
     }
@@ -493,28 +618,6 @@ class MemberDashboard {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  viewEstatutos() {
-    const estatutos = this.org.estatutos;
-    if (!estatutos) return;
-
-    const modal = document.createElement('div');
-    modal.className = 'org-modal-overlay';
-    modal.innerHTML = `
-      <div class="org-modal" style="max-width:800px;max-height:90vh;">
-        <div class="org-modal-header">
-          <h3>Estatutos de la Organización</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="org-modal-body" style="padding:24px;overflow-y:auto;max-height:70vh;">
-          <div style="line-height:1.8;color:#374151;white-space:pre-wrap;font-size:14px;">${estatutos}</div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   // ==================== ACTIVIDADES ====================
