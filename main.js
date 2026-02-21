@@ -4729,7 +4729,7 @@ function setupUserRoleUI() {
 
     if (isAdmin) {
       setupAdminUI();
-    } else {
+    } else if (user.role !== 'MIEMBRO') {
       setupUserUI();
     }
   } catch (error) {
