@@ -41,15 +41,16 @@
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding-top: 60px;
-            min-height: calc(100vh - 60px);
             position: relative;
             z-index: 1;
         }
 
         .auth-left {
             flex: 1;
-            padding: 0 60px;
+            padding: 60px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -90,7 +91,7 @@
 
         .auth-right {
             flex: 1;
-            padding: 0 60px;
+            padding: 60px;
             display: flex;
             align-items: flex-start;
             justify-content: center;
@@ -148,19 +149,12 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .auth-forms-wrapper {
-            display: grid;
-        }
-
         .auth-form {
-            grid-area: 1 / 1;
-            visibility: hidden;
-            pointer-events: none;
+            display: none;
         }
 
         .auth-form.active {
-            visibility: visible;
-            pointer-events: auto;
+            display: block;
         }
 
         .form-group {
@@ -300,7 +294,6 @@
                         <button class="auth-tab" data-tab="register">Registrarse</button>
                     </div>
 
-                    <div class="auth-forms-wrapper">
                     <!-- Login Form -->
                     <form id="login-form" class="auth-form active">
                         <div class="form-group">
@@ -465,7 +458,6 @@
                             Al registrarte, aceptas los términos y condiciones del servicio
                         </div>
                     </form>
-                    </div>
                 </div>
             </div>
         </div>
