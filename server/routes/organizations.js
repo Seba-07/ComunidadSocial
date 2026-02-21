@@ -231,6 +231,32 @@ router.get('/my', authenticate, async (req, res) => {
   }
 });
 
+// Obtener la organización a la que pertenece un miembro (DEBE ir antes de /:id)
+router.get('/my-organization', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'MIEMBRO') {
+      return res.status(403).json({ error: 'Esta ruta es solo para miembros' });
+    }
+
+    if (!req.user.organizationId) {
+      return res.status(404).json({ error: 'No estás asociado a ninguna organización' });
+    }
+
+    const organization = await Organization.findById(req.user.organizationId)
+      .select('-corrections -validationData -ministroSignature')
+      .lean();
+
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    res.json(organization);
+  } catch (error) {
+    console.error('Get my organization error:', error);
+    res.status(500).json({ error: 'Error al obtener organización' });
+  }
+});
+
 // Get organization by ID
 router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
   try {
@@ -1398,33 +1424,6 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
 });
 
 // ==================== GESTIÓN DE ORGANIZACIONES ACTIVAS ====================
-
-// Obtener la organización a la que pertenece un miembro
-router.get('/my-organization', authenticate, async (req, res) => {
-  try {
-    // Solo para usuarios MIEMBRO
-    if (req.user.role !== 'MIEMBRO') {
-      return res.status(403).json({ error: 'Esta ruta es solo para miembros' });
-    }
-
-    if (!req.user.organizationId) {
-      return res.status(404).json({ error: 'No estás asociado a ninguna organización' });
-    }
-
-    const organization = await Organization.findById(req.user.organizationId)
-      .select('-corrections -validationData -ministroSignature')
-      .lean();
-
-    if (!organization) {
-      return res.status(404).json({ error: 'Organización no encontrada' });
-    }
-
-    res.json(organization);
-  } catch (error) {
-    console.error('Get my organization error:', error);
-    res.status(500).json({ error: 'Error al obtener organización' });
-  }
-});
 
 // ==================== GESTIÓN DE ASAMBLEAS ====================
 
