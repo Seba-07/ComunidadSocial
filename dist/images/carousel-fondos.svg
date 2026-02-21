@@ -1,0 +1,36 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Money bags and coins -->
+  <g transform="translate(200, 80)">
+    <!-- Money bag 1 -->
+    <ellipse cx="80" cy="150" rx="50" ry="20" fill="white" opacity="0.9"/>
+    <path d="M 30 150 Q 30 80 80 80 Q 130 80 130 150" fill="white" opacity="0.9"/>
+    <text x="80" y="135" font-family="Arial" font-size="48" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+    <path d="M 70 75 Q 65 65 70 60 Q 80 65 80 75" fill="white" opacity="0.9"/>
+    <path d="M 90 75 Q 95 65 90 60 Q 80 65 80 75" fill="white" opacity="0.9"/>
+
+    <!-- Money bag 2 -->
+    <ellipse cx="220" cy="140" rx="45" ry="18" fill="white" opacity="0.85"/>
+    <path d="M 175 140 Q 175 75 220 75 Q 265 75 265 140" fill="white" opacity="0.85"/>
+    <text x="220" y="125" font-family="Arial" font-size="42" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+    <path d="M 212 70 Q 208 62 212 58 Q 220 62 220 70" fill="white" opacity="0.85"/>
+    <path d="M 228 70 Q 232 62 228 58 Q 220 62 220 70" fill="white" opacity="0.85"/>
+
+    <!-- Coins -->
+    <circle cx="350" cy="120" r="35" fill="#fbbf24" opacity="0.9"/>
+    <text x="350" y="135" font-family="Arial" font-size="36" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+
+    <circle cx="390" cy="150" r="30" fill="#fbbf24" opacity="0.85"/>
+    <text x="390" y="163" font-family="Arial" font-size="32" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+
+    <circle cx="330" cy="165" r="28" fill="#fbbf24" opacity="0.8"/>
+    <text x="330" y="177" font-family="Arial" font-size="30" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Clock indicating deadline -->
+  <g transform="translate(620, 150)">
+    <circle cx="0" cy="0" r="50" fill="white" opacity="0.9"/>
+    <circle cx="0" cy="0" r="45" fill="none" stroke="rgba(6,95,70,0.3)" stroke-width="3"/>
+    <line x1="0" y1="0" x2="0" y2="-30" stroke="#065f46" stroke-width="4" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="20" y2="10" stroke="#065f46" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

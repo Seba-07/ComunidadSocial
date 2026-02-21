@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a8a">
+    <title>Dashboard Ministro de Fe - Comunidad Renca</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <!-- Design System -->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .ministro-dashboard {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== NOTIFICATIONS PANEL ===== */
+        .notifications-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .notifications-overlay.active {
+            display: block;
+        }
+
+        .notifications-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 420px;
+            max-width: 100%;
+            height: 100vh;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+            box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+            z-index: 99999 !important;
+            display: none;
+            flex-direction: column;
+            isolation: isolate;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .notifications-panel.active {
+            display: flex !important;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Estilos para acciones de notificaciones */
+        .notification-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .notification-action-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .notification-action-btn.mark-read {
+            color: #2563eb;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .notification-action-btn.mark-read:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+        }
+
+        .notification-action-btn.delete {
+            color: #dc2626;
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .notification-action-btn.delete:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .notifications-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notifications-mark-all {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .notifications-mark-all:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .notifications-header {
+            padding: 24px;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0ea5e9 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notifications-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .notifications-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .notifications-header h2 svg {
+            opacity: 0.9;
+        }
+
+        .notification-count-badge {
+            font-size: 11px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .notifications-close {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .notifications-close:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: rotate(90deg);
+        }
+
+        .notifications-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .notifications-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notifications-list::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .notification-item {
+            padding: 16px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .notification-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .notification-item:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .notification-item.unread {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+            border-color: #93c5fd;
+            border-left: 4px solid #2563eb;
+        }
+
+        .notification-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 8px;
+            height: 8px;
+            background: #2563eb;
+            border-radius: 50%;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        .notification-item.unread:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+            border-color: #3b82f6;
+        }
+
+        .notification-title {
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 6px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification-message {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .notification-time {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+
+        .notification-time::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: #cbd5e1;
+            border-radius: 50%;
+        }
+
+        .notifications-empty {
+            padding: 80px 20px;
+            text-align: center;
+            color: #94a3b8;
+            background: white;
+            border-radius: 16px;
+            margin: 12px;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .notifications-empty svg {
+            margin-bottom: 20px;
+            opacity: 0.4;
+            color: #cbd5e1;
+        }
+
+        .notifications-empty p {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        /* ===== LAYOUT ===== */
+        .dashboard-main {
+            flex: 1;
+            margin-top: var(--header-height, 72px);
+            padding: 24px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .ministro-sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+            z-index: 200;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ministro-sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 199;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* menu-btn inherited from styles.css */
+
+        /* ===== TOOLBAR ===== */
+        .ministro-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ministro-toolbar h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .ministro-toolbar-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 14px;
+            background: #2563eb;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* ===== CLEAN FILTER CHIPS ===== */
+        .ministro-filters-clean {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .ministro-filter-chip-clean {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ministro-filter-chip-clean:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .ministro-filter-chip-clean.active {
+            background: #eff6ff;
+            color: #2563eb;
+            border-color: #93c5fd;
+            font-weight: 600;
+        }
+
+        .ministro-filter-chip-clean .chip-count {
+            background: #e2e8f0;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+        }
+
+        .ministro-filter-chip-clean.active .chip-count {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* ===== VIEW SECTIONS ===== */
+        .ministro-view {
+            display: none;
+        }
+
+        .ministro-view.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== DESKTOP SIDEBAR LAYOUT ===== */
+        @media (min-width: 1024px) {
+            .ministro-sidebar {
+                left: 0;
+                top: var(--header-height, 72px);
+                height: calc(100vh - var(--header-height, 72px));
+                width: 260px;
+                z-index: 50;
+                box-shadow: none;
+                border-right: 1px solid #e2e8f0;
+            }
+
+            .dashboard-main {
+                margin-left: 260px;
+                padding: 24px 32px;
+            }
+        }
+
+        /* ===== AVAILABILITY HEADER CARD ===== */
+        .availability-header-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .availability-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+
+        .availability-info p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .availability-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* ===== ASSIGNMENT CARDS ===== */
+        .assignments-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .assignment-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .assignment-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .assignment-card.modified {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+        }
+
+        .assignment-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .assignment-org-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 8px;
+        }
+
+        .assignment-date-time {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .assignment-date-time span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .assignment-date-time span strong {
+            color: #374151;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.pending {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .assignment-location {
+            background: #f9fafb;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .assignment-location .icon {
+            font-size: 18px;
+        }
+
+        .assignment-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== MODIFICATION ALERT ===== */
+        .modification-alert {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modification-alert .alert-icon {
+            font-size: 24px;
+        }
+
+        .modification-alert .alert-content p {
+            margin: 0;
+        }
+
+        .modification-alert .alert-title {
+            font-weight: 700;
+            color: #92400e;
+            font-size: 14px;
+        }
+
+        .modification-alert .alert-subtitle {
+            font-size: 12px;
+            color: #a16207;
+            margin-top: 2px;
+        }
+
+        /* ===== COMPLETED SECTION IN CARD ===== */
+        .completed-section {
+            background: #d1fae5;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .completed-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .completed-icon {
+            width: 40px;
+            height: 40px;
+            background: #10b981;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .completed-info h4 {
+            margin: 0;
+            color: #065f46;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .completed-info p {
+            margin: 4px 0 0;
+            color: #047857;
+            font-size: 12px;
+        }
+
+        .completed-details {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .completed-details-row {
+            margin-bottom: 8px;
+        }
+
+        .completed-details-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .completed-details-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #065f46;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .completed-details-value {
+            color: #047857;
+            line-height: 1.4;
+        }
+
+        .completed-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-state svg {
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            color: #374151;
+        }
+
+        .empty-state p {
+            margin: 0;
+            color: #9ca3af;
+            font-size: 15px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: white;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+
+        .btn-success:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        /* ===== AVAILABILITY SECTION ===== */
+        .availability-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .availability-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .availability-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .availability-block {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .availability-date {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .availability-date h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .full-day-block {
+            background: #fee2e2;
+            padding: 12px 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .full-day-block span {
+            color: #991b1b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .time-blocks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .time-block {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #fef3c7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .time-block button {
+            border: none;
+            background: transparent;
+            color: #dc2626;
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .dashboard-main {
+                padding: 16px;
+            }
+
+            .availability-header-card {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .availability-actions {
+                width: 100%;
+            }
+
+            .availability-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .assignment-card {
+                padding: 18px;
+            }
+
+            .assignment-top {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .status-badge {
+                align-self: flex-start;
+            }
+
+            .assignment-actions {
+                flex-direction: column;
+            }
+
+            .assignment-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .assignment-org-name {
+                font-size: 16px;
+            }
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5); }
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/ministroDashboard-CMhrFyWO.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/styles-CFCKFKhL.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-security-0Z5D63Xw.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-BEWxW0u7.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-pdf-DfjHcLIE.js">
+  <link rel="modulepreload" crossorigin href="/assets/pdf-service-Dkjl913p.js">
+  <link rel="modulepreload" crossorigin href="/assets/admin-DeXdcRK1.js">
+  <link rel="modulepreload" crossorigin href="/assets/ministro-CgRh1eWM.js">
+  <link rel="modulepreload" crossorigin href="/assets/ConnectionStatus-CKiMc5gm.js">
+  <link rel="stylesheet" crossorigin href="/assets/styles-46j59-T-.css">
+</head>
+<body>
+    <div class="ministro-dashboard">
+        <!-- Header (mismo que admin) -->
+        <header class="app-header" role="banner">
+            <div class="header-content">
+                <button id="menu-btn" class="menu-btn" aria-label="Menú">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="#" class="header-logo" id="logo-home-link">
+                    <img src="/assets/logo_renca-Ct-WKOpq.png" alt="Logo Renca" class="logo-img">
+                    <div class="header-info">
+                        <h1 class="header-title">Comunidad Renca</h1>
+                        <p class="header-subtitle" id="welcome-message">Cargando...</p>
+                    </div>
+                </a>
+                <div id="user-info" class="user-info" style="display: flex; align-items: center; gap: 12px;">
+                    <button id="btn-notifications" class="notifications-btn" aria-label="Notificaciones">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </button>
+                    <button id="btn-logout" class="btn-secondary-sm">Salir</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <nav class="ministro-sidebar" id="ministro-sidebar">
+            <div class="nav-header">
+                <h2>Ministro de Fe</h2>
+                <button class="close-btn" id="close-sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <ul class="nav-list">
+                <!-- Principal -->
+                <li class="nav-section-title">Principal</li>
+                <li>
+                    <a href="#" data-ministro-view="assignments" class="nav-link active">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="nav-text">Mis Asambleas</span>
+                    </a>
+                </li>
+
+                <!-- Filtrar Asambleas -->
+                <li><div class="nav-section-collapsible" data-section="asambleas"><span>Filtrar Asambleas</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="asambleas">
+                    <button class="nav-link-sub active" data-ministro-filter="all">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/></svg>
+                        <span>Todas</span>
+                        <span class="nav-badge" id="badge-all">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="pending">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Pendientes</span>
+                        <span class="nav-badge nav-badge-warning" id="badge-pending">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="completed">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Completadas</span>
+                        <span class="nav-badge nav-badge-success" id="badge-completed">0</span>
+                    </button>
+                    <button class="nav-link-sub" data-ministro-filter="validated">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>Validadas</span>
+                        <span class="nav-badge nav-badge-info" id="badge-validated">0</span>
+                    </button>
+                </li>
+
+                <!-- Disponibilidad -->
+                <li><div class="nav-section-collapsible" data-section="disp"><span>Disponibilidad</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="disp">
+                    <button class="nav-link-sub" data-ministro-view="availability">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Gestionar Horarios</span>
+                    </button>
+                </li>
+
+                <!-- Cuenta -->
+                <li><div class="nav-section-collapsible" data-section="cuenta"><span>Cuenta</span><svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div></li>
+                <li class="nav-section-items" data-section-items="cuenta">
+                    <button class="nav-link-sub" id="sidebar-notifications">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span>Notificaciones</span>
+                    </button>
+                    <button class="nav-link-sub" id="sidebar-change-password">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <span>Cambiar Contraseña</span>
+                    </button>
+                </li>
+
+                <!-- Separator -->
+                <li><div class="nav-separator"></div></li>
+
+                <!-- Cerrar Sesion -->
+                <li>
+                    <a href="#" class="nav-link" id="sidebar-logout">
+                        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span class="nav-text">Cerrar Sesión</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Vista: Asambleas -->
+            <div id="view-assignments" class="ministro-view active">
+                <div class="ministro-toolbar">
+                    <h2>Mis Asambleas</h2>
+                    <span class="ministro-toolbar-count" id="toolbar-total">0</span>
+                </div>
+                <div class="ministro-filters-clean" id="assignments-filters">
+                    <button class="ministro-filter-chip-clean active" data-filter="all">Todas <span class="chip-count" id="count-all">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="pending">Pendientes <span class="chip-count" id="count-pending">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="completed">Completadas <span class="chip-count" id="count-completed">0</span></button>
+                    <button class="ministro-filter-chip-clean" data-filter="validated">Validadas <span class="chip-count" id="count-validated">0</span></button>
+                </div>
+                <div id="assignments-list" class="assignments-grid"></div>
+            </div>
+
+            <!-- Vista: Disponibilidad -->
+            <div id="view-availability" class="ministro-view">
+                <div class="ministro-toolbar">
+                    <h2>Gestión de Disponibilidad</h2>
+                </div>
+                <div class="availability-header-card">
+                    <div class="availability-info">
+                        <h3>Bloqueos de Horario</h3>
+                        <p>Bloquea días u horarios en los que no estés disponible para asambleas</p>
+                    </div>
+                    <div class="availability-actions">
+                        <button class="btn btn-primary" id="btn-add-block">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Bloquear Horario
+                        </button>
+                        <button class="btn btn-secondary" id="btn-clear-blocks">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div id="availability-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notifications Overlay and Panel -->
+    <div class="notifications-overlay" id="notifications-overlay" onclick="closeNotificationsPanel()"></div>
+    <div class="notifications-panel" id="notifications-panel"></div>
+
+</body>
+</html>

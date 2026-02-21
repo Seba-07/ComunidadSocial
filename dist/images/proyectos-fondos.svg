@@ -1,0 +1,51 @@
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="proyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0fdf4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dcfce7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="400" fill="url(#proyGrad)"/>
+
+  <!-- Document/Paper -->
+  <g transform="translate(200, 80)">
+    <rect x="0" y="0" width="400" height="250" rx="8" fill="white" stroke="#065f46" stroke-width="3"/>
+
+    <!-- Title -->
+    <text x="200" y="40" font-family="Arial" font-size="24" font-weight="bold" fill="#065f46" text-anchor="middle">
+      PROYECTOS MUNICIPALES
+    </text>
+
+    <!-- Lines -->
+    <line x1="40" y1="80" x2="360" y2="80" stroke="#10b981" stroke-width="3"/>
+    <line x1="40" y1="110" x2="360" y2="110" stroke="#10b981" stroke-width="3"/>
+    <line x1="40" y1="140" x2="300" y2="140" stroke="#10b981" stroke-width="3"/>
+
+    <!-- Checkboxes -->
+    <rect x="40" y="170" width="25" height="25" rx="3" fill="none" stroke="#047857" stroke-width="2"/>
+    <path d="M 45 182 L 52 189 L 62 175" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <rect x="40" y="205" width="25" height="25" rx="3" fill="none" stroke="#047857" stroke-width="2"/>
+    <path d="M 45 217 L 52 224 L 62 210" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Money/coins -->
+  <g transform="translate(650, 150)">
+    <circle cx="0" cy="0" r="40" fill="#fbbf24" opacity="0.9" stroke="#f59e0b" stroke-width="3"/>
+    <text x="0" y="8" font-family="Arial" font-size="32" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+
+    <circle cx="-30" cy="30" r="35" fill="#fbbf24" opacity="0.8" stroke="#f59e0b" stroke-width="3"/>
+    <text x="-30" y="38" font-family="Arial" font-size="28" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+
+    <circle cx="25" cy="35" r="30" fill="#fbbf24" opacity="0.7" stroke="#f59e0b" stroke-width="3"/>
+    <text x="25" y="42" font-family="Arial" font-size="24" font-weight="bold" fill="#065f46" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Graph bars -->
+  <g transform="translate(80, 250)">
+    <rect x="0" y="50" width="30" height="50" fill="#10b981" opacity="0.7"/>
+    <rect x="40" y="30" width="30" height="70" fill="#047857" opacity="0.7"/>
+    <rect x="80" y="10" width="30" height="90" fill="#065f46" opacity="0.7"/>
+  </g>
+</svg>

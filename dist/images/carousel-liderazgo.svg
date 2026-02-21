@@ -1,0 +1,37 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="liderazgoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.15);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.05);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- People on podium -->
+  <g transform="translate(250, 120)">
+    <!-- Podium -->
+    <rect x="50" y="120" width="80" height="60" fill="rgba(255,255,255,0.2)" rx="5"/>
+    <rect x="150" y="80" width="80" height="100" fill="rgba(255,255,255,0.3)" rx="5"/>
+    <rect x="250" y="100" width="80" height="80" fill="rgba(255,255,255,0.2)" rx="5"/>
+
+    <!-- Winner (center) -->
+    <circle cx="190" cy="50" r="25" fill="white" opacity="0.9"/>
+    <path d="M 165 90 Q 165 65 190 65 Q 215 65 215 90" fill="white" opacity="0.9"/>
+
+    <!-- Trophy -->
+    <path d="M 180 25 L 185 15 L 195 15 L 200 25 Z" fill="#fbbf24" opacity="0.9"/>
+    <ellipse cx="190" cy="25" rx="12" ry="8" fill="#fbbf24" opacity="0.9"/>
+    <rect x="188" y="28" width="4" height="8" fill="#fbbf24" opacity="0.9"/>
+
+    <!-- Second place (left) -->
+    <circle cx="90" cy="90" r="22" fill="white" opacity="0.8"/>
+    <path d="M 68 125 Q 68 102 90 102 Q 112 102 112 125" fill="white" opacity="0.8"/>
+
+    <!-- Third place (right) -->
+    <circle cx="290" cy="70" r="22" fill="white" opacity="0.8"/>
+    <path d="M 268 105 Q 268 82 290 82 Q 312 82 312 105" fill="white" opacity="0.8"/>
+  </g>
+
+  <!-- Decorative elements -->
+  <circle cx="650" cy="100" r="60" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="150" cy="200" r="40" fill="rgba(255,255,255,0.08)"/>
+</svg>

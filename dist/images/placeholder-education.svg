@@ -1,0 +1,32 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0f2f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b2dfdb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg2)"/>
+
+  <!-- Book/Education icon -->
+  <g transform="translate(400, 150)">
+    <!-- Open book -->
+    <rect x="-120" y="0" width="110" height="140" rx="5" fill="#047857"/>
+    <rect x="10" y="0" width="110" height="140" rx="5" fill="#065f46"/>
+    <line x1="-120" y1="30" x2="-10" y2="30" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <line x1="-120" y1="60" x2="-10" y2="60" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <line x1="-120" y1="90" x2="-10" y2="90" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <line x1="10" y1="30" x2="120" y2="30" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <line x1="10" y1="60" x2="120" y2="60" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <line x1="10" y1="90" x2="120" y2="90" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+
+    <!-- Graduation cap -->
+    <polygon points="0,-20 -60,0 0,10 60,0" fill="#10b981"/>
+    <rect x="-3" y="10" width="6" height="30" fill="#10b981"/>
+    <circle cx="0" cy="45" r="5" fill="#10b981"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="340" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#065f46" text-anchor="middle">
+    Educación y Formación
+  </text>
+</svg>

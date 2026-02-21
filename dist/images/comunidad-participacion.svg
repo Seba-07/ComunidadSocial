@@ -1,0 +1,55 @@
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="comunidadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ecfdf5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d1fae5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="400" fill="url(#comunidadGrad)"/>
+
+  <!-- Central building/community center -->
+  <g transform="translate(300, 150)">
+    <rect x="0" y="0" width="200" height="180" rx="10" fill="#065f46"/>
+    <rect x="10" y="10" width="180" height="40" rx="5" fill="#047857"/>
+
+    <!-- Door -->
+    <rect x="80" y="130" width="40" height="50" rx="5" fill="#10b981"/>
+
+    <!-- Windows -->
+    <rect x="20" y="70" width="35" height="35" rx="3" fill="rgba(255,255,255,0.3)"/>
+    <rect x="70" y="70" width="35" height="35" rx="3" fill="rgba(255,255,255,0.3)"/>
+    <rect x="120" y="70" width="35" height="35" rx="3" fill="rgba(255,255,255,0.3)"/>
+  </g>
+
+  <!-- People around building -->
+  <g transform="translate(220, 280)">
+    <circle cx="0" cy="20" r="18" fill="#10b981"/>
+    <path d="M -20 50 Q -20 30 0 30 Q 20 30 20 50" fill="#047857"/>
+  </g>
+
+  <g transform="translate(350, 300)">
+    <circle cx="0" cy="20" r="16" fill="#10b981"/>
+    <path d="M -18 48 Q -18 30 0 30 Q 18 30 18 48" fill="#047857"/>
+  </g>
+
+  <g transform="translate(450, 300)">
+    <circle cx="0" cy="20" r="16" fill="#10b981"/>
+    <path d="M -18 48 Q -18 30 0 30 Q 18 30 18 48" fill="#047857"/>
+  </g>
+
+  <g transform="translate(550, 280)">
+    <circle cx="0" cy="20" r="18" fill="#10b981"/>
+    <path d="M -20 50 Q -20 30 0 30 Q 20 30 20 50" fill="#047857"/>
+  </g>
+
+  <!-- Trees -->
+  <circle cx="150" cy="250" r="40" fill="#10b981" opacity="0.6"/>
+  <rect x="140" y="280" width="20" height="60" fill="#065f46" opacity="0.6"/>
+
+  <circle cx="650" cy="250" r="40" fill="#10b981" opacity="0.6"/>
+  <rect x="640" y="280" width="20" height="60" fill="#065f46" opacity="0.6"/>
+
+  <!-- Sun -->
+  <circle cx="700" cy="80" r="35" fill="#fbbf24" opacity="0.8"/>
+</svg>
