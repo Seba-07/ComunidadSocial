@@ -394,7 +394,7 @@ class MemberDashboard {
                   </div>
                   <div>
                     <div style="font-weight:600;color:#1e293b;">${a.title || 'Asamblea'}</div>
-                    <div style="font-size:13px;color:#6b7280;margin-top:2px;">${a.date ? new Date(a.date).toLocaleDateString('es-CL') : ''}</div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:2px;">${a.date ? new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : ''}</div>
                   </div>
                 </div>
               </div>
@@ -635,7 +635,7 @@ class MemberDashboard {
               <div style="padding:16px 20px;background:white;border:1px solid #e5e7eb;border-radius:12px;border-left:4px solid #2563eb;transition:box-shadow 0.2s;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                   <div style="font-weight:600;font-size:15px;color:#1e293b;">${a.title || a.name || 'Actividad'}</div>
-                  ${a.date ? `<span style="font-size:13px;color:#6b7280;background:#f3f4f6;padding:4px 10px;border-radius:8px;">${new Date(a.date).toLocaleDateString('es-CL')}</span>` : ''}
+                  ${a.date ? `<span style="font-size:13px;color:#6b7280;background:#f3f4f6;padding:4px 10px;border-radius:8px;">${new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}</span>` : ''}
                 </div>
                 ${a.description ? `<p style="margin:8px 0 0;color:#4b5563;font-size:14px;line-height:1.5;">${a.description}</p>` : ''}
               </div>
@@ -687,7 +687,7 @@ class MemberDashboard {
                     <div style="display:flex;align-items:center;gap:16px;margin-top:10px;">
                       ${a.date ? `<span style="font-size:13px;color:#6b7280;display:flex;align-items:center;gap:4px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        ${new Date(a.date).toLocaleDateString('es-CL')}
+                        ${new Date(a.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}
                       </span>` : ''}
                       <span style="font-size:13px;color:#6b7280;">${(a.agendaItems || []).length} punto(s)</span>
                       <span style="font-size:13px;color:#6b7280;">${(a.attendees || []).length} asistentes</span>

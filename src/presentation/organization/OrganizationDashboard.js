@@ -562,7 +562,7 @@ class OrganizationDashboard {
                 const agendaCount = (asamblea.agendaItems || []).length;
                 return `
                 <div class="asamblea-item">
-                  <div class="asamblea-date">${asamblea.date ? new Date(asamblea.date).toLocaleDateString('es-CL') : '-'}</div>
+                  <div class="asamblea-date">${asamblea.date ? new Date(asamblea.date).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : '-'}</div>
                   <div class="asamblea-info">
                     <span class="asamblea-type ${asamblea.type}">${asamblea.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</span>
                     <span class="asamblea-title">${asamblea.title || 'Sin título'}</span>
@@ -642,7 +642,7 @@ class OrganizationDashboard {
             <div class="term-dates">
               <div class="term-item">
                 <span class="label">Fecha de Elección:</span>
-                <span class="value">${electionDate ? new Date(electionDate).toLocaleDateString('es-CL') : 'No registrada'}</span>
+                <span class="value">${electionDate ? new Date(electionDate).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : 'No registrada'}</span>
               </div>
               <div class="term-item">
                 <span class="label">Próxima Renovación:</span>
@@ -669,7 +669,7 @@ class OrganizationDashboard {
             <div class="elections-list">
               ${elections.map(e => `
                 <div class="election-item" data-id="${e.id}">
-                  <div class="election-date">${new Date(e.date).toLocaleDateString('es-CL')}</div>
+                  <div class="election-date">${new Date(e.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}</div>
                   <div class="election-info">
                     <span class="election-type">${e.type === 'total' ? 'Renovación Total' : 'Renovación Parcial'}</span>
                     <span class="election-result ${e.result === 'Pendiente' ? 'pending' : ''}">${e.result || 'Sin resultado'}</span>
@@ -2942,7 +2942,7 @@ class OrganizationDashboard {
             </div>
             <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
               <span style="font-weight: 600; font-size:12px; color:#6b7280;">Fecha</span>
-              <div style="margin-top:4px;">${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL') : '-'} ${assembly.time || ''}</div>
+              <div style="margin-top:4px;">${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : '-'} ${assembly.time || ''}</div>
             </div>
             <div style="padding: 12px; border-radius: 8px; background: ${quorumMet ? '#ecfdf5' : '#fef2f2'};">
               <span style="font-weight: 600; font-size:12px; color:#6b7280;">Quórum</span>
@@ -3047,7 +3047,7 @@ class OrganizationDashboard {
     const members = this.currentOrg.members || [];
     const currentCandidates = agendaItem.candidates || [];
     const votingMode = agendaItem.votingMode || 'per_cargo';
-    const cargos = ['presidente', 'secretario', 'tesorero', 'director'];
+    const cargos = ['presidente', 'vicepresidente', 'secretario', 'tesorero', 'director'];
 
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
@@ -3065,6 +3065,7 @@ class OrganizationDashboard {
               <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
                 <span style="flex:1;">${c.firstName} ${c.lastName} (${c.rut})</span>
                 ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;">${c.lista || '-'}</span>`}
+                <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
               </div>
             `).join('')}
           </div>
@@ -3098,8 +3099,34 @@ class OrganizationDashboard {
 
     let candidates = [...currentCandidates];
 
-    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    const goBackToDetail = () => {
+      modal.remove();
+      this.showAssemblyDetail(assemblyId, parentOverlay);
+    };
+
+    modal.querySelector('.modal-close').addEventListener('click', goBackToDetail);
+    modal.querySelector('.btn-cancel').addEventListener('click', goBackToDetail);
+
+    const rerenderList = () => {
+      const listEl = modal.querySelector('#candidates-list');
+      listEl.innerHTML = candidates.map((c, i) => `
+        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
+          <span style="flex:1;">${c.firstName} ${c.lastName} (${c.rut})</span>
+          ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;">${c.lista || '-'}</span>`}
+          <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
+        </div>
+      `).join('');
+      // Attach delete handlers
+      listEl.querySelectorAll('.btn-remove-candidate').forEach(btn => {
+        btn.addEventListener('click', () => {
+          candidates.splice(parseInt(btn.dataset.index), 1);
+          rerenderList();
+        });
+      });
+    };
+
+    // Attach delete handlers for initial candidates
+    rerenderList();
 
     modal.querySelector('#btn-add-candidate').addEventListener('click', () => {
       const rut = modal.querySelector('#candidate-member').value;
@@ -3115,15 +3142,7 @@ class OrganizationDashboard {
         lista: votingMode === 'per_lista' ? modal.querySelector('#candidate-lista')?.value : null
       };
       candidates.push(newCandidate);
-
-      // Update list display
-      const listEl = modal.querySelector('#candidates-list');
-      listEl.innerHTML += `
-        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
-          <span style="flex:1;">${newCandidate.firstName} ${newCandidate.lastName} (${newCandidate.rut})</span>
-          <span style="font-size:12px;color:#2563eb;">${newCandidate.cargo || newCandidate.lista || '-'}</span>
-        </div>
-      `;
+      rerenderList();
       showToast('Candidato agregado', 'success');
     });
 
