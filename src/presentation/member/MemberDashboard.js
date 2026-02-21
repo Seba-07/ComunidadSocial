@@ -30,7 +30,7 @@ class MemberDashboard {
       }
       return this.org;
     } catch (err) {
-      console.error('MemberDashboard init error:', err);
+      this.initError = err.message || String(err);
       return null;
     }
   }
@@ -64,7 +64,8 @@ class MemberDashboard {
     if (!container) return;
 
     if (!this.org) {
-      container.innerHTML = '<div style="padding:40px;text-align:center;color:#6b7280;">No se encontró tu organización. Contacta al administrador.</div>';
+      const errMsg = this.initError || 'Sin datos de organización';
+      container.innerHTML = `<div style="padding:40px;text-align:center;color:#6b7280;">No se encontró tu organización.<br><small style="color:#9ca3af;">Debug: ${errMsg} | orgs: ${this.orgs.length}</small></div>`;
       return;
     }
 
