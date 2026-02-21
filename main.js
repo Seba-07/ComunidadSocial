@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Setup para usuarios MIEMBRO
       if (user.role === 'MIEMBRO') {
+        document.title = 'MIEMBRO_BLOCK_RUNNING';
         try {
           // Ocultar secciones de organizador
           const orgNavSection = document.getElementById('org-nav-section');
@@ -958,7 +959,10 @@ async function loadProfileData() {
     const data = await apiService.getCurrentUser();
     if (data && data.user) {
       // Actualizar localStorage con datos completos del servidor
+      // Preservar campos existentes (ej: organizationId, organizationName de MIEMBRO)
+      const existing = JSON.parse(localStorage.getItem('currentUser') || '{}');
       const safeUser = {
+        ...existing,
         _id: data.user._id,
         rut: data.user.rut || '',
         firstName: data.user.firstName,
