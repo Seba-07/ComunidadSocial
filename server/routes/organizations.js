@@ -707,6 +707,32 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateO
 
     await organization.save();
 
+    // Si se aprueba la organización, crear automáticamente las cuentas de socios
+    let memberAccountsResult = null;
+    if (status === 'approved' && !organization.memberAccountsCreated) {
+      try {
+        memberAccountsResult = await createMemberAccounts(organization);
+        organization.memberAccountsCreated = true;
+        organization.memberAccountsCreatedAt = new Date();
+        await organization.save();
+
+        const createdCount = memberAccountsResult.createdAccounts.filter(a => a.status === 'created').length;
+        if (createdCount > 0) {
+          await Notification.create({
+            userId: organization.userId,
+            type: 'member_accounts_created',
+            title: 'Cuentas de miembros creadas',
+            message: `Se han creado ${createdCount} cuentas para los miembros de tu organización. Cada socio puede iniciar sesión con su apellido y RUT.`,
+            organizationId: organization._id,
+            data: { summary: memberAccountsResult }
+          });
+        }
+        console.log(`Auto-created ${createdCount} member accounts for org ${organization.organizationName}`);
+      } catch (memberErr) {
+        console.error('Error auto-creating member accounts:', memberErr);
+      }
+    }
+
     // Notify user con labels legibles en español
     const STATUS_LABELS = {
       'draft': 'Borrador',
@@ -731,7 +757,11 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateO
       organizationId: organization._id
     });
 
-    res.json(organization);
+    const responseData = organization.toObject();
+    if (memberAccountsResult) {
+      responseData.memberAccountsResult = memberAccountsResult;
+    }
+    res.json(responseData);
 
     // Send email notification
     if (organization.userId) {

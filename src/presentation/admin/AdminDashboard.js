@@ -2176,6 +2176,32 @@ class AdminDashboard {
       this.openDissolveModal(org, modal);
     });
 
+    // Botón para crear cuentas de socios manualmente
+    modal.querySelector('.btn-create-member-accounts')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const orgId = btn.dataset.orgId;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-small"></span> Creando cuentas...';
+      try {
+        const result = await apiService.createMemberAccounts(orgId);
+        const createdCount = result.createdAccounts?.filter(a => a.status === 'created').length || 0;
+        showToast(`Se crearon ${createdCount} cuentas de socios exitosamente`, 'success');
+        btn.outerHTML = '<span class="status-final" style="color: #059669; font-size: 12px;">👥 Cuentas de socios creadas</span>';
+      } catch (error) {
+        console.error('Error creating member accounts:', error);
+        showToast('Error al crear cuentas de socios: ' + (error.message || 'Error desconocido'), 'error');
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Crear Cuentas de Socios`;
+      }
+    });
+
     // Botón para agregar observaciones del Registro Civil
     modal.querySelector('.btn-registry-observations')?.addEventListener('click', () => {
       this.openRegistryObservationsModal(org, modal);
@@ -4072,6 +4098,19 @@ class AdminDashboard {
       case ORG_STATUS.APPROVED:
         return `
           <span class="status-final">✅ Organización aprobada</span>
+          ${!org.memberAccountsCreated ? `
+            <button class="btn-primary btn-create-member-accounts" data-org-id="${org._id || org.id}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Crear Cuentas de Socios
+            </button>
+          ` : `
+            <span class="status-final" style="color: #059669; font-size: 12px;">👥 Cuentas de socios creadas</span>
+          `}
           <button class="btn-danger btn-dissolve-org" style="margin-left: auto;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
