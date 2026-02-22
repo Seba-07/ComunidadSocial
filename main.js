@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       appState.setCurrentUser(user);
       appState.initializeAuthService();
 
-      // INMEDIATO: Si es MIEMBRO, ocultar nav del organizador ANTES de cualquier await
+      // INMEDIATO: Si es MIEMBRO, ocultar TODA la navegacion mientras se determina si es directivo
       if (user.role === 'MIEMBRO') {
         const _navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
         if (_navPrimary) _navPrimary.style.display = 'none';
@@ -139,9 +139,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const _bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
         if (_bottomNav) _bottomNav.style.display = 'none';
         const _memberBottomNav = document.getElementById('member-bottom-nav');
-        if (_memberBottomNav) _memberBottomNav.style.display = '';
+        if (_memberBottomNav) _memberBottomNav.style.display = 'none';
         const _memberNav = document.getElementById('member-nav-section');
-        if (_memberNav) _memberNav.style.display = 'block';
+        if (_memberNav) _memberNav.style.display = 'none';
       }
 
       // Actualizar nombre en header
@@ -190,188 +190,242 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Pre-cargar datos del perfil por si el usuario navega allí
       loadProfileData();
 
-      // Setup para usuarios MIEMBRO
+      // Setup para usuarios MIEMBRO (bifurca entre directivo y socio regular)
       if (user.role === 'MIEMBRO') {
         try {
-          // Reemplazar Home con contenido de miembro
-          const pageHome = document.getElementById('page-home');
-          if (pageHome) {
-            const orgName = (user.organizations && user.organizations[0]?.name) || user.organizationName || 'tu organización';
-            const firstName = user.firstName || user.name || 'Socio/a';
-            pageHome.innerHTML = `
-              <section class="home-welcome-section">
-                <div class="welcome-hero">
-                  <div class="welcome-hero-content">
-                    <h2>Bienvenido/a, ${firstName}</h2>
-                    <p>${orgName}</p>
-                  </div>
-                </div>
-              </section>
-              <section class="home-quick-links">
-                <h3>Accesos Rápidos</h3>
-                <div class="quick-links-grid">
-                  <button class="quick-link-card" data-page="member-overview">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Mi Organización</span>
-                    <span class="quick-link-desc">Resumen general</span>
-                  </button>
-                  <button class="quick-link-card" data-page="member-directorio">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Directorio</span>
-                    <span class="quick-link-desc">Mesa directiva</span>
-                  </button>
-                  <button class="quick-link-card" data-page="member-documentos">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Documentos</span>
-                    <span class="quick-link-desc">Archivos de la organización</span>
-                  </button>
-                  <button class="quick-link-card" data-page="member-actividades">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="16" y1="2" x2="16" y2="6"></line>
-                        <line x1="8" y1="2" x2="8" y2="6"></line>
-                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Actividades</span>
-                    <span class="quick-link-desc">Eventos y reuniones</span>
-                  </button>
-                  <button class="quick-link-card" data-page="member-asambleas">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Asambleas</span>
-                    <span class="quick-link-desc">Reuniones y votaciones</span>
-                  </button>
-                  <button class="quick-link-card" data-page="member-password">
-                    <div class="quick-link-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                      </svg>
-                    </div>
-                    <span class="quick-link-label">Contraseña</span>
-                    <span class="quick-link-desc">Cambiar mi contraseña</span>
-                  </button>
-                </div>
-              </section>
-            `;
+          // 1. Obtener datos de la organización + flag _isDirectivo
+          const memberData = await apiService.getMyOrganization();
+          let memberOrgs = [];
+          if (memberData && memberData.organizations) {
+            memberOrgs = memberData.organizations;
+          } else if (memberData) {
+            memberOrgs = [memberData];
           }
 
-          // Import dinámico de MemberDashboard
-          const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
-          await memberDashboard.init();
+          // Determinar si alguna org tiene _isDirectivo
+          const directivoOrg = memberOrgs.find(o => o._isDirectivo);
+          const isDirectivoMiembro = !!directivoOrg;
 
-          // Actualizar sidebar con organizaciones del miembro
-          if (memberDashboard.orgs.length > 0) {
-            const memberNavSection = document.getElementById('member-nav-section');
-            if (memberNavSection) {
-              const collapsibleDiv = memberNavSection.querySelector('.nav-section-collapsible');
-              if (collapsibleDiv) {
-                if (memberDashboard.orgs.length === 1) {
-                  // Una sola org: mostrar nombre directamente
-                  const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
-                  if (sidebarTitle) {
-                    const svgIcon = sidebarTitle.querySelector('svg');
-                    sidebarTitle.textContent = '';
-                    if (svgIcon) sidebarTitle.appendChild(svgIcon);
-                    sidebarTitle.append(` ${memberDashboard.org.organizationName}`);
-                  }
-                } else {
-                  // Múltiples orgs: agregar selector dropdown
-                  const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
-                  if (sidebarTitle) {
-                    const svgIcon = sidebarTitle.querySelector('svg');
-                    sidebarTitle.innerHTML = '';
-                    if (svgIcon) sidebarTitle.appendChild(svgIcon);
+          if (isDirectivoMiembro) {
+            // ========== DIRECTIVO: mostrar dashboard completo de organizador ==========
+            console.log('🔑 Miembro directivo detectado, cargando dashboard de organizador...');
+            sessionStorage.setItem('isDirectivoMiembro', 'true');
 
-                    const select = document.createElement('select');
-                    select.id = 'member-org-selector';
-                    select.style.cssText = 'margin-left:8px;padding:4px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;background:white;color:#1e293b;max-width:180px;cursor:pointer;';
-                    memberDashboard.orgs.forEach(o => {
-                      const opt = document.createElement('option');
-                      opt.value = o._id || o.id;
-                      opt.textContent = o.organizationName;
-                      if ((o._id || o.id) === memberDashboard.getActiveOrgId()) opt.selected = true;
-                      select.appendChild(opt);
-                    });
-                    select.addEventListener('change', () => {
-                      memberDashboard.selectOrg(select.value);
-                      // Re-render la página actual
-                      const currentPage = document.querySelector('.page-view[style*="display: block"], .page-view:not([style*="display: none"])');
-                      if (currentPage) {
-                        const pageId = currentPage.id.replace('page-', '').replace('member-', '');
-                        memberDashboard.renderPage(pageId);
-                      }
-                      // Actualizar home welcome subtitle
-                      const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
-                      if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
-                    });
-                    sidebarTitle.appendChild(select);
+            // Mostrar nav de organizador
+            const navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
+            if (navPrimary) navPrimary.style.display = '';
+            const navSecondary = document.querySelector('.nav-list-secondary');
+            if (navSecondary) navSecondary.style.display = '';
+            const orgNav = document.getElementById('org-nav-section');
+            if (orgNav) orgNav.style.display = '';
+            const bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
+            if (bottomNav) bottomNav.style.display = '';
+
+            // Pre-cargar organizaciones en organizationsService
+            organizationsService.organizations = memberOrgs;
+            organizationsService.loaded = true;
+            localStorage.setItem('user_organizations', JSON.stringify(memberOrgs));
+
+            // Inicializar menú de organizaciones en sidebar (misma ruta que ORGANIZADOR)
+            await organizationMenuManager.init();
+
+            // Navegar a org-overview
+            const savedPage = sessionStorage.getItem('app_current_page');
+            if (savedPage && savedPage.startsWith('org-')) {
+              appState.navigateTo(savedPage);
+            } else {
+              appState.navigateTo('org-overview');
+            }
+          } else {
+            // ========== SOCIO REGULAR: mostrar MemberDashboard limitado ==========
+            sessionStorage.removeItem('isDirectivoMiembro');
+
+            // Mostrar nav de miembro
+            const memberBottomNav = document.getElementById('member-bottom-nav');
+            if (memberBottomNav) memberBottomNav.style.display = '';
+            const memberNav = document.getElementById('member-nav-section');
+            if (memberNav) memberNav.style.display = 'block';
+
+            // Reemplazar Home con contenido de miembro
+            const pageHome = document.getElementById('page-home');
+            if (pageHome) {
+              const orgName = (memberOrgs[0]?.organizationName) || user.organizationName || 'tu organización';
+              const firstName = user.firstName || user.name || 'Socio/a';
+              pageHome.innerHTML = `
+                <section class="home-welcome-section">
+                  <div class="welcome-hero">
+                    <div class="welcome-hero-content">
+                      <h2>Bienvenido/a, ${firstName}</h2>
+                      <p>${orgName}</p>
+                    </div>
+                  </div>
+                </section>
+                <section class="home-quick-links">
+                  <h3>Accesos Rápidos</h3>
+                  <div class="quick-links-grid">
+                    <button class="quick-link-card" data-page="member-overview">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Mi Organización</span>
+                      <span class="quick-link-desc">Resumen general</span>
+                    </button>
+                    <button class="quick-link-card" data-page="member-directorio">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Directorio</span>
+                      <span class="quick-link-desc">Mesa directiva</span>
+                    </button>
+                    <button class="quick-link-card" data-page="member-documentos">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Documentos</span>
+                      <span class="quick-link-desc">Archivos de la organización</span>
+                    </button>
+                    <button class="quick-link-card" data-page="member-actividades">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                          <line x1="16" y1="2" x2="16" y2="6"></line>
+                          <line x1="8" y1="2" x2="8" y2="6"></line>
+                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Actividades</span>
+                      <span class="quick-link-desc">Eventos y reuniones</span>
+                    </button>
+                    <button class="quick-link-card" data-page="member-asambleas">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Asambleas</span>
+                      <span class="quick-link-desc">Reuniones y votaciones</span>
+                    </button>
+                    <button class="quick-link-card" data-page="member-password">
+                      <div class="quick-link-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                      </div>
+                      <span class="quick-link-label">Contraseña</span>
+                      <span class="quick-link-desc">Cambiar mi contraseña</span>
+                    </button>
+                  </div>
+                </section>
+              `;
+            }
+
+            // Import dinámico de MemberDashboard con datos pre-cargados
+            const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
+            memberDashboard.initWithData(memberOrgs, user);
+
+            // Actualizar sidebar con organizaciones del miembro
+            if (memberDashboard.orgs.length > 0) {
+              const memberNavSection = document.getElementById('member-nav-section');
+              if (memberNavSection) {
+                const collapsibleDiv = memberNavSection.querySelector('.nav-section-collapsible');
+                if (collapsibleDiv) {
+                  if (memberDashboard.orgs.length === 1) {
+                    // Una sola org: mostrar nombre directamente
+                    const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
+                    if (sidebarTitle) {
+                      const svgIcon = sidebarTitle.querySelector('svg');
+                      sidebarTitle.textContent = '';
+                      if (svgIcon) sidebarTitle.appendChild(svgIcon);
+                      sidebarTitle.append(` ${memberDashboard.org.organizationName}`);
+                    }
+                  } else {
+                    // Múltiples orgs: agregar selector dropdown
+                    const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
+                    if (sidebarTitle) {
+                      const svgIcon = sidebarTitle.querySelector('svg');
+                      sidebarTitle.innerHTML = '';
+                      if (svgIcon) sidebarTitle.appendChild(svgIcon);
+
+                      const select = document.createElement('select');
+                      select.id = 'member-org-selector';
+                      select.style.cssText = 'margin-left:8px;padding:4px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;background:white;color:#1e293b;max-width:180px;cursor:pointer;';
+                      memberDashboard.orgs.forEach(o => {
+                        const opt = document.createElement('option');
+                        opt.value = o._id || o.id;
+                        opt.textContent = o.organizationName;
+                        if ((o._id || o.id) === memberDashboard.getActiveOrgId()) opt.selected = true;
+                        select.appendChild(opt);
+                      });
+                      select.addEventListener('change', () => {
+                        memberDashboard.selectOrg(select.value);
+                        // Re-render la página actual
+                        const currentPage = document.querySelector('.page-view[style*="display: block"], .page-view:not([style*="display: none"])');
+                        if (currentPage) {
+                          const pageId = currentPage.id.replace('page-', '').replace('member-', '');
+                          memberDashboard.renderPage(pageId);
+                        }
+                        // Actualizar home welcome subtitle
+                        const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+                        if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
+                      });
+                      sidebarTitle.appendChild(select);
+                    }
                   }
                 }
               }
+
+              // Home welcome subtitle
+              const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+              if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
             }
 
-            // Home welcome subtitle
-            const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
-            if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
-          }
-
-          // Listeners para navegación de miembro (sidebar + home quick links + bottom nav)
-          const setupMemberNavListeners = () => {
-            document.querySelectorAll('[data-page^="member-"]').forEach(link => {
-              link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = link.dataset.page;
-                appState.navigateTo(page);
-                const pageName = page.replace('member-', '');
-                memberDashboard.renderPage(pageName);
-                // Update active state en sidebar
-                document.querySelectorAll('#member-nav-section .nav-link-sub').forEach(l => l.classList.remove('active'));
-                const sidebarLink = document.querySelector(`#member-nav-section [data-page="${page}"]`);
-                if (sidebarLink) sidebarLink.classList.add('active');
-                // Update active state en bottom nav
-                document.querySelectorAll('#member-bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
-                const bottomLink = document.querySelector(`#member-bottom-nav [data-page="${page}"]`);
-                if (bottomLink) bottomLink.classList.add('active');
+            // Listeners para navegación de miembro (sidebar + home quick links + bottom nav)
+            const setupMemberNavListeners = () => {
+              document.querySelectorAll('[data-page^="member-"]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  const page = link.dataset.page;
+                  appState.navigateTo(page);
+                  const pageName = page.replace('member-', '');
+                  memberDashboard.renderPage(pageName);
+                  // Update active state en sidebar
+                  document.querySelectorAll('#member-nav-section .nav-link-sub').forEach(l => l.classList.remove('active'));
+                  const sidebarLink = document.querySelector(`#member-nav-section [data-page="${page}"]`);
+                  if (sidebarLink) sidebarLink.classList.add('active');
+                  // Update active state en bottom nav
+                  document.querySelectorAll('#member-bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
+                  const bottomLink = document.querySelector(`#member-bottom-nav [data-page="${page}"]`);
+                  if (bottomLink) bottomLink.classList.add('active');
+                });
               });
-            });
-          };
-          setupMemberNavListeners();
+            };
+            setupMemberNavListeners();
 
-          // Check for mustChangePassword
-          const params = new URLSearchParams(window.location.search);
-          if (user.mustChangePassword || params.get('changePassword') === 'true') {
-            appState.navigateTo('member-password');
-            memberDashboard.renderPage('password');
-          } else {
-            // Navigate to overview
-            appState.navigateTo('member-overview');
-            memberDashboard.renderPage('overview');
+            // Check for mustChangePassword
+            const params = new URLSearchParams(window.location.search);
+            if (user.mustChangePassword || params.get('changePassword') === 'true') {
+              appState.navigateTo('member-password');
+              memberDashboard.renderPage('password');
+            } else {
+              // Navigate to overview
+              appState.navigateTo('member-overview');
+              memberDashboard.renderPage('overview');
+            }
           }
         } catch (memberErr) {
           console.error('Error setting up member dashboard:', memberErr);
@@ -410,8 +464,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
           }
           if (user.role === 'MIEMBRO') {
-            appState.navigateTo('member-overview');
-            import('./src/presentation/member/MemberDashboard.js').then(m => m.memberDashboard.renderPage('overview'));
+            if (sessionStorage.getItem('isDirectivoMiembro') === 'true') {
+              appState.navigateTo('org-overview');
+            } else {
+              appState.navigateTo('member-overview');
+              import('./src/presentation/member/MemberDashboard.js').then(m => m.memberDashboard.renderPage('overview'));
+            }
             return;
           }
         } catch (err) {
@@ -454,6 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       localStorage.removeItem('ministros_fe');
       localStorage.removeItem('ministro_assignments');
       localStorage.removeItem('user_notifications');
+      sessionStorage.removeItem('isDirectivoMiembro');
 
       await handleLogout();
 
@@ -1407,6 +1466,7 @@ function initProfile() {
       // Limpiar cookies del servidor y localStorage
       await apiService.logout();
       localStorage.removeItem('isAuthenticated');
+      sessionStorage.removeItem('isDirectivoMiembro');
 
       await handleLogout();
       showToast('Sesión cerrada correctamente', 'success');
@@ -4768,6 +4828,9 @@ function setupUserRoleUI() {
 
     if (isAdmin) {
       setupAdminUI();
+    } else if (user.role === 'MIEMBRO' && sessionStorage.getItem('isDirectivoMiembro') === 'true') {
+      // Directivo: misma UI que organizador
+      setupUserUI();
     } else if (user.role !== 'MIEMBRO') {
       setupUserUI();
     }
@@ -5094,10 +5157,14 @@ async function setupUserUI() {
   }
 
   // Pre-cargar organizaciones en la página Mis Organizaciones
-  try {
-    await renderOrganizations();
-  } catch (e) {
-    console.error('❌ Error pre-cargando organizaciones:', e);
+  // (Skip para directivos MIEMBRO: ya se cargaron desde /my-organization)
+  const isDirectivoMiembro = sessionStorage.getItem('isDirectivoMiembro') === 'true';
+  if (!isDirectivoMiembro) {
+    try {
+      await renderOrganizations();
+    } catch (e) {
+      console.error('❌ Error pre-cargando organizaciones:', e);
+    }
   }
 
   // Inicializar menú de organizaciones aprobadas en sidebar

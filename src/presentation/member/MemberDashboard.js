@@ -36,6 +36,16 @@ class MemberDashboard {
     }
   }
 
+  /**
+   * Inicializa con datos pre-cargados (evita doble llamada API)
+   */
+  initWithData(orgs, user) {
+    this.user = user || null;
+    this.orgs = orgs || [];
+    this.org = this.orgs[0] || null;
+    return this.org;
+  }
+
   selectOrg(orgId) {
     const found = this.orgs.find(o => (o._id || o.id) === orgId);
     if (found) {

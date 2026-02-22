@@ -14,6 +14,19 @@ import { emailService } from '../services/emailService.js';
 const router = express.Router();
 
 /**
+ * Verifica si un usuario MIEMBRO tiene cargo directivo en una organización
+ */
+function isDirectivoMember(org, user) {
+  if (!user || user.role !== 'MIEMBRO' || !user.rut) return false;
+  const cleanRut = user.rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
+  return (org.members || []).some(m => {
+    const mRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+    return mRut === cleanRut && dirRoles.includes(m.role);
+  });
+}
+
+/**
  * Genera una contraseña temporal segura usando crypto
  */
 function generateTempPassword() {
@@ -261,9 +274,22 @@ router.get('/my-organization', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'No se encontraron organizaciones' });
     }
 
-    // Devolver array de organizaciones (retrocompatible: si se pide una sola, devolver la primera)
-    // Pero ahora siempre devolvemos el array completo
-    res.json({ organizations });
+    // Anotar cada org con flags de directivo para el frontend
+    const cleanUserRut = (req.user.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+    const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
+    const enriched = organizations.map(org => {
+      const myMember = (org.members || []).find(m => {
+        const mRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        return mRut === cleanUserRut;
+      });
+      return {
+        ...org,
+        _isDirectivo: myMember ? dirRoles.includes(myMember.role) : false,
+        _myMemberRole: myMember ? myMember.role : null
+      };
+    });
+
+    res.json({ organizations: enriched });
   } catch (error) {
     console.error('Get my organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
@@ -479,8 +505,9 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
     // Check permission
     const isOwner = organization.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isDirectivo = isDirectivoMember(organization, req.user);
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && !isDirectivo) {
       return res.status(403).json({ error: 'No tienes permisos para editar esta organización' });
     }
 
@@ -1451,7 +1478,8 @@ router.post('/:id/assemblies', authenticate, validateObjectId(), async (req, res
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const { type, date, time, title, description, quorumType, quorumValue, agendaItems } = req.body;
 
@@ -1499,7 +1527,8 @@ router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), asyn
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
     if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
@@ -1548,7 +1577,8 @@ router.delete('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), a
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
     if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
@@ -1575,7 +1605,8 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
     if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
@@ -1696,7 +1727,8 @@ router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObje
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
@@ -1825,7 +1857,8 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
 
     const isOwner = org.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'No tienes permisos' });
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
     const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
