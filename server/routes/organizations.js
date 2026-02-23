@@ -532,6 +532,99 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
   }
 });
 
+// Delete organization (Owner only, not approved/dissolved)
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Only the owner can delete
+    if (organization.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ error: 'Solo el creador puede eliminar esta solicitud' });
+    }
+
+    // Cannot delete approved or dissolved organizations
+    if (['approved', 'dissolved'].includes(organization.status)) {
+      return res.status(400).json({ error: 'No se puede eliminar una organización aprobada o disuelta' });
+    }
+
+    // Statuses that require a reason (have involved admin/ministro work)
+    const requiresReason = [
+      'ministro_scheduled', 'ministro_approved', 'pending_review',
+      'in_review', 'rejected', 'sent_registry', 'registry_observations'
+    ];
+
+    if (requiresReason.includes(organization.status)) {
+      const reason = req.body?.reason?.trim();
+      if (!reason) {
+        return res.status(400).json({ error: 'Debe proporcionar un motivo para eliminar esta solicitud' });
+      }
+
+      // Cancel pending assignments
+      const assignments = await Assignment.find({
+        organizationId: organization._id,
+        status: { $in: ['pending', 'confirmed'] }
+      });
+      for (const assignment of assignments) {
+        assignment.status = 'cancelled';
+        assignment.cancelReason = `Solicitud eliminada por el organizador: ${reason}`;
+        await assignment.save();
+      }
+
+      // Deactivate linked MinistroBlocks
+      await MinistroBlock.updateMany(
+        { organizationId: organization._id, active: true },
+        { $set: { active: false } }
+      );
+
+      // Notify ministro if there was one assigned
+      if (organization.ministroData?.ministroId) {
+        await Notification.create({
+          ministroId: organization.ministroData.ministroId,
+          type: 'assignment_removed',
+          title: 'Solicitud eliminada',
+          message: `La organización "${organization.organizationName}" ha sido eliminada por el solicitante. Motivo: ${reason}`,
+          data: { organizationId: organization._id, reason },
+          organizationId: organization._id
+        });
+      }
+
+      // Notify all admins
+      const admins = await User.find({ role: 'MUNICIPALIDAD', isActive: true });
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'organization_deleted',
+          title: 'Solicitud eliminada por organizador',
+          message: `"${organization.organizationName}" fue eliminada. Motivo: ${reason}`,
+          data: { organizationId: organization._id, organizationName: organization.organizationName, reason },
+          organizationId: organization._id
+        });
+      }
+    }
+
+    // Cascade delete related documents
+    const orgId = organization._id;
+    await Promise.all([
+      GeneratedDocuments.deleteMany({ organizationId: orgId }),
+      CertificateFiles.deleteMany({ organizationId: orgId }),
+      Notification.deleteMany({ organizationId: orgId })
+    ]);
+
+    // Delete the organization
+    await Organization.findByIdAndDelete(orgId);
+
+    logger.info(`Organization deleted: ${organization.organizationName} (${orgId}) by user ${req.userId}`);
+    res.json({ message: 'Organización eliminada exitosamente' });
+  } catch (error) {
+    console.error('Delete organization error:', error);
+    res.status(500).json({ error: 'Error al eliminar organización' });
+  }
+});
+
 // Schedule ministro (Admin only)
 router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {

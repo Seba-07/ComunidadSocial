@@ -1666,6 +1666,12 @@ async function renderOrganizations() {
         }
       });
 
+      card.querySelector('.btn-org-delete')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const org = organizationsService.getById(orgId);
+        handleDeleteOrganization(orgId, org);
+      });
+
       // Agregar click al aviso de cita con cambios para ver detalles
       card.querySelector('.org-appointment-modified-notice')?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1741,6 +1747,8 @@ function renderOrganizationCard(org) {
   const isSentToRegistry = org.status === ORG_STATUS.SENT_TO_REGISTRY;
   // canContinueWizard solo para estados donde usuario puede continuar (rechazado con correcciones pendientes)
   const canContinueWizard = org.status === ORG_STATUS.REJECTED && org.corrections && !org.corrections.resolved;
+  const isDissolved = org.status === ORG_STATUS.DISSOLVED;
+  const canDelete = !isLocalDraft && !isApproved && !isDissolved;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
   const orgType = org.organizationType || org.organization?.type;
@@ -1954,9 +1962,143 @@ function renderOrganizationCard(org) {
             Continuar Solicitud
           </button>
         ` : ''}
+        ${canDelete ? `
+          <button class="btn-org-delete" data-org-id="${orgId}" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 12px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;" title="Eliminar solicitud">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Eliminar
+          </button>
+        ` : ''}
       </div>
     </div>
   `;
+}
+
+async function handleDeleteOrganization(orgId, org) {
+  if (!org) {
+    showToast('No se pudo encontrar la organización', 'error');
+    return;
+  }
+
+  const orgName = org.organizationName || 'esta organización';
+
+  // Simple cases: draft, waiting_ministro - just confirm
+  const simpleStatuses = ['draft', 'waiting_ministro'];
+  if (simpleStatuses.includes(org.status)) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${orgName}"?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+    try {
+      await organizationsService.deleteOrganization(orgId);
+      showToast('Solicitud eliminada exitosamente', 'success');
+      renderOrganizations();
+    } catch (e) {
+      showToast(e.message || 'Error al eliminar', 'error');
+    }
+    return;
+  }
+
+  // Complex cases: show modal with reason textarea
+  const overlay = document.createElement('div');
+  overlay.id = 'delete-org-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+      <div style="padding:24px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:18px;font-weight:700;color:#111;">Eliminar solicitud</h3>
+            <p style="margin:2px 0 0;font-size:13px;color:#6b7280;">${orgName}</p>
+          </div>
+        </div>
+        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;margin-bottom:16px;">
+          <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
+            Esta solicitud ya tiene avances con la municipalidad o el ministro de fe. Al eliminarla, se notificará al administrador y al ministro asignado (si aplica).
+          </p>
+        </div>
+        <label style="display:block;font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">Motivo de la eliminación <span style="color:#dc2626;">*</span></label>
+        <textarea id="delete-org-reason" maxlength="500" placeholder="Explica brevemente por qué deseas eliminar esta solicitud..." style="width:100%;min-height:100px;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <span id="delete-org-char-count" style="font-size:12px;color:#9ca3af;">0 / 500</span>
+          <span id="delete-org-error" style="font-size:12px;color:#dc2626;display:none;">El motivo es obligatorio</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button id="delete-org-cancel" style="flex:1;padding:10px 16px;border-radius:10px;border:1.5px solid #d1d5db;background:white;color:#374151;font-weight:600;font-size:14px;cursor:pointer;">Cancelar</button>
+          <button id="delete-org-confirm" style="flex:1;padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Eliminar Solicitud
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const textarea = document.getElementById('delete-org-reason');
+  const charCount = document.getElementById('delete-org-char-count');
+  const errorMsg = document.getElementById('delete-org-error');
+  const confirmBtn = document.getElementById('delete-org-confirm');
+  const cancelBtn = document.getElementById('delete-org-cancel');
+
+  textarea.addEventListener('input', () => {
+    charCount.textContent = `${textarea.value.length} / 500`;
+    if (textarea.value.trim()) errorMsg.style.display = 'none';
+  });
+
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  confirmBtn.addEventListener('click', async () => {
+    const reason = textarea.value.trim();
+    if (!reason) {
+      errorMsg.style.display = 'inline';
+      textarea.style.borderColor = '#dc2626';
+      textarea.focus();
+      return;
+    }
+
+    // Loading state
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="spinner-small" style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;"></span> Eliminando...';
+    cancelBtn.disabled = true;
+
+    try {
+      await organizationsService.deleteOrganization(orgId, reason);
+      // Success state
+      overlay.querySelector('div > div').innerHTML = `
+        <div style="text-align:center;padding:32px 20px;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111;">Solicitud eliminada</h3>
+          <p style="margin:0;font-size:14px;color:#6b7280;">La solicitud ha sido eliminada y se ha notificado a los involucrados.</p>
+          <button id="delete-org-done" style="margin-top:20px;padding:10px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-weight:600;font-size:14px;cursor:pointer;">Entendido</button>
+        </div>
+      `;
+      document.getElementById('delete-org-done').addEventListener('click', () => {
+        overlay.remove();
+        renderOrganizations();
+      });
+    } catch (e) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = 'Eliminar Solicitud';
+      cancelBtn.disabled = false;
+      showToast(e.message || 'Error al eliminar', 'error');
+    }
+  });
 }
 
 async function viewOrganization(orgId, forceRefresh = false) {

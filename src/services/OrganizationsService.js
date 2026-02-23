@@ -218,6 +218,20 @@ class OrganizationsService {
   }
 
   /**
+   * Elimina una organización
+   */
+  async deleteOrganization(id, reason) {
+    try {
+      await apiService.deleteOrganization(id, reason);
+      this.organizations = this.organizations.filter(org => (org._id || org.id) !== id);
+      localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+    } catch (e) {
+      console.error('Error deleting organization:', e);
+      throw e;
+    }
+  }
+
+  /**
    * Actualiza el estado de una organización
    */
   async updateStatus(id, newStatus, comment = '') {

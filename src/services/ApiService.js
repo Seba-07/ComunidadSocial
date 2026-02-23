@@ -293,6 +293,11 @@ class ApiService {
     return this.request(endpoint, { method: 'DELETE' });
   }
 
+  // DELETE request with body
+  deleteWithBody(endpoint, body) {
+    return this.request(endpoint, { method: 'DELETE', body });
+  }
+
   // ==================== AUTH ====================
 
   /**
@@ -409,6 +414,13 @@ class ApiService {
 
   async updateOrganization(id, updates) {
     return this.put(`/organizations/${id}`, updates);
+  }
+
+  async deleteOrganization(id, reason) {
+    if (reason) {
+      return this.deleteWithBody(`/organizations/${id}`, { reason });
+    }
+    return this.delete(`/organizations/${id}`);
   }
 
   async scheduleMinistro(orgId, ministroData) {
