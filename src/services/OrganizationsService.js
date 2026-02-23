@@ -18,7 +18,8 @@ export const ORG_STATUS = {
   SENT_TO_REGISTRY: 'sent_registry',
   REGISTRY_OBSERVATIONS: 'registry_observations', // Observaciones del Registro Civil
   APPROVED: 'approved',
-  DISSOLVED: 'dissolved'
+  DISSOLVED: 'dissolved',
+  DELETION_REQUESTED: 'deletion_requested'
 };
 
 // Etiquetas de estado en español
@@ -33,7 +34,8 @@ export const ORG_STATUS_LABELS = {
   [ORG_STATUS.SENT_TO_REGISTRY]: 'Enviada al Registro Civil',
   [ORG_STATUS.REGISTRY_OBSERVATIONS]: 'Observaciones del Registro Civil',
   [ORG_STATUS.APPROVED]: 'Aprobada',
-  [ORG_STATUS.DISSOLVED]: 'Disuelta'
+  [ORG_STATUS.DISSOLVED]: 'Disuelta',
+  [ORG_STATUS.DELETION_REQUESTED]: 'Eliminación Solicitada'
 };
 
 // Colores de estado
@@ -48,13 +50,26 @@ export const ORG_STATUS_COLORS = {
   [ORG_STATUS.SENT_TO_REGISTRY]: '#0891b2',
   [ORG_STATUS.REGISTRY_OBSERVATIONS]: '#dc2626',
   [ORG_STATUS.APPROVED]: '#10b981',
-  [ORG_STATUS.DISSOLVED]: '#4b5563'
+  [ORG_STATUS.DISSOLVED]: '#4b5563',
+  [ORG_STATUS.DELETION_REQUESTED]: '#ef4444'
 };
 
 class OrganizationsService {
   constructor() {
     this.organizations = [];
     this.loaded = false;
+  }
+
+  /**
+   * Guarda organizaciones en localStorage con manejo de quota
+   */
+  _saveToLocalStorage() {
+    try {
+      this._saveToLocalStorage();
+    } catch (e) {
+      console.warn('localStorage quota exceeded, clearing cache:', e);
+      localStorage.removeItem('user_organizations');
+    }
   }
 
   /**
@@ -70,7 +85,7 @@ class OrganizationsService {
       }
       this.loaded = true;
       // Cache local para acceso sincrónico
-      localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+      this._saveToLocalStorage();
 
       // Limpiar reservas de organizaciones que ya no existen
       this.cleanOrphanedBookings();
@@ -138,7 +153,7 @@ class OrganizationsService {
     try {
       const orgs = await apiService.getOrganizations();
       this.organizations = orgs;
-      localStorage.setItem('user_organizations', JSON.stringify(orgs));
+      this._saveToLocalStorage();
 
       // Limpiar reservas de organizaciones que ya no existen
       this.cleanOrphanedBookings();
@@ -157,7 +172,7 @@ class OrganizationsService {
     try {
       const orgs = await apiService.getMyOrganizations();
       this.organizations = orgs;
-      localStorage.setItem('user_organizations', JSON.stringify(orgs));
+      this._saveToLocalStorage();
       return orgs;
     } catch (e) {
       console.error('Error getting current user organizations:', e);
@@ -191,7 +206,7 @@ class OrganizationsService {
     try {
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
-      localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+      this._saveToLocalStorage();
       return newOrg;
     } catch (e) {
       console.error('Error creating organization:', e);
@@ -208,7 +223,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -222,9 +237,19 @@ class OrganizationsService {
    */
   async deleteOrganization(id, reason) {
     try {
-      await apiService.deleteOrganization(id, reason);
-      this.organizations = this.organizations.filter(org => (org._id || org.id) !== id);
-      localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+      const result = await apiService.deleteOrganization(id, reason);
+      if (result?.deletionRequested) {
+        // Only a request was made, update the local org status
+        const index = this.organizations.findIndex(org => (org._id || org.id) === id);
+        if (index !== -1) {
+          this.organizations[index].status = 'deletion_requested';
+        }
+      } else {
+        // Actually deleted
+        this.organizations = this.organizations.filter(org => (org._id || org.id) !== id);
+      }
+      this._saveToLocalStorage();
+      return result;
     } catch (e) {
       console.error('Error deleting organization:', e);
       throw e;
@@ -240,7 +265,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -258,7 +283,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -276,7 +301,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -518,7 +543,7 @@ class OrganizationsService {
 
       const newOrg = await apiService.createOrganization(orgData);
       this.organizations.push(newOrg);
-      localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+      this._saveToLocalStorage();
 
       if (onProgress) onProgress('Organización creada', 'Guardando certificados...', 50);
 
@@ -642,7 +667,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -663,7 +688,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {
@@ -696,7 +721,7 @@ class OrganizationsService {
       const index = this.organizations.findIndex(org => org.id === id || org._id === id);
       if (index !== -1) {
         this.organizations[index] = updated;
-        localStorage.setItem('user_organizations', JSON.stringify(this.organizations));
+        this._saveToLocalStorage();
       }
       return updated;
     } catch (e) {

@@ -1748,7 +1748,8 @@ function renderOrganizationCard(org) {
   // canContinueWizard solo para estados donde usuario puede continuar (rechazado con correcciones pendientes)
   const canContinueWizard = org.status === ORG_STATUS.REJECTED && org.corrections && !org.corrections.resolved;
   const isDissolved = org.status === ORG_STATUS.DISSOLVED;
-  const canDelete = !isLocalDraft && !isApproved && !isDissolved;
+  const isDeletionRequested = org.status === ORG_STATUS.DELETION_REQUESTED;
+  const canDelete = !isLocalDraft && !isApproved && !isDissolved && !isDeletionRequested;
 
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
   const orgType = org.organizationType || org.organization?.type;
@@ -1829,6 +1830,18 @@ function renderOrganizationCard(org) {
           <div class="org-rejection-notice">
             <span class="rejection-icon">⚠️</span>
             <span>Requiere correcciones. Revisa los comentarios.</span>
+          </div>
+        ` : ''}
+
+        ${isDeletionRequested ? `
+          <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #fca5a5; border-radius: 12px; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 24px;">🗑️</span>
+              <div style="flex: 1;">
+                <p style="margin: 0; font-weight: 700; color: #991b1b; font-size: 14px;">Eliminación solicitada</p>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #dc2626;">Esperando aprobación del administrador</p>
+              </div>
+            </div>
           </div>
         ` : ''}
 
@@ -1984,7 +1997,13 @@ async function handleDeleteOrganization(orgId, org) {
 
   const orgName = org.organizationName || 'esta organización';
 
-  // Simple cases: draft, waiting_ministro - just confirm
+  // Cannot request deletion if already in deletion_requested
+  if (org.status === 'deletion_requested') {
+    showToast('Ya existe una solicitud de eliminación pendiente', 'info');
+    return;
+  }
+
+  // Simple cases: draft, waiting_ministro - just confirm and delete immediately
   const simpleStatuses = ['draft', 'waiting_ministro'];
   if (simpleStatuses.includes(org.status)) {
     if (!confirm(`¿Estás seguro de que deseas eliminar "${orgName}"?\n\nEsta acción no se puede deshacer.`)) {
@@ -2021,7 +2040,7 @@ async function handleDeleteOrganization(orgId, org) {
         </div>
         <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;margin-bottom:16px;">
           <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
-            Esta solicitud ya tiene avances con la municipalidad o el ministro de fe. Al eliminarla, se notificará al administrador y al ministro asignado (si aplica).
+            Esta solicitud ya tiene avances con la municipalidad o el ministro de fe. Se enviará una solicitud de eliminación al administrador para su aprobación.
           </p>
         </div>
         <label style="display:block;font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">Motivo de la eliminación <span style="color:#dc2626;">*</span></label>
@@ -2037,7 +2056,7 @@ async function handleDeleteOrganization(orgId, org) {
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            Eliminar Solicitud
+            Solicitar Eliminación
           </button>
         </div>
       </div>
@@ -2074,17 +2093,18 @@ async function handleDeleteOrganization(orgId, org) {
     cancelBtn.disabled = true;
 
     try {
-      await organizationsService.deleteOrganization(orgId, reason);
+      const result = await organizationsService.deleteOrganization(orgId, reason);
       // Success state
+      const isDeletionRequest = result?.deletionRequested;
       overlay.querySelector('div > div').innerHTML = `
         <div style="text-align:center;padding:32px 20px;">
-          <div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+          <div style="width:56px;height:56px;border-radius:50%;background:${isDeletionRequest ? '#fef3c7' : '#dcfce7'};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${isDeletionRequest ? '#f59e0b' : '#16a34a'}" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
-          <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111;">Solicitud eliminada</h3>
-          <p style="margin:0;font-size:14px;color:#6b7280;">La solicitud ha sido eliminada y se ha notificado a los involucrados.</p>
+          <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111;">${isDeletionRequest ? 'Solicitud enviada' : 'Solicitud eliminada'}</h3>
+          <p style="margin:0;font-size:14px;color:#6b7280;">${isDeletionRequest ? 'Tu solicitud de eliminación ha sido enviada al administrador para su aprobación.' : 'La solicitud ha sido eliminada y se ha notificado a los involucrados.'}</p>
           <button id="delete-org-done" style="margin-top:20px;padding:10px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-weight:600;font-size:14px;cursor:pointer;">Entendido</button>
         </div>
       `;

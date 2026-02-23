@@ -45,7 +45,8 @@ const notificationSchema = new mongoose.Schema({
       'assembly_invitation',
       'election_notification',
       'organization_update',
-      'organization_deleted'
+      'organization_deleted',
+      'deletion_requested'
     ],
     required: true
   },

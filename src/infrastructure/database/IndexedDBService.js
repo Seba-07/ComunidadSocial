@@ -542,6 +542,31 @@ export class IndexedDBService {
     console.log('🧹 Cola offline limpiada:', toDelete.length, 'peticiones eliminadas');
     return toDelete.length;
   }
+
+  /**
+   * Elimina peticiones pendientes más antiguas que maxAgeMs
+   * @param {number} maxAgeMs - Edad máxima en milisegundos (default: 1 hora)
+   * @returns {number} Cantidad de peticiones eliminadas
+   */
+  async clearOldPendingRequests(maxAgeMs = 3600000) {
+    if (!this.db) await this.init();
+
+    const requests = await this.getAll('offline_queue');
+    const now = Date.now();
+    const toDelete = requests.filter(r => {
+      const createdAt = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+      return (now - createdAt) > maxAgeMs;
+    });
+
+    for (const req of toDelete) {
+      await this.removeFromOfflineQueue(req.id);
+    }
+
+    if (toDelete.length > 0) {
+      console.log('🧹 Peticiones antiguas eliminadas:', toDelete.length);
+    }
+    return toDelete.length;
+  }
 }
 
 // Instancia singleton

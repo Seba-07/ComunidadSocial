@@ -423,6 +423,14 @@ class ApiService {
     return this.delete(`/organizations/${id}`);
   }
 
+  async approveDeletion(orgId) {
+    return this.post(`/organizations/${orgId}/approve-deletion`);
+  }
+
+  async rejectDeletion(orgId, reason) {
+    return this.post(`/organizations/${orgId}/reject-deletion`, { reason });
+  }
+
   async scheduleMinistro(orgId, ministroData) {
     return this.post(`/organizations/${orgId}/schedule-ministro`, ministroData);
   }

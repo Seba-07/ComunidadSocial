@@ -982,7 +982,8 @@ class AdminDashboard {
         const processStatuses = [
           ORG_STATUS.WAITING_MINISTRO_REQUEST, ORG_STATUS.MINISTRO_SCHEDULED,
           ORG_STATUS.MINISTRO_APPROVED, ORG_STATUS.IN_REVIEW,
-          ORG_STATUS.SENT_TO_REGISTRY, ORG_STATUS.REGISTRY_OBSERVATIONS
+          ORG_STATUS.SENT_TO_REGISTRY, ORG_STATUS.REGISTRY_OBSERVATIONS,
+          ORG_STATUS.DELETION_REQUESTED
         ];
         orgs = orgs.filter(o => processStatuses.includes(o.status));
       } else if (this.currentFilter === 'approved_group') {
@@ -1065,6 +1066,17 @@ class AdminDashboard {
     const safeOrgId = escapeHtml(orgId || '');
     const safeOrgName = escapeHtml(getOrgName(org));
 
+    // Badge de eliminación solicitada
+    let deletionBadge = '';
+    if (org.status === ORG_STATUS.DELETION_REQUESTED) {
+      deletionBadge = `
+        <div style="background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;"
+             title="Motivo: ${escapeHtml(org.deletionRequest?.reason || 'Sin motivo')}">
+          🗑️ ELIMINACIÓN
+        </div>
+      `;
+    }
+
     // FASE 5: Verificar si es organización fantasma
     let ghostBadge = '';
     if (org.status === ORG_STATUS.APPROVED) {
@@ -1091,7 +1103,7 @@ class AdminDashboard {
     }
 
     return `
-      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''}" data-org-id="${safeOrgId}">
+      <div class="admin-app-row ${ghostBadge ? 'has-ghost-indicator' : ''} ${deletionBadge ? 'has-deletion-request' : ''}" data-org-id="${safeOrgId}">
         <div class="app-row-main">
           <div class="app-row-icon">${typeIcon}</div>
           <div class="app-row-info">
@@ -1101,6 +1113,7 @@ class AdminDashboard {
           <div class="app-row-status" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30">
             ${statusLabel}
           </div>
+          ${deletionBadge}
           ${ghostBadge}
           <button class="btn-admin-review" title="Revisar solicitud">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2174,6 +2187,48 @@ class AdminDashboard {
     // FASE 5: Botón de disolución
     modal.querySelector('.btn-dissolve-org')?.addEventListener('click', () => {
       this.openDissolveModal(org, modal);
+    });
+
+    // Botones para aprobar/rechazar eliminación
+    modal.querySelector('.btn-approve-deletion')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const orgId = btn.dataset.orgId;
+      if (!confirm('¿Estás seguro de que deseas aprobar la eliminación de esta organización? Esta acción no se puede deshacer.')) return;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-small"></span> Eliminando...';
+      try {
+        await apiService.approveDeletion(orgId);
+        showToast('Organización eliminada exitosamente', 'success');
+        modal.remove();
+        await organizationsService.sync();
+        this.renderApplicationsList();
+      } catch (error) {
+        console.error('Error approving deletion:', error);
+        showToast('Error al aprobar eliminación: ' + (error.message || 'Error desconocido'), 'error');
+        btn.disabled = false;
+        btn.textContent = 'Aprobar Eliminación';
+      }
+    });
+
+    modal.querySelector('.btn-reject-deletion')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const orgId = btn.dataset.orgId;
+      const reason = prompt('Motivo del rechazo (opcional):');
+      if (reason === null) return; // User cancelled
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-small"></span> Rechazando...';
+      try {
+        await apiService.rejectDeletion(orgId, reason || '');
+        showToast('Solicitud de eliminación rechazada', 'success');
+        modal.remove();
+        await organizationsService.sync();
+        this.renderApplicationsList();
+      } catch (error) {
+        console.error('Error rejecting deletion:', error);
+        showToast('Error al rechazar eliminación: ' + (error.message || 'Error desconocido'), 'error');
+        btn.disabled = false;
+        btn.textContent = 'Rechazar Eliminación';
+      }
     });
 
     // Botón para crear cuentas de socios manualmente
@@ -3605,6 +3660,18 @@ class AdminDashboard {
         iconBg = '#059669';
         break;
 
+      case ORG_STATUS.DELETION_REQUESTED:
+        icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>`;
+        title = 'Solicitud de Eliminación Pendiente';
+        message = `El organizador solicita eliminar esta organización. Motivo: "${org.deletionRequest?.reason || 'Sin motivo especificado'}". Puede aprobar o rechazar esta solicitud.`;
+        bgColor = '#fef2f2';
+        borderColor = '#dc2626';
+        iconBg = '#dc2626';
+        break;
+
       default:
         return '';
     }
@@ -4124,6 +4191,33 @@ class AdminDashboard {
       case ORG_STATUS.REJECTED:
         return `
           <span class="status-final rejected">⚠️ Solicitud rechazada - Esperando correcciones del usuario</span>
+        `;
+
+      case ORG_STATUS.DELETION_REQUESTED:
+        return `
+          <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+            <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;">
+              <p style="margin:0 0 4px;font-weight:700;color:#991b1b;font-size:13px;">🗑️ Solicitud de eliminación</p>
+              <p style="margin:0;font-size:13px;color:#dc2626;">Motivo: ${escapeHtml(org.deletionRequest?.reason || 'Sin motivo especificado')}</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-danger btn-approve-deletion" data-org-id="${org._id || org.id}" style="flex:1;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Aprobar Eliminación
+              </button>
+              <button class="btn-secondary btn-reject-deletion" data-org-id="${org._id || org.id}" style="flex:1;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                Rechazar Eliminación
+              </button>
+            </div>
+          </div>
         `;
 
       default:

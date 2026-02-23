@@ -533,6 +533,8 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
 });
 
 // Delete organization (Owner only, not approved/dissolved)
+// draft/waiting_ministro: immediate delete
+// Others (except approved/dissolved): request deletion (requires admin approval)
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
@@ -551,63 +553,114 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'No se puede eliminar una organización aprobada o disuelta' });
     }
 
-    // Statuses that require a reason (have involved admin/ministro work)
-    const requiresReason = [
-      'ministro_scheduled', 'ministro_approved', 'pending_review',
-      'in_review', 'rejected', 'sent_registry', 'registry_observations'
-    ];
-
-    if (requiresReason.includes(organization.status)) {
-      const reason = req.body?.reason?.trim();
-      if (!reason) {
-        return res.status(400).json({ error: 'Debe proporcionar un motivo para eliminar esta solicitud' });
-      }
-
-      // Cancel pending assignments
-      const assignments = await Assignment.find({
-        organizationId: organization._id,
-        status: { $in: ['pending', 'confirmed'] }
-      });
-      for (const assignment of assignments) {
-        assignment.status = 'cancelled';
-        assignment.cancelReason = `Solicitud eliminada por el organizador: ${reason}`;
-        await assignment.save();
-      }
-
-      // Deactivate linked MinistroBlocks
-      await MinistroBlock.updateMany(
-        { organizationId: organization._id, active: true },
-        { $set: { active: false } }
-      );
-
-      // Notify ministro if there was one assigned
-      if (organization.ministroData?.ministroId) {
-        await Notification.create({
-          ministroId: organization.ministroData.ministroId,
-          type: 'assignment_removed',
-          title: 'Solicitud eliminada',
-          message: `La organización "${organization.organizationName}" ha sido eliminada por el solicitante. Motivo: ${reason}`,
-          data: { organizationId: organization._id, reason },
-          organizationId: organization._id
-        });
-      }
-
-      // Notify all admins
-      const admins = await User.find({ role: 'MUNICIPALIDAD', isActive: true });
-      for (const admin of admins) {
-        await Notification.create({
-          userId: admin._id,
-          type: 'organization_deleted',
-          title: 'Solicitud eliminada por organizador',
-          message: `"${organization.organizationName}" fue eliminada. Motivo: ${reason}`,
-          data: { organizationId: organization._id, organizationName: organization.organizationName, reason },
-          organizationId: organization._id
-        });
-      }
+    // Cannot request deletion if already requested
+    if (organization.status === 'deletion_requested') {
+      return res.status(400).json({ error: 'Ya existe una solicitud de eliminación pendiente' });
     }
 
-    // Cascade delete related documents
+    // Immediate delete for draft and waiting_ministro (no admin work involved)
+    const immediateDeleteStatuses = ['draft', 'waiting_ministro'];
+    if (immediateDeleteStatuses.includes(organization.status)) {
+      const orgId = organization._id;
+      await Promise.all([
+        GeneratedDocuments.deleteMany({ organizationId: orgId }),
+        CertificateFiles.deleteMany({ organizationId: orgId }),
+        Notification.deleteMany({ organizationId: orgId })
+      ]);
+      await Organization.findByIdAndDelete(orgId);
+
+      logger.info(`Organization deleted (immediate): ${organization.organizationName} (${orgId}) by user ${req.userId}`);
+      return res.json({ message: 'Organización eliminada exitosamente' });
+    }
+
+    // For all other statuses: request deletion (requires admin approval)
+    const reason = req.body?.reason?.trim();
+    if (!reason) {
+      return res.status(400).json({ error: 'Debe proporcionar un motivo para solicitar la eliminación' });
+    }
+
+    const previousStatus = organization.status;
+    organization.deletionRequest = {
+      reason,
+      requestedAt: new Date(),
+      previousStatus
+    };
+    organization.status = 'deletion_requested';
+    organization.statusHistory.push({
+      status: 'deletion_requested',
+      date: new Date(),
+      comment: `Eliminación solicitada por el organizador. Motivo: ${reason}`
+    });
+
+    await organization.save();
+
+    // Notify all admins
+    const admins = await User.find({ role: 'MUNICIPALIDAD', active: true });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin._id,
+        type: 'deletion_requested',
+        title: 'Solicitud de eliminación',
+        message: `"${organization.organizationName}" solicita ser eliminada. Motivo: ${reason}`,
+        data: { organizationId: organization._id, organizationName: organization.organizationName, reason, previousStatus },
+        organizationId: organization._id
+      });
+    }
+
+    // Notify ministro if there was one assigned
+    if (organization.ministroData?.ministroId) {
+      await Notification.create({
+        ministroId: organization.ministroData.ministroId,
+        type: 'assignment_removed',
+        title: 'Solicitud de eliminación',
+        message: `La organización "${organization.organizationName}" ha solicitado ser eliminada. Motivo: ${reason}`,
+        data: { organizationId: organization._id, reason },
+        organizationId: organization._id
+      });
+    }
+
+    logger.info(`Deletion requested: ${organization.organizationName} (${organization._id}) by user ${req.userId}`);
+    res.json({ message: 'Solicitud de eliminación enviada al administrador', deletionRequested: true });
+  } catch (error) {
+    console.error('Delete organization error:', error);
+    res.status(500).json({ error: 'Error al eliminar organización' });
+  }
+});
+
+// Approve deletion (Admin only)
+router.post('/:id/approve-deletion', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    if (organization.status !== 'deletion_requested') {
+      return res.status(400).json({ error: 'La organización no tiene una solicitud de eliminación pendiente' });
+    }
+
     const orgId = organization._id;
+    const orgName = organization.organizationName;
+    const orgUserId = organization.userId;
+
+    // Cancel pending assignments
+    const assignments = await Assignment.find({
+      organizationId: orgId,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+    for (const assignment of assignments) {
+      assignment.status = 'cancelled';
+      assignment.cancelReason = `Organización eliminada por aprobación del administrador`;
+      await assignment.save();
+    }
+
+    // Deactivate linked MinistroBlocks
+    await MinistroBlock.updateMany(
+      { organizationId: orgId, active: true },
+      { $set: { active: false } }
+    );
+
+    // Cascade delete related documents
     await Promise.all([
       GeneratedDocuments.deleteMany({ organizationId: orgId }),
       CertificateFiles.deleteMany({ organizationId: orgId }),
@@ -617,11 +670,61 @@ router.delete('/:id', authenticate, async (req, res) => {
     // Delete the organization
     await Organization.findByIdAndDelete(orgId);
 
-    logger.info(`Organization deleted: ${organization.organizationName} (${orgId}) by user ${req.userId}`);
+    // Notify the organizer
+    await Notification.create({
+      userId: orgUserId,
+      type: 'organization_deleted',
+      title: 'Organización eliminada',
+      message: `Tu solicitud de eliminación de "${orgName}" ha sido aprobada por el administrador.`,
+      data: { organizationName: orgName }
+    });
+
+    logger.info(`Deletion approved: ${orgName} (${orgId}) by admin ${req.userId}`);
     res.json({ message: 'Organización eliminada exitosamente' });
   } catch (error) {
-    console.error('Delete organization error:', error);
-    res.status(500).json({ error: 'Error al eliminar organización' });
+    console.error('Approve deletion error:', error);
+    res.status(500).json({ error: 'Error al aprobar eliminación' });
+  }
+});
+
+// Reject deletion (Admin only)
+router.post('/:id/reject-deletion', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    if (organization.status !== 'deletion_requested') {
+      return res.status(400).json({ error: 'La organización no tiene una solicitud de eliminación pendiente' });
+    }
+
+    // Revert to previous status
+    const previousStatus = organization.deletionRequest?.previousStatus || 'pending_review';
+    organization.status = previousStatus;
+    organization.statusHistory.push({
+      status: previousStatus,
+      date: new Date(),
+      comment: `Solicitud de eliminación rechazada por el administrador. ${req.body?.reason ? 'Motivo: ' + req.body.reason : ''}`
+    });
+    organization.deletionRequest = undefined;
+
+    await organization.save();
+
+    // Notify the organizer
+    await Notification.create({
+      userId: organization.userId,
+      type: 'status_change',
+      title: 'Solicitud de eliminación rechazada',
+      message: `Tu solicitud de eliminación de "${organization.organizationName}" fue rechazada por el administrador.${req.body?.reason ? ' Motivo: ' + req.body.reason : ''}`,
+      organizationId: organization._id
+    });
+
+    logger.info(`Deletion rejected: ${organization.organizationName} (${organization._id}) by admin ${req.userId}`);
+    res.json(organization);
+  } catch (error) {
+    console.error('Reject deletion error:', error);
+    res.status(500).json({ error: 'Error al rechazar eliminación' });
   }
 });
 
@@ -817,7 +920,8 @@ const VALID_STATUS_TRANSITIONS = {
   'sent_registry': ['approved', 'registry_observations', 'rejected'],
   'registry_observations': ['sent_registry', 'approved', 'rejected'],
   'approved': ['dissolved'], // Estado final, solo puede disolverse
-  'dissolved': [] // Estado terminal
+  'dissolved': [], // Estado terminal
+  'deletion_requested': [] // Managed by approve/reject-deletion routes
 };
 
 /**
@@ -904,7 +1008,8 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateO
       'sent_registry': 'Enviado al Registro Civil',
       'registry_observations': 'Observaciones del Registro',
       'approved': 'Aprobada',
-      'dissolved': 'Disuelta'
+      'dissolved': 'Disuelta',
+      'deletion_requested': 'Eliminación Solicitada'
     };
 
     const statusLabel = STATUS_LABELS[status] || status;

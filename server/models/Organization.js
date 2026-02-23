@@ -216,7 +216,8 @@ const organizationSchema = new mongoose.Schema({
       'sent_registry',
       'registry_observations', // Estado cuando Registro Civil tiene observaciones
       'approved',
-      'dissolved'
+      'dissolved',
+      'deletion_requested'
     ],
     default: 'draft'
   },
@@ -339,6 +340,13 @@ const organizationSchema = new mongoose.Schema({
   dissolvedAt: Date,
   dissolutionReason: String,
   dissolvedBy: String,
+
+  // Deletion request (requires admin approval)
+  deletionRequest: {
+    reason: String,
+    requestedAt: Date,
+    previousStatus: String
+  },
 
   // Asambleas (sistema mejorado con votación)
   assemblies: [assemblySchema],
