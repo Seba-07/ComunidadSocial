@@ -533,7 +533,7 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
 });
 
 // Delete organization (Owner only, not approved/dissolved)
-// draft/waiting_ministro: immediate delete
+// draft: immediate delete
 // Others (except approved/dissolved): request deletion (requires admin approval)
 router.delete('/:id', authenticate, async (req, res) => {
   try {
@@ -558,8 +558,8 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Ya existe una solicitud de eliminación pendiente' });
     }
 
-    // Immediate delete for draft and waiting_ministro (no admin work involved)
-    const immediateDeleteStatuses = ['draft', 'waiting_ministro'];
+    // Immediate delete only for draft (no solicitud enviada yet)
+    const immediateDeleteStatuses = ['draft'];
     if (immediateDeleteStatuses.includes(organization.status)) {
       const orgId = organization._id;
       await Promise.all([

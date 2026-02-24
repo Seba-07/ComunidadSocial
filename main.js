@@ -2003,8 +2003,8 @@ async function handleDeleteOrganization(orgId, org) {
     return;
   }
 
-  // Simple cases: draft, waiting_ministro - just confirm and delete immediately
-  const simpleStatuses = ['draft', 'waiting_ministro'];
+  // Simple cases: only draft - just confirm and delete immediately
+  const simpleStatuses = ['draft'];
   if (simpleStatuses.includes(org.status)) {
     if (!confirm(`¿Estás seguro de que deseas eliminar "${orgName}"?\n\nEsta acción no se puede deshacer.`)) {
       return;
