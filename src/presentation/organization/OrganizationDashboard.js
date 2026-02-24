@@ -627,7 +627,7 @@ class OrganizationDashboard {
           <h4>Historial de Asambleas</h4>
           ${asambleas.length > 0 ? `
             <div class="asambleas-table">
-              ${asambleas.map(asamblea => {
+              ${asambleas.slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map(asamblea => {
                 const st = statusConfig[asamblea.status] || statusConfig.draft;
                 const agendaCount = (asamblea.agendaItems || []).length;
                 return `
@@ -1947,6 +1947,14 @@ class OrganizationDashboard {
         showToast('Asamblea creada correctamente', 'success');
         modal.remove();
         this.refreshContent(parentOverlay);
+
+        // Si tiene punto de elección de directorio, abrir gestión de candidatos
+        const electionItem = (result.agendaItems || []).find(i => i.type === 'eleccion_directorio');
+        if (electionItem) {
+          setTimeout(() => {
+            this.showCandidatesManager(result.id, electionItem.id, parentOverlay);
+          }, 300);
+        }
       } catch (err) {
         showToast(err.message || 'Error al crear asamblea', 'error');
       }
@@ -3353,46 +3361,63 @@ class OrganizationDashboard {
     if (!agendaItem) return;
 
     const orgId = this.currentOrg._id || this.currentOrg.id;
-    const members = this.currentOrg.members || [];
+    const allMembers = this.currentOrg.members || [];
     const currentCandidates = agendaItem.candidates || [];
     const votingMode = agendaItem.votingMode || 'per_cargo';
-    const cargos = ['presidente', 'vicepresidente', 'secretario', 'tesorero', 'director'];
+
+    // Cargos dinámicos según tipo de organización
+    const orgType = this.currentOrg.organizationType || this.currentOrg.organization?.type;
+    const config = this.getDirectorioConfig(orgType);
+    const cargos = config.cargos;
+
+    // Filtrar solo mayores de edad (18+)
+    const today = new Date();
+    const eligibleMembers = allMembers.filter(m => {
+      if (!m.birthDate) return true; // Sin fecha de nacimiento se asume mayor
+      const birth = new Date(m.birthDate);
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+      return age >= 18;
+    });
+    const minorCount = allMembers.length - eligibleMembers.length;
 
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
     modal.innerHTML = `
       <div class="org-modal" style="max-width: 600px;">
-        <div class="org-modal-header">
+        <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white;">
           <h3>Gestionar Candidatos</h3>
-          <button class="modal-close">&times;</button>
+          <button class="modal-close" style="color: white;">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px; max-height:65vh; overflow-y:auto;">
-          <p style="color:#6b7280;font-size:13px;margin-bottom:16px;">Modo: <strong>${votingMode === 'per_cargo' ? 'Por cargo individual' : 'Por lista completa'}</strong></p>
+          <p style="color:#6b7280;font-size:13px;margin-bottom:8px;">Modo: <strong>${votingMode === 'per_cargo' ? 'Por cargo individual' : 'Por lista completa'}</strong></p>
+          ${minorCount > 0 ? '<p style="color:#b45309;font-size:12px;margin-bottom:16px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">Los socios menores de edad no aparecen como candidatos elegibles.</p>' : ''}
 
           <div id="candidates-list">
             ${currentCandidates.map((c, i) => `
-              <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
-                <span style="flex:1;">${c.firstName} ${c.lastName} (${c.rut})</span>
-                ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;">${c.lista || '-'}</span>`}
+              <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                <span style="flex:1;font-weight:500;">${c.firstName} ${c.lastName} (${c.rut})</span>
+                ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.lista || '-'}</span>`}
                 <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
               </div>
             `).join('')}
           </div>
 
-          <h4 style="margin:16px 0 8px;">Agregar Candidato</h4>
+          <h4 style="margin:16px 0 8px;font-size:14px;">Agregar Candidato</h4>
           <div style="display:grid;gap:8px;">
             <select id="candidate-member" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-              <option value="">Seleccionar socio...</option>
-              ${members.map(m => `<option value="${m.rut}">${m.firstName} ${m.lastName} (${m.rut})</option>`).join('')}
+              <option value="">Seleccionar socio mayor de edad...</option>
+              ${eligibleMembers.map(m => `<option value="${m.rut}">${m.firstName} ${m.lastName} (${m.rut})</option>`).join('')}
             </select>
             ${votingMode === 'per_cargo' ? `
               <select id="candidate-cargo" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                ${cargos.map(c => `<option value="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('')}
+                ${cargos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
               </select>
             ` : `
               <input type="text" id="candidate-lista" placeholder="Nombre de la lista" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
             `}
-            <button id="btn-add-candidate" style="padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Agregar</button>
+            <button id="btn-add-candidate" style="padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Agregar Candidato</button>
           </div>
 
           <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
@@ -3403,8 +3428,7 @@ class OrganizationDashboard {
       </div>
     `;
 
-    const appendTarget = parentOverlay || document.body;
-    appendTarget.appendChild(modal);
+    document.body.appendChild(modal);
 
     let candidates = [...currentCandidates];
 
@@ -3416,12 +3440,17 @@ class OrganizationDashboard {
     modal.querySelector('.modal-close').addEventListener('click', goBackToDetail);
     modal.querySelector('.btn-cancel').addEventListener('click', goBackToDetail);
 
+    const getCargoLabel = (cargoId) => {
+      const found = cargos.find(c => c.id === cargoId);
+      return found ? found.nombre : cargoId;
+    };
+
     const rerenderList = () => {
       const listEl = modal.querySelector('#candidates-list');
       listEl.innerHTML = candidates.map((c, i) => `
-        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:#f9fafb;border-radius:8px;">
-          <span style="flex:1;">${c.firstName} ${c.lastName} (${c.rut})</span>
-          ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;">${c.lista || '-'}</span>`}
+        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+          <span style="flex:1;font-weight:500;">${c.firstName} ${c.lastName} (${c.rut})</span>
+          ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">${getCargoLabel(c.cargo)}</span>` : `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.lista || '-'}</span>`}
           <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
         </div>
       `).join('');
@@ -3440,8 +3469,9 @@ class OrganizationDashboard {
     modal.querySelector('#btn-add-candidate').addEventListener('click', () => {
       const rut = modal.querySelector('#candidate-member').value;
       if (!rut) return showToast('Selecciona un socio', 'error');
-      const member = members.find(m => m.rut === rut);
+      const member = eligibleMembers.find(m => m.rut === rut);
       if (!member) return;
+      if (candidates.find(c => c.rut === rut)) return showToast('Este socio ya es candidato', 'error');
 
       const newCandidate = {
         rut: member.rut,
