@@ -170,18 +170,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       console.log('✅ Usuario cargado:', user);
 
-      // Sincronizar datos desde el servidor (no bloquear para MIEMBRO)
+      // Sincronizar datos desde el servidor
       if (user.role !== 'MIEMBRO') {
-        try {
-          await Promise.all([
-            organizationsService.sync(),
-            notificationService.sync()
-          ]);
+        // Mostrar UI inmediatamente con datos de cache
+        hideLoadingScreen();
+        // Fire-and-forget: sync en background, no bloquear UI
+        Promise.all([
+          organizationsService.sync(),
+          notificationService.sync()
+        ]).then(() => {
           notificationService.startPolling();
-        } catch (syncError) {
+        }).catch((syncError) => {
           console.warn('Error sincronizando datos:', syncError);
           notificationService.startPolling();
-        }
+        });
       } else {
         // MIEMBRO: sync en background sin bloquear
         notificationService.sync().then(() => notificationService.startPolling()).catch(() => notificationService.startPolling());
@@ -226,8 +228,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             organizationsService.loaded = true;
             localStorage.setItem('user_organizations', JSON.stringify(memberOrgs));
 
-            // Inicializar menú de organizaciones en sidebar (misma ruta que ORGANIZADOR)
-            await organizationMenuManager.init();
+            // Mostrar UI inmediatamente
+            hideLoadingScreen();
+
+            // Inicializar menú de organizaciones en sidebar (no bloquear)
+            organizationMenuManager.init().catch(e => console.error('Error menú:', e));
 
             // Navegar a org-overview
             const savedPage = sessionStorage.getItem('app_current_page');
@@ -245,6 +250,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (memberBottomNav) memberBottomNav.style.display = '';
             const memberNav = document.getElementById('member-nav-section');
             if (memberNav) memberNav.style.display = 'block';
+
+            // Mostrar UI inmediatamente
+            hideLoadingScreen();
 
             // Reemplazar Home con contenido de miembro
             const pageHome = document.getElementById('page-home');
@@ -442,6 +450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Los admin se restauran en el bloque de admin setup
       if (user.role !== 'MUNICIPALIDAD' && user.role !== 'MIEMBRO') {
         const savedPage = sessionStorage.getItem('app_current_page');
+        console.log('🔄 Restaurando página para', user.role, ':', savedPage);
         if (savedPage && savedPage !== 'admin') {
           appState.navigateTo(savedPage);
         }
@@ -5076,7 +5085,7 @@ function setupUserRoleUI() {
     console.error('Error setting up role UI:', error);
   }
 
-  // Ocultar loading screen y mostrar contenido
+  // Fallback: asegurar que loading screen se oculte si no se hizo antes
   hideLoadingScreen();
 }
 
@@ -5394,21 +5403,13 @@ async function setupUserUI() {
     }
   }
 
-  // Pre-cargar organizaciones en la página Mis Organizaciones
+  // Pre-cargar organizaciones en la página Mis Organizaciones (non-blocking)
   // (Skip para directivos MIEMBRO: ya se cargaron desde /my-organization)
   const isDirectivoMiembro = sessionStorage.getItem('isDirectivoMiembro') === 'true';
   if (!isDirectivoMiembro) {
-    try {
-      await renderOrganizations();
-    } catch (e) {
-      console.error('❌ Error pre-cargando organizaciones:', e);
-    }
+    renderOrganizations().catch(e => console.error('❌ Error pre-cargando organizaciones:', e));
   }
 
-  // Inicializar menú de organizaciones aprobadas en sidebar
-  try {
-    await organizationMenuManager.init();
-  } catch (e) {
-    console.error('❌ Error inicializando menú organizaciones:', e);
-  }
+  // Inicializar menú de organizaciones aprobadas en sidebar (non-blocking)
+  organizationMenuManager.init().catch(e => console.error('❌ Error inicializando menú organizaciones:', e));
 }
