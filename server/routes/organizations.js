@@ -8,6 +8,8 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
 import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
 import MinistroBlock from '../models/MinistroBlock.js';
+import Document from '../models/Document.js';
+import Member from '../models/Member.js';
 import logger from '../utils/logger.js';
 import { emailService } from '../services/emailService.js';
 
@@ -565,7 +567,9 @@ router.delete('/:id', authenticate, async (req, res) => {
       await Promise.all([
         GeneratedDocuments.deleteMany({ organizationId: orgId }),
         CertificateFiles.deleteMany({ organizationId: orgId }),
-        Notification.deleteMany({ organizationId: orgId })
+        Notification.deleteMany({ organizationId: orgId }),
+        Document.deleteMany({ organizationId: orgId }),
+        Member.deleteMany({ organizationId: orgId })
       ]);
       await Organization.findByIdAndDelete(orgId);
 
@@ -627,7 +631,7 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Approve deletion (Admin only)
+// Approve deletion (Admin only) - Full cascade delete, no trace left
 router.post('/:id/approve-deletion', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
@@ -643,43 +647,44 @@ router.post('/:id/approve-deletion', authenticate, requireRole('MUNICIPALIDAD'),
     const orgName = organization.organizationName;
     const orgUserId = organization.userId;
 
-    // Cancel pending assignments
-    const assignments = await Assignment.find({
-      organizationId: orgId,
-      status: { $in: ['pending', 'confirmed'] }
-    });
-    for (const assignment of assignments) {
-      assignment.status = 'cancelled';
-      assignment.cancelReason = `Organización eliminada por aprobación del administrador`;
-      await assignment.save();
-    }
+    // 1. Delete ALL assignments (not just cancel - full removal)
+    await Assignment.deleteMany({ organizationId: orgId });
 
-    // Deactivate linked MinistroBlocks
-    await MinistroBlock.updateMany(
-      { organizationId: orgId, active: true },
-      { $set: { active: false } }
+    // 2. Deactivate and delete linked MinistroBlocks (free time slots)
+    await MinistroBlock.deleteMany({ organizationId: orgId });
+
+    // 3. Remove org reference from member accounts (Users MIEMBRO)
+    await User.updateMany(
+      { organizationIds: orgId },
+      { $pull: { organizationIds: orgId } }
+    );
+    await User.updateMany(
+      { organizationId: orgId },
+      { $unset: { organizationId: '' } }
     );
 
-    // Cascade delete related documents
+    // 4. Cascade delete all related documents and records
     await Promise.all([
       GeneratedDocuments.deleteMany({ organizationId: orgId }),
       CertificateFiles.deleteMany({ organizationId: orgId }),
-      Notification.deleteMany({ organizationId: orgId })
+      Notification.deleteMany({ organizationId: orgId }),
+      Document.deleteMany({ organizationId: orgId }),
+      Member.deleteMany({ organizationId: orgId })
     ]);
 
-    // Delete the organization
+    // 5. Delete the organization itself
     await Organization.findByIdAndDelete(orgId);
 
-    // Notify the organizer
+    // 6. Notify the organizer (this notification has no organizationId since org is gone)
     await Notification.create({
       userId: orgUserId,
       type: 'organization_deleted',
       title: 'Organización eliminada',
-      message: `Tu solicitud de eliminación de "${orgName}" ha sido aprobada por el administrador.`,
-      data: { organizationName: orgName }
+      message: `Tu solicitud de eliminación de "${orgName}" ha sido aprobada por el administrador. La organización y todos sus datos asociados han sido eliminados.`,
+      data: { organizationName: orgName, deletedAt: new Date().toISOString() }
     });
 
-    logger.info(`Deletion approved: ${orgName} (${orgId}) by admin ${req.userId}`);
+    logger.info(`Deletion approved (full cascade): ${orgName} (${orgId}) by admin ${req.userId}`);
     res.json({ message: 'Organización eliminada exitosamente' });
   } catch (error) {
     console.error('Approve deletion error:', error);

@@ -652,7 +652,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           const timeAgo = getTimeAgo(new Date(notif.createdAt));
           const icon = notif.type === 'schedule_change' ? '📅' :
                        notif.type === 'ministro_assigned' ? '⚖️' :
-                       notif.type === 'status_update' ? '🔔' : '📬';
+                       notif.type === 'status_update' ? '🔔' :
+                       notif.type === 'organization_deleted' ? '🗑️' : '📬';
           const notifId = notif._id || notif.id;
 
           return `
@@ -1609,7 +1610,14 @@ async function renderOrganizations() {
   // Filtrar organizaciones aprobadas - esas solo se muestran en sidebar "Mi Organización"
   allOrganizations = allOrganizations.filter(org => org.status !== ORG_STATUS.APPROVED);
 
-  const hasOrgs = allOrganizations.length > 0;
+  // Check for deletion notice notifications
+  let hasDeletionNotices = false;
+  try {
+    const allNotifs = await notificationService.getAllAsync();
+    hasDeletionNotices = allNotifs.some(n => n.type === 'organization_deleted');
+  } catch (e) { /* ignore */ }
+
+  const hasOrgs = allOrganizations.length > 0 || hasDeletionNotices;
   console.log('📋 Organizaciones a mostrar (sin aprobadas):', allOrganizations.length, allOrganizations);
 
   // Auto-sync certificados desde IndexedDB para orgs que no los tienen en server
@@ -1634,8 +1642,53 @@ async function renderOrganizations() {
     if (heroSection) heroSection.style.display = 'none';
     if (btnNuevaOrg) btnNuevaOrg.style.display = 'flex';
 
+    // Obtener notificaciones de organizaciones eliminadas
+    let deletionNotices = '';
+    try {
+      const allNotifs = await notificationService.getAllAsync();
+      const deletionNotifs = allNotifs.filter(n => n.type === 'organization_deleted');
+      deletionNotices = deletionNotifs.map(notif => {
+        const notifId = notif._id || notif.id;
+        const orgName = notif.data?.organizationName || 'Organización';
+        return `
+          <div class="org-card deletion-notice-card" data-notif-id="${notifId}" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #fca5a5;position:relative;">
+            <div style="padding:20px;text-align:center;">
+              <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
+              <h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#991b1b;">Organización eliminada</h3>
+              <p style="margin:0 0 4px;font-size:14px;color:#dc2626;font-weight:600;">"${orgName}"</p>
+              <p style="margin:0 0 16px;font-size:13px;color:#7f1d1d;line-height:1.4;">${notif.message || 'La eliminación fue aprobada por el administrador.'}</p>
+              <button class="btn-dismiss-deletion" data-notif-id="${notifId}" style="
+                background:#dc2626;color:white;border:none;padding:8px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;
+              ">Entendido, eliminar aviso</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.warn('Error loading deletion notifications:', e);
+    }
+
     // Renderizar cards de organizaciones
-    orgsList.innerHTML = allOrganizations.map(org => renderOrganizationCard(org)).join('');
+    orgsList.innerHTML = deletionNotices + allOrganizations.map(org => renderOrganizationCard(org)).join('');
+
+    // Event listeners para avisos de eliminación
+    orgsList.querySelectorAll('.btn-dismiss-deletion').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const notifId = btn.dataset.notifId;
+        try {
+          await notificationService.delete(notifId);
+          const card = btn.closest('.deletion-notice-card');
+          if (card) card.remove();
+          showToast('Aviso eliminado', 'info');
+          // Si no quedan orgs ni avisos, mostrar sección vacía
+          const remaining = orgsList.querySelectorAll('.org-card');
+          if (remaining.length === 0) renderOrganizations();
+        } catch (err) {
+          showToast('Error al eliminar aviso', 'error');
+        }
+      });
+    });
 
     // Agregar event listeners a las cards
     orgsList.querySelectorAll('.org-card').forEach(card => {

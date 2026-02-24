@@ -3666,7 +3666,28 @@ class AdminDashboard {
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </svg>`;
         title = 'Solicitud de Eliminación Pendiente';
-        message = `El organizador solicita eliminar esta organización. Motivo: "${org.deletionRequest?.reason || 'Sin motivo especificado'}". Puede aprobar o rechazar esta solicitud.`;
+        message = `El organizador solicita eliminar esta organización.<br><strong>Motivo:</strong> "${escapeHtml(org.deletionRequest?.reason || 'Sin motivo especificado')}"
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="btn-approve-deletion" data-org-id="${org._id || org.id}" style="
+              background:#dc2626;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Aprobar Eliminación
+            </button>
+            <button class="btn-reject-deletion" data-org-id="${org._id || org.id}" style="
+              background:white;color:#374151;border:2px solid #d1d5db;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+              Rechazar
+            </button>
+          </div>`;
         bgColor = '#fef2f2';
         borderColor = '#dc2626';
         iconBg = '#dc2626';
