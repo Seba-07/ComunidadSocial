@@ -476,6 +476,53 @@ class OrganizationDashboard {
     const lastElectionDate = lastElection?.date ? new Date(lastElection.date).toLocaleDateString('es-CL') : null;
     const dirType = org.provisionalDirectorio?.type === 'ELECTO' ? 'Electo' : 'Provisorio';
 
+    // Calcular fecha límite para próxima elección
+    const today = new Date();
+    let deadlineDate = null;
+    let deadlineSource = '';
+    if (lastElection?.date) {
+      // Directorio definitivo: 3 años desde la elección
+      deadlineDate = new Date(new Date(lastElection.date).getTime() + (3 * 365.25 * 24 * 60 * 60 * 1000));
+      deadlineSource = 'elección';
+    } else if (isProvisional) {
+      // Provisorio: Ley 19.418 da un plazo máximo para elegir directorio definitivo
+      // Se usa la fecha de aprobación o creación de la org como referencia
+      const approvedEntry = org.statusHistory?.find(h => h.status === ORG_STATUS.APPROVED);
+      const refDate = approvedEntry?.date || org.createdAt;
+      if (refDate) {
+        // Plazo razonable: 1 año desde aprobación para convocar elección definitiva
+        deadlineDate = new Date(new Date(refDate).getTime() + (365.25 * 24 * 60 * 60 * 1000));
+        deadlineSource = 'constitución';
+      }
+    }
+
+    let deadlineHtml = '';
+    if (deadlineDate) {
+      const daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+      const deadlineDateStr = deadlineDate.toLocaleDateString('es-CL');
+      const isOverdue = daysLeft < 0;
+      const isUrgent = daysLeft >= 0 && daysLeft <= 90;
+
+      let bgColor, borderColor, textColor, icon, message;
+      if (isOverdue) {
+        bgColor = '#fef2f2'; borderColor = '#fecaca'; textColor = '#991b1b'; icon = '🚨';
+        message = `El plazo para renovar el directorio venció hace <strong>${Math.abs(daysLeft)} días</strong> (${deadlineDateStr}). Convoque una asamblea de elección de inmediato.`;
+      } else if (isUrgent) {
+        bgColor = '#fffbeb'; borderColor = '#fde68a'; textColor = '#92400e'; icon = '⚠️';
+        message = `Quedan <strong>${daysLeft} días</strong> para la renovación del directorio (${deadlineDateStr}). Planifique la convocatoria a asamblea de elección.`;
+      } else {
+        bgColor = '#eff6ff'; borderColor = '#bfdbfe'; textColor = '#1e40af'; icon = '📅';
+        message = `Fecha límite de renovación: <strong>${deadlineDateStr}</strong> (${daysLeft} días restantes, desde ${deadlineSource}).`;
+      }
+
+      deadlineHtml = `
+        <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px;">${icon}</span>
+          <p style="margin:0;font-size:13px;color:${textColor};line-height:1.5;">${message}</p>
+        </div>
+      `;
+    }
+
     const roleDescriptions = {
       'presidente': 'Representa legal y judicialmente a la organización.',
       'vicepresidente': 'Reemplaza al presidente y colabora en la gestión.',
@@ -499,6 +546,8 @@ class OrganizationDashboard {
             Agendar Elección
           </button>
         </div>
+
+        ${deadlineHtml}
 
         <div class="directorio-info">
           <p>El directorio debe contar con al menos ${cargos.length} miembros titulares mayores de 18 años, elegidos por votación directa. Cada miembro dura <strong>3 años</strong> en su cargo, con posibilidad de reelección.</p>
@@ -1193,7 +1242,8 @@ class OrganizationDashboard {
   async loadOrgDocuments() {
     if (!this.currentOrg) return;
     try {
-      const response = await orgDocumentService.getDocuments(this.currentOrg.id);
+      const orgId = this.currentOrg._id || this.currentOrg.id;
+      const response = await orgDocumentService.getDocuments(orgId);
       this.orgDocuments = response.documents || response || [];
     } catch (error) {
       console.error('Error al cargar documentos de la organizacion:', error);
@@ -1494,12 +1544,14 @@ class OrganizationDashboard {
       showToast('Documento subido correctamente', 'success');
       await this.loadOrgDocuments();
       // Refresh the documents list in the DOM
-      const listContainer = parentOverlay?.querySelector('#org-documents-list') || document.querySelector('#org-documents-list');
+      const listContainer = document.querySelector('#org-documents-list');
       if (listContainer) {
         listContainer.innerHTML = this.renderOrgDocuments();
         // Re-attach listeners
         const container = this._pendingRefreshContainer || listContainer.closest('[id$="-content"]');
-        if (container) this.attachOrgDocumentListenersToContainer(container);
+        if (container) {
+          this.attachOrgDocumentListenersToContainer(container);
+        }
       }
     } catch (error) {
       loadingOverlay.remove();
@@ -1548,15 +1600,17 @@ class OrganizationDashboard {
 
     confirmModal.querySelector('#btn-confirm-delete-doc').addEventListener('click', async () => {
       try {
-        await orgDocumentService.deleteDocument(this.currentOrg.id, docId);
+        const orgId = this.currentOrg._id || this.currentOrg.id;
+        await orgDocumentService.deleteDocument(orgId, docId);
         showToast('Documento eliminado correctamente', 'success');
         confirmModal.remove();
         await this.loadOrgDocuments();
         // Refresh the documents list in the DOM
-        const listContainer = parentOverlay?.querySelector('#org-documents-list');
+        const listContainer = document.querySelector('#org-documents-list');
         if (listContainer) {
           listContainer.innerHTML = this.renderOrgDocuments();
-          this.attachOrgDocumentListeners(parentOverlay);
+          const container = this._pendingRefreshContainer || listContainer.closest('[id$="-content"]');
+          if (container) this.attachOrgDocumentListenersToContainer(container);
         }
       } catch (error) {
         console.error('Error al eliminar documento:', error);
@@ -1575,7 +1629,8 @@ class OrganizationDashboard {
       btn.addEventListener('click', async () => {
         const docId = btn.dataset.docId;
         try {
-          await orgDocumentService.downloadDocument(this.currentOrg.id, docId);
+          const orgId = this.currentOrg._id || this.currentOrg.id;
+          await orgDocumentService.downloadDocument(orgId, docId);
         } catch (error) {
           showToast(error.message || 'Error al descargar el documento', 'error');
         }
@@ -3098,7 +3153,7 @@ class OrganizationDashboard {
       </div>
     `;
 
-    parentOverlay.appendChild(modal);
+    document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-close-summary').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -4691,10 +4746,18 @@ ${comm.message || 'Sin contenido'}
     container.querySelectorAll('.quick-action-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const action = btn.dataset.action;
-        // Disparar evento personalizado para que OrganizationMenuManager maneje la navegación
-        window.dispatchEvent(new CustomEvent('org-quick-action', { detail: { action } }));
+        if (action) {
+          // Disparar evento personalizado para que OrganizationMenuManager maneje la navegación
+          window.dispatchEvent(new CustomEvent('org-quick-action', { detail: { action } }));
+        }
       });
     });
+
+    // Ver Validación de Ministro de Fe
+    const btnViewValidation = container.querySelector('#btn-view-validation');
+    if (btnViewValidation) {
+      btnViewValidation.addEventListener('click', () => this.showValidationSummary());
+    }
 
     // Nueva asamblea
     container.querySelectorAll('#btn-new-assembly, #btn-first-assembly').forEach(btn => {
@@ -5011,18 +5074,15 @@ ${comm.message || 'Sin contenido'}
         }
 
         return `
-          <div class="doc-item" style="display: flex; align-items: center; gap: 10px;">
-            <span class="doc-icon" style="color: ${hasData ? '#16a34a' : '#dc2626'};">${hasData ? '✓' : '✗'}</span>
-            <div style="flex: 1; min-width: 0;">
-              <span class="doc-name" style="display: block; font-weight: 600; font-size: 14px;">${label}</span>
-              ${personName ? `<span style="font-size: 12px; color: #6b7280;">${personName}</span>` : ''}
-            </div>
+          <div class="doc-item">
+            <span class="doc-icon">${hasData ? '✅' : '❌'}</span>
+            <span class="doc-name">${label}${personName ? ` — ${personName}` : ''}</span>
             ${hasData ? `
               <div class="doc-actions">
                 <button class="btn-view-cert-file" data-cert-idx="${idx}">Ver</button>
                 <button class="btn-download-cert-file" data-cert-idx="${idx}">⬇</button>
               </div>
-            ` : '<span style="font-size: 12px; color: #991b1b;">Sin archivo</span>'}
+            ` : '<span style="font-size: 12px; color: #991b1b; margin-left: auto;">Sin archivo</span>'}
           </div>
         `;
       }).join('');
@@ -5125,6 +5185,85 @@ ${comm.message || 'Sin contenido'}
     document.body.appendChild(a);
     a.click();
     a.remove();
+  }
+
+  /**
+   * Ver un documento subido en modal
+   */
+  async viewOrgDocument(docId) {
+    const orgId = this.currentOrg._id || this.currentOrg.id;
+    const doc = (this.orgDocuments || []).find(d => (d._id || d.id) === docId);
+    const docName = doc?.name || 'Documento';
+
+    try {
+      const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+      const token = localStorage.getItem('auth_token');
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`${baseUrl}/org-documents/${orgId}/${docId}/download`, {
+        method: 'GET',
+        credentials: 'include',
+        headers
+      });
+
+      if (!response.ok) throw new Error('Error al obtener documento');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const isImage = blob.type.startsWith('image/');
+      const isPdf = blob.type === 'application/pdf';
+
+      const modal = document.createElement('div');
+      modal.className = 'org-modal-overlay';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+      let contentHtml;
+      if (isImage) {
+        contentHtml = `<img src="${blobUrl}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:8px;" />`;
+      } else if (isPdf) {
+        contentHtml = `<iframe src="${blobUrl}" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>`;
+      } else {
+        contentHtml = `<div style="text-align:center;padding:40px;"><p style="font-size:16px;color:#6b7280;">Vista previa no disponible para este tipo de archivo.</p><p style="font-size:13px;color:#9ca3af;">Usa el botón Descargar para abrir el archivo.</p></div>`;
+      }
+
+      modal.innerHTML = `
+        <div style="background:white;border-radius:12px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+            <h4 style="margin:0;font-size:15px;color:#1e293b;">${docName}</h4>
+            <button class="modal-close" style="background:#f1f5f9;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;color:#64748b;display:flex;align-items:center;justify-content:center;">&times;</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px;display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+            ${contentHtml}
+          </div>
+          <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
+            <button class="btn-dl-doc" style="padding:8px 16px;background:#059669;color:white;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Descargar</button>
+            <button class="btn-close-doc" style="padding:8px 16px;background:white;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">Cerrar</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      modal.querySelector('.modal-close').addEventListener('click', () => { modal.remove(); window.URL.revokeObjectURL(blobUrl); });
+      modal.querySelector('.btn-close-doc').addEventListener('click', () => { modal.remove(); window.URL.revokeObjectURL(blobUrl); });
+      modal.addEventListener('click', (e) => { if (e.target === modal) { modal.remove(); window.URL.revokeObjectURL(blobUrl); } });
+      modal.querySelector('.btn-dl-doc').addEventListener('click', () => this.downloadOrgDocument(docId));
+    } catch (error) {
+      console.error('Error al ver documento:', error);
+      showToast('Error al abrir el documento', 'error');
+    }
+  }
+
+  /**
+   * Descargar un documento subido
+   */
+  async downloadOrgDocument(docId) {
+    try {
+      const orgId = this.currentOrg._id || this.currentOrg.id;
+      await orgDocumentService.downloadDocument(orgId, docId);
+    } catch (error) {
+      showToast(error.message || 'Error al descargar el documento', 'error');
+    }
   }
 
   /**
