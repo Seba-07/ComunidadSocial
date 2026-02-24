@@ -18,7 +18,8 @@ import {
   formatDate,
   parseDateTimeSafe,
   getOrgType,
-  getOrgIcon
+  getOrgIcon,
+  formatRut
 } from '../../shared/utils/index.js';
 
 // Wrapper para compatibilidad con código existente
@@ -293,7 +294,7 @@ class OrganizationDashboard {
             <span class="stat-text">Total Socios</span>
           </div>
           <div class="member-stat">
-            <span class="stat-number">${members.filter(m => m.status === 'active').length || members.length}</span>
+            <span class="stat-number">${members.filter(m => m.status !== 'inactive').length}</span>
             <span class="stat-text">Activos</span>
           </div>
         </div>
@@ -311,11 +312,25 @@ class OrganizationDashboard {
               </tr>
             </thead>
             <tbody>
-              ${members.length > 0 ? members.map((member, index) => `
+              ${members.length > 0 ? members.map((member, index) => {
+                let ageHtml = '';
+                if (member.birthDate) {
+                  const birth = new Date(member.birthDate);
+                  const today = new Date();
+                  let age = today.getFullYear() - birth.getFullYear();
+                  const monthDiff = today.getMonth() - birth.getMonth();
+                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+                  const isMinor = age < 18;
+                  ageHtml = `<span style="font-size:11px;color:${isMinor ? '#dc2626' : '#6b7280'};display:block;">${age} años${isMinor ? ' · Menor de edad' : ''}</span>`;
+                }
+                return `
                 <tr>
                   <td class="member-name">
                     <div class="member-avatar">${(member.firstName?.[0] || 'S').toUpperCase()}</div>
-                    <span>${member.firstName} ${member.lastName}</span>
+                    <div>
+                      <span>${member.firstName} ${member.lastName}</span>
+                      ${ageHtml}
+                    </div>
                   </td>
                   <td>${member.rut || '-'}</td>
                   <td>${member.phone || '-'}</td>
@@ -324,6 +339,12 @@ class OrganizationDashboard {
                     <span class="status-badge ${member.status || 'active'}">${member.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
                   </td>
                   <td class="actions-cell">
+                    <button class="btn-icon btn-view-member" data-rut="${member.rut}" title="Ver Perfil">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
                     <button class="btn-icon btn-edit-member" data-rut="${member.rut}" title="Editar">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -338,7 +359,7 @@ class OrganizationDashboard {
                     </button>
                   </td>
                 </tr>
-              `).join('') : `
+              `; }).join('') : `
                 <tr>
                   <td colspan="6" class="empty-state">No hay socios registrados</td>
                 </tr>
@@ -1626,9 +1647,15 @@ class OrganizationDashboard {
                 <input type="text" id="member-lastname" required>
               </div>
             </div>
-            <div class="form-group">
-              <label>RUT *</label>
-              <input type="text" id="member-rut" placeholder="12.345.678-9" required>
+            <div class="form-row">
+              <div class="form-group">
+                <label>RUT *</label>
+                <input type="text" id="member-rut" placeholder="12.345.678-9" required>
+              </div>
+              <div class="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" id="member-birthdate">
+              </div>
             </div>
             <div class="form-group">
               <label>Teléfono</label>
@@ -1657,6 +1684,16 @@ class OrganizationDashboard {
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
+    // Auto-formateo de RUT
+    const rutInput = modal.querySelector('#member-rut');
+    rutInput.addEventListener('input', () => {
+      const pos = rutInput.selectionStart;
+      const prevLen = rutInput.value.length;
+      rutInput.value = formatRut(rutInput.value);
+      const newLen = rutInput.value.length;
+      rutInput.setSelectionRange(pos + (newLen - prevLen), pos + (newLen - prevLen));
+    });
+
     modal.querySelector('#form-add-member').addEventListener('submit', (e) => {
       e.preventDefault();
 
@@ -1665,6 +1702,7 @@ class OrganizationDashboard {
         firstName: modal.querySelector('#member-firstname').value.trim(),
         lastName: modal.querySelector('#member-lastname').value.trim(),
         rut: modal.querySelector('#member-rut').value.trim(),
+        birthDate: modal.querySelector('#member-birthdate').value || '',
         phone: modal.querySelector('#member-phone').value.trim(),
         email: modal.querySelector('#member-email').value.trim(),
         address: modal.querySelector('#member-address').value.trim(),
@@ -2761,9 +2799,15 @@ class OrganizationDashboard {
                 <input type="text" id="edit-lastName" value="${member.lastName || member.apellidoPaterno || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
               </div>
             </div>
-            <div class="form-group" style="margin-top: 12px;">
-              <label style="font-weight: 600; display: block; margin-bottom: 6px;">RUT</label>
-              <input type="text" value="${member.rut || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #f1f5f9;" disabled>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+              <div class="form-group">
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">RUT</label>
+                <input type="text" value="${member.rut || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #f1f5f9;" disabled>
+              </div>
+              <div class="form-group">
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Fecha de Nacimiento</label>
+                <input type="date" id="edit-birthDate" value="${member.birthDate || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+              </div>
             </div>
             <div class="form-group" style="margin-top: 12px;">
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Email</label>
@@ -2772,6 +2816,10 @@ class OrganizationDashboard {
             <div class="form-group" style="margin-top: 12px;">
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Telefono</label>
               <input type="tel" id="edit-phone" value="${member.phone || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 6px;">Dirección</label>
+              <input type="text" id="edit-address" value="${member.address || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
@@ -2782,7 +2830,7 @@ class OrganizationDashboard {
       </div>
     `;
 
-    parentOverlay.appendChild(modal);
+    document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -2795,11 +2843,13 @@ class OrganizationDashboard {
         ...members[idx],
         firstName: modal.querySelector('#edit-firstName').value,
         lastName: modal.querySelector('#edit-lastName').value,
+        birthDate: modal.querySelector('#edit-birthDate').value || members[idx].birthDate || '',
         email: modal.querySelector('#edit-email').value,
-        phone: modal.querySelector('#edit-phone').value
+        phone: modal.querySelector('#edit-phone').value,
+        address: modal.querySelector('#edit-address').value
       };
       try {
-        await organizationsService.update(org.id || org._id, { members });
+        await organizationsService.update(org._id || org.id, { members });
         this.currentOrg.members = members;
         showToast('Socio actualizado correctamente', 'success');
         modal.remove();
@@ -2808,6 +2858,148 @@ class OrganizationDashboard {
         showToast('Error al actualizar socio', 'error');
       }
     });
+  }
+
+  /**
+   * Ver perfil completo de un socio
+   */
+  showMemberProfile(memberRut) {
+    const org = this.currentOrg;
+    const members = org.members || [];
+    const member = members.find(m => m.rut === memberRut);
+    if (!member) { showToast('Miembro no encontrado', 'error'); return; }
+
+    // Calcular edad
+    let ageText = '';
+    if (member.birthDate) {
+      const birth = new Date(member.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+      const isMinor = age < 18;
+      ageText = `${age} años${isMinor ? ' <span style="color:#dc2626;font-weight:600;">· Menor de edad</span>' : ''}`;
+    }
+
+    // Determinar rol en la organización
+    const pd = org.provisionalDirectorio || {};
+    const ec = org.comisionElectoral || org.electoralCommission || [];
+    let role = 'Socio';
+    let roleColor = '#6b7280';
+
+    const directorioRoles = {
+      presidente: 'Presidente/a', vicepresidente: 'Vicepresidente/a',
+      secretario: 'Secretario/a', tesorero: 'Tesorero/a',
+      director1: 'Director/a', director2: 'Director/a',
+      directorPrevencion: 'Director/a de Prevención', directorConvivencia: 'Director/a de Convivencia'
+    };
+    for (const [key, label] of Object.entries(directorioRoles)) {
+      if (pd[key] && pd[key].rut === memberRut) {
+        role = `Directorio — ${label}`;
+        roleColor = '#2563eb';
+        break;
+      }
+    }
+    if (role === 'Socio') {
+      const ecMembers = Array.isArray(ec) ? ec : [];
+      if (ecMembers.some(e => (e.rut || e) === memberRut)) {
+        role = 'Comisión Electoral';
+        roleColor = '#7c3aed';
+      }
+    }
+
+    const isFundador = !member.joinDate;
+    const joinDateText = member.joinDate ? new Date(member.joinDate).toLocaleDateString('es-CL') : 'Fundador';
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.innerHTML = `
+      <div class="org-modal" style="max-width: 550px;">
+        <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white;">
+          <h3 style="display:flex;align-items:center;gap:10px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">
+              ${(member.firstName?.[0] || 'S').toUpperCase()}
+            </div>
+            ${member.firstName} ${member.lastName}
+          </h3>
+          <button class="modal-close" style="color: white;">&times;</button>
+        </div>
+        <div class="org-modal-body" style="padding: 24px;">
+          <!-- Rol -->
+          <div style="margin-bottom: 20px; padding: 10px 14px; border-radius: 8px; background: ${roleColor}10; border: 1px solid ${roleColor}30;">
+            <span style="font-size: 13px; font-weight: 600; color: ${roleColor};">${role}</span>
+          </div>
+
+          <!-- Datos personales -->
+          <h4 style="font-size: 13px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 12px;">Datos Personales</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">RUT</div>
+              <div style="font-size: 14px; font-weight: 500;">${member.rut || '-'}</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Fecha de Nacimiento</div>
+              <div style="font-size: 14px; font-weight: 500;">${member.birthDate ? new Date(member.birthDate + 'T12:00:00').toLocaleDateString('es-CL') : '-'}</div>
+              ${ageText ? `<div style="font-size: 12px; margin-top: 2px;">${ageText}</div>` : ''}
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Teléfono</div>
+              <div style="font-size: 14px; font-weight: 500;">${member.phone || '-'}</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Email</div>
+              <div style="font-size: 14px; font-weight: 500;">${member.email || '-'}</div>
+            </div>
+            <div style="grid-column: span 2;">
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Dirección</div>
+              <div style="font-size: 14px; font-weight: 500;">${member.address || '-'}</div>
+            </div>
+          </div>
+
+          <!-- Estado -->
+          <h4 style="font-size: 13px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 12px;">Estado</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Estado</div>
+              <span class="status-badge ${member.status || 'active'}" style="font-size: 12px;">${member.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Ingreso</div>
+              <div style="font-size: 14px; font-weight: 500;">${joinDateText}</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Tipo</div>
+              <div style="font-size: 14px; font-weight: 500;">${isFundador ? 'Fundador' : 'Ingreso posterior'}</div>
+            </div>
+          </div>
+
+          <!-- Documentos -->
+          ${member.certificate || member.signature ? `
+            <h4 style="font-size: 13px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 12px;">Documentos</h4>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              ${member.certificate ? `
+                <div style="padding: 8px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; color: #166534;">
+                  Certificado de antecedentes
+                </div>
+              ` : ''}
+              ${member.signature ? `
+                <div style="padding: 8px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 13px; color: #1e40af;">
+                  Firma registrada
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
+        <div class="org-modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #e5e7eb;">
+          <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   /**
@@ -4614,7 +4806,10 @@ ${comm.message || 'Sin contenido'}
       });
     });
 
-    // Editar y eliminar miembros
+    // Ver perfil, editar y eliminar miembros
+    container.querySelectorAll('.btn-view-member').forEach(btn => {
+      btn.addEventListener('click', () => this.showMemberProfile(btn.dataset.rut));
+    });
     container.querySelectorAll('.btn-edit-member').forEach(btn => {
       btn.addEventListener('click', () => this.openEditMemberModalInPage(btn.dataset.rut, container));
     });
