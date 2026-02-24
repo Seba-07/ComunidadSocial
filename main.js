@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Navegar a org-overview
             const savedPage = sessionStorage.getItem('app_current_page');
-            if (savedPage && savedPage.startsWith('org-')) {
+            if (savedPage && (savedPage.startsWith('org-') || savedPage === 'profile')) {
               appState.navigateTo(savedPage);
             } else {
               appState.navigateTo('org-overview');
@@ -422,9 +422,15 @@ document.addEventListener('DOMContentLoaded', async () => {
               appState.navigateTo('member-password');
               memberDashboard.renderPage('password');
             } else {
-              // Navigate to overview
-              appState.navigateTo('member-overview');
-              memberDashboard.renderPage('overview');
+              // Restaurar página guardada o ir a overview por defecto
+              const savedMemberPage = sessionStorage.getItem('app_current_page');
+              if (savedMemberPage && savedMemberPage.startsWith('member-')) {
+                appState.navigateTo(savedMemberPage);
+                memberDashboard.renderPage(savedMemberPage.replace('member-', ''));
+              } else {
+                appState.navigateTo('member-overview');
+                memberDashboard.renderPage('overview');
+              }
             }
           }
         } catch (memberErr) {
