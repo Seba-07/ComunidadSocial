@@ -3120,11 +3120,7 @@ class OrganizationDashboard {
           ` : '<div style="background: #fffbeb; padding: 16px; border-radius: 12px; margin-bottom: 20px;"><strong style="color: #92400e;">Pendiente de validacion</strong></div>'}
 
           <h4 style="margin: 20px 0 12px; color: #1e293b;">Directorio Provisorio</h4>
-          <div style="display: grid; gap: 8px;">
-            ${pd.president ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Presidente</span><span>${pd.president.firstName || ''} ${pd.president.lastName || ''} (${pd.president.rut || '-'})</span></div>` : ''}
-            ${pd.secretary ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Secretario</span><span>${pd.secretary.firstName || ''} ${pd.secretary.lastName || ''} (${pd.secretary.rut || '-'})</span></div>` : ''}
-            ${pd.treasurer ? `<div style="display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px;"><span style="font-weight: 600;">Tesorero</span><span>${pd.treasurer.firstName || ''} ${pd.treasurer.lastName || ''} (${pd.treasurer.rut || '-'})</span></div>` : ''}
-          </div>
+          <div style="display: grid; gap: 8px;" id="validation-directorio-list"></div>
 
           <h4 style="margin: 20px 0 12px; color: #1e293b;">Comision Electoral (${ec.length} miembros)</h4>
           <div style="display: grid; gap: 8px;">
@@ -3154,6 +3150,26 @@ class OrganizationDashboard {
     `;
 
     document.body.appendChild(modal);
+
+    // Populate directorio dinámicamente según tipo de organización
+    const dirListEl = modal.querySelector('#validation-directorio-list');
+    if (dirListEl) {
+      const orgType = org.organizationType || org.organization?.type;
+      const config = this.getDirectorioConfig(orgType);
+      dirListEl.innerHTML = config.cargos.map(cargo => {
+        const member = this.getProvisionalMember(org, cargo.id);
+        if (!member) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">'
+            + '<span style="font-weight:600;color:' + cargo.color + ';">' + cargo.nombre + '</span>'
+            + '<span style="color:#991b1b;font-size:13px;">Sin asignar</span></div>';
+        }
+        const name = ((member.firstName || member.primerNombre || member.name || '') + ' ' + (member.lastName || member.apellidoPaterno || '')).trim();
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border-radius:8px;">'
+          + '<span style="font-weight:600;color:' + cargo.color + ';">' + cargo.nombre + '</span>'
+          + '<span>' + (name || 'Sin nombre') + ' (' + (member.rut || '-') + ')</span></div>';
+      }).join('');
+    }
+
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-close-summary').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
