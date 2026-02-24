@@ -1804,6 +1804,11 @@ function renderOrganizationCard(org) {
   const isDeletionRequested = org.status === ORG_STATUS.DELETION_REQUESTED;
   const canDelete = !isLocalDraft && !isApproved && !isDissolved && !isDeletionRequested;
 
+  // Detectar si la última entrada en statusHistory es un rechazo de eliminación
+  const lastHistory = org.statusHistory?.[org.statusHistory.length - 1];
+  const deletionRejected = lastHistory?.comment?.includes('Solicitud de eliminación rechazada');
+  const deletionRejectionReason = deletionRejected ? (lastHistory.comment.match(/Motivo: (.+)/)?.[1] || '') : '';
+
   // Obtener tipo - soportar formato nuevo (backend) y viejo (localStorage)
   const orgType = org.organizationType || org.organization?.type;
   const orgName = org.organizationName || org.organization?.name || 'Sin nombre';
@@ -1893,6 +1898,18 @@ function renderOrganizationCard(org) {
               <div style="flex: 1;">
                 <p style="margin: 0; font-weight: 700; color: #991b1b; font-size: 14px;">Eliminación solicitada</p>
                 <p style="margin: 2px 0 0; font-size: 12px; color: #dc2626;">Esperando aprobación del administrador</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${deletionRejected ? `
+          <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 2px solid #fcd34d; border-radius: 12px; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 24px;">❌</span>
+              <div style="flex: 1;">
+                <p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Solicitud de eliminación rechazada</p>
+                ${deletionRejectionReason ? `<p style="margin: 4px 0 0; font-size: 13px; color: #78350f; line-height: 1.4;"><strong>Motivo del administrador:</strong> ${deletionRejectionReason}</p>` : '<p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">El administrador rechazó la solicitud sin especificar motivo.</p>'}
               </div>
             </div>
           </div>
