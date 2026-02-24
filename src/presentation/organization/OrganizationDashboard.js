@@ -1039,6 +1039,13 @@ class OrganizationDashboard {
           </div>
 
           <div class="doc-category">
+            <h4>🛡️ Certificados de Antecedentes</h4>
+            <div class="doc-list" id="cert-antecedentes-list">
+              <p class="no-docs" style="color: #94a3b8; font-size: 13px;">Cargando certificados...</p>
+            </div>
+          </div>
+
+          <div class="doc-category">
             <h4>📝 Actas de Asamblea</h4>
             <div class="doc-list">
               ${this.currentOrg.assemblies?.length > 0 ?
@@ -4937,6 +4944,187 @@ ${comm.message || 'Sin contenido'}
     }
 
     this.attachOrgDocumentListenersToContainer(container);
+
+    // Cargar certificados de antecedentes
+    const certContainer = container.querySelector('#cert-antecedentes-list');
+    if (certContainer) {
+      this.loadAndRenderCertificateFiles(certContainer);
+    }
+  }
+
+  /**
+   * Carga y renderiza los certificados de antecedentes desde la API
+   */
+  async loadAndRenderCertificateFiles(container) {
+    const orgId = this.currentOrg._id || this.currentOrg.id;
+    const cargoLabels = {
+      presidente: 'Presidente/a', vicepresidente: 'Vicepresidente/a',
+      secretario: 'Secretario/a', tesorero: 'Tesorero/a',
+      director1: 'Director/a 1', director2: 'Director/a 2',
+      directorPrevencion: 'Dir. Prevención', directorConvivencia: 'Dir. Convivencia',
+      comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3'
+    };
+
+    try {
+      const certFiles = await apiService.get(`/organizations/${orgId}/certificate-files`);
+      const certsMeta = this.currentOrg.certificatesStep5 || [];
+      const metaArray = Array.isArray(certsMeta)
+        ? certsMeta
+        : Object.entries(certsMeta).filter(([k]) => k !== '_id').map(([key, val]) => ({
+            memberId: key,
+            memberName: typeof val === 'object' ? (val.memberName || val.name || '') : key
+          }));
+
+      // Merge metadata + base64
+      const mergedCerts = metaArray.map(meta => {
+        const fileData = (certFiles || []).find(f => f.memberId === meta.memberId);
+        return { ...meta, certificate: fileData ? fileData.certificate : '' };
+      });
+      // Add certs only in the files collection
+      (certFiles || []).forEach(f => {
+        if (!mergedCerts.find(m => m.memberId === f.memberId)) {
+          mergedCerts.push(f);
+        }
+      });
+
+      if (mergedCerts.length === 0) {
+        container.innerHTML = '<p class="no-docs">No se cargaron certificados de antecedentes</p>';
+        return;
+      }
+
+      // Also try to match with org members for better names
+      const members = this.currentOrg.members || [];
+      const pd = this.currentOrg.provisionalDirectorio || {};
+
+      container.innerHTML = mergedCerts.map((cert, idx) => {
+        const cargoId = cert.memberId || '';
+        const label = cargoLabels[cargoId] || cargoId;
+        const hasData = !!(cert.certificate && cert.certificate.length > 50);
+
+        // Try to get the person's actual name
+        let personName = cert.memberName || '';
+        if (!personName || personName === cargoId) {
+          const pdEntry = pd[cargoId];
+          if (pdEntry) {
+            personName = `${pdEntry.firstName || pdEntry.primerNombre || ''} ${pdEntry.lastName || pdEntry.apellidoPaterno || ''}`.trim();
+          }
+        }
+
+        return `
+          <div class="doc-item" style="display: flex; align-items: center; gap: 10px;">
+            <span class="doc-icon" style="color: ${hasData ? '#16a34a' : '#dc2626'};">${hasData ? '✓' : '✗'}</span>
+            <div style="flex: 1; min-width: 0;">
+              <span class="doc-name" style="display: block; font-weight: 600; font-size: 14px;">${label}</span>
+              ${personName ? `<span style="font-size: 12px; color: #6b7280;">${personName}</span>` : ''}
+            </div>
+            ${hasData ? `
+              <div class="doc-actions">
+                <button class="btn-view-cert-file" data-cert-idx="${idx}">Ver</button>
+                <button class="btn-download-cert-file" data-cert-idx="${idx}">⬇</button>
+              </div>
+            ` : '<span style="font-size: 12px; color: #991b1b;">Sin archivo</span>'}
+          </div>
+        `;
+      }).join('');
+
+      // Store merged certs for view/download handlers
+      this._certFilesCache = mergedCerts;
+
+      // Attach listeners
+      container.querySelectorAll('.btn-view-cert-file').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.certIdx);
+          this.viewCertificateFile(idx);
+        });
+      });
+      container.querySelectorAll('.btn-download-cert-file').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.certIdx);
+          this.downloadCertificateFile(idx);
+        });
+      });
+    } catch (err) {
+      console.error('Error cargando certificados de antecedentes:', err);
+      container.innerHTML = '<p class="no-docs" style="color: #ef4444;">Error al cargar certificados</p>';
+    }
+  }
+
+  /**
+   * Ver un certificado de antecedentes en modal
+   */
+  viewCertificateFile(idx) {
+    const certs = this._certFilesCache || [];
+    const cert = certs[idx];
+    if (!cert || !cert.certificate) return;
+
+    const cargoLabels = {
+      presidente: 'Presidente/a', vicepresidente: 'Vicepresidente/a',
+      secretario: 'Secretario/a', tesorero: 'Tesorero/a',
+      director1: 'Director/a 1', director2: 'Director/a 2',
+      comision1: 'Com. Electoral 1', comision2: 'Com. Electoral 2', comision3: 'Com. Electoral 3'
+    };
+    const label = cargoLabels[cert.memberId] || cert.memberId || 'Certificado';
+    const base64 = cert.certificate;
+    const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+    const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const contentHtml = isImage || base64.startsWith('data:image')
+      ? `<img src="${dataUri}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:8px;" />`
+      : `<iframe src="${dataUri}" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>`;
+
+    modal.innerHTML = `
+      <div style="background:white;border-radius:12px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+          <h4 style="margin:0;font-size:15px;color:#1e293b;">Certificado de Antecedentes — ${label}</h4>
+          <button class="modal-close" style="background:#f1f5f9;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;color:#64748b;display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:20px;display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+          ${contentHtml}
+        </div>
+        <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
+          <button class="btn-dl-cert" style="padding:8px 16px;background:#059669;color:white;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Descargar</button>
+          <button class="btn-close-cert" style="padding:8px 16px;background:white;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">Cerrar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.querySelector('.btn-close-cert').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    modal.querySelector('.btn-dl-cert').addEventListener('click', () => this.downloadCertificateFile(idx));
+  }
+
+  /**
+   * Descargar un certificado de antecedentes
+   */
+  downloadCertificateFile(idx) {
+    const certs = this._certFilesCache || [];
+    const cert = certs[idx];
+    if (!cert || !cert.certificate) return;
+
+    const cargoLabels = {
+      presidente: 'Presidente', vicepresidente: 'Vicepresidente',
+      secretario: 'Secretario', tesorero: 'Tesorero',
+      director1: 'Director_1', director2: 'Director_2',
+      comision1: 'Com_Electoral_1', comision2: 'Com_Electoral_2', comision3: 'Com_Electoral_3'
+    };
+    const label = cargoLabels[cert.memberId] || cert.memberId || 'certificado';
+    const base64 = cert.certificate;
+    const isImage = base64.startsWith('data:image') || (!base64.startsWith('data:') && !base64.startsWith('JVBER'));
+    const dataUri = base64.startsWith('data:') ? base64 : (isImage ? 'data:image/jpeg;base64,' + base64 : 'data:application/pdf;base64,' + base64);
+    const ext = isImage ? '.jpg' : '.pdf';
+
+    const a = document.createElement('a');
+    a.href = dataUri;
+    a.download = `Certificado_Antecedentes_${label}${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   /**
