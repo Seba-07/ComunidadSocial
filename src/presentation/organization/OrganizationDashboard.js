@@ -1445,17 +1445,36 @@ class OrganizationDashboard {
    * Sube un documento al servidor
    */
   async uploadDocument(file, name, description, category, parentOverlay) {
+    // Mostrar overlay de carga visible
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'org-modal-overlay';
+    loadingOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200001;display:flex;align-items:center;justify-content:center;';
+    loadingOverlay.innerHTML = `
+      <div style="background:white;border-radius:16px;padding:32px 48px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="width:48px;height:48px;border:4px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div>
+        <p style="margin:0;font-weight:600;color:#1f2937;font-size:16px;">Subiendo documento...</p>
+        <p style="margin:8px 0 0;color:#6b7280;font-size:13px;">Esto puede tomar unos segundos</p>
+      </div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    `;
+    document.body.appendChild(loadingOverlay);
+
     try {
-      await orgDocumentService.uploadDocument(this.currentOrg.id, file, name, description, category);
+      const orgId = this.currentOrg._id || this.currentOrg.id;
+      await orgDocumentService.uploadDocument(orgId, file, name, description, category);
+      loadingOverlay.remove();
       showToast('Documento subido correctamente', 'success');
       await this.loadOrgDocuments();
       // Refresh the documents list in the DOM
-      const listContainer = parentOverlay?.querySelector('#org-documents-list');
+      const listContainer = parentOverlay?.querySelector('#org-documents-list') || document.querySelector('#org-documents-list');
       if (listContainer) {
         listContainer.innerHTML = this.renderOrgDocuments();
-        this.attachOrgDocumentListeners(parentOverlay);
+        // Re-attach listeners
+        const container = this._pendingRefreshContainer || listContainer.closest('[id$="-content"]');
+        if (container) this.attachOrgDocumentListenersToContainer(container);
       }
     } catch (error) {
+      loadingOverlay.remove();
       console.error('Error al subir documento:', error);
       showToast(error.message || 'Error al subir el documento', 'error');
     }
@@ -1901,7 +1920,7 @@ class OrganizationDashboard {
 
       if (!this.currentOrg.projects) this.currentOrg.projects = [];
       this.currentOrg.projects.push(newProject);
-      organizationsService.update(this.currentOrg.id, { projects: this.currentOrg.projects });
+      organizationsService.update(this.currentOrg._id || this.currentOrg.id, { projects: this.currentOrg.projects });
 
       showToast('Proyecto creado correctamente', 'success');
       modal.remove();
@@ -2604,7 +2623,7 @@ class OrganizationDashboard {
       </div>
     `;
 
-    parentOverlay.appendChild(modal);
+    document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -2626,7 +2645,7 @@ class OrganizationDashboard {
       };
       elections.push(newElection);
       try {
-        await organizationsService.update(org.id || org._id, { elections });
+        await organizationsService.update(org._id || org.id, { elections });
         this.currentOrg.elections = elections;
         showToast('Eleccion convocada exitosamente', 'success');
         modal.remove();
@@ -2683,7 +2702,7 @@ class OrganizationDashboard {
       </div>
     `;
 
-    parentOverlay.appendChild(modal);
+    document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
@@ -2702,7 +2721,7 @@ class OrganizationDashboard {
       };
       communications.push(newComm);
       try {
-        await organizationsService.update(org.id || org._id, { communications });
+        await organizationsService.update(org._id || org.id, { communications });
         this.currentOrg.communications = communications;
         showToast(`Comunicacion enviada a ${membersWithEmail.length} socios`, 'success');
         modal.remove();
@@ -2996,6 +3015,10 @@ class OrganizationDashboard {
           ` : '<p style="color:#6b7280;font-size:13px;">Sin asistentes registrados.</p>'}
 
           <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            ${assembly.status === 'finalizada' ? `<button id="btn-download-assembly-acta" style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg,#2563eb,#1d4ed8); color: white; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar Acta PDF
+            </button>` : ''}
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
           </div>
         </div>
@@ -3007,6 +3030,22 @@ class OrganizationDashboard {
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Descargar acta PDF para asambleas finalizadas
+    const btnDownloadActa = modal.querySelector('#btn-download-assembly-acta');
+    if (btnDownloadActa) {
+      btnDownloadActa.addEventListener('click', () => {
+        try {
+          const actaDoc = this._generateAssemblyActaPDF(assembly);
+          const dateStr = assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL').replace(/\//g, '-') : 'sin-fecha';
+          const orgName = (this.currentOrg.organizationName || 'Org').replace(/\s+/g, '_');
+          pdfService.downloadPDF(actaDoc, `Acta_Asamblea_${dateStr}_${orgName}.pdf`);
+          showToast('Acta descargada', 'success');
+        } catch (err) {
+          showToast('Error al generar acta: ' + err.message, 'error');
+        }
+      });
+    }
 
     // Toggle voting buttons
     modal.querySelectorAll('.btn-toggle-voting').forEach(btn => {
@@ -4212,6 +4251,157 @@ ${comm.message || 'Sin contenido'}
   }
 
   /**
+   * Muestra el acta PDF de una asamblea específica
+   */
+  viewAssemblyActa(assemblyId) {
+    const assembly = (this.currentOrg.assemblies || []).find(a => a.id === assemblyId);
+    if (!assembly) {
+      showToast('Asamblea no encontrada', 'error');
+      return;
+    }
+
+    try {
+      const doc = this._generateAssemblyActaPDF(assembly);
+      const blobUrl = pdfService.getPDFDataURL(doc);
+      const dateStr = assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL') : '';
+      this._showPDFPreviewModal(blobUrl, `Acta de Asamblea - ${dateStr}`, doc);
+    } catch (error) {
+      console.error('Error generando acta:', error);
+      showToast('Error al generar el acta: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Genera un PDF de acta para una asamblea específica
+   */
+  _generateAssemblyActaPDF(assembly) {
+    const doc = new jsPDF();
+    const org = this.currentOrg;
+    const orgName = org.organizationName || org.organization?.name || 'Organización';
+    const dateStr = assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+    const statusLabels = { draft: 'Borrador', convocada: 'Convocada', en_curso: 'En Curso', finalizada: 'Finalizada', cancelada: 'Cancelada' };
+    const agendaTypeLabels = { eleccion_directorio: 'Elección de Directorio', aprobacion_presupuesto: 'Aprobación de Presupuesto', reforma_estatutos: 'Reforma de Estatutos', memoria_anual: 'Memoria Anual', disolucion: 'Disolución', custom: 'Tema General' };
+
+    let y = 20;
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ACTA DE ASAMBLEA', 105, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(11);
+    doc.text(orgName, 105, y, { align: 'center' });
+    y += 12;
+
+    // Info general
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const info = [
+      ['Título', assembly.title || 'Asamblea'],
+      ['Tipo', assembly.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'],
+      ['Fecha', dateStr],
+      ['Hora', assembly.time || '-'],
+      ['Lugar', assembly.location || '-'],
+      ['Estado', statusLabels[assembly.status] || assembly.status]
+    ];
+    info.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}: `, 20, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, 55, y);
+      y += 6;
+    });
+    y += 4;
+
+    // Quórum
+    const attendeeCount = (assembly.attendees || []).length;
+    const members = org.members || [];
+    const totalMembers = members.length;
+    const quorumRequired = assembly.quorumType === 'percentage'
+      ? Math.ceil(totalMembers * (assembly.quorumValue || 50) / 100)
+      : (assembly.quorumValue || 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Asistentes: ${attendeeCount} de ${totalMembers} socios (quórum requerido: ${quorumRequired})`, 20, y);
+    y += 10;
+
+    // Descripción
+    if (assembly.description) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Descripción:', 20, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(assembly.description, 170);
+      doc.text(descLines, 20, y);
+      y += descLines.length * 5 + 6;
+    }
+
+    // Agenda y Resultados
+    if ((assembly.agendaItems || []).length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('PUNTOS DE AGENDA', 20, y);
+      y += 8;
+      doc.setFontSize(10);
+
+      assembly.agendaItems.forEach((item, idx) => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        const typeLabel = agendaTypeLabels[item.type] || item.type;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${idx + 1}. ${item.title} (${typeLabel})`, 20, y);
+        y += 6;
+
+        if (item.result) {
+          doc.setFont('helvetica', 'normal');
+          let resultText = '';
+          if (item.result.mode === 'per_lista') {
+            resultText = `Resultado: Lista ganadora: ${item.result.winningLista || '-'} con ${item.result.votesByLista?.[item.result.winningLista] || 0} votos`;
+          } else if (item.result.winners) {
+            resultText = 'Resultado: ' + Object.entries(item.result.winners).map(([cargo, w]) => `${cargo}: ${w.firstName} ${w.lastName} (${w.votes} votos)`).join(', ');
+          }
+          if (resultText) {
+            const resultLines = doc.splitTextToSize(resultText, 170);
+            doc.text(resultLines, 24, y);
+            y += resultLines.length * 5 + 2;
+          }
+        }
+        y += 4;
+      });
+    }
+
+    // Asistentes
+    if (attendeeCount > 0) {
+      if (y > 230) { doc.addPage(); y = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('REGISTRO DE ASISTENCIA', 20, y);
+      y += 8;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Nombre', 20, y);
+      doc.text('RUT', 120, y);
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      (assembly.attendees || []).forEach(a => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(`${a.firstName || ''} ${a.lastName || ''}`, 20, y);
+        doc.text(a.rut || '-', 120, y);
+        y += 5;
+      });
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
+    }
+
+    return doc;
+  }
+
+  /**
    * Genera un PDF a partir del contenido de estatutos (texto plano)
    */
   _generateEstatutosPDF(org) {
@@ -4528,6 +4718,11 @@ ${comm.message || 'Sin contenido'}
       btn.addEventListener('click', () => this.downloadLegalDocument(btn.dataset.docType));
     });
 
+    // Ver actas de asambleas (sección documentos)
+    container.querySelectorAll('.btn-view-doc').forEach(btn => {
+      btn.addEventListener('click', () => this.viewAssemblyActa(btn.dataset.id));
+    });
+
     // Upload documento
     const btnUploadDoc = container.querySelector('#btn-upload-doc');
     if (btnUploadDoc) {
@@ -4616,8 +4811,13 @@ ${comm.message || 'Sin contenido'}
   }
 
   openNewElectionModalInPage(container) {
-    this.openNewElectionModal({ querySelector: () => null, querySelectorAll: () => [] });
-    this._pendingRefreshContainer = container;
+    // Misma ventana que "Agendar Elección" en directorio: abre modal de asamblea con elección pre-seleccionada
+    window.dispatchEvent(new CustomEvent('org-quick-action', { detail: { action: 'asambleas' } }));
+    setTimeout(() => {
+      const asambleasContainer = document.getElementById('org-asambleas-content');
+      this.openNewAssemblyModal({ querySelector: () => null, querySelectorAll: () => [] }, 'eleccion_directorio');
+      this._pendingRefreshContainer = asambleasContainer || container;
+    }, 300);
   }
 
   openNewCommunicationModalInPage(container) {
