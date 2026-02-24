@@ -1774,7 +1774,7 @@ class OrganizationDashboard {
 
       if (!this.currentOrg.members) this.currentOrg.members = [];
       this.currentOrg.members.push(newMember);
-      organizationsService.update(this.currentOrg.id, { members: this.currentOrg.members });
+      organizationsService.update(this.currentOrg._id || this.currentOrg.id, { members: this.currentOrg.members });
 
       showToast('Socio agregado correctamente', 'success');
       modal.remove();
@@ -2104,7 +2104,7 @@ class OrganizationDashboard {
 
       if (!this.currentOrg.activities) this.currentOrg.activities = [];
       this.currentOrg.activities.push(newActivity);
-      organizationsService.update(this.currentOrg.id, { activities: this.currentOrg.activities });
+      organizationsService.update(this.currentOrg._id || this.currentOrg.id, { activities: this.currentOrg.activities });
 
       showToast('Actividad creada correctamente', 'success');
       modal.remove();
@@ -2188,7 +2188,7 @@ class OrganizationDashboard {
         this.currentOrg.finances.balance -= amount;
       }
 
-      organizationsService.update(this.currentOrg.id, { finances: this.currentOrg.finances });
+      organizationsService.update(this.currentOrg._id || this.currentOrg.id, { finances: this.currentOrg.finances });
 
       showToast('Movimiento registrado correctamente', 'success');
       modal.remove();
@@ -2317,7 +2317,7 @@ class OrganizationDashboard {
 
       try {
         await organizationsService.dissolveOrganization(
-          this.currentOrg.id,
+          this.currentOrg._id || this.currentOrg.id,
           reason,
           details || 'Solicitud de disolución por parte del usuario'
         );
@@ -3537,7 +3537,7 @@ class OrganizationDashboard {
         this.currentOrg.projects[idx].status = modal.querySelector('#edit-project-status').value;
         this.currentOrg.projects[idx].progress = parseInt(rangeInput.value);
         try {
-          await organizationsService.update(this.currentOrg.id, { projects: this.currentOrg.projects });
+          await organizationsService.update(this.currentOrg._id || this.currentOrg.id, { projects: this.currentOrg.projects });
           showToast('Proyecto actualizado', 'success');
           modal.remove();
           this.refreshContent(parentOverlay);
@@ -3665,7 +3665,7 @@ ${comm.message || 'Sin contenido'}
           description: modal.querySelector('#edit-act-desc').value.trim()
         };
         try {
-          await organizationsService.update(this.currentOrg.id, { activities: this.currentOrg.activities });
+          await organizationsService.update(this.currentOrg._id || this.currentOrg.id, { activities: this.currentOrg.activities });
           showToast('Actividad actualizada', 'success');
           modal.remove();
           this.refreshContent(parentOverlay);
@@ -3685,7 +3685,7 @@ ${comm.message || 'Sin contenido'}
     const arr = this.currentOrg[arrayName] || [];
     this.currentOrg[arrayName] = arr.filter(item => item.id !== itemId);
     try {
-      await organizationsService.update(this.currentOrg.id, { [arrayName]: this.currentOrg[arrayName] });
+      await organizationsService.update(this.currentOrg._id || this.currentOrg.id, { [arrayName]: this.currentOrg[arrayName] });
       showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} eliminada`, 'success');
       this.refreshContent(parentOverlay);
     } catch (err) {
@@ -3713,7 +3713,7 @@ ${comm.message || 'Sin contenido'}
     this.currentOrg.finances = finances;
 
     try {
-      await organizationsService.update(this.currentOrg.id, { finances });
+      await organizationsService.update(this.currentOrg._id || this.currentOrg.id, { finances });
       showToast('Movimiento eliminado', 'success');
       this.refreshContent(parentOverlay);
     } catch (err) {
@@ -4410,7 +4410,7 @@ ${comm.message || 'Sin contenido'}
       election.notes = modal.querySelector('#election-notes-edit').value;
 
       try {
-        await organizationsService.update(this.currentOrg.id || this.currentOrg._id, { elections });
+        await organizationsService.update(this.currentOrg._id || this.currentOrg.id, { elections });
         showToast('Elección actualizada correctamente', 'success');
         modal.remove();
         this.refreshContent(parentOverlay);
