@@ -1936,7 +1936,7 @@ router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObje
     const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
-    const { agendaItemId, candidates } = req.body;
+    const { agendaItemId, candidates, customCargos } = req.body;
     const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
     if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
     if (agendaItem.type !== 'eleccion_directorio') {
@@ -1950,6 +1950,10 @@ router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObje
       cargo: c.cargo || null,
       lista: c.lista || null
     }));
+
+    if (customCargos && customCargos.length > 0) {
+      agendaItem.customCargos = customCargos.map(c => ({ id: c.id, nombre: c.nombre, color: c.color }));
+    }
 
     await org.save();
     res.json(agendaItem);

@@ -1867,12 +1867,26 @@ class OrganizationDashboard {
 
     let agendaCounter = 0;
     const agendaContainer = modal.querySelector('#agenda-items-container');
+    // Almacén de candidatos pre-configurados por índice de punto de agenda
+    const preCandidatesMap = {}; // { rowIndex: { candidates: [...], customCargos: [...] } }
+
+    const updateCandidatesStatus = (row, index) => {
+      const statusEl = row.querySelector('.candidates-status');
+      if (!statusEl) return;
+      const config = preCandidatesMap[index];
+      if (config && config.candidates.length > 0) {
+        const uniqueCargos = new Set(config.candidates.map(c => c.cargo));
+        statusEl.innerHTML = '<span style="color:#059669;font-weight:600;">' + config.candidates.length + ' candidatos en ' + uniqueCargos.size + ' cargos</span>';
+      } else {
+        statusEl.innerHTML = '<span style="color:#b45309;">Sin candidatos configurados</span>';
+      }
+    };
 
     const addAgendaItem = (preType) => {
       agendaCounter++;
       const row = document.createElement('div');
       row.className = 'agenda-item-row';
-      row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start;margin-bottom:10px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;';
+      row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;margin-bottom:10px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;';
       row.dataset.index = agendaCounter;
       row.innerHTML = `
         <div>
@@ -1886,22 +1900,79 @@ class OrganizationDashboard {
               <option value="per_lista">Votación por lista completa</option>
             </select>
           </div>
+          <div class="candidates-config-container" style="display:none;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button type="button" class="btn-configure-candidates" style="padding:8px 14px;border:1px solid #2563eb;border-radius:6px;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">Configurar Candidatos</button>
+              <span class="candidates-status" style="font-size:12px;color:#b45309;">Sin candidatos configurados</span>
+            </div>
+          </div>
         </div>
         <button type="button" class="btn-remove-agenda" style="padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:white;color:#ef4444;cursor:pointer;font-size:16px;line-height:1;">&times;</button>
       `;
       agendaContainer.appendChild(row);
 
+      const currentIndex = agendaCounter;
       const typeSelect = row.querySelector('.agenda-type');
       const votingContainer = row.querySelector('.voting-mode-container');
+      const candidatesContainer = row.querySelector('.candidates-config-container');
+
+      const updateVisibility = () => {
+        const isElection = typeSelect.value === 'eleccion_directorio';
+        votingContainer.style.display = isElection ? 'block' : 'none';
+        candidatesContainer.style.display = isElection ? 'block' : 'none';
+        if (!isElection) delete preCandidatesMap[currentIndex];
+      };
+
       if (preType) {
         typeSelect.value = preType;
-        if (preType === 'eleccion_directorio') votingContainer.style.display = 'block';
+        updateVisibility();
       }
-      typeSelect.addEventListener('change', () => {
-        votingContainer.style.display = typeSelect.value === 'eleccion_directorio' ? 'block' : 'none';
+      typeSelect.addEventListener('change', updateVisibility);
+
+      // Botón configurar candidatos — abre el gestor de candidatos en modo callback
+      row.querySelector('.btn-configure-candidates').addEventListener('click', () => {
+        const votingMode = row.querySelector('.agenda-voting-mode').value;
+        if (votingMode !== 'per_cargo') {
+          showToast('Para votación por lista, los candidatos se configuran después de crear la asamblea', 'info');
+          return;
+        }
+
+        const orgType = this.currentOrg.organizationType || this.currentOrg.organization?.type;
+        const config = this.getDirectorioConfig(orgType);
+        const allMembers = this.currentOrg.members || [];
+        const today = new Date();
+        const eligibleMembers = allMembers.filter(m => {
+          if (!m.birthDate) return true;
+          const birth = new Date(m.birthDate);
+          let age = today.getFullYear() - birth.getFullYear();
+          const monthDiff = today.getMonth() - birth.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+          return age >= 18;
+        });
+        const minorCount = allMembers.length - eligibleMembers.length;
+
+        const existing = preCandidatesMap[currentIndex];
+        const currentCandidates = existing ? existing.candidates : [];
+
+        this._showCargoCandidatesManager(null, null, null, {
+          orgId: this.currentOrg._id || this.currentOrg.id,
+          cargos: config.cargos,
+          eligibleMembers,
+          minorCount,
+          currentCandidates,
+          agendaItem: null,
+          preCustomCargos: existing ? existing.customCargos : [],
+          onConfigured: (candidates, customCargos) => {
+            preCandidatesMap[currentIndex] = { candidates, customCargos };
+            updateCandidatesStatus(row, currentIndex);
+          }
+        });
       });
 
-      row.querySelector('.btn-remove-agenda').addEventListener('click', () => row.remove());
+      row.querySelector('.btn-remove-agenda').addEventListener('click', () => {
+        delete preCandidatesMap[currentIndex];
+        row.remove();
+      });
     };
 
     modal.querySelector('#btn-add-agenda-item').addEventListener('click', () => addAgendaItem());
@@ -1919,13 +1990,21 @@ class OrganizationDashboard {
     modal.querySelector('#form-new-assembly').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Collect agenda items
+      // Recopilar puntos de agenda en orden del DOM
+      const rows = agendaContainer.querySelectorAll('.agenda-item-row');
       const agendaItems = [];
-      agendaContainer.querySelectorAll('.agenda-item-row').forEach(row => {
+      const orderedElectionConfigs = []; // configs en orden para items de elección
+
+      rows.forEach(row => {
         const title = row.querySelector('.agenda-title').value.trim();
         const type = row.querySelector('.agenda-type').value;
         const votingMode = type === 'eleccion_directorio' ? row.querySelector('.agenda-voting-mode').value : null;
-        if (title) agendaItems.push({ title, type, votingMode });
+        if (title) {
+          agendaItems.push({ title, type, votingMode });
+          if (type === 'eleccion_directorio') {
+            orderedElectionConfigs.push(preCandidatesMap[row.dataset.index] || null);
+          }
+        }
       });
 
       const assemblyData = {
@@ -1944,17 +2023,21 @@ class OrganizationDashboard {
         const result = await apiService.createAssembly(orgId, assemblyData);
         if (!this.currentOrg.assemblies) this.currentOrg.assemblies = [];
         this.currentOrg.assemblies.push(result);
+
+        // Guardar candidatos pre-configurados si existen
+        const electionItems = (result.agendaItems || []).filter(i => i.type === 'eleccion_directorio');
+        for (let i = 0; i < electionItems.length && i < orderedElectionConfigs.length; i++) {
+          const config = orderedElectionConfigs[i];
+          if (config && config.candidates && config.candidates.length > 0) {
+            await apiService.addCandidates(orgId, result.id, electionItems[i].id, config.candidates, config.customCargos || []);
+            electionItems[i].candidates = config.candidates;
+            if (config.customCargos && config.customCargos.length > 0) electionItems[i].customCargos = config.customCargos;
+          }
+        }
+
         showToast('Asamblea creada correctamente', 'success');
         modal.remove();
         this.refreshContent(parentOverlay);
-
-        // Si tiene punto de elección de directorio, abrir gestión de candidatos
-        const electionItem = (result.agendaItems || []).find(i => i.type === 'eleccion_directorio');
-        if (electionItem) {
-          setTimeout(() => {
-            this.showCandidatesManager(result.id, electionItem.id, parentOverlay);
-          }, 300);
-        }
       } catch (err) {
         showToast(err.message || 'Error al crear asamblea', 'error');
       }
@@ -3475,119 +3558,187 @@ class OrganizationDashboard {
   }
 
   /**
-   * Gestión de candidatos por cargo — UI con slots por cada cargo del directorio
+   * Gestión de candidatos por cargo — UI con slots por cada cargo del directorio.
+   * Soporta múltiples candidatos por cargo, agregar cargos personalizados,
+   * y modo callback (onConfigured) para pre-configuración antes de crear asamblea.
    */
   _showCargoCandidatesManager(assemblyId, agendaItemId, parentOverlay, ctx) {
-    const { orgId, cargos, eligibleMembers, minorCount, currentCandidates, agendaItem } = ctx;
+    const { orgId, cargos: initialCargos, eligibleMembers, minorCount, currentCandidates, agendaItem, onConfigured } = ctx;
 
-    // Estado: mapa de cargoId -> { rut, firstName, lastName }
+    // Copia de trabajo de cargos (puede crecer con cargos personalizados)
+    const cargos = [...initialCargos.map(c => ({...c}))];
+    // Cargar cargos personalizados existentes
+    const existingCustom = (agendaItem && agendaItem.customCargos) || (ctx.preCustomCargos) || [];
+    existingCustom.forEach(cc => {
+      if (!cargos.find(c => c.id === cc.id)) {
+        cargos.push({ id: cc.id, nombre: cc.nombre, color: cc.color });
+      }
+    });
+    let customCargoCounter = cargos.filter(c => c.id.startsWith('custom_')).length;
+
+    // Estado: mapa de cargoId -> array de { rut, firstName, lastName }
     const cargoAssignments = {};
-    cargos.forEach(c => { cargoAssignments[c.id] = null; });
+    cargos.forEach(c => { cargoAssignments[c.id] = []; });
     currentCandidates.forEach(c => {
-      if (c.cargo && cargoAssignments.hasOwnProperty(c.cargo)) {
-        cargoAssignments[c.cargo] = { rut: c.rut, firstName: c.firstName, lastName: c.lastName };
+      if (c.cargo) {
+        if (!cargoAssignments[c.cargo]) cargoAssignments[c.cargo] = [];
+        cargoAssignments[c.cargo].push({ rut: c.rut, firstName: c.firstName, lastName: c.lastName });
       }
     });
 
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
+    const defaultColors = ['#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#84cc16', '#ef4444'];
 
     const buildCargoSlots = () => {
-      const filledCount = Object.values(cargoAssignments).filter(v => v !== null).length;
+      const filledCount = Object.keys(cargoAssignments).filter(k => cargoAssignments[k].length > 0).length;
       const totalCount = cargos.length;
       const allFilled = filledCount === totalCount;
 
       return '<div style="margin-bottom:16px;">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
-        + '<span style="font-size:13px;color:#6b7280;">Cargos asignados</span>'
+        + '<span style="font-size:13px;color:#6b7280;">Cargos con candidatos</span>'
         + '<span style="font-size:13px;font-weight:600;color:' + (allFilled ? '#059669' : '#b45309') + ';">' + filledCount + ' / ' + totalCount + '</span>'
         + '</div>'
         + '<div style="width:100%;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:16px;">'
         + '<div style="width:' + Math.round((filledCount / totalCount) * 100) + '%;height:100%;background:' + (allFilled ? '#059669' : '#2563eb') + ';border-radius:3px;transition:width 0.3s;"></div>'
         + '</div>'
         + cargos.map(cargo => {
-          const assigned = cargoAssignments[cargo.id];
-          return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:10px;border:2px solid ' + (assigned ? cargo.color + '40' : '#e5e7eb') + ';background:' + (assigned ? cargo.color + '08' : '#fafafa') + ';">'
-            + '<div style="width:36px;height:36px;border-radius:50%;background:' + cargo.color + '18;color:' + cargo.color + ';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">'
-            + (assigned ? assigned.firstName[0].toUpperCase() : '?') + '</div>'
+          const assigned = cargoAssignments[cargo.id] || [];
+          const hasAssigned = assigned.length > 0;
+          return '<div style="padding:12px 14px;margin-bottom:8px;border-radius:10px;border:2px solid ' + (hasAssigned ? cargo.color + '40' : '#e5e7eb') + ';background:' + (hasAssigned ? cargo.color + '08' : '#fafafa') + ';">'
+            // Cabecera del cargo
+            + '<div style="display:flex;align-items:center;gap:10px;' + (hasAssigned || true ? 'margin-bottom:8px;' : '') + '">'
+            + '<div style="width:32px;height:32px;border-radius:50%;background:' + cargo.color + '18;color:' + cargo.color + ';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">'
+            + (hasAssigned ? assigned.length : '?') + '</div>'
             + '<div style="flex:1;min-width:0;">'
-            + '<div style="font-weight:600;font-size:13px;color:' + cargo.color + ';">' + cargo.nombre + '</div>'
-            + (assigned
-              ? '<div style="font-size:13px;color:#1f2937;">' + assigned.firstName + ' ' + assigned.lastName + ' <span style="color:#6b7280;font-size:11px;">(' + assigned.rut + ')</span></div>'
-              : '<div style="font-size:12px;color:#9ca3af;font-style:italic;">Sin candidato asignado</div>')
+            + '<div style="font-weight:600;font-size:13px;color:' + cargo.color + ';">' + cargo.nombre + (hasAssigned ? ' <span style="font-weight:400;font-size:11px;color:#6b7280;">(' + assigned.length + ' candidato' + (assigned.length > 1 ? 's' : '') + ')</span>' : '') + '</div>'
+            + (!hasAssigned ? '<div style="font-size:12px;color:#9ca3af;font-style:italic;">Sin candidatos asignados</div>' : '')
             + '</div>'
-            + '<div style="display:flex;gap:6px;flex-shrink:0;">'
-            + '<select class="cargo-select" data-cargo="' + cargo.id + '" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;max-width:160px;">'
-            + '<option value="">Seleccionar...</option>'
-            + eligibleMembers.map(m => {
-              const isSelected = assigned && assigned.rut === m.rut;
-              // Check if this member is already assigned to another cargo
-              const assignedElsewhere = Object.entries(cargoAssignments).find(([cId, a]) => a && a.rut === m.rut && cId !== cargo.id);
-              return '<option value="' + m.rut + '"' + (isSelected ? ' selected' : '') + (assignedElsewhere ? ' disabled' : '') + '>'
-                + m.firstName + ' ' + m.lastName + (assignedElsewhere ? ' (ya asignado)' : '') + '</option>';
-            }).join('')
+            + (cargo.id.startsWith('custom_') ? '<button class="btn-remove-cargo" data-cargo="' + cargo.id + '" style="padding:2px 8px;border:1px solid #fecaca;border-radius:4px;background:white;color:#ef4444;cursor:pointer;font-size:11px;" title="Eliminar cargo">Eliminar</button>' : '')
+            + '</div>'
+            // Lista de candidatos asignados
+            + (hasAssigned ? '<div style="margin-left:42px;margin-bottom:8px;">'
+              + assigned.map((a, idx) => '<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin-bottom:3px;background:white;border-radius:6px;border:1px solid #e5e7eb;">'
+                + '<div style="width:22px;height:22px;border-radius:50%;background:' + cargo.color + '18;color:' + cargo.color + ';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;flex-shrink:0;">' + a.firstName[0].toUpperCase() + '</div>'
+                + '<span style="flex:1;font-size:12px;color:#1f2937;">' + a.firstName + ' ' + a.lastName + ' <span style="color:#6b7280;font-size:11px;">(' + a.rut + ')</span></span>'
+                + '<button class="btn-remove-candidate-from-cargo" data-cargo="' + cargo.id + '" data-index="' + idx + '" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;">&times;</button>'
+                + '</div>').join('')
+              + '</div>' : '')
+            // Selector para agregar candidato
+            + '<div style="display:flex;gap:6px;margin-left:42px;">'
+            + '<select class="cargo-add-select" data-cargo="' + cargo.id + '" style="flex:1;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;">'
+            + '<option value="">Agregar candidato...</option>'
+            + eligibleMembers.filter(m => !assigned.find(a => a.rut === m.rut)).map(m =>
+              '<option value="' + m.rut + '">' + m.firstName + ' ' + m.lastName + '</option>'
+            ).join('')
             + '</select>'
-            + (assigned ? '<button class="btn-clear-cargo" data-cargo="' + cargo.id + '" style="padding:4px 8px;border:1px solid #fecaca;border-radius:6px;background:white;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;" title="Quitar">&times;</button>' : '')
-            + '</div></div>';
+            + '<button class="btn-add-to-cargo" data-cargo="' + cargo.id + '" style="padding:4px 10px;border:1px solid #2563eb;border-radius:6px;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">+</button>'
+            + '</div>'
+            + '</div>';
         }).join('')
+        // Botón agregar cargo personalizado
+        + '<button id="btn-add-cargo" style="display:flex;align-items:center;gap:6px;width:100%;padding:10px 14px;margin-top:8px;border:2px dashed #d1d5db;border-radius:10px;background:white;cursor:pointer;font-size:13px;color:#6b7280;justify-content:center;">'
+        + '<span style="font-size:16px;">+</span> Agregar Cargo de Director'
+        + '</button>'
         + '</div>';
     };
 
+    const btnLabel = onConfigured ? 'Confirmar Candidatos' : 'Guardar Candidatos';
     modal.innerHTML = '<div class="org-modal" style="max-width:620px;">'
       + '<div class="org-modal-header" style="background:linear-gradient(135deg,#1e40af 0%,#2563eb 100%);color:white;">'
       + '<h3>Candidatos para Elección de Directorio</h3>'
       + '<button class="modal-close" style="color:white;">&times;</button></div>'
       + '<div class="org-modal-body" style="padding:24px;max-height:70vh;overflow-y:auto;">'
-      + '<p style="color:#6b7280;font-size:13px;margin-bottom:8px;">Seleccione un candidato para cada cargo. Todos los cargos deben tener un candidato asignado.</p>'
+      + '<p style="color:#6b7280;font-size:13px;margin-bottom:8px;">Seleccione uno o más candidatos para cada cargo. Todos los cargos deben tener al menos un candidato.</p>'
       + (minorCount > 0 ? '<p style="color:#b45309;font-size:12px;margin-bottom:16px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">Los socios menores de edad no son elegibles como candidatos.</p>' : '')
       + '<div id="cargo-slots-container">' + buildCargoSlots() + '</div>'
       + '<div id="save-validation-msg" style="display:none;margin-top:12px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#991b1b;"></div>'
       + '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">'
-      + '<button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cerrar</button>'
-      + '<button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">Guardar Candidatos</button>'
+      + '<button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cancelar</button>'
+      + '<button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">' + btnLabel + '</button>'
       + '</div></div></div>';
 
     document.body.appendChild(modal);
 
-    const goBackToDetail = () => {
+    const goBack = () => {
       modal.remove();
-      this.showAssemblyDetail(assemblyId, parentOverlay);
+      if (!onConfigured) this.showAssemblyDetail(assemblyId, parentOverlay);
     };
-    modal.querySelector('.modal-close').addEventListener('click', goBackToDetail);
-    modal.querySelector('.btn-cancel').addEventListener('click', goBackToDetail);
+    modal.querySelector('.modal-close').addEventListener('click', goBack);
+    modal.querySelector('.btn-cancel').addEventListener('click', goBack);
+
+    const refreshSlots = () => {
+      modal.querySelector('#cargo-slots-container').innerHTML = buildCargoSlots();
+      attachSlotListeners();
+      const msgEl = modal.querySelector('#save-validation-msg');
+      if (msgEl) msgEl.style.display = 'none';
+    };
 
     const attachSlotListeners = () => {
       const container = modal.querySelector('#cargo-slots-container');
-      container.querySelectorAll('.cargo-select').forEach(select => {
-        select.addEventListener('change', () => {
-          const cargoId = select.dataset.cargo;
-          const rut = select.value;
-          if (rut) {
-            const member = eligibleMembers.find(m => m.rut === rut);
-            if (member) cargoAssignments[cargoId] = { rut: member.rut, firstName: member.firstName, lastName: member.lastName };
-          } else {
-            cargoAssignments[cargoId] = null;
-          }
-          container.innerHTML = buildCargoSlots();
-          attachSlotListeners();
-          // Hide validation message on change
-          const msgEl = modal.querySelector('#save-validation-msg');
-          if (msgEl) msgEl.style.display = 'none';
-        });
-      });
-      container.querySelectorAll('.btn-clear-cargo').forEach(btn => {
+
+      // Agregar candidato a un cargo
+      container.querySelectorAll('.btn-add-to-cargo').forEach(btn => {
         btn.addEventListener('click', () => {
-          cargoAssignments[btn.dataset.cargo] = null;
-          container.innerHTML = buildCargoSlots();
-          attachSlotListeners();
+          const cargoId = btn.dataset.cargo;
+          const select = container.querySelector('.cargo-add-select[data-cargo="' + cargoId + '"]');
+          const rut = select.value;
+          if (!rut) return;
+          const member = eligibleMembers.find(m => m.rut === rut);
+          if (!member) return;
+          if (!cargoAssignments[cargoId]) cargoAssignments[cargoId] = [];
+          cargoAssignments[cargoId].push({ rut: member.rut, firstName: member.firstName, lastName: member.lastName });
+          refreshSlots();
         });
       });
+
+      // Quitar candidato de un cargo
+      container.querySelectorAll('.btn-remove-candidate-from-cargo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cargoId = btn.dataset.cargo;
+          const idx = parseInt(btn.dataset.index);
+          if (cargoAssignments[cargoId]) {
+            cargoAssignments[cargoId].splice(idx, 1);
+            refreshSlots();
+          }
+        });
+      });
+
+      // Eliminar cargo personalizado
+      container.querySelectorAll('.btn-remove-cargo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cargoId = btn.dataset.cargo;
+          const idx = cargos.findIndex(c => c.id === cargoId);
+          if (idx !== -1) {
+            cargos.splice(idx, 1);
+            delete cargoAssignments[cargoId];
+            refreshSlots();
+          }
+        });
+      });
+
+      // Agregar cargo nuevo
+      const addCargoBtn = container.querySelector('#btn-add-cargo');
+      if (addCargoBtn) {
+        addCargoBtn.addEventListener('click', () => {
+          const name = prompt('Nombre del nuevo cargo de director:');
+          if (!name || !name.trim()) return;
+          customCargoCounter++;
+          const newId = 'custom_' + Date.now() + '_' + customCargoCounter;
+          const color = defaultColors[cargos.length % defaultColors.length];
+          cargos.push({ id: newId, nombre: name.trim(), color });
+          cargoAssignments[newId] = [];
+          refreshSlots();
+        });
+      }
     };
     attachSlotListeners();
 
+    // Guardar / Confirmar
     modal.querySelector('#btn-save-candidates').addEventListener('click', async () => {
-      // Validar que todos los cargos estén cubiertos
-      const missing = cargos.filter(c => !cargoAssignments[c.id]);
+      // Validar que todos los cargos tengan al menos un candidato
+      const missing = cargos.filter(c => !cargoAssignments[c.id] || cargoAssignments[c.id].length === 0);
       if (missing.length > 0) {
         const msgEl = modal.querySelector('#save-validation-msg');
         msgEl.textContent = 'Faltan candidatos para: ' + missing.map(c => c.nombre).join(', ');
@@ -3595,15 +3746,30 @@ class OrganizationDashboard {
         return;
       }
 
-      // Construir array de candidatos
-      const candidates = cargos.map(cargo => {
-        const a = cargoAssignments[cargo.id];
-        return { rut: a.rut, firstName: a.firstName, lastName: a.lastName, cargo: cargo.id, lista: null };
+      // Construir array de candidatos (múltiples por cargo)
+      const candidates = [];
+      cargos.forEach(cargo => {
+        (cargoAssignments[cargo.id] || []).forEach(a => {
+          candidates.push({ rut: a.rut, firstName: a.firstName, lastName: a.lastName, cargo: cargo.id, lista: null });
+        });
       });
 
+      // Cargos personalizados (los que no venían de la config inicial)
+      const initialIds = new Set(initialCargos.map(c => c.id));
+      const customCargos = cargos.filter(c => !initialIds.has(c.id)).map(c => ({ id: c.id, nombre: c.nombre, color: c.color }));
+
+      // Modo callback (pre-creación de asamblea)
+      if (onConfigured) {
+        onConfigured(candidates, customCargos);
+        modal.remove();
+        return;
+      }
+
+      // Modo normal (asamblea ya existe)
       try {
-        await apiService.addCandidates(orgId, assemblyId, agendaItemId, candidates);
+        await apiService.addCandidates(orgId, assemblyId, agendaItemId, candidates, customCargos);
         agendaItem.candidates = candidates;
+        if (customCargos.length > 0) agendaItem.customCargos = customCargos;
         showToast('Candidatos guardados correctamente', 'success');
         modal.remove();
         this.showAssemblyDetail(assemblyId, parentOverlay);

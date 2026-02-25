@@ -68,7 +68,8 @@ const agendaItemSchema = new mongoose.Schema({
   votes: [voteSchema],
   votingOpen: { type: Boolean, default: false },
   votingClosedAt: Date,
-  result: mongoose.Schema.Types.Mixed
+  result: mongoose.Schema.Types.Mixed,
+  customCargos: [{ id: String, nombre: String, color: String }]
 }, { _id: false });
 
 const assemblyAttendeeSchema = new mongoose.Schema({

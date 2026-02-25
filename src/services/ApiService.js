@@ -661,8 +661,8 @@ class ApiService {
     return this.delete(`/organizations/${orgId}/assemblies/${assemblyId}`);
   }
 
-  async addCandidates(orgId, assemblyId, agendaItemId, candidates) {
-    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/candidates`, { agendaItemId, candidates });
+  async addCandidates(orgId, assemblyId, agendaItemId, candidates, customCargos) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/candidates`, { agendaItemId, candidates, customCargos });
   }
 
   async castVote(orgId, assemblyId, agendaItemId, votes) {
