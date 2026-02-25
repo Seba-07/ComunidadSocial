@@ -2018,6 +2018,20 @@ class OrganizationDashboard {
         agendaItems
       };
 
+      // Feedback visual: mostrar loading en el botón
+      const btnSave = modal.querySelector('.btn-save');
+      const originalText = btnSave.textContent;
+      btnSave.disabled = true;
+      btnSave.style.opacity = '0.7';
+      btnSave.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/></svg> Creando asamblea...</span>';
+      // Agregar animación de spin si no existe
+      if (!document.getElementById('spin-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'spin-keyframes';
+        style.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+        document.head.appendChild(style);
+      }
+
       try {
         const orgId = this.currentOrg._id || this.currentOrg.id;
         const result = await apiService.createAssembly(orgId, assemblyData);
@@ -2026,6 +2040,9 @@ class OrganizationDashboard {
 
         // Guardar candidatos pre-configurados si existen
         const electionItems = (result.agendaItems || []).filter(i => i.type === 'eleccion_directorio');
+        if (electionItems.length > 0 && orderedElectionConfigs.some(c => c && c.candidates && c.candidates.length > 0)) {
+          btnSave.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/></svg> Guardando candidatos...</span>';
+        }
         for (let i = 0; i < electionItems.length && i < orderedElectionConfigs.length; i++) {
           const config = orderedElectionConfigs[i];
           if (config && config.candidates && config.candidates.length > 0) {
@@ -2039,6 +2056,9 @@ class OrganizationDashboard {
         modal.remove();
         this.refreshContent(parentOverlay);
       } catch (err) {
+        btnSave.disabled = false;
+        btnSave.style.opacity = '1';
+        btnSave.textContent = originalText;
         showToast(err.message || 'Error al crear asamblea', 'error');
       }
     });

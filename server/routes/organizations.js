@@ -16,16 +16,68 @@ import { emailService } from '../services/emailService.js';
 const router = express.Router();
 
 /**
- * Verifica si un usuario MIEMBRO tiene cargo directivo en una organización
+ * Normaliza un RUT para comparaciones (sin puntos, guiones, en mayúsculas)
+ */
+function normalizeRut(rut) {
+  return (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+}
+
+/**
+ * Verifica si un usuario MIEMBRO tiene cargo directivo en una organización.
+ * Revisa tanto member.role como provisionalDirectorio (fuente de verdad).
  */
 function isDirectivoMember(org, user) {
   if (!user || user.role !== 'MIEMBRO' || !user.rut) return false;
-  const cleanRut = user.rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  const cleanRut = normalizeRut(user.rut);
+
+  // 1) Revisar member.role directo
   const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
-  return (org.members || []).some(m => {
-    const mRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-    return mRut === cleanRut && dirRoles.includes(m.role);
+  const hasMemberRole = (org.members || []).some(m => {
+    return normalizeRut(m.rut) === cleanRut && dirRoles.includes(m.role);
   });
+  if (hasMemberRole) return true;
+
+  // 2) Revisar provisionalDirectorio (fuente de verdad para directorio vigente)
+  const prov = org.provisionalDirectorio;
+  if (prov) {
+    if (prov.president && normalizeRut(prov.president.rut) === cleanRut) return true;
+    if (prov.secretary && normalizeRut(prov.secretary.rut) === cleanRut) return true;
+    if (prov.treasurer && normalizeRut(prov.treasurer.rut) === cleanRut) return true;
+    if (prov.additionalMembers && prov.additionalMembers.some(m => m && normalizeRut(m.rut) === cleanRut)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Sincroniza los roles de member[] con el provisionalDirectorio de la org.
+ * Establece 'president', 'secretary', 'treasurer', 'director' según corresponda.
+ */
+function syncMemberRolesFromDirectorio(org) {
+  const prov = org.provisionalDirectorio;
+  if (!prov || !org.members) return;
+
+  // Primero, resetear roles de directorio previos a 'member'
+  const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
+  org.members.forEach(m => {
+    if (dirRoles.includes(m.role)) m.role = 'member';
+  });
+
+  const assignRole = (rut, role) => {
+    if (!rut) return;
+    const clean = normalizeRut(rut);
+    const member = org.members.find(m => normalizeRut(m.rut) === clean);
+    if (member) member.role = role;
+  };
+
+  if (prov.president) assignRole(prov.president.rut, 'president');
+  if (prov.secretary) assignRole(prov.secretary.rut, 'secretary');
+  if (prov.treasurer) assignRole(prov.treasurer.rut, 'treasurer');
+  if (prov.additionalMembers) {
+    prov.additionalMembers.forEach(m => {
+      if (m) assignRole(m.rut, 'director');
+    });
+  }
 }
 
 /**
@@ -277,17 +329,28 @@ router.get('/my-organization', authenticate, async (req, res) => {
     }
 
     // Anotar cada org con flags de directivo para el frontend
-    const cleanUserRut = (req.user.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+    const cleanUserRut = normalizeRut(req.user.rut);
     const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
     const enriched = organizations.map(org => {
-      const myMember = (org.members || []).find(m => {
-        const mRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-        return mRut === cleanUserRut;
-      });
+      const myMember = (org.members || []).find(m => normalizeRut(m.rut) === cleanUserRut);
+      const myRole = myMember ? myMember.role : null;
+
+      // Verificar directivo por member.role O por provisionalDirectorio
+      let isDirectivo = myMember ? dirRoles.includes(myMember.role) : false;
+      if (!isDirectivo) {
+        const prov = org.provisionalDirectorio;
+        if (prov) {
+          if (prov.president && normalizeRut(prov.president.rut) === cleanUserRut) isDirectivo = true;
+          else if (prov.secretary && normalizeRut(prov.secretary.rut) === cleanUserRut) isDirectivo = true;
+          else if (prov.treasurer && normalizeRut(prov.treasurer.rut) === cleanUserRut) isDirectivo = true;
+          else if (prov.additionalMembers && prov.additionalMembers.some(m => m && normalizeRut(m.rut) === cleanUserRut)) isDirectivo = true;
+        }
+      }
+
       return {
         ...org,
-        _isDirectivo: myMember ? dirRoles.includes(myMember.role) : false,
-        _myMemberRole: myMember ? myMember.role : null
+        _isDirectivo: isDirectivo,
+        _myMemberRole: myRole
       };
     });
 
@@ -458,6 +521,10 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
     }
 
     const organization = new Organization(orgData);
+
+    // Sincronizar roles de miembros con el directorio provisorio
+    syncMemberRolesFromDirectorio(organization);
+
     await organization.save();
 
     // DEBUG: Verificar que se guardó (solo en desarrollo)
@@ -1447,10 +1514,8 @@ router.post('/:id/set-directorio', authenticate, requireRole('MUNICIPALIDAD'), a
       type: 'PROVISIONAL'
     };
 
-    // También actualizar los roles de los miembros
-    if (president) president.role = 'president';
-    if (secretary) secretary.role = 'secretary';
-    if (treasurer) treasurer.role = 'treasurer';
+    // Sincronizar roles de miembros con el directorio
+    syncMemberRolesFromDirectorio(org);
 
     await org.save();
 
@@ -1911,6 +1976,9 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
           date: new Date(),
           updatedAt: new Date()
         };
+
+        // Sincronizar roles de miembros con el nuevo directorio electo
+        syncMemberRolesFromDirectorio(org);
       }
     }
 
