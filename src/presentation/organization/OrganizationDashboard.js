@@ -3373,7 +3373,7 @@ class OrganizationDashboard {
     // Filtrar solo mayores de edad (18+)
     const today = new Date();
     const eligibleMembers = allMembers.filter(m => {
-      if (!m.birthDate) return true; // Sin fecha de nacimiento se asume mayor
+      if (!m.birthDate) return true;
       const birth = new Date(m.birthDate);
       let age = today.getFullYear() - birth.getFullYear();
       const monthDiff = today.getMonth() - birth.getMonth();
@@ -3382,41 +3382,35 @@ class OrganizationDashboard {
     });
     const minorCount = allMembers.length - eligibleMembers.length;
 
+    // Para modo per_cargo: UI basada en slots de cargos
+    if (votingMode === 'per_cargo') {
+      this._showCargoCandidatesManager(assemblyId, agendaItemId, parentOverlay, {
+        orgId, cargos, eligibleMembers, minorCount, currentCandidates, agendaItem
+      });
+      return;
+    }
+
+    // Modo per_lista: UI de lista libre
     const modal = document.createElement('div');
     modal.className = 'org-modal-overlay';
     modal.innerHTML = `
       <div class="org-modal" style="max-width: 600px;">
         <div class="org-modal-header" style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white;">
-          <h3>Gestionar Candidatos</h3>
+          <h3>Gestionar Candidatos — Por Lista</h3>
           <button class="modal-close" style="color: white;">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px; max-height:65vh; overflow-y:auto;">
-          <p style="color:#6b7280;font-size:13px;margin-bottom:8px;">Modo: <strong>${votingMode === 'per_cargo' ? 'Por cargo individual' : 'Por lista completa'}</strong></p>
           ${minorCount > 0 ? '<p style="color:#b45309;font-size:12px;margin-bottom:16px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">Los socios menores de edad no aparecen como candidatos elegibles.</p>' : ''}
 
-          <div id="candidates-list">
-            ${currentCandidates.map((c, i) => `
-              <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-                <span style="flex:1;font-weight:500;">${c.firstName} ${c.lastName} (${c.rut})</span>
-                ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.cargo || '-'}</span>` : `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.lista || '-'}</span>`}
-                <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
-              </div>
-            `).join('')}
-          </div>
+          <div id="candidates-list"></div>
 
           <h4 style="margin:16px 0 8px;font-size:14px;">Agregar Candidato</h4>
           <div style="display:grid;gap:8px;">
             <select id="candidate-member" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
               <option value="">Seleccionar socio mayor de edad...</option>
-              ${eligibleMembers.map(m => `<option value="${m.rut}">${m.firstName} ${m.lastName} (${m.rut})</option>`).join('')}
+              ${eligibleMembers.map(m => '<option value="' + m.rut + '">' + m.firstName + ' ' + m.lastName + ' (' + m.rut + ')</option>').join('')}
             </select>
-            ${votingMode === 'per_cargo' ? `
-              <select id="candidate-cargo" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                ${cargos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
-              </select>
-            ` : `
-              <input type="text" id="candidate-lista" placeholder="Nombre de la lista" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-            `}
+            <input type="text" id="candidate-lista" placeholder="Nombre de la lista" style="padding:10px;border:1px solid #d1d5db;border-radius:8px;">
             <button id="btn-add-candidate" style="padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Agregar Candidato</button>
           </div>
 
@@ -3429,41 +3423,28 @@ class OrganizationDashboard {
     `;
 
     document.body.appendChild(modal);
-
     let candidates = [...currentCandidates];
 
     const goBackToDetail = () => {
       modal.remove();
       this.showAssemblyDetail(assemblyId, parentOverlay);
     };
-
     modal.querySelector('.modal-close').addEventListener('click', goBackToDetail);
     modal.querySelector('.btn-cancel').addEventListener('click', goBackToDetail);
 
-    const getCargoLabel = (cargoId) => {
-      const found = cargos.find(c => c.id === cargoId);
-      return found ? found.nombre : cargoId;
-    };
-
     const rerenderList = () => {
       const listEl = modal.querySelector('#candidates-list');
-      listEl.innerHTML = candidates.map((c, i) => `
-        <div class="candidate-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-          <span style="flex:1;font-weight:500;">${c.firstName} ${c.lastName} (${c.rut})</span>
-          ${votingMode === 'per_cargo' ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">${getCargoLabel(c.cargo)}</span>` : `<span style="font-size:12px;color:#2563eb;font-weight:600;">${c.lista || '-'}</span>`}
-          <button class="btn-remove-candidate" data-index="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" title="Eliminar">&times;</button>
-        </div>
-      `).join('');
-      // Attach delete handlers
+      listEl.innerHTML = candidates.map((c, i) =>
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">'
+        + '<span style="flex:1;font-weight:500;">' + c.firstName + ' ' + c.lastName + ' (' + c.rut + ')</span>'
+        + '<span style="font-size:12px;color:#2563eb;font-weight:600;">' + (c.lista || '-') + '</span>'
+        + '<button class="btn-remove-candidate" data-index="' + i + '" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;">&times;</button>'
+        + '</div>'
+      ).join('');
       listEl.querySelectorAll('.btn-remove-candidate').forEach(btn => {
-        btn.addEventListener('click', () => {
-          candidates.splice(parseInt(btn.dataset.index), 1);
-          rerenderList();
-        });
+        btn.addEventListener('click', () => { candidates.splice(parseInt(btn.dataset.index), 1); rerenderList(); });
       });
     };
-
-    // Attach delete handlers for initial candidates
     rerenderList();
 
     modal.querySelector('#btn-add-candidate').addEventListener('click', () => {
@@ -3472,15 +3453,10 @@ class OrganizationDashboard {
       const member = eligibleMembers.find(m => m.rut === rut);
       if (!member) return;
       if (candidates.find(c => c.rut === rut)) return showToast('Este socio ya es candidato', 'error');
-
-      const newCandidate = {
-        rut: member.rut,
-        firstName: member.firstName,
-        lastName: member.lastName,
-        cargo: votingMode === 'per_cargo' ? modal.querySelector('#candidate-cargo')?.value : null,
-        lista: votingMode === 'per_lista' ? modal.querySelector('#candidate-lista')?.value : null
-      };
-      candidates.push(newCandidate);
+      candidates.push({
+        rut: member.rut, firstName: member.firstName, lastName: member.lastName,
+        cargo: null, lista: modal.querySelector('#candidate-lista')?.value || null
+      });
       rerenderList();
       showToast('Candidato agregado', 'success');
     });
@@ -3488,9 +3464,147 @@ class OrganizationDashboard {
     modal.querySelector('#btn-save-candidates').addEventListener('click', async () => {
       try {
         await apiService.addCandidates(orgId, assemblyId, agendaItemId, candidates);
-        // Update local data
         agendaItem.candidates = candidates;
         showToast('Candidatos guardados', 'success');
+        modal.remove();
+        this.showAssemblyDetail(assemblyId, parentOverlay);
+      } catch (err) {
+        showToast(err.message || 'Error al guardar', 'error');
+      }
+    });
+  }
+
+  /**
+   * Gestión de candidatos por cargo — UI con slots por cada cargo del directorio
+   */
+  _showCargoCandidatesManager(assemblyId, agendaItemId, parentOverlay, ctx) {
+    const { orgId, cargos, eligibleMembers, minorCount, currentCandidates, agendaItem } = ctx;
+
+    // Estado: mapa de cargoId -> { rut, firstName, lastName }
+    const cargoAssignments = {};
+    cargos.forEach(c => { cargoAssignments[c.id] = null; });
+    currentCandidates.forEach(c => {
+      if (c.cargo && cargoAssignments.hasOwnProperty(c.cargo)) {
+        cargoAssignments[c.cargo] = { rut: c.rut, firstName: c.firstName, lastName: c.lastName };
+      }
+    });
+
+    const modal = document.createElement('div');
+    modal.className = 'org-modal-overlay';
+
+    const buildCargoSlots = () => {
+      const filledCount = Object.values(cargoAssignments).filter(v => v !== null).length;
+      const totalCount = cargos.length;
+      const allFilled = filledCount === totalCount;
+
+      return '<div style="margin-bottom:16px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        + '<span style="font-size:13px;color:#6b7280;">Cargos asignados</span>'
+        + '<span style="font-size:13px;font-weight:600;color:' + (allFilled ? '#059669' : '#b45309') + ';">' + filledCount + ' / ' + totalCount + '</span>'
+        + '</div>'
+        + '<div style="width:100%;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:16px;">'
+        + '<div style="width:' + Math.round((filledCount / totalCount) * 100) + '%;height:100%;background:' + (allFilled ? '#059669' : '#2563eb') + ';border-radius:3px;transition:width 0.3s;"></div>'
+        + '</div>'
+        + cargos.map(cargo => {
+          const assigned = cargoAssignments[cargo.id];
+          return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:10px;border:2px solid ' + (assigned ? cargo.color + '40' : '#e5e7eb') + ';background:' + (assigned ? cargo.color + '08' : '#fafafa') + ';">'
+            + '<div style="width:36px;height:36px;border-radius:50%;background:' + cargo.color + '18;color:' + cargo.color + ';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">'
+            + (assigned ? assigned.firstName[0].toUpperCase() : '?') + '</div>'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div style="font-weight:600;font-size:13px;color:' + cargo.color + ';">' + cargo.nombre + '</div>'
+            + (assigned
+              ? '<div style="font-size:13px;color:#1f2937;">' + assigned.firstName + ' ' + assigned.lastName + ' <span style="color:#6b7280;font-size:11px;">(' + assigned.rut + ')</span></div>'
+              : '<div style="font-size:12px;color:#9ca3af;font-style:italic;">Sin candidato asignado</div>')
+            + '</div>'
+            + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+            + '<select class="cargo-select" data-cargo="' + cargo.id + '" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;max-width:160px;">'
+            + '<option value="">Seleccionar...</option>'
+            + eligibleMembers.map(m => {
+              const isSelected = assigned && assigned.rut === m.rut;
+              // Check if this member is already assigned to another cargo
+              const assignedElsewhere = Object.entries(cargoAssignments).find(([cId, a]) => a && a.rut === m.rut && cId !== cargo.id);
+              return '<option value="' + m.rut + '"' + (isSelected ? ' selected' : '') + (assignedElsewhere ? ' disabled' : '') + '>'
+                + m.firstName + ' ' + m.lastName + (assignedElsewhere ? ' (ya asignado)' : '') + '</option>';
+            }).join('')
+            + '</select>'
+            + (assigned ? '<button class="btn-clear-cargo" data-cargo="' + cargo.id + '" style="padding:4px 8px;border:1px solid #fecaca;border-radius:6px;background:white;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;" title="Quitar">&times;</button>' : '')
+            + '</div></div>';
+        }).join('')
+        + '</div>';
+    };
+
+    modal.innerHTML = '<div class="org-modal" style="max-width:620px;">'
+      + '<div class="org-modal-header" style="background:linear-gradient(135deg,#1e40af 0%,#2563eb 100%);color:white;">'
+      + '<h3>Candidatos para Elección de Directorio</h3>'
+      + '<button class="modal-close" style="color:white;">&times;</button></div>'
+      + '<div class="org-modal-body" style="padding:24px;max-height:70vh;overflow-y:auto;">'
+      + '<p style="color:#6b7280;font-size:13px;margin-bottom:8px;">Seleccione un candidato para cada cargo. Todos los cargos deben tener un candidato asignado.</p>'
+      + (minorCount > 0 ? '<p style="color:#b45309;font-size:12px;margin-bottom:16px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">Los socios menores de edad no son elegibles como candidatos.</p>' : '')
+      + '<div id="cargo-slots-container">' + buildCargoSlots() + '</div>'
+      + '<div id="save-validation-msg" style="display:none;margin-top:12px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#991b1b;"></div>'
+      + '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">'
+      + '<button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cerrar</button>'
+      + '<button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">Guardar Candidatos</button>'
+      + '</div></div></div>';
+
+    document.body.appendChild(modal);
+
+    const goBackToDetail = () => {
+      modal.remove();
+      this.showAssemblyDetail(assemblyId, parentOverlay);
+    };
+    modal.querySelector('.modal-close').addEventListener('click', goBackToDetail);
+    modal.querySelector('.btn-cancel').addEventListener('click', goBackToDetail);
+
+    const attachSlotListeners = () => {
+      const container = modal.querySelector('#cargo-slots-container');
+      container.querySelectorAll('.cargo-select').forEach(select => {
+        select.addEventListener('change', () => {
+          const cargoId = select.dataset.cargo;
+          const rut = select.value;
+          if (rut) {
+            const member = eligibleMembers.find(m => m.rut === rut);
+            if (member) cargoAssignments[cargoId] = { rut: member.rut, firstName: member.firstName, lastName: member.lastName };
+          } else {
+            cargoAssignments[cargoId] = null;
+          }
+          container.innerHTML = buildCargoSlots();
+          attachSlotListeners();
+          // Hide validation message on change
+          const msgEl = modal.querySelector('#save-validation-msg');
+          if (msgEl) msgEl.style.display = 'none';
+        });
+      });
+      container.querySelectorAll('.btn-clear-cargo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          cargoAssignments[btn.dataset.cargo] = null;
+          container.innerHTML = buildCargoSlots();
+          attachSlotListeners();
+        });
+      });
+    };
+    attachSlotListeners();
+
+    modal.querySelector('#btn-save-candidates').addEventListener('click', async () => {
+      // Validar que todos los cargos estén cubiertos
+      const missing = cargos.filter(c => !cargoAssignments[c.id]);
+      if (missing.length > 0) {
+        const msgEl = modal.querySelector('#save-validation-msg');
+        msgEl.textContent = 'Faltan candidatos para: ' + missing.map(c => c.nombre).join(', ');
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      // Construir array de candidatos
+      const candidates = cargos.map(cargo => {
+        const a = cargoAssignments[cargo.id];
+        return { rut: a.rut, firstName: a.firstName, lastName: a.lastName, cargo: cargo.id, lista: null };
+      });
+
+      try {
+        await apiService.addCandidates(orgId, assemblyId, agendaItemId, candidates);
+        agendaItem.candidates = candidates;
+        showToast('Candidatos guardados correctamente', 'success');
         modal.remove();
         this.showAssemblyDetail(assemblyId, parentOverlay);
       } catch (err) {
