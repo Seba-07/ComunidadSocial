@@ -167,8 +167,55 @@ async function autoMigrateOrganizations() {
       }
     }
 
+    // Sincronizar roles de miembros con provisionalDirectorio en TODAS las orgs
+    let rolesSynced = 0;
+    for (const org of organizations) {
+      const prov = org.provisionalDirectorio;
+      if (!prov) continue;
+
+      const normalizeRut = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
+      let needsSync = false;
+
+      // Verificar si algún miembro del directorio tiene role='member'
+      const checkRut = (rut, expectedRole) => {
+        if (!rut) return;
+        const clean = normalizeRut(rut);
+        const member = org.members?.find(m => normalizeRut(m.rut) === clean);
+        if (member && !dirRoles.includes(member.role)) needsSync = true;
+      };
+
+      if (prov.president) checkRut(prov.president.rut, 'president');
+      if (prov.secretary) checkRut(prov.secretary.rut, 'secretary');
+      if (prov.treasurer) checkRut(prov.treasurer.rut, 'treasurer');
+      if (prov.additionalMembers) prov.additionalMembers.forEach(m => { if (m) checkRut(m.rut, 'director'); });
+
+      if (needsSync) {
+        // Resetear roles de directorio previos
+        org.members?.forEach(m => { if (dirRoles.includes(m.role)) m.role = 'member'; });
+
+        const assignRole = (rut, role) => {
+          if (!rut) return;
+          const clean = normalizeRut(rut);
+          const member = org.members?.find(m => normalizeRut(m.rut) === clean);
+          if (member) member.role = role;
+        };
+
+        if (prov.president) assignRole(prov.president.rut, 'president');
+        if (prov.secretary) assignRole(prov.secretary.rut, 'secretary');
+        if (prov.treasurer) assignRole(prov.treasurer.rut, 'treasurer');
+        if (prov.additionalMembers) prov.additionalMembers.forEach(m => { if (m) assignRole(m.rut, 'director'); });
+
+        await org.save();
+        rolesSynced++;
+      }
+    }
+
     if (migratedCount > 0) {
       console.log(`Auto-migration: ${migratedCount} organizations updated`);
+    }
+    if (rolesSynced > 0) {
+      console.log(`Auto-migration: ${rolesSynced} organizations had member roles synced with directorio`);
     }
   } catch (error) {
     console.error('Auto-migration error:', error);
