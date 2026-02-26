@@ -1,7 +1,20 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  plugins: [
+    react({
+      include: ['src/react/**/*.{jsx,tsx}']
+    })
+  ],
+  resolve: {
+    alias: {
+      '@react': resolve(__dirname, 'src/react'),
+      '@services': resolve(__dirname, 'src/services'),
+      '@shared': resolve(__dirname, 'src/shared')
+    }
+  },
   server: {
     port: 3000,
     host: true,
@@ -27,13 +40,17 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         auth: resolve(__dirname, 'auth.html'),
         ministroDashboard: resolve(__dirname, 'ministro-dashboard.html'),
-        ministroLogin: resolve(__dirname, 'ministro-login.html')
+        ministroLogin: resolve(__dirname, 'ministro-login.html'),
+        reactApp: resolve(__dirname, 'react-app.html')
       },
       output: {
         // ============ CODE SPLITTING OPTIMIZADO ============
         manualChunks: (id) => {
           // Vendor chunks - librerías externas
           if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('zustand')) {
+              return 'vendor-react';  // Solo carga en páginas React
+            }
             if (id.includes('jspdf') || id.includes('jszip')) {
               return 'vendor-pdf';  // ~200KB - solo carga cuando genera PDFs
             }
@@ -41,6 +58,11 @@ export default defineConfig({
               return 'vendor-security';  // ~20KB
             }
             return 'vendor';  // Resto de node_modules
+          }
+
+          // React chunks
+          if (id.includes('src/react/')) {
+            return 'react-app';
           }
 
           // Feature chunks - módulos grandes del proyecto
@@ -67,8 +89,8 @@ export default defineConfig({
   publicDir: 'public',
   // Optimizar dependencias
   optimizeDeps: {
-    include: ['dompurify', 'jspdf', 'jszip'],
-    exclude: []  // firebase removido
+    include: ['dompurify', 'jspdf', 'jszip', 'react', 'react-dom', 'react-router-dom', 'zustand'],
+    exclude: []
   },
   test: {
     globals: true,
