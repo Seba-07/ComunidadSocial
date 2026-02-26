@@ -64,8 +64,9 @@ class OrganizationMenuManager {
       if (!allOrgs) allOrgs = [];
       console.log('[OrganizationMenuManager] All orgs statuses:', allOrgs.map(o => ({ name: o.organizationName || o.organization?.name, status: o.status })));
 
-      this.approvedOrgs = allOrgs.filter(org => org.status === ORG_STATUS.APPROVED);
-      console.log('[OrganizationMenuManager] Approved orgs found:', this.approvedOrgs.length);
+      // Incluir orgs aprobadas O donde el usuario es directivo (para MIEMBRO directivo)
+      this.approvedOrgs = allOrgs.filter(org => org.status === ORG_STATUS.APPROVED || org._isDirectivo);
+      console.log('[OrganizationMenuManager] Available orgs found:', this.approvedOrgs.length);
       return this.approvedOrgs;
     } catch (error) {
       console.error('[OrganizationMenuManager] Error loading organizations:', error);
@@ -280,7 +281,7 @@ class OrganizationMenuManager {
           <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1e293b;">${orgName}</h1>
           <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
             <span style="font-size: 14px; color: #64748b;">${orgType}</span>
-            <span style="padding: 2px 10px; background: #dcfce7; color: #166534; border-radius: 12px; font-size: 12px; font-weight: 600;">Registrada</span>
+            <span style="padding: 2px 10px; background: ${org.status === 'approved' ? '#dcfce7' : '#fef3c7'}; color: ${org.status === 'approved' ? '#166534' : '#92400e'}; border-radius: 12px; font-size: 12px; font-weight: 600;">${org.status === 'approved' ? 'Registrada' : 'En trámite'}</span>
           </div>
         </div>
         <div style="text-align: right;">
