@@ -29,8 +29,8 @@ const statusHistorySchema = new mongoose.Schema({
   status: String,
   date: { type: Date, default: Date.now },
   comment: String,
-  corrections: mongoose.Schema.Types.Mixed
-});
+  corrections: mongoose.Schema.Types.Mixed // Legacy: varied structure across versions
+}, { strict: false });
 
 // ============ SCHEMAS DE ASAMBLEAS ============
 
@@ -50,6 +50,20 @@ const voteSchema = new mongoose.Schema({
   votedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
+// Result schema for agenda item voting results
+const agendaResultSchema = new mongoose.Schema({
+  mode: { type: String, enum: ['per_cargo', 'per_lista', null], default: null },
+  // per_cargo results: winners keyed by cargo name
+  winners: mongoose.Schema.Types.Mixed, // { [cargo]: { rut, firstName, lastName, votes } }
+  // per_lista results
+  winningLista: String,
+  listaResults: [{ lista: String, votes: Number }],
+  // Common fields
+  totalVotes: Number,
+  closedAt: Date,
+  appliedToDirectorio: { type: Boolean, default: false }
+}, { _id: false, strict: false });
+
 const agendaItemSchema = new mongoose.Schema({
   id: String,
   title: { type: String, required: true },
@@ -68,7 +82,7 @@ const agendaItemSchema = new mongoose.Schema({
   votes: [voteSchema],
   votingOpen: { type: Boolean, default: false },
   votingClosedAt: Date,
-  result: mongoose.Schema.Types.Mixed,
+  result: agendaResultSchema,
   customCargos: [{ id: String, nombre: String, color: String }]
 }, { _id: false });
 
@@ -192,12 +206,51 @@ const organizationSchema = new mongoose.Schema({
   // Electoral Commission
   electoralCommission: [memberSchema],
 
-  // Directorio Provisorio (flexible schema para datos del wizard)
+  // Directorio Provisorio
   provisionalDirectorio: {
-    president: mongoose.Schema.Types.Mixed,
-    secretary: mongoose.Schema.Types.Mixed,
-    treasurer: mongoose.Schema.Types.Mixed,
-    additionalMembers: [mongoose.Schema.Types.Mixed],
+    president: {
+      type: new mongoose.Schema({
+        rut: String,
+        firstName: String,
+        segundoNombre: String,
+        lastName: String,
+        apellidoMaterno: String,
+        signature: String
+      }, { _id: false, strict: false }),
+      default: null
+    },
+    secretary: {
+      type: new mongoose.Schema({
+        rut: String,
+        firstName: String,
+        segundoNombre: String,
+        lastName: String,
+        apellidoMaterno: String,
+        signature: String
+      }, { _id: false, strict: false }),
+      default: null
+    },
+    treasurer: {
+      type: new mongoose.Schema({
+        rut: String,
+        firstName: String,
+        segundoNombre: String,
+        lastName: String,
+        apellidoMaterno: String,
+        signature: String
+      }, { _id: false, strict: false }),
+      default: null
+    },
+    additionalMembers: [{
+      type: new mongoose.Schema({
+        rut: String,
+        firstName: String,
+        segundoNombre: String,
+        lastName: String,
+        apellidoMaterno: String,
+        signature: String
+      }, { _id: false, strict: false })
+    }],
     designatedAt: Date,
     type: { type: String, default: 'PROVISIONAL' },
     expiresAt: Date
@@ -252,8 +305,8 @@ const organizationSchema = new mongoose.Schema({
     }
   },
 
-  // Comision Electoral (from validation wizard - flexible schema)
-  comisionElectoral: [mongoose.Schema.Types.Mixed],
+  // Comision Electoral (from validation wizard)
+  comisionElectoral: [memberSchema],
 
   // Estatutos de la organización
   estatutos: {
@@ -295,8 +348,15 @@ const organizationSchema = new mongoose.Schema({
     fechaSnapshot: Date
   },
 
-  // Validated attendees from assembly (flexible schema para soportar externos con name)
-  validatedAttendees: [mongoose.Schema.Types.Mixed],
+  // Validated attendees from assembly
+  validatedAttendees: [{
+    type: new mongoose.Schema({
+      rut: String,
+      firstName: String,
+      lastName: String,
+      name: String // For external attendees
+    }, { _id: false, strict: false })
+  }],
 
   // Validation data from Ministro de Fe
   validationData: {
@@ -310,10 +370,21 @@ const organizationSchema = new mongoose.Schema({
   // Corrections
   corrections: {
     version: Number,
-    items: [mongoose.Schema.Types.Mixed],
+    items: [{
+      type: new mongoose.Schema({
+        category: { type: String, enum: ['datos_generales', 'directorio', 'comision_electoral', 'miembros', 'documentos', 'certificados'] },
+        field: String,
+        memberId: String,
+        memberName: String,
+        role: String,
+        docType: String,
+        label: String,
+        message: { type: String, default: 'Requiere corrección' }
+      }, { _id: false, strict: false })
+    }],
     fromStatus: String,
     createdAt: Date,
-    // v1 legacy
+    // v1 legacy (kept for backward compatibility)
     fields: mongoose.Schema.Types.Mixed,
     documents: mongoose.Schema.Types.Mixed,
     certificates: mongoose.Schema.Types.Mixed,

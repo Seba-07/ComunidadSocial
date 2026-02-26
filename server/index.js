@@ -32,8 +32,8 @@ import searchRoutes from './routes/search.js';
 import orgDocumentsRoutes from './routes/organizationDocuments.js';
 import ministroBlocksRoutes from './routes/ministroBlocks.js';
 
-// Model for auto-migration
-import Organization from './models/Organization.js';
+// Auto-migration system
+import { autoMigrateOrganizations } from './scripts/auto-migration.js';
 
 dotenv.config();
 
@@ -104,133 +104,18 @@ app.use('/uploads', express.static('uploads', {
   lastModified: true
 }));
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
-
-// Auto-migration function for existing organizations
-async function autoMigrateOrganizations() {
-  try {
-    const organizations = await Organization.find({});
-    let migratedCount = 0;
-
-    for (const org of organizations) {
-      let updated = false;
-
-      // Migrar provisionalDirectorio si esta vacio
-      if (!org.provisionalDirectorio?.president && !org.provisionalDirectorio?.secretary && !org.provisionalDirectorio?.treasurer) {
-        const president = org.members?.find(m => m.role === 'president');
-        const secretary = org.members?.find(m => m.role === 'secretary');
-        const treasurer = org.members?.find(m => m.role === 'treasurer');
-
-        if (president || secretary || treasurer) {
-          org.provisionalDirectorio = {
-            president: president ? { rut: president.rut, firstName: president.firstName, lastName: president.lastName } : null,
-            secretary: secretary ? { rut: secretary.rut, firstName: secretary.firstName, lastName: secretary.lastName } : null,
-            treasurer: treasurer ? { rut: treasurer.rut, firstName: treasurer.firstName, lastName: treasurer.lastName } : null,
-            designatedAt: new Date(),
-            type: 'PROVISIONAL'
-          };
-          updated = true;
-        }
-      }
-
-      // Migrar electoralCommission si esta vacio
-      if (!org.electoralCommission || org.electoralCommission.length === 0) {
-        let commissionMembers = org.members?.filter(m => m.role === 'electoral_commission') || [];
-
-        if (commissionMembers.length === 0) {
-          const usedRuts = new Set();
-          if (org.provisionalDirectorio?.president?.rut) usedRuts.add(org.provisionalDirectorio.president.rut);
-          if (org.provisionalDirectorio?.secretary?.rut) usedRuts.add(org.provisionalDirectorio.secretary.rut);
-          if (org.provisionalDirectorio?.treasurer?.rut) usedRuts.add(org.provisionalDirectorio.treasurer.rut);
-
-          commissionMembers = org.members?.filter(m =>
-            !usedRuts.has(m.rut) &&
-            ['director', 'member', 'electoral_commission'].includes(m.role)
-          ).slice(0, 3) || [];
-        }
-
-        if (commissionMembers.length > 0) {
-          org.electoralCommission = commissionMembers.map(m => ({
-            rut: m.rut,
-            firstName: m.firstName,
-            lastName: m.lastName,
-            role: 'electoral_commission'
-          }));
-          updated = true;
-        }
-      }
-
-      if (updated) {
-        await org.save();
-        migratedCount++;
-      }
-    }
-
-    // Sincronizar roles de miembros con provisionalDirectorio en TODAS las orgs
-    let rolesSynced = 0;
-    for (const org of organizations) {
-      const prov = org.provisionalDirectorio;
-      if (!prov) continue;
-
-      const normalizeRut = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-      const dirRoles = ['president', 'secretary', 'treasurer', 'director'];
-      let needsSync = false;
-
-      // Verificar si algún miembro del directorio tiene role='member'
-      const checkRut = (rut, expectedRole) => {
-        if (!rut) return;
-        const clean = normalizeRut(rut);
-        const member = org.members?.find(m => normalizeRut(m.rut) === clean);
-        if (member && !dirRoles.includes(member.role)) needsSync = true;
-      };
-
-      if (prov.president) checkRut(prov.president.rut, 'president');
-      if (prov.secretary) checkRut(prov.secretary.rut, 'secretary');
-      if (prov.treasurer) checkRut(prov.treasurer.rut, 'treasurer');
-      if (prov.additionalMembers) prov.additionalMembers.forEach(m => { if (m) checkRut(m.rut, 'director'); });
-
-      if (needsSync) {
-        // Resetear roles de directorio previos
-        org.members?.forEach(m => { if (dirRoles.includes(m.role)) m.role = 'member'; });
-
-        const assignRole = (rut, role) => {
-          if (!rut) return;
-          const clean = normalizeRut(rut);
-          const member = org.members?.find(m => normalizeRut(m.rut) === clean);
-          if (member) member.role = role;
-        };
-
-        if (prov.president) assignRole(prov.president.rut, 'president');
-        if (prov.secretary) assignRole(prov.secretary.rut, 'secretary');
-        if (prov.treasurer) assignRole(prov.treasurer.rut, 'treasurer');
-        if (prov.additionalMembers) prov.additionalMembers.forEach(m => { if (m) assignRole(m.rut, 'director'); });
-
-        await org.save();
-        rolesSynced++;
-      }
-    }
-
-    if (migratedCount > 0) {
-      console.log(`Auto-migration: ${migratedCount} organizations updated`);
-    }
-    if (rolesSynced > 0) {
-      console.log(`Auto-migration: ${rolesSynced} organizations had member roles synced with directorio`);
-    }
-  } catch (error) {
-    console.error('Auto-migration error:', error);
-  }
+// MongoDB Connection (skip in test - tests manage their own connection)
+if (process.env.NODE_ENV !== 'test') {
+  const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+  mongoose.connect(MONGODB_URI)
+    .then(async () => {
+      console.log('Connected to MongoDB Atlas');
+      await autoMigrateOrganizations();
+    })
+    .catch((err) => {
+      console.error('MongoDB connection error:', err);
+    });
 }
-
-mongoose.connect(MONGODB_URI)
-  .then(async () => {
-    console.log('Connected to MongoDB Atlas');
-    // Run auto-migration on startup
-    await autoMigrateOrganizations();
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -292,18 +177,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start listening when not imported by tests
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 
-// ============ TIMEOUTS DE CONEXIÓN ============
-// Timeout para requests que tardan demasiado (30s)
-server.setTimeout(30000);
-
-// Keep-alive timeout (65s - mayor que el timeout de AWS/proxies que suele ser 60s)
-server.keepAliveTimeout = 65000;
-
-// Headers timeout (debe ser mayor que keepAliveTimeout)
-server.headersTimeout = 66000;
+  // ============ TIMEOUTS DE CONEXIÓN ============
+  server.setTimeout(30000);
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
+}
 
 export default app;

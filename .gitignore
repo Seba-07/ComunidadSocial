@@ -2,7 +2,7 @@
 node_modules/
 
 # Build
-# dist/ — tracked for Vercel deploy
+dist/
 
 # Logs
 *.log

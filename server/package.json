@@ -11,7 +11,9 @@
     "seed:uv": "node scripts/seedUnidadesVecinales.js",
     "migrate:normalize": "node scripts/migrate-to-normalized.js",
     "migrate:normalize:dry": "node scripts/migrate-to-normalized.js --dry-run",
-    "migrate:rollback": "node scripts/migrate-to-normalized.js --rollback"
+    "migrate:rollback": "node scripts/migrate-to-normalized.js --rollback",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -32,5 +34,10 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.0.1",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.18"
   }
 }
