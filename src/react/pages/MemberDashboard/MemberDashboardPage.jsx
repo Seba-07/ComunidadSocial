@@ -4,21 +4,25 @@ import { useAuthStore } from '../../stores/authStore';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import OrgInfo from './OrgInfo';
 import MembersList from './MembersList';
+import MemberDirectorio from './MemberDirectorio';
 import AssemblyList from './AssemblyList';
+import MemberActividades from './MemberActividades';
 import MemberDocuments from './MemberDocuments';
 import MemberPassword from './MemberPassword';
 
 const TABS = [
   { id: 'overview', label: 'Resumen' },
+  { id: 'directorio', label: 'Directorio' },
   { id: 'members', label: 'Miembros' },
   { id: 'assemblies', label: 'Asambleas' },
+  { id: 'activities', label: 'Actividades' },
   { id: 'documents', label: 'Documentos' },
   { id: 'password', label: 'Contraseña' }
 ];
 
 export default function MemberDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
-  const { activeOrg, isLoading, error, fetchMemberOrganization, refreshActiveOrg } = useOrganizationStore();
+  const { organizations, activeOrg, isLoading, error, fetchMemberOrganization, refreshActiveOrg, setActiveOrg } = useOrganizationStore();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -49,6 +53,8 @@ export default function MemberDashboardPage() {
     );
   }
 
+  const hasMultipleOrgs = organizations.length > 1;
+
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
       {/* Header */}
@@ -68,6 +74,27 @@ export default function MemberDashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {hasMultipleOrgs && (
+            <select
+              value={activeOrg._id}
+              onChange={(e) => setActiveOrg(e.target.value)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: 8,
+                padding: '6px 12px',
+                fontSize: 13,
+                cursor: 'pointer'
+              }}
+            >
+              {organizations.map((org) => (
+                <option key={org._id} value={org._id} style={{ color: '#1e3a8a' }}>
+                  {org.organizationName}
+                </option>
+              ))}
+            </select>
+          )}
           <span style={{ fontSize: 14 }}>{user?.firstName} {user?.lastName}</span>
           <button
             onClick={() => { logout(); window.location.href = '/app/login'; }}
@@ -112,6 +139,7 @@ export default function MemberDashboardPage() {
       {/* Content */}
       <main style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
         {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
+        {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}
         {activeTab === 'members' && <MembersList members={activeOrg.members} />}
         {activeTab === 'assemblies' && (
           <AssemblyList
@@ -121,6 +149,7 @@ export default function MemberDashboardPage() {
             onRefresh={refreshActiveOrg}
           />
         )}
+        {activeTab === 'activities' && <MemberActividades activities={activeOrg.activities || []} />}
         {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
         {activeTab === 'password' && <MemberPassword />}
       </main>

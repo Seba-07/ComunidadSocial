@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
+import Modal from '../../components/ui/Modal';
+import FormField from '../../components/ui/FormField';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { formatDate } from '../../utils/formatters';
 
-const CATEGORY_LABELS = {
-  ACTA_ASAMBLEA: 'Acta Asamblea',
-  BALANCE: 'Balance',
-  INFORME: 'Informe',
-  CERTIFICADO: 'Certificado',
-  CORRESPONDENCIA: 'Correspondencia',
-  OTRO: 'Otro'
-};
+const DOC_CATEGORIES = [
+  { value: 'ACTA_ASAMBLEA', label: 'Acta de Asamblea' },
+  { value: 'BALANCE', label: 'Balance' },
+  { value: 'INFORME', label: 'Informe' },
+  { value: 'CERTIFICADO', label: 'Certificado' },
+  { value: 'CORRESPONDENCIA', label: 'Correspondencia' },
+  { value: 'OTRO', label: 'Otro' }
+];
+
+const CATEGORY_LABELS = Object.fromEntries(DOC_CATEGORIES.map((c) => [c.value, c.label]));
 
 function formatFileSize(bytes) {
   if (!bytes) return '';
@@ -19,14 +24,14 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function OrgDocumentos({ org }) {
+export default function OrgDocumentos({ org, onRefresh }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
 
   useEffect(() => {
-    if (!org?._id) return;
-    loadDocuments();
+    if (org?._id) loadDocuments();
   }, [org?._id]);
 
   async function loadDocuments() {
@@ -44,35 +49,102 @@ export default function OrgDocumentos({ org }) {
   async function handleDownloadActa() {
     try {
       await apiService.downloadActaPDF(org._id);
-      addToast('Acta descargada', 'success');
     } catch (error) {
-      addToast(error.message || 'Error al descargar', 'error');
+      addToast(error.message || 'Error al descargar acta', 'error');
     }
   }
 
   async function handleDownloadMembers() {
     try {
       await apiService.downloadMembersPDF(org._id);
-      addToast('Lista de miembros descargada', 'success');
+    } catch (error) {
+      addToast(error.message || 'Error al descargar lista', 'error');
+    }
+  }
+
+  async function handleDeleteDoc(docId) {
+    if (!confirm('¿Eliminar este documento?')) return;
+    try {
+      await apiService.delete(`/org-documents/${org._id}/${docId}`);
+      addToast('Documento eliminado', 'success');
+      loadDocuments();
+    } catch (error) {
+      addToast(error.message || 'Error al eliminar', 'error');
+    }
+  }
+
+  async function handleDownloadDoc(docId, docName) {
+    try {
+      const response = await fetch(`${apiService.baseUrl}/org-documents/${org._id}/${docId}/download`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Error al descargar');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = docName || 'documento';
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
       addToast(error.message || 'Error al descargar', 'error');
     }
   }
 
+  // Assembly actas
+  const assemblyActas = (org?.assemblies || []).filter((a) => a.status === 'finalizada');
+
   return (
     <div>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 24 }}>Documentos</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Documentos</h3>
+        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => setShowUpload(true)}>
+          + Subir Documento
+        </button>
+      </div>
 
       {/* Legal Documents */}
       <div style={{ marginBottom: 32 }}>
         <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Documentos Legales</h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <LegalDoc name="Acta Constitutiva" onDownload={handleDownloadActa} />
-          <LegalDoc name="Lista de Miembros" onDownload={handleDownloadMembers} />
-          {org.estatutos && <LegalDoc name="Estatutos" />}
-          <LegalDoc name="Certificación Municipal" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <LegalDoc name="Acta Constitutiva" icon="📋" onDownload={handleDownloadActa} />
+          <LegalDoc name="Lista de Miembros" icon="📋" onDownload={handleDownloadMembers} />
+          {org.estatutos && <LegalDoc name="Estatutos" icon="📜" />}
+          <LegalDoc name="Certificación Municipal" icon="📋" />
         </div>
       </div>
+
+      {/* Certificates */}
+      <div style={{ marginBottom: 32 }}>
+        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados</h4>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button style={certBtnStyle}>Certificado de Residencia</button>
+          <button style={certBtnStyle}>Certificado de Socio</button>
+        </div>
+      </div>
+
+      {/* Assembly Actas */}
+      {assemblyActas.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Actas de Asamblea</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {assemblyActas.map((a) => (
+              <div key={a.id || a._id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>📝</span>
+                  <div>
+                    <span style={{ fontWeight: 500, fontSize: 14 }}>{a.title}</span>
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(a.date)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Uploaded Documents */}
       <div>
@@ -84,18 +156,10 @@ export default function OrgDocumentos({ org }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {docs.map((doc) => (
-              <div
-                key={doc._id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8
-                }}
-              >
+              <div key={doc._id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 20 }}>📄</span>
                   <div>
@@ -109,38 +173,108 @@ export default function OrgDocumentos({ org }) {
                     </div>
                   </div>
                 </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => handleDownloadDoc(doc._id, doc.name)} style={actionBtnStyle}>Descargar</button>
+                  <button onClick={() => handleDeleteDoc(doc._id)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <UploadModal open={showUpload} onClose={() => setShowUpload(false)} orgId={org._id}
+        onUploaded={() => { setShowUpload(false); loadDocuments(); }} addToast={addToast} />
     </div>
   );
 }
 
-function LegalDoc({ name, onDownload }) {
+const actionBtnStyle = { padding: '4px 12px', fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6, background: 'white', cursor: 'pointer', color: '#374151', fontWeight: 500 };
+const certBtnStyle = { padding: '10px 20px', border: '1px solid #8b5cf6', borderRadius: 12, background: 'white', color: '#8b5cf6', cursor: 'pointer', fontWeight: 600, fontSize: 13 };
+
+function LegalDoc({ name, icon = '📋', onDownload }) {
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '12px 16px',
-      background: 'white',
-      border: '1px solid #e5e7eb',
-      borderRadius: 8
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 20 }}>📋</span>
+        <span style={{ fontSize: 20 }}>{icon}</span>
         <span style={{ fontWeight: 500, fontSize: 14 }}>{name}</span>
       </div>
       {onDownload && (
-        <button
-          onClick={onDownload}
-          style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6, background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
-        >
+        <button onClick={onDownload} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6, background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}>
           Descargar PDF
         </button>
       )}
     </div>
+  );
+}
+
+// ========== Upload Modal ==========
+function UploadModal({ open, onClose, orgId, onUploaded, addToast }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('OTRO');
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const fileRef = useRef();
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!file) { addToast('Selecciona un archivo', 'error'); return; }
+    if (!name.trim()) { addToast('Ingresa un nombre', 'error'); return; }
+    if (file.size > 10 * 1024 * 1024) { addToast('El archivo no puede superar 10MB', 'error'); return; }
+
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('name', name);
+      formData.append('description', description);
+      formData.append('category', category);
+
+      await fetch(`${apiService.baseUrl}/org-documents/${orgId}/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      }).then((r) => { if (!r.ok) throw new Error('Error al subir'); return r.json(); });
+
+      addToast('Documento subido exitosamente', 'success');
+      setName(''); setDescription(''); setCategory('OTRO'); setFile(null);
+      onUploaded();
+    } catch (error) {
+      addToast(error.message || 'Error al subir documento', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Subir Documento">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <FormField label="Nombre del documento *" id="doc-name" type="text" placeholder="Acta 2024" value={name} onChange={(e) => setName(e.target.value)} />
+        <FormField label="Categoría" id="doc-cat">
+          <select id="doc-cat" value={category} onChange={(e) => setCategory(e.target.value)}
+            style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
+            {DOC_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Descripción" id="doc-desc">
+          <textarea id="doc-desc" value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder="Descripción opcional..." rows={2}
+            style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16, resize: 'vertical', boxSizing: 'border-box' }} />
+        </FormField>
+        <div className="form-group">
+          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Archivo * (máx 10MB)</label>
+          <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files[0])}
+            style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 14 }} />
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
+          <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Subiendo...' : 'Subir Documento'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }

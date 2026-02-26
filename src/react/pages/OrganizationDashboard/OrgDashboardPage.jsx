@@ -127,9 +127,9 @@ export default function OrgDashboardPage() {
         {activeTab === 'members' && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
         {activeTab === 'directorio' && <OrgDirectorio org={activeOrg} />}
         {activeTab === 'asambleas' && <OrgAsambleas org={activeOrg} onRefresh={refreshActiveOrg} />}
-        {activeTab === 'documentos' && <OrgDocumentos org={activeOrg} />}
-        {activeTab === 'finanzas' && <OrgFinanzas org={activeOrg} />}
-        {activeTab === 'comunicaciones' && <OrgComunicaciones org={activeOrg} />}
+        {activeTab === 'documentos' && <OrgDocumentos org={activeOrg} onRefresh={refreshActiveOrg} />}
+        {activeTab === 'finanzas' && <OrgFinanzas org={activeOrg} onRefresh={refreshActiveOrg} />}
+        {activeTab === 'comunicaciones' && <OrgComunicaciones org={activeOrg} onRefresh={refreshActiveOrg} />}
       </main>
     </div>
   );

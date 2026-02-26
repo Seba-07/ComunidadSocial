@@ -24,9 +24,11 @@ export const useOrganizationStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await apiService.getMyOrganization();
-      const org = data.organization || data;
-      set({ activeOrg: org, organizations: org ? [org] : [], isLoading: false });
-      return org;
+      // API returns { organizations: [...] } array for members
+      const orgs = data.organizations || (data.organization ? [data.organization] : (Array.isArray(data) ? data : [data]));
+      const active = orgs[0] || null;
+      set({ activeOrg: active, organizations: orgs, isLoading: false });
+      return active;
     } catch (error) {
       set({ isLoading: false, error: error.message });
       throw error;

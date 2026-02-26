@@ -2,11 +2,27 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
 
+// SPA fallback plugin for /app/* routes in dev mode
+function spaFallbackPlugin() {
+  return {
+    name: 'spa-fallback',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url.startsWith('/app') && !req.url.includes('.')) {
+          req.url = '/react-app.html';
+        }
+        next();
+      });
+    }
+  };
+}
+
 export default defineConfig({
   plugins: [
     react({
       include: ['src/react/**/*.{jsx,tsx}']
-    })
+    }),
+    spaFallbackPlugin()
   ],
   resolve: {
     alias: {

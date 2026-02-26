@@ -2,6 +2,7 @@ import { useState } from 'react';
 import FormField from '../../components/ui/FormField';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
+import { formatRut } from '../../utils/validators';
 
 export default function LoginSocioForm() {
   const [lastName, setLastName] = useState('');
@@ -11,10 +12,18 @@ export default function LoginSocioForm() {
   const loginSocio = useAuthStore((s) => s.loginSocio);
   const addToast = useUiStore((s) => s.addToast);
 
+  function handleRutChange(e) {
+    const raw = e.target.value.replace(/[^0-9kK]/g, '');
+    if (raw.length <= 9) {
+      setRut(raw.length > 1 ? formatRut(raw) : raw);
+    }
+  }
+
   function validate() {
     const errs = {};
     if (!lastName || lastName.length < 2) errs.lastName = 'Ingresa tu apellido paterno';
-    if (!rut || rut.length < 7) errs.rut = 'Ingresa tu RUT sin puntos ni guión';
+    const cleanRut = rut.replace(/[.\-]/g, '');
+    if (!cleanRut || cleanRut.length < 7) errs.rut = 'Ingresa tu RUT';
     return errs;
   }
 
@@ -68,12 +77,12 @@ export default function LoginSocioForm() {
         error={errors.lastName}
       />
       <FormField
-        label="RUT (sin puntos ni guión)"
+        label="RUT"
         id="socio-rut"
         type="text"
-        placeholder="123456789"
+        placeholder="12.345.678-9"
         value={rut}
-        onChange={(e) => setRut(e.target.value)}
+        onChange={handleRutChange}
         error={errors.rut}
       />
       <button type="submit" className="btn-auth" disabled={submitting}>
