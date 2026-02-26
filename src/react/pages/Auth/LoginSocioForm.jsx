@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FormField from '../../components/ui/FormField';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -11,6 +12,7 @@ export default function LoginSocioForm() {
   const [submitting, setSubmitting] = useState(false);
   const loginSocio = useAuthStore((s) => s.loginSocio);
   const addToast = useUiStore((s) => s.addToast);
+  const navigate = useNavigate();
 
   function handleRutChange(e) {
     const raw = e.target.value.replace(/[^0-9kK]/g, '');
@@ -41,12 +43,8 @@ export default function LoginSocioForm() {
       addToast(`¡Bienvenido ${user.firstName}!`, 'success');
 
       setTimeout(() => {
-        if (user.mustChangePassword) {
-          window.location.href = '/?member=true&changePassword=true';
-        } else {
-          window.location.href = '/?member=true';
-        }
-      }, 500);
+        navigate('/member');
+      }, 300);
     } catch (error) {
       if (error.message.includes('Apellido') || error.message.includes('apellido')) {
         setErrors({ lastName: error.message });

@@ -30,9 +30,11 @@ export default function OrgDashboardPage() {
 
   useEffect(() => {
     fetchMyOrganizations().then((orgs) => {
-      if (id && orgs?.length) {
+      if (!orgs?.length) return;
+      if (id && id !== 'auto') {
         setActiveOrg(id);
-      } else if (orgs?.length === 1) {
+      } else {
+        // Auto-select first (or only) org
         setActiveOrg(orgs[0]._id);
       }
     });

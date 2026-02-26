@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FormField from '../../components/ui/FormField';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -10,6 +11,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const login = useAuthStore((s) => s.login);
   const addToast = useUiStore((s) => s.addToast);
+  const navigate = useNavigate();
 
   function validate() {
     const errs = {};
@@ -29,27 +31,31 @@ export default function LoginForm() {
     try {
       const user = await login(email, password);
 
+      localStorage.setItem('isAuthenticated', 'true');
+      addToast(`¡Bienvenido ${user.firstName}!`, 'success');
+
       if (user.role === 'MINISTRO_FE') {
         localStorage.removeItem('currentUser');
         localStorage.setItem('currentMinistro', JSON.stringify(user));
         localStorage.setItem('isMinistroAuthenticated', 'true');
-        addToast(`¡Bienvenido ${user.firstName}!`, 'success');
         const url = user.mustChangePassword
           ? '/ministro-dashboard.html?changePassword=true'
           : '/ministro-dashboard.html';
         setTimeout(() => { window.location.href = url; }, 500);
       } else if (user.role === 'MUNICIPALIDAD') {
-        localStorage.setItem('isAuthenticated', 'true');
-        addToast(`¡Bienvenido ${user.firstName || 'Municipalidad'}!`, 'success');
         setTimeout(() => { window.location.href = '/?admin=true'; }, 500);
       } else if (user.role === 'MIEMBRO') {
-        localStorage.setItem('isAuthenticated', 'true');
-        addToast(`¡Bienvenido ${user.firstName || 'Miembro'}!`, 'success');
-        setTimeout(() => { window.location.href = '/?member=true'; }, 500);
+        setTimeout(() => { navigate('/member'); }, 300);
       } else {
-        localStorage.setItem('isAuthenticated', 'true');
-        addToast(`¡Bienvenido ${user.firstName || user.profile?.firstName || 'Usuario'}!`, 'success');
-        setTimeout(() => { window.location.href = '/'; }, 500);
+        // ORGANIZADOR - navigate to org dashboard
+        // Try to get their org ID from organizations array
+        const orgId = user.organizationIds?.[0] || user.organizations?.[0]?._id;
+        if (orgId) {
+          setTimeout(() => { navigate(`/org/${orgId}`); }, 300);
+        } else {
+          // Fetch their orgs, then navigate
+          setTimeout(() => { navigate('/org/auto'); }, 300);
+        }
       }
     } catch (error) {
       if (error.message.includes('no encontrado') || error.message.includes('Usuario') || error.message.includes('Credenciales inválidas') || error.message.includes('inválidas')) {
