@@ -3296,6 +3296,21 @@ class OrganizationDashboard {
     if (!assembly) return;
 
     const orgId = this.currentOrg._id || this.currentOrg.id;
+
+    // Detectar si el usuario actual es un MIEMBRO directivo (puede votar y marcar asistencia)
+    let currentUserRut = null;
+    let isDirectivoMiembro = false;
+    try {
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.role === 'MIEMBRO' && user.rut) {
+          currentUserRut = user.rut;
+          isDirectivoMiembro = sessionStorage.getItem('isDirectivoMiembro') === 'true';
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     const statusConfig = {
       draft: { label: 'Borrador', color: '#6b7280', bg: '#f3f4f6' },
       convocada: { label: 'Convocada', color: '#2563eb', bg: '#eff6ff' },
@@ -3362,6 +3377,57 @@ class OrganizationDashboard {
             const isElection = item.type === 'eleccion_directorio';
             const candidateCount = (item.candidates || []).length;
             const voteCount = (item.votes || []).length;
+            const candidates = item.candidates || [];
+
+            // Voting UI para MIEMBRO directivo
+            const alreadyVoted = currentUserRut && (item.votes || []).some(v => v.voterRut === currentUserRut);
+            const canVote = isDirectivoMiembro && assembly.status === 'en_curso' && item.votingOpen && !alreadyVoted && isElection;
+
+            let directivoVotingUI = '';
+            if (canVote && candidates.length > 0) {
+              if (item.votingMode === 'per_cargo') {
+                const byCargo = {};
+                candidates.forEach(c => { const key = c.cargo || 'Sin cargo'; if (!byCargo[key]) byCargo[key] = []; byCargo[key].push(c); });
+                directivoVotingUI = `
+                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_cargo" style="margin-top:14px;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                    <div style="font-size:14px;font-weight:600;color:#15803d;margin-bottom:12px;">Emitir tu voto</div>
+                    ${Object.entries(byCargo).map(([cargo, cands]) => `
+                      <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;font-weight:600;color:#374151;text-transform:capitalize;margin-bottom:6px;">${cargo}</div>
+                        <div style="display:grid;gap:6px;">
+                          ${cands.map(c => `
+                            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:white;border-radius:8px;cursor:pointer;border:2px solid #e5e7eb;transition:all 0.2s;">
+                              <input type="radio" name="vote-${item.id}-${cargo}" value="${c.rut}" style="width:18px;height:18px;accent-color:#2563eb;">
+                              <span style="font-size:14px;">${c.firstName} ${c.lastName}</span>
+                            </label>
+                          `).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                    <button class="btn-directivo-vote" data-agenda-id="${item.id}" style="margin-top:4px;padding:12px 28px;border:none;border-radius:10px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:14px;">Emitir Voto</button>
+                  </div>`;
+              } else if (item.votingMode === 'per_lista') {
+                const listas = {};
+                candidates.forEach(c => { const key = c.lista || 'Sin lista'; if (!listas[key]) listas[key] = []; listas[key].push(c); });
+                directivoVotingUI = `
+                  <div class="vote-section" data-agenda-id="${item.id}" data-mode="per_lista" style="margin-top:14px;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                    <div style="font-size:14px;font-weight:600;color:#15803d;margin-bottom:12px;">Emitir tu voto</div>
+                    <div style="display:grid;gap:8px;">
+                      ${Object.entries(listas).map(([lista, cands]) => `
+                        <label style="display:flex;align-items:start;gap:12px;padding:14px;background:white;border-radius:10px;cursor:pointer;border:2px solid #e5e7eb;transition:all 0.2s;">
+                          <input type="radio" name="vote-lista-${item.id}" value="${lista}" style="width:18px;height:18px;margin-top:2px;accent-color:#2563eb;">
+                          <div>
+                            <strong style="font-size:14px;">${lista}</strong>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px;">${cands.map(c => `${c.cargo ? c.cargo + ': ' : ''}${c.firstName} ${c.lastName}`).join(', ')}</div>
+                          </div>
+                        </label>
+                      `).join('')}
+                    </div>
+                    <button class="btn-directivo-vote" data-agenda-id="${item.id}" style="margin-top:10px;padding:12px 28px;border:none;border-radius:10px;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:14px;">Emitir Voto</button>
+                  </div>`;
+              }
+            }
+
             return `
             <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;${item.votingOpen ? 'border-color:#059669;background:#f0fdf4;' : ''}">
               <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -3372,10 +3438,12 @@ class OrganizationDashboard {
                 </div>
                 <div style="display:flex;gap:6px;">
                   ${isElection && assembly.status !== 'finalizada' && assembly.status !== 'cancelada' ? `<button class="btn-manage-candidates" data-agenda-id="${item.id}" style="padding:4px 10px;font-size:11px;border:1px solid #2563eb;border-radius:6px;background:#eff6ff;color:#2563eb;cursor:pointer;">Candidatos (${candidateCount})</button>` : ''}
-                  ${assembly.status === 'en_curso' ? `<button class="btn-toggle-voting" data-agenda-id="${item.id}" style="padding:4px 10px;font-size:11px;border:1px solid ${item.votingOpen ? '#ef4444' : '#059669'};border-radius:6px;background:${item.votingOpen ? '#fef2f2' : '#ecfdf5'};color:${item.votingOpen ? '#ef4444' : '#059669'};cursor:pointer;font-weight:600;">${item.votingOpen ? 'Cerrar Votación' : 'Abrir Votación'}</button>` : ''}
+                  ${assembly.status === 'en_curso' ? `<button class="btn-toggle-voting" data-agenda-id="${item.id}" style="padding:4px 10px;font-size:11px;border:1px solid ${item.votingOpen ? '#ef4444' : '#059669'};border-radius:6px;background:${item.votingOpen ? '#fef2f2' : '#ecfdf5'};color:${item.votingOpen ? '#ef4444' : '#059669'};cursor:pointer;font-weight:600;">${item.votingOpen ? 'Cerrar Votacion' : 'Abrir Votacion'}</button>` : ''}
                 </div>
               </div>
               ${isElection ? `<div style="font-size:12px;color:#6b7280;margin-top:6px;">${candidateCount} candidatos | ${voteCount} votos registrados</div>` : ''}
+              ${alreadyVoted && !item.result ? '<div style="margin-top:10px;padding:10px 14px;background:#ecfdf5;border-radius:8px;color:#059669;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Tu voto ha sido registrado.</div>' : ''}
+              ${directivoVotingUI}
               ${item.result ? `<div style="margin-top:8px;padding:8px 12px;background:#f5f3ff;border-radius:6px;font-size:12px;color:#7c3aed;">
                 <strong>Resultado:</strong> ${item.result.mode === 'per_lista' ? `Lista ganadora: ${item.result.winningLista || '-'} con ${item.result.votesByLista?.[item.result.winningLista] || 0} votos` : Object.entries(item.result.winners || {}).map(([cargo, w]) => `${cargo}: ${w.firstName} ${w.lastName} (${w.votes} votos)`).join(' | ')}
               </div>` : ''}
@@ -3383,7 +3451,19 @@ class OrganizationDashboard {
           }).join('') : '<p style="color:#6b7280;font-size:13px;">No hay puntos de agenda definidos.</p>'}
 
           <!-- Attendees -->
-          <h4 style="margin:16px 0 8px;">Asistencia (${attendeeCount})</h4>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px;">
+            <h4 style="margin:0;">Asistencia (${attendeeCount})</h4>
+            ${(() => {
+              if (!isDirectivoMiembro || !currentUserRut) return '';
+              if (assembly.status !== 'en_curso' && assembly.status !== 'convocada') return '';
+              const alreadyCheckedIn = (assembly.attendees || []).some(a => a.rut === currentUserRut);
+              if (alreadyCheckedIn) return '<span style="display:flex;align-items:center;gap:4px;font-size:13px;color:#059669;font-weight:600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Presente</span>';
+              return `<button id="btn-directivo-checkin" style="padding:6px 16px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Marcar Presente
+              </button>`;
+            })()}
+          </div>
           ${attendeeCount > 0 ? `
             <div style="max-height:150px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
               ${(assembly.attendees || []).map(a => `
@@ -3450,6 +3530,70 @@ class OrganizationDashboard {
       btn.addEventListener('click', () => {
         modal.remove();
         this.showCandidatesManager(assemblyId, btn.dataset.agendaId, parentOverlay);
+      });
+    });
+
+    // Directivo check-in button
+    const btnCheckin = modal.querySelector('#btn-directivo-checkin');
+    if (btnCheckin) {
+      btnCheckin.addEventListener('click', async () => {
+        btnCheckin.disabled = true;
+        btnCheckin.textContent = 'Registrando...';
+        try {
+          await apiService.checkinAssembly(orgId, assemblyId, {});
+          const updatedOrg = await apiService.getOrganization(orgId);
+          Object.assign(this.currentOrg, updatedOrg);
+          modal.remove();
+          this.showAssemblyDetail(assemblyId, parentOverlay);
+          showToast('Asistencia registrada', 'success');
+        } catch (err) {
+          showToast(err.message || 'Error al registrar asistencia', 'error');
+          btnCheckin.disabled = false;
+          btnCheckin.textContent = 'Marcar Presente';
+        }
+      });
+    }
+
+    // Directivo vote submission
+    modal.querySelectorAll('.btn-directivo-vote').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const agendaItemId = btn.dataset.agendaId;
+        const section = modal.querySelector(`.vote-section[data-agenda-id="${agendaItemId}"]`);
+        const mode = section?.dataset.mode;
+        const votes = [];
+
+        if (mode === 'per_cargo') {
+          const radioGroups = new Set();
+          section.querySelectorAll('input[type="radio"]').forEach(r => radioGroups.add(r.name));
+          for (const group of radioGroups) {
+            const selected = section.querySelector(`input[name="${group}"]:checked`);
+            if (selected) {
+              const cargo = group.replace(`vote-${agendaItemId}-`, '');
+              votes.push({ cargo, candidateRut: selected.value });
+            }
+          }
+          if (votes.length === 0) { showToast('Selecciona al menos un candidato', 'error'); return; }
+        } else if (mode === 'per_lista') {
+          const selected = section.querySelector(`input[name="vote-lista-${agendaItemId}"]:checked`);
+          if (!selected) { showToast('Selecciona una lista', 'error'); return; }
+          votes.push({ lista: selected.value });
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+          await apiService.castVote(orgId, assemblyId, agendaItemId, votes);
+          showToast('Voto registrado exitosamente', 'success');
+          const updatedOrg = await apiService.getOrganization(orgId);
+          Object.assign(this.currentOrg, updatedOrg);
+          modal.remove();
+          this.showAssemblyDetail(assemblyId, parentOverlay);
+        } catch (err) {
+          showToast(err.message || 'Error al votar', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Emitir Voto';
+        }
       });
     });
   }
