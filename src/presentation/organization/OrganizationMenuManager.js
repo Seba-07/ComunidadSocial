@@ -16,6 +16,7 @@ class OrganizationMenuManager {
     this.approvedOrgs = [];
     this.activeOrgId = null;
     this.initialized = false;
+    this._initializing = false;
     this.menuCollapsed = false;
   }
 
@@ -23,7 +24,8 @@ class OrganizationMenuManager {
    * Inicializa el gestor del menú de organizaciones
    */
   async init() {
-    if (this.initialized) return;
+    if (this.initialized || this._initializing) return;
+    this._initializing = true;
 
     await this.loadApprovedOrganizations();
     this.setupUI();
@@ -32,7 +34,8 @@ class OrganizationMenuManager {
     this.restoreMenuState();
 
     this.initialized = true;
-    console.log('[OrganizationMenuManager] Initialized with', this.approvedOrgs.length, 'approved organizations');
+    this._initializing = false;
+    console.log('[OrganizationMenuManager] Initialized with', this.approvedOrgs.length, 'organizations');
   }
 
   /**
