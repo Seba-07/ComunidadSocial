@@ -12,6 +12,7 @@ import Document from '../models/Document.js';
 import Member from '../models/Member.js';
 import logger from '../utils/logger.js';
 import { emailService } from '../services/emailService.js';
+import * as assemblyService from '../services/assemblyService.js';
 
 const router = express.Router();
 
@@ -1749,37 +1750,7 @@ router.post('/:id/assemblies', authenticate, validateObjectId(), async (req, res
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const { type, date, time, title, description, quorumType, quorumValue, agendaItems } = req.body;
-
-    const newAssembly = {
-      id: 'assembly_' + Date.now(),
-      type: type || 'ordinaria',
-      date,
-      time,
-      title,
-      description,
-      status: 'draft',
-      quorumType: quorumType || 'percentage',
-      quorumValue: quorumValue || 50,
-      agendaItems: (agendaItems || []).map((item, i) => ({
-        id: `agenda_${Date.now()}_${i}`,
-        title: item.title,
-        type: item.type || 'custom',
-        description: item.description || '',
-        votingMode: item.votingMode || null,
-        candidates: [],
-        votes: [],
-        votingOpen: false
-      })),
-      attendance: 0,
-      attendees: [],
-      createdAt: new Date()
-    };
-
-    if (!org.assemblies) org.assemblies = [];
-    org.assemblies.push(newAssembly);
-    await org.save();
-
+    const newAssembly = await assemblyService.createAssembly(org, req.body);
     res.status(201).json(newAssembly);
   } catch (error) {
     console.error('Create assembly error:', error);
@@ -1798,24 +1769,17 @@ router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), asyn
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
-    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
-
-    const assembly = org.assemblies[idx];
-    if (assembly.status === 'finalizada' || assembly.status === 'cancelada') {
-      return res.status(400).json({ error: 'No se puede editar una asamblea finalizada o cancelada' });
-    }
-
     const { type, date, time, title, description, quorumType, quorumValue, agendaItems } = req.body;
-    if (type) assembly.type = type;
-    if (date) assembly.date = date;
-    if (time !== undefined) assembly.time = time;
-    if (title) assembly.title = title;
-    if (description !== undefined) assembly.description = description;
-    if (quorumType) assembly.quorumType = quorumType;
-    if (quorumValue !== undefined) assembly.quorumValue = quorumValue;
+    const updates = {};
+    if (type) updates.type = type;
+    if (date) updates.date = date;
+    if (time !== undefined) updates.time = time;
+    if (title) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (quorumType) updates.quorumType = quorumType;
+    if (quorumValue !== undefined) updates.quorumValue = quorumValue;
     if (agendaItems) {
-      assembly.agendaItems = agendaItems.map((item, i) => ({
+      updates.agendaItems = agendaItems.map((item, i) => ({
         id: item.id || `agenda_${Date.now()}_${i}`,
         title: item.title,
         type: item.type || 'custom',
@@ -1829,9 +1793,13 @@ router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), asyn
       }));
     }
 
-    await org.save();
-    res.json(org.assemblies[idx]);
+    const assembly = await assemblyService.updateAssembly(org, req.params.assemblyId, updates);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    res.json(assembly);
   } catch (error) {
+    if (error.message.includes('No se puede editar')) {
+      return res.status(400).json({ error: error.message });
+    }
     console.error('Update assembly error:', error);
     res.status(500).json({ error: 'Error al actualizar asamblea' });
   }
@@ -1848,18 +1816,13 @@ router.delete('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), a
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
-    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
-
-    const assembly = org.assemblies[idx];
-    if (!['draft', 'convocada'].includes(assembly.status)) {
-      return res.status(400).json({ error: 'Solo se pueden eliminar asambleas en estado borrador o convocada' });
-    }
-
-    org.assemblies.splice(idx, 1);
-    await org.save();
+    const result = await assemblyService.deleteAssembly(org, req.params.assemblyId);
+    if (!result) return res.status(404).json({ error: 'Asamblea no encontrada' });
     res.json({ message: 'Asamblea eliminada correctamente' });
   } catch (error) {
+    if (error.message.includes('Solo se pueden eliminar')) {
+      return res.status(400).json({ error: error.message });
+    }
     console.error('Delete assembly error:', error);
     res.status(500).json({ error: 'Error al eliminar asamblea' });
   }
@@ -1876,10 +1839,9 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const idx = (org.assemblies || []).findIndex(a => a.id === req.params.assemblyId);
-    if (idx === -1) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
-    const assembly = org.assemblies[idx];
     const { action } = req.body; // convocar, iniciar, finalizar, cancelar
 
     const transitions = {
@@ -1982,8 +1944,8 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
       }
     }
 
-    await org.save();
-    res.json(org.assemblies[idx]);
+    await assemblyService.saveAssembly(org, assembly);
+    res.json(assembly.toObject ? assembly.toObject() : assembly);
   } catch (error) {
     console.error('Update assembly status error:', error);
     res.status(500).json({ error: 'Error al cambiar estado de asamblea' });
@@ -2001,7 +1963,7 @@ router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObje
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
     const { agendaItemId, candidates, customCargos } = req.body;
@@ -2023,7 +1985,7 @@ router.post('/:id/assemblies/:assemblyId/candidates', authenticate, validateObje
       agendaItem.customCargos = customCargos.map(c => ({ id: c.id, nombre: c.nombre, color: c.color }));
     }
 
-    await org.save();
+    await assemblyService.saveAssembly(org, assembly);
     res.json(agendaItem);
   } catch (error) {
     console.error('Add candidates error:', error);
@@ -2041,28 +2003,24 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
     const org = await Organization.findById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    // Verificar que el miembro pertenece a esta organización
     const memberOrgIds = req.user.getAllOrgIds();
     if (!memberOrgIds.includes(org._id.toString())) {
       return res.status(403).json({ error: 'No perteneces a esta organización' });
     }
 
-    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
     if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea no está en curso' });
 
-    const { agendaItemId, votes } = req.body; // votes: [{cargo, candidateRut}] o [{lista}]
+    const { agendaItemId, votes } = req.body;
     const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
     if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
     if (!agendaItem.votingOpen) return res.status(400).json({ error: 'La votación no está abierta' });
 
     const voterRut = req.user.rut;
-
-    // Verificar que no haya votado ya en este punto
     const alreadyVoted = agendaItem.votes.some(v => v.voterRut === voterRut);
     if (alreadyVoted) return res.status(400).json({ error: 'Ya has votado en este punto' });
 
-    // Registrar votos
     for (const vote of votes) {
       agendaItem.votes.push({
         voterRut,
@@ -2073,7 +2031,6 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
       });
     }
 
-    // Auto-checkin si no está en la lista de asistentes
     const isCheckedIn = assembly.attendees.some(a => a.rut === voterRut);
     if (!isCheckedIn) {
       assembly.attendees.push({
@@ -2085,7 +2042,7 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
       assembly.attendance = assembly.attendees.length;
     }
 
-    await org.save();
+    await assemblyService.saveAssembly(org, assembly);
     res.json({ message: 'Voto registrado exitosamente' });
   } catch (error) {
     console.error('Cast vote error:', error);
@@ -2099,7 +2056,7 @@ router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectI
     const org = await Organization.findById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
     const { rut, firstName, lastName } = req.body;
@@ -2116,7 +2073,7 @@ router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectI
     });
     assembly.attendance = assembly.attendees.length;
 
-    await org.save();
+    await assemblyService.saveAssembly(org, assembly);
     res.json({ message: 'Asistencia registrada', attendance: assembly.attendance });
   } catch (error) {
     console.error('Checkin error:', error);
@@ -2135,7 +2092,7 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
     const isDirectivo = isDirectivoMember(org, req.user);
     if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
 
-    const assembly = (org.assemblies || []).find(a => a.id === req.params.assemblyId);
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
     if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea debe estar en curso' });
 
@@ -2146,7 +2103,7 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
     agendaItem.votingOpen = !agendaItem.votingOpen;
     if (!agendaItem.votingOpen) agendaItem.votingClosedAt = new Date();
 
-    await org.save();
+    await assemblyService.saveAssembly(org, assembly);
     res.json({ votingOpen: agendaItem.votingOpen });
   } catch (error) {
     console.error('Toggle voting error:', error);

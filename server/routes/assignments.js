@@ -3,6 +3,7 @@ import Assignment from '../models/Assignment.js';
 import Organization from '../models/Organization.js';
 import Counter from '../models/Counter.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { withTransactionFallback } from '../utils/withTransaction.js';
 
 const router = express.Router();
 
@@ -325,50 +326,55 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO_FE', 'MUNICIPAL
     assignment.wizardData = wizardData;
     assignment.status = 'completed'; // Cambiar estado a completado
 
-    await assignment.save();
+    // Use transaction to atomically update Assignment + Organization
+    await withTransactionFallback(async (session) => {
+      const opts = session ? { session } : {};
 
-    // Update organization status and save validation data
-    if (assignment.organizationId) {
-      // Generar números únicos de certificación y depósito
-      const certNumber = await Counter.generateNumber('certificacion');
-      const depositNumber = await Counter.generateNumber('deposito');
+      await assignment.save(opts);
 
-      const updateData = {
-        status: 'ministro_approved',
-        certNumber,
-        depositNumber,
-        $push: {
-          statusHistory: {
-            status: 'ministro_approved',
-            date: new Date(),
-            comment: 'Firmas validadas por Ministro de Fe'
+      // Update organization status and save validation data
+      if (assignment.organizationId) {
+        // Generar números únicos de certificación y depósito
+        const certNumber = await Counter.generateNumber('certificacion');
+        const depositNumber = await Counter.generateNumber('deposito');
+
+        const updateData = {
+          status: 'ministro_approved',
+          certNumber,
+          depositNumber,
+          $push: {
+            statusHistory: {
+              status: 'ministro_approved',
+              date: new Date(),
+              comment: 'Firmas validadas por Ministro de Fe'
+            }
           }
-        }
-      };
-
-      // Copy wizard data to organization for PDF generation
-      if (wizardData) {
-        if (wizardData.provisionalDirectorio) {
-          updateData.provisionalDirectorio = wizardData.provisionalDirectorio;
-        }
-        if (wizardData.comisionElectoral) {
-          updateData.comisionElectoral = wizardData.comisionElectoral;
-        }
-        if (wizardData.attendees) {
-          updateData.validatedAttendees = wizardData.attendees;
-        }
-        // Store validation metadata
-        updateData.validationData = {
-          validatedAt: new Date(),
-          validatorId: wizardData.validatorId,
-          validatorName: wizardData.validatorName,
-          ministroSignature: wizardData.ministroSignature,
-          signatures: signatures
         };
-      }
 
-      await Organization.findByIdAndUpdate(assignment.organizationId, updateData);
-    }
+        // Copy wizard data to organization for PDF generation
+        if (wizardData) {
+          if (wizardData.provisionalDirectorio) {
+            updateData.provisionalDirectorio = wizardData.provisionalDirectorio;
+          }
+          if (wizardData.comisionElectoral) {
+            updateData.comisionElectoral = wizardData.comisionElectoral;
+          }
+          if (wizardData.attendees) {
+            updateData.validatedAttendees = wizardData.attendees;
+          }
+          // Store validation metadata
+          updateData.validationData = {
+            validatedAt: new Date(),
+            validatorId: wizardData.validatorId,
+            validatorName: wizardData.validatorName,
+            ministroSignature: wizardData.ministroSignature,
+            signatures: signatures
+          };
+        }
+
+        await Organization.findByIdAndUpdate(assignment.organizationId, updateData, opts);
+      }
+    });
 
     res.json(assignment);
   } catch (error) {
@@ -405,29 +411,34 @@ router.post('/:id/reset-validation', authenticate, requireRole('MINISTRO_FE', 'M
     assignment.status = 'pending'; // Volver a pending
     assignment.lastEditedAt = new Date();
 
-    await assignment.save();
+    // Use transaction to atomically revert Assignment + Organization
+    await withTransactionFallback(async (session) => {
+      const opts = session ? { session } : {};
 
-    // CRÍTICO: Revertir también el estado de la Organization
-    if (assignment.organizationId) {
-      const org = await Organization.findById(assignment.organizationId);
-      if (org && org.status === 'ministro_approved') {
-        org.status = 'ministro_scheduled';
-        org.statusHistory.push({
-          status: 'ministro_scheduled',
-          date: new Date(),
-          comment: 'Validación reseteada - requiere nueva validación de firmas'
-        });
-        // Limpiar datos de validación pero mantener directorio provisorio
-        if (org.validationData) {
-          org.validationData.validatedAt = null;
-          org.validationData.signatures = null;
+      await assignment.save(opts);
+
+      // CRÍTICO: Revertir también el estado de la Organization
+      if (assignment.organizationId) {
+        const org = await Organization.findById(assignment.organizationId).session(session || null);
+        if (org && org.status === 'ministro_approved') {
+          org.status = 'ministro_scheduled';
+          org.statusHistory.push({
+            status: 'ministro_scheduled',
+            date: new Date(),
+            comment: 'Validación reseteada - requiere nueva validación de firmas'
+          });
+          // Limpiar datos de validación pero mantener directorio provisorio
+          if (org.validationData) {
+            org.validationData.validatedAt = null;
+            org.validationData.signatures = null;
+          }
+          // Limpiar números de certificación (se regenerarán)
+          org.certNumber = null;
+          org.depositNumber = null;
+          await org.save(opts);
         }
-        // Limpiar números de certificación (se regenerarán)
-        org.certNumber = null;
-        org.depositNumber = null;
-        await org.save();
       }
-    }
+    });
 
     res.json({
       assignment,

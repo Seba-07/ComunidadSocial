@@ -199,11 +199,13 @@ const organizationSchema = new mongoose.Schema({
     default: 'phone'
   },
 
-  // Members
+  // DEPRECATED: Members are now in the Member collection (see models/Member.js).
+  // This embedded array is maintained during the transition period.
+  // Remove after running migrate-to-normalized.js and verifying isNormalized=true.
   members: [memberSchema],
   minMembers: { type: Number, default: 15 },
 
-  // Electoral Commission
+  // DEPRECATED: Use memberService.getElectoralCommission() instead.
   electoralCommission: [memberSchema],
 
   // Directorio Provisorio
@@ -305,7 +307,8 @@ const organizationSchema = new mongoose.Schema({
     }
   },
 
-  // Comision Electoral (from validation wizard)
+  // DEPRECATED: Use memberService.getElectoralCommission() instead.
+  // Kept for backward compatibility during transition.
   comisionElectoral: [memberSchema],
 
   // Estatutos de la organización
@@ -314,7 +317,8 @@ const organizationSchema = new mongoose.Schema({
     default: ''
   },
 
-  // Certificados del Paso 5 del Wizard (certificados de socios)
+  // DEPRECATED: Certificates should be in the Document collection (see models/Document.js).
+  // Remove after running migrate-base64-to-s3.js.
   certificatesStep5: [{
     memberId: String,        // ID o RUT del miembro
     memberName: String,      // Nombre completo para referencia
@@ -420,7 +424,9 @@ const organizationSchema = new mongoose.Schema({
     previousStatus: String
   },
 
-  // Asambleas (sistema mejorado con votación)
+  // DEPRECATED: Assemblies are now in the Assembly collection (see models/Assembly.js).
+  // This embedded array is maintained during the dual-write transition period.
+  // Remove after running migrate-assemblies.js and enabling USE_NORMALIZED_ASSEMBLIES.
   assemblies: [assemblySchema],
   lastDirectorioElection: {
     assemblyId: String,

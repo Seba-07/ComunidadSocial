@@ -39,6 +39,11 @@ const memberSchema = new mongoose.Schema({
   email: String,
   birthDate: String,
   occupation: String,
+  genero: {
+    type: String,
+    enum: ['masculino', 'femenino', 'otro', 'no_especifica', ''],
+    default: ''
+  },
 
   // Rol en la organización
   role: {

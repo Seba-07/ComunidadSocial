@@ -36,11 +36,19 @@ const documentSchema = new mongoose.Schema({
     index: true
   },
 
-  // Contenido Base64
+  // Contenido Base64 (legacy, empty when stored in S3)
   content: {
     type: String,
-    required: true
+    default: ''
   },
+
+  // S3 storage fields (when migrated from base64)
+  storageType: {
+    type: String,
+    enum: ['base64', 's3'],
+    default: 'base64'
+  },
+  s3Key: String,
 
   // Metadata del archivo
   mimeType: {
