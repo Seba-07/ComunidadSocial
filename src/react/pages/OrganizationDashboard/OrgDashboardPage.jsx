@@ -72,7 +72,9 @@ export default function OrgDashboardPage() {
         padding: '16px 24px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 12
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/icons/logo_renca.png" alt="Logo" style={{ width: 40, height: 'auto' }} />
@@ -81,7 +83,7 @@ export default function OrgDashboardPage() {
             <div style={{ fontSize: 12, opacity: 0.8 }}>Panel de Organización</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <span style={{ fontSize: 14 }}>{user?.firstName} {user?.lastName}</span>
           <button
             onClick={() => { logout(); window.location.href = '/app/login'; }}
@@ -99,7 +101,8 @@ export default function OrgDashboardPage() {
         padding: '0 24px',
         display: 'flex',
         gap: 0,
-        overflowX: 'auto'
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch'
       }}>
         {TABS.map((tab) => (
           <button

@@ -232,6 +232,17 @@ const organizationSchema = new mongoose.Schema({
       }, { _id: false, strict: false }),
       default: null
     },
+    vicePresident: {
+      type: new mongoose.Schema({
+        rut: String,
+        firstName: String,
+        segundoNombre: String,
+        lastName: String,
+        apellidoMaterno: String,
+        signature: String
+      }, { _id: false, strict: false }),
+      default: null
+    },
     treasurer: {
       type: new mongoose.Schema({
         rut: String,
@@ -454,6 +465,25 @@ const organizationSchema = new mongoose.Schema({
     message: String,
     date: Date,
     recipients: Number,
+    id: String
+  }],
+
+  // Actividades de la organización
+  activities: [{
+    title: String,
+    description: String,
+    date: Date,
+    category: String,
+    id: String
+  }],
+
+  // Proyectos de la organización
+  projects: [{
+    name: String,
+    description: String,
+    status: { type: String, enum: ['planificado', 'en_curso', 'completado', 'cancelado'], default: 'planificado' },
+    startDate: Date,
+    endDate: Date,
     id: String
   }],
 

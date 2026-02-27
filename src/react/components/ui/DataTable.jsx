@@ -1,8 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
-export default function DataTable({ columns, data, emptyMessage = 'Sin datos' }) {
+export default function DataTable({ columns, data, emptyMessage = 'Sin datos', pageSize = 20 }) {
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(0);
+
+  // Reset to page 0 when data changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [data.length]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return data;
@@ -14,6 +20,10 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos' })
       return 0;
     });
   }, [data, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(sorted.length / pageSize);
+  const paginatedData = sorted.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const showPagination = data.length > pageSize;
 
   function handleSort(key) {
     if (sortKey === key) {
@@ -55,7 +65,7 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos' })
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row, i) => (
+          {paginatedData.map((row, i) => (
             <tr key={row._id || row.id || i} style={{ borderBottom: '1px solid #f3f4f6' }}>
               {columns.map((col) => (
                 <td
@@ -69,6 +79,54 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos' })
           ))}
         </tbody>
       </table>
+      {showPagination && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          fontSize: 13,
+          color: '#374151',
+          borderTop: '1px solid #e5e7eb'
+        }}>
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            style={{
+              padding: '6px 14px',
+              border: '1px solid #d1d5db',
+              borderRadius: 6,
+              background: currentPage === 0 ? '#f3f4f6' : 'white',
+              color: currentPage === 0 ? '#9ca3af' : '#374151',
+              cursor: currentPage === 0 ? 'default' : 'pointer',
+              fontSize: 13,
+              fontWeight: 500
+            }}
+          >
+            Anterior
+          </button>
+          <span>
+            Página {currentPage + 1} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage >= totalPages - 1}
+            style={{
+              padding: '6px 14px',
+              border: '1px solid #d1d5db',
+              borderRadius: 6,
+              background: currentPage >= totalPages - 1 ? '#f3f4f6' : 'white',
+              color: currentPage >= totalPages - 1 ? '#9ca3af' : '#374151',
+              cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+              fontSize: 13,
+              fontWeight: 500
+            }}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 }
