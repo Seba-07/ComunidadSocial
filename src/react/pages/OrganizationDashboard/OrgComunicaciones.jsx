@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { apiService } from '@services/ApiService.js';
@@ -154,11 +154,13 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
   const [submitting, setSubmitting] = useState(false);
 
   // Update fields when template changes
-  if (template && subject === '' && template.subject) {
-    setSubject(template.subject);
-    setType(template.type);
-    setMessage(template.body);
-  }
+  useEffect(() => {
+    if (template) {
+      setSubject(template.subject || '');
+      setType(template.type || 'general');
+      setMessage(template.body || '');
+    }
+  }, [template]);
 
   async function handleSubmit(e) {
     e.preventDefault();

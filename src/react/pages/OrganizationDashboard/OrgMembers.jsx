@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
@@ -75,9 +75,11 @@ export default function OrgMembers({ org, onRefresh }) {
       key: 'role',
       label: 'Rol',
       render: (val) => {
-        const label = val === 'directivo' ? 'Directivo' : 'Socio';
-        const bg = val === 'directivo' ? '#dbeafe' : '#f3f4f6';
-        const color = val === 'directivo' ? '#1e40af' : '#374151';
+        const ROLE_LABELS = { president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero', director: 'Director', member: 'Socio', electoral_commission: 'Comisión Electoral' };
+        const label = ROLE_LABELS[val] || val || 'Socio';
+        const isDirectivo = ['president', 'secretary', 'treasurer', 'director'].includes(val);
+        const bg = isDirectivo ? '#dbeafe' : '#f3f4f6';
+        const color = isDirectivo ? '#1e40af' : '#374151';
         return <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: bg, color }}>{label}</span>;
       }
     },
@@ -161,7 +163,7 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
   const [submitting, setSubmitting] = useState(false);
 
   // Reset form when member changes
-  useState(() => {
+  useEffect(() => {
     if (member) {
       setForm({
         firstName: member.firstName || '',
@@ -177,18 +179,6 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
     }
   }, [member]);
 
-  // Also handle open state changes
-  if (open && member && form.firstName === '' && member.firstName) {
-    setForm({
-      firstName: member.firstName || '',
-      lastName: member.lastName || '',
-      rut: member.rut || '',
-      phone: member.phone || '',
-      email: member.email || '',
-      birthDate: member.birthDate ? member.birthDate.slice(0, 10) : '',
-      address: member.address || ''
-    });
-  }
 
   function set(field) {
     return (e) => {
@@ -300,8 +290,8 @@ function MemberProfileModal({ open, onClose, member, org }) {
           <div style={{ fontSize: 20, fontWeight: 700, color: '#1e3a8a' }}>{member.firstName} {member.lastName}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             {dirRole && <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: '#dbeafe', color: '#1e40af' }}>{dirRole}</span>}
-            <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: member.role === 'directivo' ? '#dbeafe' : '#f3f4f6', color: member.role === 'directivo' ? '#1e40af' : '#374151' }}>
-              {member.role === 'directivo' ? 'Directivo' : 'Socio'}
+            <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: ['president', 'secretary', 'treasurer', 'director'].includes(member.role) ? '#dbeafe' : '#f3f4f6', color: ['president', 'secretary', 'treasurer', 'director'].includes(member.role) ? '#1e40af' : '#374151' }}>
+              {({ president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero', director: 'Director', member: 'Socio', electoral_commission: 'Comisión Electoral' })[member.role] || member.role || 'Socio'}
             </span>
           </div>
         </div>

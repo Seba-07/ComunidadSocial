@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import Organization from '../models/Organization.js';
 import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
@@ -590,6 +591,76 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         organization[field] = req.body[field];
+      }
+    }
+
+    // ============ ACTION HANDLERS ============
+    // Handle specific actions from req.body
+
+    // Add a new member
+    if (req.body.addMember) {
+      const newMember = {
+        ...req.body.addMember,
+        id: new mongoose.Types.ObjectId().toString()
+      };
+      if (!organization.members) organization.members = [];
+      organization.members.push(newMember);
+    }
+
+    // Update an existing member by RUT
+    if (req.body.updateMember) {
+      const { rut, ...updates } = req.body.updateMember;
+      if (rut && organization.members) {
+        const member = organization.members.find(m => m.rut === rut);
+        if (member) {
+          const allowedUpdates = ['firstName', 'lastName', 'birthDate', 'phone', 'email', 'address', 'role'];
+          for (const key of allowedUpdates) {
+            if (updates[key] !== undefined) {
+              member[key] = updates[key];
+            }
+          }
+        }
+      }
+    }
+
+    // Remove a member by RUT
+    if (req.body.removeMemberRut) {
+      if (organization.members) {
+        organization.members = organization.members.filter(m => m.rut !== req.body.removeMemberRut);
+      }
+    }
+
+    // Add a finance record
+    if (req.body.addFinance) {
+      const newFinance = {
+        ...req.body.addFinance,
+        id: new mongoose.Types.ObjectId().toString()
+      };
+      if (!organization.finances) organization.finances = [];
+      organization.finances.push(newFinance);
+    }
+
+    // Remove a finance record by id
+    if (req.body.removeFinance) {
+      if (organization.finances) {
+        organization.finances = organization.finances.filter(f => f.id !== req.body.removeFinance);
+      }
+    }
+
+    // Add a communication record
+    if (req.body.addCommunication) {
+      const newComm = {
+        ...req.body.addCommunication,
+        id: new mongoose.Types.ObjectId().toString()
+      };
+      if (!organization.communications) organization.communications = [];
+      organization.communications.push(newComm);
+    }
+
+    // Remove a communication record by id
+    if (req.body.removeCommunication) {
+      if (organization.communications) {
+        organization.communications = organization.communications.filter(c => c.id !== req.body.removeCommunication);
       }
     }
 

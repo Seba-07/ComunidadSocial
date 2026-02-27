@@ -438,6 +438,25 @@ const organizationSchema = new mongoose.Schema({
   memberAccountsCreated: { type: Boolean, default: false },
   memberAccountsCreatedAt: Date,
 
+  // Finanzas de la organización
+  finances: [{
+    concept: String,
+    amount: Number,
+    category: { type: String, enum: ['ingreso', 'egreso', 'cuota', 'donacion', 'proyecto', 'otro'] },
+    date: Date,
+    id: String
+  }],
+
+  // Comunicaciones de la organización
+  communications: [{
+    subject: String,
+    type: { type: String, enum: ['general', 'asamblea', 'actividad', 'informe', 'urgente'] },
+    message: String,
+    date: Date,
+    recipients: Number,
+    id: String
+  }],
+
   // ============ CAMPOS NORMALIZADOS (v2) ============
   // Estos campos se usan para la nueva estructura normalizada
   // Coexisten con los campos embebidos durante la transición

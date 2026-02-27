@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FormField from '../../components/ui/FormField';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -12,6 +13,7 @@ export default function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const register = useAuthStore((s) => s.register);
   const addToast = useUiStore((s) => s.addToast);
+  const navigate = useNavigate();
 
   function set(field) {
     return (e) => {
@@ -54,7 +56,7 @@ export default function RegisterForm() {
 
       localStorage.setItem('isAuthenticated', 'true');
       addToast('¡Cuenta creada exitosamente! Redirigiendo...', 'success');
-      setTimeout(() => { window.location.href = '/'; }, 1500);
+      setTimeout(() => { navigate('/org/auto'); }, 1500);
     } catch (error) {
       if (error.details && Array.isArray(error.details)) {
         const fieldMap = {

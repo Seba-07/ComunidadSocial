@@ -17,7 +17,7 @@ export default function MembersList({ members = [] }) {
             width: 36,
             height: 36,
             borderRadius: '50%',
-            background: getColor(members.indexOf(row)),
+            background: AVATAR_COLORS[((row.firstName || '?').charCodeAt(0) + (row.lastName || '?').charCodeAt(0)) % AVATAR_COLORS.length],
             color: 'white',
             display: 'flex',
             alignItems: 'center',

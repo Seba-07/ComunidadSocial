@@ -241,7 +241,10 @@ export const ALLOWED_FIELDS = {
     'provisionalDirectorio', 'electionDate', 'electionTime', 'assemblyAddress',
     'comments', 'estatutos', 'corrections',
     'description', 'objectives', 'userCorrectedFields',
-    'assemblies', 'lastDirectorioElection'
+    'assemblies', 'lastDirectorioElection',
+    'finances', 'communications',
+    'addMember', 'updateMember', 'removeMemberRut',
+    'addFinance', 'removeFinance', 'addCommunication', 'removeCommunication'
   ],
 
   // Campos que solo admin puede modificar en organización

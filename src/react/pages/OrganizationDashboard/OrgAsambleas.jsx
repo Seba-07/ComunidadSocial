@@ -136,7 +136,7 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
         {actions.map(({ label, action, color: c }) => (
           <button key={action} onClick={() => onAction(id, action)} style={{ padding: '4px 12px', fontSize: 12, border: 'none', borderRadius: 6, background: c, color: 'white', cursor: 'pointer', fontWeight: 600 }}>{label}</button>
         ))}
-        {(a.status === 'draft' || a.status === 'cancelada') && (
+        {(a.status === 'draft' || a.status === 'convocada') && (
           <button onClick={() => onDelete(id)} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #ef4444', borderRadius: 6, background: 'white', color: '#ef4444', cursor: 'pointer' }}>Eliminar</button>
         )}
       </div>
