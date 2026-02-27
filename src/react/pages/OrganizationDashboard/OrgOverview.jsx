@@ -2,24 +2,58 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/formatters';
 
 const TYPE_LABELS = {
+  // Territoriales
   JUNTA_VECINOS: 'Junta de Vecinos',
+  COMITE_VECINOS: 'Comité de Vecinos',
+  // Clubes
   CLUB_DEPORTIVO: 'Club Deportivo',
-  CENTRO_MADRES: 'Centro de Madres',
-  COMITE_VIVIENDA: 'Comité de Vivienda',
-  COMITE_CONVIVENCIA: 'Comité de Convivencia',
-  CENTRO_CULTURAL: 'Centro Cultural',
-  ORGANIZACION_JUVENIL: 'Organización Juvenil',
   CLUB_ADULTO_MAYOR: 'Club de Adulto Mayor',
-  OTRA: 'Otra'
+  CLUB_JUVENIL: 'Club Juvenil',
+  CLUB_CULTURAL: 'Club Cultural',
+  // Centros
+  CENTRO_MADRES: 'Centro de Madres',
+  CENTRO_PADRES: 'Centro de Padres',
+  CENTRO_CULTURAL: 'Centro Cultural',
+  // Agrupaciones
+  AGRUPACION_FOLCLORICA: 'Agrupación Folclórica',
+  AGRUPACION_CULTURAL: 'Agrupación Cultural',
+  AGRUPACION_JUVENIL: 'Agrupación Juvenil',
+  AGRUPACION_AMBIENTAL: 'Agrupación Ambiental',
+  AGRUPACION_EMPRENDEDORES: 'Agrupación de Emprendedores',
+  // Comités
+  COMITE_VIVIENDA: 'Comité de Vivienda',
+  COMITE_ALLEGADOS: 'Comité de Allegados',
+  COMITE_APR: 'Comité APR',
+  COMITE_ADELANTO: 'Comité de Adelanto',
+  COMITE_MEJORAMIENTO: 'Comité de Mejoramiento',
+  COMITE_CONVIVENCIA: 'Comité de Convivencia',
+  // Organizaciones específicas
+  ORG_SCOUT: 'Organización Scout',
+  ORG_MUJERES: 'Organización de Mujeres',
+  ORG_INDIGENA: 'Organización Indígena',
+  ORG_SALUD: 'Organización de Salud',
+  ORG_SOCIAL: 'Organización Social',
+  ORG_CULTURAL: 'Organización Cultural',
+  // Arte y cultura
+  GRUPO_TEATRO: 'Grupo de Teatro',
+  CORO: 'Coro',
+  TALLER_ARTESANIA: 'Taller de Artesanía',
+  // Genéricos
+  ORG_COMUNITARIA: 'Organización Comunitaria',
+  ORG_FUNCIONAL: 'Organización Funcional',
+  OTRA_FUNCIONAL: 'Otra Funcional'
 };
+
+function prettifyType(type) {
+  if (!type) return '—';
+  return TYPE_LABELS[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bOrg\b/i, 'Organización').replace(/\bApr\b/i, 'APR');
+}
 
 export default function OrgOverview({ org, onNavigateTab }) {
   if (!org) return null;
 
   const memberCount = org.members?.length || 0;
   const assemblyCount = org.assemblies?.length || 0;
-  const projectCount = org.projects?.length || 0;
-  const activityCount = org.activities?.length || 0;
 
   // Active assemblies alert
   const activeAssemblies = (org.assemblies || []).filter(
@@ -72,8 +106,6 @@ export default function OrgOverview({ org, onNavigateTab }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
         <StatCard label="Socios" value={memberCount} color="#3b82f6" onClick={() => onNavigateTab('members')} />
         <StatCard label="Asambleas" value={assemblyCount} color="#8b5cf6" onClick={() => onNavigateTab('asambleas')} />
-        <StatCard label="Proyectos" value={projectCount} color="#f59e0b" />
-        <StatCard label="Actividades" value={activityCount} color="#10b981" />
       </div>
 
       {/* Organization Info */}
@@ -81,7 +113,7 @@ export default function OrgOverview({ org, onNavigateTab }) {
         <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 16 }}>Información de la Organización</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
           <InfoRow label="Nombre" value={org.organizationName} />
-          <InfoRow label="Tipo" value={TYPE_LABELS[org.organizationType] || org.organizationType} />
+          <InfoRow label="Tipo" value={prettifyType(org.organizationType)} />
           <InfoRow label="Estado"><StatusBadge status={org.status} /></InfoRow>
           <InfoRow label="Dirección" value={org.address} />
           <InfoRow label="Comuna" value={org.comuna} />

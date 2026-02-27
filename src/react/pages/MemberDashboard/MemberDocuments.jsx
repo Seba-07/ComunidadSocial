@@ -72,6 +72,9 @@ export default function MemberDocuments({ org }) {
                 category={CATEGORY_LABELS[doc.category] || doc.category}
                 size={formatFileSize(doc.fileSize)}
                 date={doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('es-CL') : ''}
+                docId={doc._id}
+                orgId={org._id}
+                canDownload={true}
               />
             ))}
           </div>
@@ -81,7 +84,34 @@ export default function MemberDocuments({ org }) {
   );
 }
 
-function DocRow({ name, category, size, date }) {
+function DocRow({ name, category, size, date, docId, orgId, canDownload }) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    if (!docId || !orgId) return;
+    setDownloading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiService.baseUrl}/org-documents/${orgId}/${docId}/download`, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!response.ok) throw new Error('Error al descargar');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name || 'documento';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Error al descargar el documento');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div style={{
       display: 'flex',
@@ -103,6 +133,28 @@ function DocRow({ name, category, size, date }) {
           </div>
         </div>
       </div>
+      {canDownload && (
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          style={{
+            background: downloading ? '#9ca3af' : '#2563eb',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            padding: '6px 14px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: downloading ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+            transition: 'background 0.2s'
+          }}
+          onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = '#2563eb'; }}
+        >
+          {downloading ? 'Descargando...' : 'Descargar'}
+        </button>
+      )}
     </div>
   );
 }

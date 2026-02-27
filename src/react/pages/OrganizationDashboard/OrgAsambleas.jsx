@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 import Modal from '../../components/ui/Modal';
@@ -13,6 +13,16 @@ export default function OrgAsambleas({ org, onRefresh }) {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedAssembly, setSelectedAssembly] = useState(null);
   const [showElections, setShowElections] = useState(false);
+
+  // Sync selectedAssembly with refreshed org data
+  useEffect(() => {
+    if (selectedAssembly && org?.assemblies) {
+      const updated = org.assemblies.find(a => (a.id || a._id) === (selectedAssembly.id || selectedAssembly._id));
+      if (updated) {
+        setSelectedAssembly(updated);
+      }
+    }
+  }, [org?.assemblies]);
   const addToast = useUiStore((s) => s.addToast);
 
   const assemblies = org?.assemblies || [];

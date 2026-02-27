@@ -12,6 +12,8 @@ const overlayStyle = {
 };
 
 const cardStyle = {
+  maxHeight: '90vh',
+  overflowY: 'auto',
   background: 'white',
   borderRadius: 24,
   padding: 48,

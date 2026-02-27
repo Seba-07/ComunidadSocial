@@ -121,8 +121,8 @@ export default function OrgDocumentos({ org, onRefresh }) {
       <div style={{ marginBottom: 32 }}>
         <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados</h4>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button style={certBtnStyle}>Certificado de Residencia</button>
-          <button style={certBtnStyle}>Certificado de Socio</button>
+          <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Residencia</button>
+          <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Socio</button>
         </div>
       </div>
 

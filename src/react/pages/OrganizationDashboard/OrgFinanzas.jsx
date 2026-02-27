@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import DataTable from '../../components/ui/DataTable';
+import Modal from '../../components/ui/Modal';
+import FormField from '../../components/ui/FormField';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 
@@ -14,6 +16,7 @@ function formatCLP(val) {
 
 export default function OrgFinanzas({ org, onRefresh }) {
   const [filter, setFilter] = useState('all');
+  const [showCreate, setShowCreate] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
   const transactions = org?.finances || [];
 
@@ -23,7 +26,6 @@ export default function OrgFinanzas({ org, onRefresh }) {
     const ingresos = transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
     const egresos = transactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
 
-    // Monthly stats (current month)
     const now = new Date();
     const thisMonth = transactions.filter((t) => {
       const d = new Date(t.date);
@@ -96,6 +98,9 @@ export default function OrgFinanzas({ org, onRefresh }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Finanzas</h3>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13 }} onClick={() => setShowCreate(true)}>
+            + Nueva Transacción
+          </button>
           <button onClick={exportCSV} style={outlineBtn}>Exportar CSV</button>
         </div>
       </div>
@@ -124,6 +129,14 @@ export default function OrgFinanzas({ org, onRefresh }) {
       </div>
 
       <DataTable columns={columns} data={filtered} emptyMessage="No hay transacciones registradas" />
+
+      <CreateTransactionModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        orgId={org._id}
+        onCreated={() => { setShowCreate(false); onRefresh(); }}
+        addToast={addToast}
+      />
     </div>
   );
 }
@@ -136,5 +149,98 @@ function SummaryCard({ label, value, color }) {
       <span style={{ fontSize: 12, color: '#6b7280', display: 'block', marginBottom: 4 }}>{label}</span>
       <span style={{ fontSize: 20, fontWeight: 700, color }}>{formatCLP(value)}</span>
     </div>
+  );
+}
+
+function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
+  const [concept, setConcept] = useState('');
+  const [amount, setAmount] = useState('');
+  const [direction, setDirection] = useState('ingreso');
+  const [category, setCategory] = useState('ingreso');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [submitting, setSubmitting] = useState(false);
+
+  function resetForm() {
+    setConcept('');
+    setAmount('');
+    setDirection('ingreso');
+    setCategory('ingreso');
+    setDate(new Date().toISOString().slice(0, 10));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!concept.trim()) { addToast('Ingresa un concepto', 'error'); return; }
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount <= 0) { addToast('Ingresa un monto válido mayor a 0', 'error'); return; }
+
+    const finalAmount = direction === 'egreso' ? -Math.abs(numAmount) : Math.abs(numAmount);
+
+    setSubmitting(true);
+    try {
+      await apiService.updateOrganization(orgId, {
+        addFinance: { concept: concept.trim(), amount: finalAmount, category, date }
+      });
+      addToast('Transacción registrada', 'success');
+      resetForm();
+      onCreated();
+    } catch (error) {
+      addToast(error.message || 'Error al registrar transacción', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Nueva Transacción">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <FormField label="Concepto *" id="tx-concept" type="text" placeholder="Ej: Pago de arriendo, Cuota mensual" value={concept} onChange={(e) => setConcept(e.target.value)} />
+
+        <FormField label="Monto *" id="tx-amount" type="number" placeholder="0" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} />
+
+        <FormField label="Tipo" id="tx-direction">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setDirection('ingreso')}
+              style={{
+                flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                borderColor: direction === 'ingreso' ? '#059669' : '#e5e7eb',
+                background: direction === 'ingreso' ? '#ecfdf5' : 'white',
+                color: direction === 'ingreso' ? '#059669' : '#6b7280'
+              }}
+            >
+              Ingreso
+            </button>
+            <button
+              type="button"
+              onClick={() => setDirection('egreso')}
+              style={{
+                flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                borderColor: direction === 'egreso' ? '#ef4444' : '#e5e7eb',
+                background: direction === 'egreso' ? '#fef2f2' : 'white',
+                color: direction === 'egreso' ? '#ef4444' : '#6b7280'
+              }}
+            >
+              Egreso
+            </button>
+          </div>
+        </FormField>
+
+        <FormField label="Categoría" id="tx-category">
+          <select id="tx-category" value={category} onChange={(e) => setCategory(e.target.value)}
+            style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
+            {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </FormField>
+
+        <FormField label="Fecha" id="tx-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
+          <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Guardando...' : 'Registrar Transacción'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }

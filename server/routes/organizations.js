@@ -599,11 +599,14 @@ router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
 
     // Add a new member
     if (req.body.addMember) {
-      const newMember = {
-        ...req.body.addMember,
-        id: new mongoose.Types.ObjectId().toString()
-      };
+      const newMember = req.body.addMember;
+      // Check for duplicate RUT
       if (!organization.members) organization.members = [];
+      const exists = organization.members.some(m => m.rut === newMember.rut);
+      if (exists) {
+        return res.status(400).json({ error: 'Ya existe un miembro con ese RUT' });
+      }
+      newMember.id = new mongoose.Types.ObjectId().toString();
       organization.members.push(newMember);
     }
 

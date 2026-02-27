@@ -6,7 +6,6 @@ import OrgInfo from './OrgInfo';
 import MembersList from './MembersList';
 import MemberDirectorio from './MemberDirectorio';
 import AssemblyList from './AssemblyList';
-import MemberActividades from './MemberActividades';
 import MemberDocuments from './MemberDocuments';
 import MemberPassword from './MemberPassword';
 
@@ -15,7 +14,6 @@ const TABS = [
   { id: 'directorio', label: 'Directorio' },
   { id: 'members', label: 'Miembros' },
   { id: 'assemblies', label: 'Asambleas' },
-  { id: 'activities', label: 'Actividades' },
   { id: 'documents', label: 'Documentos' },
   { id: 'password', label: 'Contraseña' }
 ];
@@ -149,7 +147,6 @@ export default function MemberDashboardPage() {
             onRefresh={refreshActiveOrg}
           />
         )}
-        {activeTab === 'activities' && <MemberActividades activities={activeOrg.activities || []} />}
         {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
         {activeTab === 'password' && <MemberPassword />}
       </main>
