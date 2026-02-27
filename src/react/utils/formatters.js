@@ -22,26 +22,34 @@ export function formatDateShort(dateStr) {
  * Organization status labels in Spanish
  */
 export const ORG_STATUS_LABELS = {
-  borrador: 'Borrador',
-  directorio_completo: 'Directorio Completo',
-  en_revision: 'En Revisión',
-  aprobada: 'Aprobada',
-  rechazada: 'Rechazada',
-  constituida: 'Constituida',
-  acta_aprobada: 'Acta Aprobada',
-  personalidad_juridica: 'Personalidad Jurídica'
+  draft: 'Borrador',
+  waiting_ministro: 'Esperando Ministro de Fe',
+  ministro_scheduled: 'Ministro Agendado',
+  ministro_approved: 'Aprobada por Ministro',
+  pending_review: 'Pendiente de Revisión',
+  in_review: 'En Revisión',
+  rejected: 'Rechazada',
+  sent_registry: 'Enviada al Registro',
+  registry_observations: 'Observaciones del Registro',
+  approved: 'Aprobada',
+  dissolved: 'Disuelta',
+  deletion_requested: 'Eliminación Solicitada'
 };
 
 /**
  * Organization status colors
  */
 export const ORG_STATUS_COLORS = {
-  borrador: '#6b7280',
-  directorio_completo: '#f59e0b',
-  en_revision: '#3b82f6',
-  aprobada: '#10b981',
-  rechazada: '#ef4444',
-  constituida: '#8b5cf6',
-  acta_aprobada: '#06b6d4',
-  personalidad_juridica: '#059669'
+  draft: '#6b7280',
+  waiting_ministro: '#f59e0b',
+  ministro_scheduled: '#3b82f6',
+  ministro_approved: '#06b6d4',
+  pending_review: '#f59e0b',
+  in_review: '#8b5cf6',
+  rejected: '#ef4444',
+  sent_registry: '#6366f1',
+  registry_observations: '#f97316',
+  approved: '#10b981',
+  dissolved: '#6b7280',
+  deletion_requested: '#ef4444'
 };

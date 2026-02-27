@@ -17,15 +17,20 @@ const TABS = [
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState('login');
   const [forgotOpen, setForgotOpen] = useState(false);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
-  // If already authenticated, redirect
+  // If already authenticated, redirect based on role
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/member', { replace: true });
+    if (isAuthenticated && user) {
+      if (user.role === 'MIEMBRO') {
+        navigate('/member', { replace: true });
+      } else if (user.role === 'ORGANIZADOR') {
+        navigate('/org/auto', { replace: true });
+      }
+      // MUNICIPALIDAD and MINISTRO_FE stay on vanilla pages
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // Listen for forgot password click from LoginForm
   useEffect(() => {

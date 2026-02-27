@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AuthPage from './pages/Auth/AuthPage';
 import MemberDashboardPage from './pages/MemberDashboard/MemberDashboardPage';
 import OrgDashboardPage from './pages/OrganizationDashboard/OrgDashboardPage';
 import ToastContainer from './components/ui/Toast';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated } = useAuthStore();
@@ -21,11 +22,17 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 export default function App() {
+  const [ready, setReady] = useState(false);
   const hydrate = useAuthStore((s) => s.hydrate);
 
   useEffect(() => {
     hydrate();
+    setReady(true);
   }, [hydrate]);
+
+  if (!ready) {
+    return <LoadingSpinner text="Cargando..." />;
+  }
 
   return (
     <>
