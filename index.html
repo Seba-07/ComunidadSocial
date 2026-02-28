@@ -22,7 +22,7 @@
         // Check authentication before loading app
         const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
         if (!isAuthenticated) {
-            window.location.href = '/auth.html';
+            window.location.href = '/app/login';
         }
     </script>
     <style>

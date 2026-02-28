@@ -38,12 +38,9 @@ export default function LoginForm() {
         localStorage.removeItem('currentUser');
         localStorage.setItem('currentMinistro', JSON.stringify(user));
         localStorage.setItem('isMinistroAuthenticated', 'true');
-        const url = user.mustChangePassword
-          ? '/ministro-dashboard.html?changePassword=true'
-          : '/ministro-dashboard.html';
-        setTimeout(() => { window.location.href = url; }, 500);
+        setTimeout(() => { navigate('/ministro'); }, 300);
       } else if (user.role === 'MUNICIPALIDAD') {
-        setTimeout(() => { window.location.href = '/?admin=true'; }, 500);
+        setTimeout(() => { navigate('/admin'); }, 300);
       } else if (user.role === 'MIEMBRO') {
         setTimeout(() => { navigate('/member'); }, 300);
       } else {

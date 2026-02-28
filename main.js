@@ -8,11 +8,11 @@ import './src/shared/styles/variables.css';
 import './src/shared/styles/components.css';
 
 import { initializeApp, appState, showToast, handleLogout } from './src/app.js';
-import { WizardController } from './src/presentation/components/wizard/WizardController.js';
+// WizardController migrated to React - /app/wizard
 import { CHILE_REGIONS, getComunasByRegion } from './src/data/chile-regions.js';
 import { getUserRepository } from './src/infrastructure/config/container.js';
 import { organizationsService, ORG_STATUS, ORG_STATUS_LABELS, ORG_STATUS_COLORS } from './src/services/OrganizationsService.js';
-import { adminDashboard } from './src/presentation/admin/AdminDashboard.js';
+// AdminDashboard migrated to React - /app/admin
 import { organizationMenuManager } from './src/presentation/organization/OrganizationMenuManager.js';
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
@@ -29,9 +29,7 @@ console.log('📦 main.js cargado');
 
 // Función global para abrir wizard con progreso guardado (accesible desde onclick)
 window.openLocalDraftWizard = function() {
-  console.log('openLocalDraftWizard llamada');
-  const wizard = new WizardController();
-  wizard.open();
+  window.location.href = '/app/wizard';
 };
 
 // Función global para descartar borrador local
@@ -105,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ministro = JSON.parse(currentMinistro);
       if (ministro.role === 'MINISTRO_FE') {
         console.log('⚖️ Ministro detectado, redirigiendo al dashboard de ministro...');
-        window.location.href = '/ministro-dashboard.html';
+        window.location.href = '/app/ministro';
         return;
       }
     } catch (e) {
@@ -503,8 +501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Comenzar ahora clicked!');
       console.log('Usuario autenticado, abriendo wizard...');
       // Abrir wizard
-      const wizard = new WizardController();
-      wizard.open();
+      window.location.href = '/app/wizard';
     });
     console.log('✅ Comenzar ahora event listener attached');
   }
@@ -532,7 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await handleLogout();
 
       // Redirigir inmediatamente a auth
-      window.location.href = '/auth.html';
+      window.location.href = '/app/login';
     });
   }
 
@@ -1488,7 +1485,7 @@ function initProfile() {
       showToast('Sesión cerrada correctamente', 'success');
 
       setTimeout(() => {
-        window.location.href = '/auth.html';
+        window.location.href = '/app/login';
       }, 500);
     });
   }
@@ -1505,8 +1502,7 @@ function initOrganizations() {
   const btnCrearOrg = document.getElementById('btn-crear-organizacion');
 
   const openWizard = () => {
-    const wizard = new WizardController();
-    wizard.open();
+    window.location.href = '/app/wizard';
   };
 
   if (btnNuevaOrg) btnNuevaOrg.addEventListener('click', openWizard);
@@ -4706,9 +4702,8 @@ function continueOrganizationWizard(orgId) {
   // Guardar el progreso en localStorage para que el wizard lo cargue
   localStorage.setItem('wizardProgress', JSON.stringify(wizardProgress));
 
-  // Abrir el wizard
-  const wizard = new WizardController();
-  wizard.open();
+  // Redirect to React wizard
+  window.location.href = '/app/wizard';
 }
 
 /**
@@ -4752,11 +4747,8 @@ function continueDraftOrganization(orgId) {
   // Guardar el progreso en localStorage para que el wizard lo cargue
   localStorage.setItem('wizardProgress', JSON.stringify(wizardProgress));
 
-  // Abrir el wizard
-  const wizard = new WizardController();
-  wizard.open();
-
-  showToast('Continuando con el registro guardado...', 'info');
+  // Redirect to React wizard
+  window.location.href = `/app/wizard/${orgId}`;
 }
 
 // Exportar para uso desde el wizard
@@ -5104,6 +5096,11 @@ function hideLoadingScreen() {
 }
 
 function setupAdminUI() {
+  // Admin dashboard migrated to React - redirect immediately
+  window.location.href = '/app/admin';
+  return;
+
+  // --- Legacy code below kept for reference but never reached ---
   console.log('🔑 Configurando UI de Administrador');
 
   // Ocultar hero section

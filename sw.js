@@ -6,9 +6,7 @@ const isDevelopment = location.hostname === 'localhost' || location.hostname ===
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/auth.html',
-  '/ministro-dashboard.html',
-  '/ministro-login.html',
+  '/react-app.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'

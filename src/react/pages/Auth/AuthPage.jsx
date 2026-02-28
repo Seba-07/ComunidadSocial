@@ -4,6 +4,7 @@ import AuthLayout from '../../components/layout/AuthLayout';
 import LoginForm from './LoginForm';
 import LoginSocioForm from './LoginSocioForm';
 import RegisterForm from './RegisterForm';
+import MinistroLoginForm from './MinistroLoginForm';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { useAuthStore } from '../../stores/authStore';
 import './auth.css';
@@ -11,6 +12,7 @@ import './auth.css';
 const TABS = [
   { id: 'login', label: 'Organizador' },
   { id: 'login-socio', label: 'Socio' },
+  { id: 'login-ministro', label: 'Ministro de Fe' },
   { id: 'register', label: 'Registrarse' }
 ];
 
@@ -27,8 +29,11 @@ export default function AuthPage() {
         navigate('/member', { replace: true });
       } else if (user.role === 'ORGANIZADOR') {
         navigate('/org/auto', { replace: true });
+      } else if (user.role === 'MUNICIPALIDAD') {
+        navigate('/admin', { replace: true });
+      } else if (user.role === 'MINISTRO_FE') {
+        navigate('/ministro', { replace: true });
       }
-      // MUNICIPALIDAD and MINISTRO_FE stay on vanilla pages
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -64,6 +69,7 @@ export default function AuthPage() {
 
         {activeTab === 'login' && <LoginForm />}
         {activeTab === 'login-socio' && <LoginSocioForm />}
+        {activeTab === 'login-ministro' && <MinistroLoginForm />}
         {activeTab === 'register' && <RegisterForm />}
       </div>
 
