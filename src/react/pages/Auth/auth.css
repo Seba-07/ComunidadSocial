@@ -147,6 +147,13 @@ html {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Override vanilla styles.css rule that hides .auth-form without .active class */
+.auth-page .auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .auth-form .form-group {
   margin-bottom: 24px;
 }
