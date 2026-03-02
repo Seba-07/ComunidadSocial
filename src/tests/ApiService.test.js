@@ -229,7 +229,7 @@ describe('ApiService', () => {
       expect(result.user.email).toBe('test@example.com');
     });
 
-    it('should not store MINISTRO_FE users in currentUser', async () => {
+    it('should store MINISTRO_FE users in currentUser (unified login)', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
@@ -240,9 +240,11 @@ describe('ApiService', () => {
 
       await apiService.login('ministro@example.com', 'password');
 
-      const setItemCalls = localStorage.setItem.mock.calls;
-      const currentUserCall = setItemCalls.find(call => call[0] === 'currentUser');
-      expect(currentUserCall).toBeUndefined();
+      // All roles now use currentUser (unified login)
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'currentUser',
+        expect.stringContaining('ministro@example.com')
+      );
     });
   });
 
