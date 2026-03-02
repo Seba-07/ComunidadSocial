@@ -747,14 +747,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateNotificationBadge();
   }
 
-  // Navegación
+  // Navegación - event delegation on sidebar for unified sidebar items
+  const sideNavEl = document.getElementById('side-nav');
+  if (sideNavEl) {
+    sideNavEl.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-page]');
+      if (!item) return;
+      // Skip org-* pages (handled by OrganizationMenuManager)
+      if (item.dataset.page.startsWith('org-')) return;
+      // Skip member-* pages (handled by member nav setup)
+      if (item.dataset.page.startsWith('member-')) return;
+
+      e.preventDefault();
+      const page = item.dataset.page;
+      appState.navigateTo(page);
+      sidebarManager.updateActiveLink(page);
+
+      if (page === 'profile') {
+        loadProfileData();
+      } else if (page === 'mis-organizaciones') {
+        renderOrganizations();
+      } else if (page === 'guia-constitucion') {
+        guiaConstitucionManager.init();
+      } else if (page === 'biblioteca') {
+        bibliotecaManager.init();
+      } else if (page === 'noticias') {
+        newsManager.init();
+      }
+    });
+  }
+
+  // Legacy nav-link/nav-item listeners (bottom nav, etc.)
   document.querySelectorAll('.nav-link, .nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const page = item.dataset.page;
       if (page) {
         appState.navigateTo(page);
-        // Cargar datos del perfil si se navega a esa página
         if (page === 'profile') {
           loadProfileData();
         } else if (page === 'mis-organizaciones') {

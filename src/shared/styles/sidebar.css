@@ -19,6 +19,13 @@
   transition: transform 0.3s ease;
 }
 
+/* When used inside vanilla JS app with app-header, sit below it */
+.side-nav.unified-sidebar {
+  top: var(--header-height, 72px);
+  height: calc(100vh - var(--header-height, 72px));
+  z-index: 50;
+}
+
 /* === Header === */
 .unified-sidebar__header {
   padding: 24px 20px;
@@ -225,8 +232,9 @@
 
   /* Push header to the right too */
   .has-unified-sidebar .main-header,
-  .has-unified-sidebar #main-header {
-    margin-left: 260px;
+  .has-unified-sidebar #main-header,
+  .has-unified-sidebar .app-header {
+    left: 260px;
     width: calc(100% - 260px);
   }
 
@@ -248,6 +256,13 @@
     height: 100vh;
     z-index: 1050;
     box-shadow: none;
+  }
+
+  /* Vanilla JS sidebar: below header on mobile too */
+  .side-nav.unified-sidebar {
+    top: var(--header-height, 72px);
+    height: calc(100vh - var(--header-height, 72px));
+    z-index: 1050;
   }
 
   .unified-sidebar.open {
