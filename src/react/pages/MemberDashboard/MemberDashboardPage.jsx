@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOrganizationStore } from '../../stores/organizationStore';
 import { useAuthStore } from '../../stores/authStore';
+import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import OrgInfo from './OrgInfo';
@@ -54,7 +55,6 @@ export default function MemberDashboardPage() {
   const hasMultipleOrgs = organizations.length > 1;
   const sidebarTitle = activeOrg.organizationName || 'Mi Organización';
 
-  // Org selector header for multiple orgs
   const orgSelectorHeader = hasMultipleOrgs ? (
     <div className="unified-sidebar__org-container">
       <span className="unified-sidebar__org-label">Mi Organización</span>
@@ -73,31 +73,32 @@ export default function MemberDashboardPage() {
   ) : null;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
-      <SharedSidebar
-        title={sidebarTitle}
-        menuItems={MEMBER_MENU_ITEMS}
-        activeKey={activeTab}
-        onItemClick={setActiveTab}
-        header={orgSelectorHeader}
-      />
-
-      {/* Main content - offset for fixed sidebar */}
-      <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
-        {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
-        {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}
-        {activeTab === 'members' && <MembersList members={activeOrg.members} />}
-        {activeTab === 'assemblies' && (
-          <AssemblyList
-            assemblies={activeOrg.assemblies || []}
-            orgId={activeOrg._id}
-            currentUser={user}
-            onRefresh={refreshActiveOrg}
-          />
-        )}
-        {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
-        {activeTab === 'password' && <MemberPassword />}
-      </main>
-    </div>
+    <>
+      <SharedHeader />
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 72px)' }}>
+        <SharedSidebar
+          title={sidebarTitle}
+          menuItems={MEMBER_MENU_ITEMS}
+          activeKey={activeTab}
+          onItemClick={setActiveTab}
+          header={orgSelectorHeader}
+        />
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
+          {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
+          {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}
+          {activeTab === 'members' && <MembersList members={activeOrg.members} />}
+          {activeTab === 'assemblies' && (
+            <AssemblyList
+              assemblies={activeOrg.assemblies || []}
+              orgId={activeOrg._id}
+              currentUser={user}
+              onRefresh={refreshActiveOrg}
+            />
+          )}
+          {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
+          {activeTab === 'password' && <MemberPassword />}
+        </main>
+      </div>
+    </>
   );
 }

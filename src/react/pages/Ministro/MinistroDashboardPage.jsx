@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useAssignmentsStore } from '../../stores/assignmentsStore';
 import { useUiStore } from '../../stores/uiStore';
+import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatsGrid from '../../components/ui/StatsGrid';
@@ -44,7 +45,6 @@ export default function MinistroDashboardPage() {
     { icon: '📅', label: 'Total', value: assignments.length, color: '#2563eb' }
   ];
 
-  // Add badges to menu items
   const menuItems = MINISTRO_MENU_ITEMS.map(item => {
     if (item.key === 'pending' && myPending.length > 0) {
       return { ...item, badge: myPending.length };
@@ -73,66 +73,59 @@ export default function MinistroDashboardPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6' }}>
-      <SharedSidebar
-        title="Ministro de Fe"
-        menuItems={menuItems}
-        activeKey={activeView}
-        onItemClick={setActiveView}
-      />
+    <>
+      <SharedHeader />
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 72px)' }}>
+        <SharedSidebar
+          title="Ministro de Fe"
+          menuItems={menuItems}
+          activeKey={activeView}
+          onItemClick={setActiveView}
+        />
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
+            <StatsGrid stats={stats} />
 
-      {/* Main content - offset for fixed sidebar */}
-      <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
-          <StatsGrid stats={stats} />
+            {activeView === 'pending' && (
+              <>
+                <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                  Asignaciones Pendientes
+                </h2>
+                {myPending.length === 0 ? (
+                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
+                    <p style={{ color: '#6b7280', fontSize: 16 }}>No tienes asignaciones pendientes</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {myPending.map(a => (
+                      <AssignmentCard key={a._id} assignment={a} onValidate={() => openValidation(a)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
 
-          {activeView === 'pending' && (
-            <>
-              <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                Asignaciones Pendientes
-              </h2>
-
-              {myPending.length === 0 ? (
-                <div style={{
-                  background: 'white', borderRadius: 12, padding: 40, textAlign: 'center',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <p style={{ color: '#6b7280', fontSize: 16 }}>No tienes asignaciones pendientes</p>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {myPending.map(a => (
-                    <AssignmentCard key={a._id} assignment={a} onValidate={() => openValidation(a)} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {activeView === 'completed' && (
-            <>
-              <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                Completadas
-              </h2>
-
-              {completedAssignments.length === 0 ? (
-                <div style={{
-                  background: 'white', borderRadius: 12, padding: 40, textAlign: 'center',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <p style={{ color: '#6b7280', fontSize: 16 }}>No hay asignaciones completadas</p>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {completedAssignments.map(a => (
-                    <AssignmentCard key={a._id} assignment={a} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+            {activeView === 'completed' && (
+              <>
+                <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                  Completadas
+                </h2>
+                {completedAssignments.length === 0 ? (
+                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
+                    <p style={{ color: '#6b7280', fontSize: 16 }}>No hay asignaciones completadas</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {completedAssignments.map(a => (
+                      <AssignmentCard key={a._id} assignment={a} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

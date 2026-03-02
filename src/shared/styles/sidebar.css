@@ -242,6 +242,12 @@
   .has-unified-sidebar #menu-btn {
     display: none;
   }
+
+  /* React pages: header with sidebar-offset class pushed right */
+  .app-header.sidebar-offset {
+    left: 260px;
+    width: calc(100% - 260px);
+  }
 }
 
 /* ============================================================

@@ -4,20 +4,12 @@ import '../../../shared/styles/sidebar.css';
 
 /**
  * SharedSidebar - Unified sidebar component for all React-based roles.
- *
- * Props:
- *   title       - Sidebar header title (e.g. "Panel Admin", "Ministro de Fe")
- *   menuItems   - Array of { key, label, icon, badge? }
- *   activeKey   - Currently active item key
- *   onItemClick - Callback(key) when an item is clicked
- *   header      - Optional React node rendered between title and nav (e.g. org selector)
- *   sections    - Optional array of { label?, items: menuItems[] } for grouped items with separators
+ * Positioned below the SharedHeader (top: var(--header-height)).
  */
 export default function SharedSidebar({ title, menuItems, activeKey, onItemClick, header, sections }) {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close on ESC
   useEffect(() => {
     function handleKey(e) {
       if (e.key === 'Escape' && mobileOpen) setMobileOpen(false);
@@ -58,21 +50,14 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
     menuItems?.map(renderItem)
   );
 
+  // Sidebar sits below the header
+  const sidebarStyle = {
+    top: 'var(--header-height, 72px)',
+    height: 'calc(100vh - var(--header-height, 72px))',
+  };
+
   return (
     <>
-      {/* Mobile hamburger trigger */}
-      <button
-        className="unified-sidebar__mobile-trigger"
-        onClick={() => setMobileOpen(true)}
-        style={{
-          display: 'none', position: 'fixed', top: 12, left: 12, zIndex: 1048,
-          background: '#1e3a8a', color: 'white', border: 'none', borderRadius: 8,
-          padding: '8px 12px', cursor: 'pointer', fontSize: 20
-        }}
-      >
-        ☰
-      </button>
-
       {/* Overlay for mobile */}
       {mobileOpen && (
         <div
@@ -82,7 +67,7 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
       )}
 
       {/* Sidebar */}
-      <aside className={`unified-sidebar${mobileOpen ? ' open' : ''}`}>
+      <aside className={`unified-sidebar${mobileOpen ? ' open' : ''}`} style={sidebarStyle}>
         {/* Close button (mobile) */}
         <button
           className="unified-sidebar__close-btn"
@@ -110,13 +95,6 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
         <nav className="unified-sidebar__nav">
           {renderItems}
         </nav>
-
-        {/* Footer - Logout */}
-        <div className="unified-sidebar__footer">
-          <button className="unified-sidebar__logout" onClick={logout}>
-            Cerrar sesión
-          </button>
-        </div>
       </aside>
     </>
   );

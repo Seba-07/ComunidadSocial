@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useOrganizationStore } from '../../stores/organizationStore';
 import { useAuthStore } from '../../stores/authStore';
+import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import OrgOverview from './OrgOverview';
@@ -65,24 +66,25 @@ export default function OrgDashboardPage() {
   const sidebarTitle = activeOrg.organizationName || 'Mi Organización';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
-      <SharedSidebar
-        title={sidebarTitle}
-        menuItems={ORG_MENU_ITEMS}
-        activeKey={activeTab}
-        onItemClick={setActiveTab}
-      />
-
-      {/* Main content - offset for fixed sidebar */}
-      <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
-        {activeTab === 'overview' && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
-        {activeTab === 'members' && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
-        {activeTab === 'directorio' && <OrgDirectorio org={activeOrg} />}
-        {activeTab === 'asambleas' && <OrgAsambleas org={activeOrg} onRefresh={refreshActiveOrg} />}
-        {activeTab === 'documentos' && <OrgDocumentos org={activeOrg} onRefresh={refreshActiveOrg} />}
-        {activeTab === 'finanzas' && <OrgFinanzas org={activeOrg} onRefresh={refreshActiveOrg} />}
-        {activeTab === 'comunicaciones' && <OrgComunicaciones org={activeOrg} onRefresh={refreshActiveOrg} />}
-      </main>
-    </div>
+    <>
+      <SharedHeader />
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 72px)' }}>
+        <SharedSidebar
+          title={sidebarTitle}
+          menuItems={ORG_MENU_ITEMS}
+          activeKey={activeTab}
+          onItemClick={setActiveTab}
+        />
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
+          {activeTab === 'overview' && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
+          {activeTab === 'members' && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
+          {activeTab === 'directorio' && <OrgDirectorio org={activeOrg} />}
+          {activeTab === 'asambleas' && <OrgAsambleas org={activeOrg} onRefresh={refreshActiveOrg} />}
+          {activeTab === 'documentos' && <OrgDocumentos org={activeOrg} onRefresh={refreshActiveOrg} />}
+          {activeTab === 'finanzas' && <OrgFinanzas org={activeOrg} onRefresh={refreshActiveOrg} />}
+          {activeTab === 'comunicaciones' && <OrgComunicaciones org={activeOrg} onRefresh={refreshActiveOrg} />}
+        </main>
+      </div>
+    </>
   );
 }

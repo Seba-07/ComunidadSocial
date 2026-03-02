@@ -1,3 +1,4 @@
+import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 
 const MENU_ITEMS = [
@@ -17,7 +18,6 @@ const MENU_ITEMS = [
 export { MENU_ITEMS };
 
 export default function AdminLayout({ activeView, onViewChange, children, orgCounts }) {
-  // Add badge to organizations item if orgCounts is provided
   const items = MENU_ITEMS.map(item => {
     if (item.key === 'organizations' && orgCounts?.total > 0) {
       return { ...item, badge: orgCounts.total };
@@ -26,18 +26,19 @@ export default function AdminLayout({ activeView, onViewChange, children, orgCou
   });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6' }}>
-      <SharedSidebar
-        title="Panel Admin"
-        menuItems={items}
-        activeKey={activeView}
-        onItemClick={onViewChange}
-      />
-
-      {/* Main content - offset for fixed sidebar */}
-      <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
-        {children}
-      </main>
-    </div>
+    <>
+      <SharedHeader />
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 72px)' }}>
+        <SharedSidebar
+          title="Panel Admin"
+          menuItems={items}
+          activeKey={activeView}
+          onItemClick={onViewChange}
+        />
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
+          {children}
+        </main>
+      </div>
+    </>
   );
 }
