@@ -116,19 +116,7 @@ class OrganizationMenuManager {
       });
     }
 
-    // Toggle de menú colapsable
-    const toggle = document.getElementById('org-menu-toggle');
-    const items = document.getElementById('org-nav-items');
-    if (toggle && items) {
-      toggle.addEventListener('click', () => {
-        this.menuCollapsed = !this.menuCollapsed;
-        toggle.classList.toggle('collapsed', this.menuCollapsed);
-        items.classList.toggle('collapsed', this.menuCollapsed);
-        localStorage.setItem('org-menu-collapsed', this.menuCollapsed);
-      });
-    }
-
-    // Navegación a páginas de organización
+    // Navegación a páginas de organización (unified sidebar items)
     document.querySelectorAll('[data-page^="org-"]').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -191,18 +179,10 @@ class OrganizationMenuManager {
   }
 
   /**
-   * Restaura el estado del menú (colapsado/expandido)
+   * Restaura el estado del menú (no needed for unified sidebar — flat list)
    */
   restoreMenuState() {
-    const collapsed = localStorage.getItem('org-menu-collapsed') === 'true';
-    this.menuCollapsed = collapsed;
-
-    const toggle = document.getElementById('org-menu-toggle');
-    const items = document.getElementById('org-nav-items');
-    if (toggle && items && collapsed) {
-      toggle.classList.add('collapsed');
-      items.classList.add('collapsed');
-    }
+    // No-op: unified sidebar uses a flat item list, no collapsible sections
   }
 
   /**
@@ -295,20 +275,15 @@ class OrganizationMenuManager {
   }
 
   /**
-   * Actualiza la navegación activa en el menú
+   * Actualiza la navegación activa en el menú (unified sidebar)
    */
   updateActiveNavigation(page) {
-    // Quitar active de todos los links del menú de org
-    document.querySelectorAll('.nav-link-sub').forEach(link => {
-      link.classList.remove('active');
+    // Remove active from all unified sidebar items
+    document.querySelectorAll('.unified-sidebar__item').forEach(link => {
+      link.classList.remove('unified-sidebar__item--active');
       if (link.dataset.page === page) {
-        link.classList.add('active');
+        link.classList.add('unified-sidebar__item--active');
       }
-    });
-
-    // Quitar active de los links principales
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('active');
     });
   }
 

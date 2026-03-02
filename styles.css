@@ -534,6 +534,24 @@ body {
     left: 0;
 }
 
+/* === Unified Sidebar overrides ===
+   When .unified-sidebar is applied, sidebar.css takes full control.
+   Neutralize conflicting old .side-nav rules. */
+.side-nav.unified-sidebar {
+    left: 0 !important;
+    top: 0 !important;
+    width: 260px !important;
+    height: 100vh !important;
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%) !important;
+    box-shadow: none !important;
+    z-index: 100 !important;
+    overflow-y: visible !important;
+}
+
+.side-nav.unified-sidebar.open {
+    left: 0 !important;
+}
+
 .nav-header {
     display: flex;
     align-items: center;
@@ -693,6 +711,36 @@ body {
 
     .bottom-nav {
         display: none !important;
+    }
+
+    /* Unified sidebar desktop overrides - neutralize old rules */
+    .side-nav.unified-sidebar {
+        left: 0 !important;
+        top: 0 !important;
+        width: 260px !important;
+        height: 100vh !important;
+        border-right: none !important;
+        z-index: 100 !important;
+    }
+
+    .side-nav.unified-sidebar.collapsed {
+        width: 260px !important;  /* No collapse for unified sidebar */
+    }
+
+    /* Hide old toggle button inside unified sidebar */
+    .side-nav.unified-sidebar .sidebar-toggle-btn {
+        display: none !important;
+    }
+
+    /* When unified sidebar is active, use its layout rules */
+    .has-unified-sidebar .main-content {
+        margin-left: 260px !important;
+        width: calc(100% - 260px) !important;
+    }
+
+    .has-unified-sidebar .main-content.sidebar-collapsed {
+        margin-left: 260px !important;
+        width: calc(100% - 260px) !important;
     }
 }
 

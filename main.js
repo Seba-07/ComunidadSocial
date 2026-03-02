@@ -347,54 +347,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { memberDashboard } = await import('./src/presentation/member/MemberDashboard.js');
             memberDashboard.initWithData(memberOrgs, user);
 
-            // Actualizar sidebar con organizaciones del miembro
+            // Actualizar sidebar con organizaciones del miembro (unified sidebar)
             if (memberDashboard.orgs.length > 0) {
+              const sidebarTitle = document.querySelector('#side-nav .unified-sidebar__title');
               const memberNavSection = document.getElementById('member-nav-section');
-              if (memberNavSection) {
-                const collapsibleDiv = memberNavSection.querySelector('.nav-section-collapsible');
-                if (collapsibleDiv) {
-                  if (memberDashboard.orgs.length === 1) {
-                    // Una sola org: mostrar nombre directamente
-                    const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
-                    if (sidebarTitle) {
-                      const svgIcon = sidebarTitle.querySelector('svg');
-                      sidebarTitle.textContent = '';
-                      if (svgIcon) sidebarTitle.appendChild(svgIcon);
-                      sidebarTitle.append(` ${memberDashboard.org.organizationName}`);
-                    }
-                  } else {
-                    // Múltiples orgs: agregar selector dropdown
-                    const sidebarTitle = collapsibleDiv.querySelector('.nav-section-title');
-                    if (sidebarTitle) {
-                      const svgIcon = sidebarTitle.querySelector('svg');
-                      sidebarTitle.innerHTML = '';
-                      if (svgIcon) sidebarTitle.appendChild(svgIcon);
 
-                      const select = document.createElement('select');
-                      select.id = 'member-org-selector';
-                      select.style.cssText = 'margin-left:8px;padding:4px 8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;background:white;color:#1e293b;max-width:180px;cursor:pointer;';
-                      memberDashboard.orgs.forEach(o => {
-                        const opt = document.createElement('option');
-                        opt.value = o._id || o.id;
-                        opt.textContent = o.organizationName;
-                        if ((o._id || o.id) === memberDashboard.getActiveOrgId()) opt.selected = true;
-                        select.appendChild(opt);
-                      });
-                      select.addEventListener('change', () => {
-                        memberDashboard.selectOrg(select.value);
-                        // Re-render la página actual
-                        const currentPage = document.querySelector('.page-view[style*="display: block"], .page-view:not([style*="display: none"])');
-                        if (currentPage) {
-                          const pageId = currentPage.id.replace('page-', '').replace('member-', '');
-                          memberDashboard.renderPage(pageId);
-                        }
-                        // Actualizar home welcome subtitle
-                        const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
-                        if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
-                      });
-                      sidebarTitle.appendChild(select);
-                    }
+              if (memberDashboard.orgs.length === 1) {
+                // Una sola org: update sidebar title with org name
+                if (sidebarTitle) {
+                  sidebarTitle.textContent = memberDashboard.org.organizationName || 'Mi Organización';
+                }
+              } else if (memberNavSection) {
+                // Múltiples orgs: insert org selector before nav items
+                const selectorContainer = document.createElement('div');
+                selectorContainer.className = 'unified-sidebar__org-container';
+
+                const label = document.createElement('span');
+                label.className = 'unified-sidebar__org-label';
+                label.textContent = 'Mi Organización';
+
+                const select = document.createElement('select');
+                select.id = 'member-org-selector';
+                select.className = 'unified-sidebar__org-selector';
+                memberDashboard.orgs.forEach(o => {
+                  const opt = document.createElement('option');
+                  opt.value = o._id || o.id;
+                  opt.textContent = o.organizationName;
+                  if ((o._id || o.id) === memberDashboard.getActiveOrgId()) opt.selected = true;
+                  select.appendChild(opt);
+                });
+                select.addEventListener('change', () => {
+                  memberDashboard.selectOrg(select.value);
+                  const currentPage = document.querySelector('.page-view[style*="display: block"], .page-view:not([style*="display: none"])');
+                  if (currentPage) {
+                    const pageId = currentPage.id.replace('page-', '').replace('member-', '');
+                    memberDashboard.renderPage(pageId);
                   }
+                  const homeWelcome = document.querySelector('#page-home .welcome-hero-content p');
+                  if (homeWelcome) homeWelcome.textContent = memberDashboard.org?.organizationName || '';
+                });
+
+                selectorContainer.appendChild(label);
+                selectorContainer.appendChild(select);
+                memberNavSection.insertBefore(selectorContainer, memberNavSection.firstChild);
+
+                if (sidebarTitle) {
+                  sidebarTitle.textContent = memberDashboard.org?.organizationName || 'Mi Organización';
                 }
               }
 
@@ -530,24 +528,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Menú lateral
+  // Menú lateral (unified sidebar)
   const menuBtn = document.getElementById('menu-btn');
   const sideNav = document.getElementById('side-nav');
-  const closeNavBtn = document.getElementById('close-nav-btn');
-  const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-  const mainContent = document.getElementById('main-content');
-  const isDesktop = () => window.innerWidth >= 1024;
 
-  // Restore sidebar collapsed state from localStorage on desktop
-  if (isDesktop() && sideNav && mainContent) {
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (savedCollapsed) {
-      sideNav.classList.add('collapsed');
-      mainContent.classList.add('sidebar-collapsed');
-    }
-  }
-
-  // Mobile menu button - only for mobile overlay behavior
+  // Mobile menu button - opens unified sidebar as drawer
   if (menuBtn && sideNav) {
     menuBtn.addEventListener('click', () => {
       const isOpen = sideNav.classList.contains('open');
@@ -571,23 +556,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         }
       }
-    });
-  }
-
-  if (closeNavBtn) {
-    closeNavBtn.addEventListener('click', () => {
-      sideNav.classList.remove('open');
-      const overlay = document.getElementById('overlay');
-      if (overlay) overlay.remove();
-    });
-  }
-
-  // Desktop sidebar toggle (collapse/expand)
-  if (sidebarToggleBtn && sideNav && mainContent) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      sideNav.classList.toggle('collapsed');
-      mainContent.classList.toggle('sidebar-collapsed');
-      localStorage.setItem('sidebarCollapsed', sideNav.classList.contains('collapsed'));
     });
   }
 
