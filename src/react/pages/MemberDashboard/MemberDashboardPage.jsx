@@ -75,7 +75,7 @@ export default function MemberDashboardPage() {
   return (
     <>
       <SharedHeader />
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 72px)' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title={sidebarTitle}
           menuItems={MEMBER_MENU_ITEMS}
@@ -83,7 +83,7 @@ export default function MemberDashboardPage() {
           onItemClick={setActiveTab}
           header={orgSelectorHeader}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
           {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
           {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}
           {activeTab === 'members' && <MembersList members={activeOrg.members} />}

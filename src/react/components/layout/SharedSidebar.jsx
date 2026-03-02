@@ -1,14 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import '../../../shared/styles/sidebar.css';
+
+const STORAGE_KEY = 'sidebar-collapsed';
+
+function getInitialCollapsed() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 /**
  * SharedSidebar - Unified sidebar component for all React-based roles.
  * Positioned below the SharedHeader (top: var(--header-height)).
+ * Supports collapse/expand with localStorage persistence.
  */
 export default function SharedSidebar({ title, menuItems, activeKey, onItemClick, header, sections }) {
   const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+
+  // Sync CSS variable on mount and when collapsed changes
+  useEffect(() => {
+    const width = collapsed ? '72px' : '260px';
+    document.documentElement.style.setProperty('--sidebar-width', width);
+    return () => {
+      // Reset on unmount
+      document.documentElement.style.setProperty('--sidebar-width', '260px');
+    };
+  }, [collapsed]);
 
   useEffect(() => {
     function handleKey(e) {
@@ -17,6 +39,14 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [mobileOpen]);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(STORAGE_KEY, String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   function handleItemClick(key) {
     onItemClick(key);
@@ -30,11 +60,15 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
         key={item.key}
         className={`unified-sidebar__item${isActive ? ' unified-sidebar__item--active' : ''}`}
         onClick={() => handleItemClick(item.key)}
+        title={collapsed ? item.label : undefined}
       >
         <span className="unified-sidebar__item-icon">{item.icon}</span>
         <span className="unified-sidebar__item-label">{item.label}</span>
         {item.badge != null && (
           <span className="unified-sidebar__badge">{item.badge}</span>
+        )}
+        {collapsed && (
+          <span className="unified-sidebar__tooltip">{item.label}</span>
         )}
       </button>
     );
@@ -50,11 +84,22 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
     menuItems?.map(renderItem)
   );
 
+  // Build initials for collapsed title
+  const titleInitials = title
+    ? title.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+    : '';
+
   // Sidebar sits below the header
   const sidebarStyle = {
-    top: 'var(--header-height, 72px)',
-    height: 'calc(100vh - var(--header-height, 72px))',
+    top: 'var(--header-height, 60px)',
+    height: 'calc(100vh - var(--header-height, 60px))',
   };
+
+  const sidebarClasses = [
+    'unified-sidebar',
+    mobileOpen && 'open',
+    collapsed && 'unified-sidebar--collapsed',
+  ].filter(Boolean).join(' ');
 
   return (
     <>
@@ -67,7 +112,7 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
       )}
 
       {/* Sidebar */}
-      <aside className={`unified-sidebar${mobileOpen ? ' open' : ''}`} style={sidebarStyle}>
+      <aside className={sidebarClasses} style={sidebarStyle}>
         {/* Close button (mobile) */}
         <button
           className="unified-sidebar__close-btn"
@@ -82,7 +127,9 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
 
         {/* Header */}
         <div className="unified-sidebar__header">
-          <h2 className="unified-sidebar__title">{title}</h2>
+          <h2 className="unified-sidebar__title">
+            {collapsed ? titleInitials : title}
+          </h2>
           <p className="unified-sidebar__subtitle">
             {user?.firstName} {user?.lastName}
           </p>
@@ -95,6 +142,22 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
         <nav className="unified-sidebar__nav">
           {renderItems}
         </nav>
+
+        {/* Footer */}
+        <div className="unified-sidebar__footer">
+          <button
+            className="unified-sidebar__toggle-btn"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span className="unified-sidebar__toggle-label">
+              {collapsed ? '' : 'Colapsar'}
+            </span>
+          </button>
+        </div>
       </aside>
     </>
   );

@@ -75,14 +75,14 @@ export default function MinistroDashboardPage() {
   return (
     <>
       <SharedHeader />
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 72px)' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title="Ministro de Fe"
           menuItems={menuItems}
           activeKey={activeView}
           onItemClick={setActiveView}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
           <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
             <StatsGrid stats={stats} />
 

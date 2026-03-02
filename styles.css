@@ -45,7 +45,8 @@
     --gradient-bg-secondary: var(--gradient-secondary);
 
     /* Dimensiones específicas de esta app */
-    --header-height: 72px;
+    --header-height: 60px;
+    --sidebar-width: 260px;
     --bottom-nav-height: 72px;
 }
 
@@ -65,17 +66,19 @@ body {
     overflow-x: hidden;
 }
 
-/* Header - Dark Blue Gradient */
+/* Header - Modern Glassmorphism */
 .app-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: var(--header-height);
-    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     color: white;
-    box-shadow: 0 2px 12px rgba(30, 58, 138, 0.3);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     z-index: var(--z-fixed, 100);
 }
 
@@ -106,7 +109,7 @@ body {
 }
 
 .logo-img {
-    height: 44px;
+    height: 36px;
     width: auto;
     object-fit: contain;
     transition: var(--cs-transition, all 0.2s ease);
@@ -120,9 +123,9 @@ body {
 }
 
 .header-title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: white;
 }
 
@@ -3104,19 +3107,20 @@ body {
 }
 
 .btn-secondary-sm {
-    padding: 10px 18px;
-    font-size: 14px;
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    color: white;
-    border-radius: 12px;
+    padding: 8px 16px;
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .btn-secondary-sm:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
     color: white;
 }
 
@@ -9156,10 +9160,11 @@ body {
 
 /* Header Avatar */
 .header-avatar {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background: var(--primary-color);
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -17685,7 +17690,7 @@ a.header-logo:hover {
 @media (max-width: 768px) {
     /* Variables ajustadas */
     :root {
-        --header-height: 70px;
+        --header-height: 56px;
         --bottom-nav-height: 64px;
     }
 
@@ -17701,7 +17706,7 @@ a.header-logo:hover {
     }
 
     .logo-img {
-        height: 48px !important;
+        height: 32px !important;
         width: auto !important;
     }
 

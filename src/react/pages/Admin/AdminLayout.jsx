@@ -28,14 +28,14 @@ export default function AdminLayout({ activeView, onViewChange, children, orgCou
   return (
     <>
       <SharedHeader />
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 72px)' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title="Panel Admin"
           menuItems={items}
           activeKey={activeView}
           onItemClick={onViewChange}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 260 }}>
+        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
           {children}
         </main>
       </div>

@@ -5,8 +5,8 @@
 
 /* === Container === */
 .unified-sidebar {
-  width: 260px;
-  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  width: var(--sidebar-width, 260px);
+  background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -16,58 +16,70 @@
   top: 0;
   left: 0;
   z-index: 100;
-  transition: transform 0.3s ease;
+  transition: width 0.25s ease, transform 0.3s ease;
+  overflow: hidden;
 }
 
 /* When used inside vanilla JS app with app-header, sit below it */
 .side-nav.unified-sidebar {
-  top: var(--header-height, 72px);
-  height: calc(100vh - var(--header-height, 72px));
+  top: var(--header-height, 60px);
+  height: calc(100vh - var(--header-height, 60px));
   z-index: 50;
 }
 
 /* === Header === */
 .unified-sidebar__header {
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 60px;
+  overflow: hidden;
 }
 
 .unified-sidebar__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
 }
 
 .unified-sidebar__subtitle {
   margin: 4px 0 0;
   font-size: 12px;
-  opacity: 0.7;
+  opacity: 0.6;
   color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
 }
 
 /* === Nav (scrollable area) === */
 .unified-sidebar__nav {
   flex: 1;
-  padding: 12px 0;
+  padding: 8px 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 /* === Section separator === */
 .unified-sidebar__section {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   margin-top: 8px;
   padding-top: 8px;
 }
 
 /* === Menu item === */
 .unified-sidebar__item {
-  width: 100%;
-  padding: 10px 20px;
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  padding: 10px 12px;
   border: none;
   background: transparent;
-  color: white;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -75,30 +87,46 @@
   gap: 10px;
   text-align: left;
   text-decoration: none;
-  transition: background 0.15s;
-  border-left: 3px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-radius 0.15s ease;
+  border-radius: 8px;
   font-family: inherit;
   line-height: 1.4;
+  position: relative;
+  white-space: nowrap;
 }
 
 .unified-sidebar__item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
 }
 
 .unified-sidebar__item--active {
-  background: rgba(255, 255, 255, 0.15);
-  border-left-color: white;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-weight: 500;
 }
 
 /* === Item icon (emoji or SVG) === */
 .unified-sidebar__item-icon {
-  font-size: 16px;
-  width: 20px;
+  font-size: 15px;
+  width: 32px;
+  height: 32px;
   text-align: center;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.unified-sidebar__item:hover .unified-sidebar__item-icon {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.unified-sidebar__item--active .unified-sidebar__item-icon {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .unified-sidebar__item-icon svg {
@@ -113,24 +141,26 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: opacity 0.2s ease, width 0.25s ease;
 }
 
 /* === Badge === */
 .unified-sidebar__badge {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
   flex-shrink: 0;
+  transition: opacity 0.2s ease;
 }
 
 /* === Org selector (for Organizador / Directivo) === */
 .unified-sidebar__org-selector {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
   font-size: 13px;
   font-weight: 600;
@@ -141,17 +171,18 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
+  transition: opacity 0.2s ease, border-color 0.15s ease;
 }
 
 .unified-sidebar__org-selector:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .unified-sidebar__org-selector:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .unified-sidebar__org-selector option {
@@ -161,39 +192,81 @@
 
 /* === Org selector container (padding wrapper) === */
 .unified-sidebar__org-container {
-  padding: 8px 20px 4px;
+  padding: 8px 16px 4px;
+  transition: opacity 0.2s ease;
 }
 
 .unified-sidebar__org-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  opacity: 0.6;
+  opacity: 0.5;
   margin-bottom: 6px;
   display: block;
 }
 
-/* === Footer (logout) === */
+/* === Footer === */
 .unified-sidebar__footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+/* === Logout button === */
 .unified-sidebar__logout {
   width: 100%;
   padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   background: transparent;
-  color: white;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s, opacity 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .unified-sidebar__logout:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+/* === Toggle button (collapse/expand) === */
+.unified-sidebar__toggle-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.unified-sidebar__toggle-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.unified-sidebar__toggle-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.unified-sidebar__toggle-label {
+  transition: opacity 0.2s ease;
 }
 
 /* === Close button (mobile only) === */
@@ -215,6 +288,105 @@
   opacity: 1;
 }
 
+/* === Tooltip for collapsed items === */
+.unified-sidebar__tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #0f172a;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.unified-sidebar__tooltip::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #0f172a;
+}
+
+/* ============================================================
+   COLLAPSED STATE
+   ============================================================ */
+.unified-sidebar--collapsed {
+  width: 72px;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__header {
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__subtitle,
+.unified-sidebar--collapsed .unified-sidebar__org-container,
+.unified-sidebar--collapsed .unified-sidebar__badge,
+.unified-sidebar--collapsed .unified-sidebar__toggle-label {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  position: absolute;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__title {
+  font-size: 14px;
+  text-align: center;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__item {
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  padding: 8px;
+  justify-content: center;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__item-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__item:hover .unified-sidebar__tooltip {
+  opacity: 1;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__toggle-btn svg {
+  transform: rotate(180deg);
+}
+
+.unified-sidebar--collapsed .unified-sidebar__logout {
+  font-size: 0;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show a small icon for logout when collapsed */
+.unified-sidebar__logout-icon {
+  display: none;
+}
+
+.unified-sidebar--collapsed .unified-sidebar__logout-icon {
+  display: inline;
+  font-size: 16px;
+}
+
 /* ============================================================
    Responsive: Desktop
    ============================================================ */
@@ -224,13 +396,12 @@
     transform: translateX(0);
   }
 
-  /* Push main content to the right */
+  /* Push main content to the right - uses CSS variable */
   .has-unified-sidebar .main-content,
   .has-unified-sidebar #main-content {
-    margin-left: 260px;
+    margin-left: var(--sidebar-width, 260px);
+    transition: margin-left 0.25s ease;
   }
-
-  /* Header stays full width — sidebar sits below it */
 
   /* Hide hamburger menu button on desktop when unified sidebar is active */
   .has-unified-sidebar #menu-btn {
@@ -243,6 +414,7 @@
    ============================================================ */
 @media (max-width: 1023px) {
   .unified-sidebar {
+    width: 260px !important;
     transform: translateX(-100%);
     position: fixed;
     top: 0;
@@ -254,8 +426,8 @@
 
   /* Vanilla JS sidebar: below header on mobile too */
   .side-nav.unified-sidebar {
-    top: var(--header-height, 72px);
-    height: calc(100vh - var(--header-height, 72px));
+    top: var(--header-height, 60px);
+    height: calc(100vh - var(--header-height, 60px));
     z-index: 1050;
   }
 
@@ -266,6 +438,43 @@
 
   .unified-sidebar__close-btn {
     display: block;
+  }
+
+  /* Hide toggle button on mobile */
+  .unified-sidebar__toggle-btn {
+    display: none;
+  }
+
+  /* Always show labels on mobile (override collapsed) */
+  .unified-sidebar--collapsed .unified-sidebar__item-label,
+  .unified-sidebar--collapsed .unified-sidebar__subtitle,
+  .unified-sidebar--collapsed .unified-sidebar__badge,
+  .unified-sidebar--collapsed .unified-sidebar__toggle-label {
+    opacity: 1;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    position: static;
+    padding: revert;
+    margin: revert;
+  }
+
+  .unified-sidebar--collapsed .unified-sidebar__item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .unified-sidebar--collapsed .unified-sidebar__org-container {
+    opacity: 1;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    position: static;
+    padding: 8px 16px 4px;
+  }
+
+  .unified-sidebar--collapsed .unified-sidebar__logout {
+    font-size: 13px;
   }
 
   /* Overlay behind mobile sidebar */

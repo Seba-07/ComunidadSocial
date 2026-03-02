@@ -4,6 +4,8 @@
  * Preserves IDs: #org-nav-section, #org-selector, #org-nav-items for OrganizationMenuManager.
  */
 
+const STORAGE_KEY = 'sidebar-collapsed';
+
 // Org admin menu items (flat list — no collapsible section)
 const ORG_NAV_ITEMS = [
   { page: 'org-overview', icon: '📊', label: 'Resumen' },
@@ -20,7 +22,7 @@ const ORG_NAV_ITEMS = [
 
 // Secondary nav items (below org section, separated)
 const SECONDARY_NAV_ITEMS = [
-  { page: 'mis-organizaciones', icon: '🏠', label: 'Crear Organización' },
+  { page: 'mis-organizaciones', icon: '🏠', label: 'Mis Organizaciones' },
   { page: 'guia-constitucion', icon: '📑', label: 'Guía' },
   { page: 'biblioteca', icon: '📚', label: 'Biblioteca' },
   { page: 'noticias', icon: '📰', label: 'Noticias' },
@@ -51,7 +53,7 @@ const BOTTOM_ICONS = {
 // Org bottom nav items
 const ORG_BOTTOM_NAV = [
   { page: 'home', icon: 'home', label: 'Inicio' },
-  { page: 'mis-organizaciones', icon: 'crearOrg', label: 'Crear Org' },
+  { page: 'mis-organizaciones', icon: 'crearOrg', label: 'Mis Orgs' },
   { page: 'guia-constitucion', icon: 'guia', label: 'Guía' },
   { page: 'biblioteca', icon: 'biblioteca', label: 'Biblioteca' },
   { page: 'noticias', icon: 'noticias', label: 'Noticias' },
@@ -65,10 +67,14 @@ const MEMBER_BOTTOM_NAV = [
   { page: 'member-documentos', icon: 'docs', label: 'Documentos' },
 ];
 
+// Chevron SVG for toggle button
+const CHEVRON_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+
 
 class SidebarManager {
   constructor() {
     this.currentRole = null;
+    this.collapsed = false;
   }
 
   /**
@@ -77,6 +83,8 @@ class SidebarManager {
    */
   init(role) {
     this.currentRole = role;
+    this.collapsed = this._getCollapsedState();
+    this._updateCSSVariable();
     this.renderSidebar(role);
     this.renderBottomNav(role);
   }
@@ -89,11 +97,12 @@ class SidebarManager {
     if (!sideNav) return;
 
     // Apply unified sidebar class
-    sideNav.className = 'side-nav unified-sidebar';
+    sideNav.className = 'side-nav unified-sidebar' + (this.collapsed ? ' unified-sidebar--collapsed' : '');
 
     // Get user info from localStorage
     const user = this._getUser();
     const title = this._getTitleForRole(role);
+    const initials = title.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
     let html = '';
 
@@ -107,7 +116,7 @@ class SidebarManager {
 
     // Header
     html += `<div class="unified-sidebar__header">
-      <h2 class="unified-sidebar__title">${title}</h2>
+      <h2 class="unified-sidebar__title">${this.collapsed ? initials : title}</h2>
       <p class="unified-sidebar__subtitle">${user.firstName || ''} ${user.lastName || ''}</p>
     </div>`;
 
@@ -122,9 +131,16 @@ class SidebarManager {
 
     html += '</div>';
 
-    // Footer - Logout
+    // Footer - Toggle + Logout
     html += `<div class="unified-sidebar__footer">
-      <button class="unified-sidebar__logout" id="sidebar-logout-btn">Cerrar sesión</button>
+      <button class="unified-sidebar__toggle-btn" id="sidebar-toggle-btn" aria-label="${this.collapsed ? 'Expandir menú' : 'Colapsar menú'}">
+        ${CHEVRON_SVG}
+        <span class="unified-sidebar__toggle-label">${this.collapsed ? '' : 'Colapsar'}</span>
+      </button>
+      <button class="unified-sidebar__logout" id="sidebar-logout-btn">
+        <span class="unified-sidebar__logout-icon">🚪</span>
+        Cerrar sesión
+      </button>
     </div>`;
 
     sideNav.innerHTML = html;
@@ -132,11 +148,10 @@ class SidebarManager {
     // Add unified sidebar class to body for layout adjustments
     document.body.classList.add('has-unified-sidebar');
 
-    // Attach close button listener
+    // Attach event listeners
     this._attachCloseBtn();
-
-    // Attach logout listener
     this._attachLogout();
+    this._attachToggle();
   }
 
   /**
@@ -199,13 +214,14 @@ class SidebarManager {
   }
 
   /**
-   * Render a single sidebar item
+   * Render a single sidebar item with tooltip support
    */
   _renderItem(item, isActive = false) {
     const activeClass = isActive ? ' unified-sidebar__item--active' : '';
-    return `<a href="#" data-page="${item.page}" class="unified-sidebar__item${activeClass}">
+    return `<a href="#" data-page="${item.page}" class="unified-sidebar__item${activeClass}" title="${item.label}">
       <span class="unified-sidebar__item-icon">${item.icon}</span>
       <span class="unified-sidebar__item-label">${item.label}</span>
+      <span class="unified-sidebar__tooltip">${item.label}</span>
     </a>`;
   }
 
@@ -262,6 +278,34 @@ class SidebarManager {
   }
 
   /**
+   * Toggle collapsed state
+   */
+  toggleCollapsed() {
+    this.collapsed = !this.collapsed;
+    this._saveCollapsedState();
+    this._updateCSSVariable();
+
+    const sideNav = document.getElementById('side-nav');
+    if (sideNav) {
+      sideNav.classList.toggle('unified-sidebar--collapsed', this.collapsed);
+    }
+
+    // Update title
+    const titleEl = sideNav?.querySelector('.unified-sidebar__title');
+    if (titleEl) {
+      const title = this._getTitleForRole(this.currentRole);
+      const initials = title.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      titleEl.textContent = this.collapsed ? initials : title;
+    }
+
+    // Update toggle button label
+    const toggleLabel = sideNav?.querySelector('.unified-sidebar__toggle-label');
+    if (toggleLabel) {
+      toggleLabel.textContent = this.collapsed ? '' : 'Colapsar';
+    }
+  }
+
+  /**
    * Attach close button for mobile sidebar
    */
   _attachCloseBtn() {
@@ -290,6 +334,46 @@ class SidebarManager {
         }
       });
     }
+  }
+
+  /**
+   * Attach toggle button listener
+   */
+  _attachToggle() {
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        this.toggleCollapsed();
+      });
+    }
+  }
+
+  /**
+   * Get collapsed state from localStorage
+   */
+  _getCollapsedState() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Save collapsed state to localStorage
+   */
+  _saveCollapsedState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(this.collapsed));
+    } catch {}
+  }
+
+  /**
+   * Update CSS variable for sidebar width
+   */
+  _updateCSSVariable() {
+    const width = this.collapsed ? '72px' : '260px';
+    document.documentElement.style.setProperty('--sidebar-width', width);
   }
 
   /**
