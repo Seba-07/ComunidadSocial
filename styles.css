@@ -540,15 +540,15 @@ body {
 /* === Unified Sidebar overrides ===
    When .unified-sidebar is applied, sidebar.css takes full control.
    Neutralize conflicting old .side-nav rules.
-   Sidebar sits BELOW the app-header (top: header-height). */
+   Sidebar is full-height from top, header sits beside it. */
 .side-nav.unified-sidebar {
     left: 0 !important;
-    top: var(--header-height) !important;
-    width: 260px !important;
-    height: calc(100vh - var(--header-height)) !important;
-    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%) !important;
+    top: 0 !important;
+    width: var(--sidebar-width, 260px) !important;
+    height: 100vh !important;
+    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%) !important;
     box-shadow: none !important;
-    z-index: 50 !important;
+    z-index: 110 !important;
     overflow-y: visible !important;
 }
 
@@ -717,14 +717,14 @@ body {
         display: none !important;
     }
 
-    /* Unified sidebar desktop overrides - below header, no collapse */
+    /* Unified sidebar desktop overrides - full height, header beside it */
     .side-nav.unified-sidebar {
         left: 0 !important;
-        top: var(--header-height) !important;
-        width: 260px !important;
-        height: calc(100vh - var(--header-height)) !important;
+        top: 0 !important;
+        width: var(--sidebar-width, 260px) !important;
+        height: 100vh !important;
         border-right: none !important;
-        z-index: 50 !important;
+        z-index: 110 !important;
     }
 
     .side-nav.unified-sidebar.collapsed {

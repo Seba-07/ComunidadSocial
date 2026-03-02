@@ -1,8 +1,8 @@
 import { useAuthStore } from '../../stores/authStore';
 
 /**
- * SharedHeader - Matches the vanilla JS .app-header from index.html.
- * Used in all React pages so they have the same header as the vanilla JS app.
+ * SharedHeader - Sits beside the sidebar (not above it).
+ * Uses --sidebar-width CSS variable to offset from the left.
  */
 export default function SharedHeader() {
   const { user, logout } = useAuthStore();
@@ -15,7 +15,6 @@ export default function SharedHeader() {
     try {
       await logout();
     } catch { /* ignore */ }
-    // Clear any remaining localStorage data
     localStorage.removeItem('auth_token');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isAuthenticated');
@@ -26,7 +25,11 @@ export default function SharedHeader() {
   }
 
   return (
-    <header className="app-header" role="banner">
+    <header
+      className="app-header"
+      role="banner"
+      style={{ left: 'var(--sidebar-width, 260px)', transition: 'left 0.25s ease' }}
+    >
       <div className="header-content">
         {/* Logo */}
         <a href="/" className="header-logo">

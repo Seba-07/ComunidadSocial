@@ -20,11 +20,11 @@ import OrgMisOrganizaciones from './OrgMisOrganizaciones';
 // Org-specific menu items (shown when an org is selected)
 const ORG_MENU_ITEMS = [
   { key: 'overview', label: 'Resumen', icon: '📊' },
-  { key: 'members', label: 'Socios', icon: '👥' },
-  { key: 'directorio', label: 'Directorio', icon: '👤' },
-  { key: 'asambleas', label: 'Asambleas', icon: '🗣️' },
+  { key: 'members', label: 'Socios', icon: '🤝' },
+  { key: 'directorio', label: 'Directorio', icon: '📇' },
+  { key: 'asambleas', label: 'Asambleas', icon: '📢' },
   { key: 'elecciones', label: 'Elecciones', icon: '✅' },
-  { key: 'comunicaciones', label: 'Comunicaciones', icon: '✉️' },
+  { key: 'comunicaciones', label: 'Comunicaciones', icon: '💬' },
   { key: 'finanzas', label: 'Finanzas', icon: '💰' },
   { key: 'proyectos', label: 'Proyectos', icon: '📁' },
   { key: 'documentos', label: 'Documentos', icon: '📄' },

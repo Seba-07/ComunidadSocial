@@ -9,11 +9,11 @@ const STORAGE_KEY = 'sidebar-collapsed';
 // Org admin menu items (flat list — no collapsible section)
 const ORG_NAV_ITEMS = [
   { page: 'org-overview', icon: '📊', label: 'Resumen' },
-  { page: 'org-members', icon: '👥', label: 'Socios' },
-  { page: 'org-directorio', icon: '👤', label: 'Directorio' },
-  { page: 'org-asambleas', icon: '🗣️', label: 'Asambleas' },
+  { page: 'org-members', icon: '🤝', label: 'Socios' },
+  { page: 'org-directorio', icon: '📇', label: 'Directorio' },
+  { page: 'org-asambleas', icon: '📢', label: 'Asambleas' },
   { page: 'org-elecciones', icon: '✅', label: 'Elecciones' },
-  { page: 'org-comunicaciones', icon: '✉️', label: 'Comunicaciones' },
+  { page: 'org-comunicaciones', icon: '💬', label: 'Comunicaciones' },
   { page: 'org-finanzas', icon: '💰', label: 'Finanzas' },
   { page: 'org-proyectos', icon: '📁', label: 'Proyectos' },
   { page: 'org-documentos', icon: '📄', label: 'Documentos' },
@@ -31,11 +31,11 @@ const SECONDARY_NAV_ITEMS = [
 // Member sidebar items
 const MEMBER_NAV_ITEMS = [
   { page: 'member-overview', icon: '🏠', label: 'Información' },
-  { page: 'member-directorio', icon: '👤', label: 'Directorio' },
+  { page: 'member-directorio', icon: '📇', label: 'Directorio' },
   { page: 'member-documentos', icon: '📄', label: 'Documentos' },
   { page: 'member-actividades', icon: '📅', label: 'Actividades' },
-  { page: 'member-asambleas', icon: '🗣️', label: 'Asambleas' },
-  { page: 'member-password', icon: '🔒', label: 'Cambiar Contraseña' },
+  { page: 'member-asambleas', icon: '📢', label: 'Asambleas' },
+  { page: 'member-password', icon: '🔑', label: 'Cambiar Contraseña' },
 ];
 
 // Bottom nav icon SVGs (kept small for mobile)

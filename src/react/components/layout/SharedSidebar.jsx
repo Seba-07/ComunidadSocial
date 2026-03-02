@@ -22,13 +22,14 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
 
-  // Sync CSS variable on mount and when collapsed changes
+  // Sync CSS variable + body class on mount and when collapsed changes
   useEffect(() => {
     const width = collapsed ? '72px' : '260px';
     document.documentElement.style.setProperty('--sidebar-width', width);
+    document.body.classList.add('has-unified-sidebar');
     return () => {
-      // Reset on unmount
       document.documentElement.style.setProperty('--sidebar-width', '260px');
+      document.body.classList.remove('has-unified-sidebar');
     };
   }, [collapsed]);
 
@@ -89,12 +90,6 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
     ? title.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
     : '';
 
-  // Sidebar sits below the header
-  const sidebarStyle = {
-    top: 'var(--header-height, 60px)',
-    height: 'calc(100vh - var(--header-height, 60px))',
-  };
-
   const sidebarClasses = [
     'unified-sidebar',
     mobileOpen && 'open',
@@ -112,7 +107,7 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
       )}
 
       {/* Sidebar */}
-      <aside className={sidebarClasses} style={sidebarStyle}>
+      <aside className={sidebarClasses}>
         {/* Close button (mobile) */}
         <button
           className="unified-sidebar__close-btn"

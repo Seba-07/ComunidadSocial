@@ -20,11 +20,11 @@
   overflow: hidden;
 }
 
-/* When used inside vanilla JS app with app-header, sit below it */
+/* Vanilla JS sidebar — also full height from top */
 .side-nav.unified-sidebar {
-  top: var(--header-height, 60px);
-  height: calc(100vh - var(--header-height, 60px));
-  z-index: 50;
+  top: 0;
+  height: 100vh;
+  z-index: 110;
 }
 
 /* === Header === */
@@ -116,17 +116,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   transition: background 0.15s ease;
 }
 
 .unified-sidebar__item:hover .unified-sidebar__item-icon {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .unified-sidebar__item--active .unified-sidebar__item-icon {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .unified-sidebar__item-icon svg {
@@ -403,6 +403,12 @@
     transition: margin-left 0.25s ease;
   }
 
+  /* Header sits beside the sidebar */
+  .has-unified-sidebar .app-header {
+    left: var(--sidebar-width, 260px);
+    transition: left 0.25s ease;
+  }
+
   /* Hide hamburger menu button on desktop when unified sidebar is active */
   .has-unified-sidebar #menu-btn {
     display: none;
@@ -424,10 +430,10 @@
     box-shadow: none;
   }
 
-  /* Vanilla JS sidebar: below header on mobile too */
+  /* Vanilla JS sidebar: full-height overlay on mobile */
   .side-nav.unified-sidebar {
-    top: var(--header-height, 60px);
-    height: calc(100vh - var(--header-height, 60px));
+    top: 0;
+    height: 100vh;
     z-index: 1050;
   }
 
@@ -475,6 +481,11 @@
 
   .unified-sidebar--collapsed .unified-sidebar__logout {
     font-size: 13px;
+  }
+
+  /* Header goes full width on mobile (sidebar is overlay) */
+  .has-unified-sidebar .app-header {
+    left: 0 !important;
   }
 
   /* Overlay behind mobile sidebar */

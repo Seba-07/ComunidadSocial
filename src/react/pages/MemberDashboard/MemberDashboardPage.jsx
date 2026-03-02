@@ -13,11 +13,11 @@ import MemberPassword from './MemberPassword';
 
 const MEMBER_MENU_ITEMS = [
   { key: 'overview', label: 'Información', icon: '🏠' },
-  { key: 'directorio', label: 'Directorio', icon: '👤' },
-  { key: 'members', label: 'Miembros', icon: '👥' },
-  { key: 'assemblies', label: 'Asambleas', icon: '🗣️' },
+  { key: 'directorio', label: 'Directorio', icon: '📇' },
+  { key: 'members', label: 'Miembros', icon: '🤝' },
+  { key: 'assemblies', label: 'Asambleas', icon: '📢' },
   { key: 'documents', label: 'Documentos', icon: '📄' },
-  { key: 'password', label: 'Contraseña', icon: '🔒' }
+  { key: 'password', label: 'Contraseña', icon: '🔑' }
 ];
 
 export default function MemberDashboardPage() {
