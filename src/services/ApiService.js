@@ -310,7 +310,7 @@ class ApiService {
     // Guardar token para fallback de Authorization header
     if (data.token) localStorage.setItem('auth_token', data.token);
     // Guardar datos de usuario para UI (sin información sensible)
-    if (data.user && data.user.role !== 'MINISTRO_FE') {
+    if (data.user) {
       const safeUser = {
         _id: data.user._id,
         rut: data.user.rut || '',

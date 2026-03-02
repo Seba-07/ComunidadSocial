@@ -14,6 +14,7 @@ import { getUserRepository } from './src/infrastructure/config/container.js';
 import { organizationsService, ORG_STATUS, ORG_STATUS_LABELS, ORG_STATUS_COLORS } from './src/services/OrganizationsService.js';
 // AdminDashboard migrated to React - /app/admin
 import { organizationMenuManager } from './src/presentation/organization/OrganizationMenuManager.js';
+import { sidebarManager } from './src/presentation/shared/SidebarManager.js';
 import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
@@ -96,13 +97,35 @@ if ('serviceWorker' in navigator && !isDevelopment) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🎯 DOM Content Loaded - Inicializando eventos...');
 
-  // Check if ministro is logged in - redirect to ministro dashboard
-  const currentMinistro = localStorage.getItem('currentMinistro');
-  if (currentMinistro) {
+  // Check if special roles are logged in - redirect to their dashboards
+  const earlyUser = localStorage.getItem('currentUser');
+  if (earlyUser) {
     try {
-      const ministro = JSON.parse(currentMinistro);
-      if (ministro.role === 'MINISTRO_FE') {
+      const parsed = JSON.parse(earlyUser);
+      if (parsed.role === 'MINISTRO_FE') {
         console.log('⚖️ Ministro detectado, redirigiendo al dashboard de ministro...');
+        window.location.href = '/app/ministro';
+        return;
+      }
+      if (parsed.role === 'MUNICIPALIDAD') {
+        console.log('🏛️ Admin detectado, redirigiendo al dashboard de admin...');
+        window.location.href = '/app/admin';
+        return;
+      }
+    } catch (e) {
+      localStorage.removeItem('currentUser');
+    }
+  }
+  // Legacy migration: if currentMinistro exists, migrate to currentUser
+  const legacyMinistro = localStorage.getItem('currentMinistro');
+  if (legacyMinistro) {
+    try {
+      const ministro = JSON.parse(legacyMinistro);
+      if (ministro.role === 'MINISTRO_FE') {
+        localStorage.setItem('currentUser', legacyMinistro);
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.removeItem('currentMinistro');
+        localStorage.removeItem('isMinistroAuthenticated');
         window.location.href = '/app/ministro';
         return;
       }
@@ -126,21 +149,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       appState.setCurrentUser(user);
       appState.initializeAuthService();
 
-      // INMEDIATO: Si es MIEMBRO, ocultar TODA la navegacion mientras se determina si es directivo
-      if (user.role === 'MIEMBRO') {
-        const _navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
-        if (_navPrimary) _navPrimary.style.display = 'none';
-        const _navSecondary = document.querySelector('.nav-list-secondary');
-        if (_navSecondary) _navSecondary.style.display = 'none';
-        const _orgNav = document.getElementById('org-nav-section');
-        if (_orgNav) _orgNav.style.display = 'none';
-        const _bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
-        if (_bottomNav) _bottomNav.style.display = 'none';
-        const _memberBottomNav = document.getElementById('member-bottom-nav');
-        if (_memberBottomNav) _memberBottomNav.style.display = 'none';
-        const _memberNav = document.getElementById('member-nav-section');
-        if (_memberNav) _memberNav.style.display = 'none';
+      // For non-MIEMBRO roles, render sidebar immediately
+      if (user.role !== 'MIEMBRO') {
+        sidebarManager.init('ORGANIZADOR');
       }
+      // MIEMBRO sidebar is rendered later after determining if directivo
 
       // Actualizar nombre en header
       const userName = document.getElementById('user-name');
@@ -211,15 +224,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('🔑 Miembro directivo detectado, cargando dashboard de organizador...');
             sessionStorage.setItem('isDirectivoMiembro', 'true');
 
-            // Mostrar nav de organizador
-            const navPrimary = document.querySelector('.nav-list:not(.nav-list-secondary)');
-            if (navPrimary) navPrimary.style.display = '';
-            const navSecondary = document.querySelector('.nav-list-secondary');
-            if (navSecondary) navSecondary.style.display = '';
-            const orgNav = document.getElementById('org-nav-section');
-            if (orgNav) orgNav.style.display = '';
-            const bottomNav = document.querySelector('.bottom-nav:not(#member-bottom-nav)');
-            if (bottomNav) bottomNav.style.display = '';
+            // Render org sidebar + bottom nav for directivo
+            sidebarManager.init('MIEMBRO_DIRECTIVO');
 
             // Pre-cargar organizaciones en organizationsService
             organizationsService.organizations = memberOrgs;
@@ -243,11 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ========== SOCIO REGULAR: mostrar MemberDashboard limitado ==========
             sessionStorage.removeItem('isDirectivoMiembro');
 
-            // Mostrar nav de miembro
-            const memberBottomNav = document.getElementById('member-bottom-nav');
-            if (memberBottomNav) memberBottomNav.style.display = '';
-            const memberNav = document.getElementById('member-nav-section');
-            if (memberNav) memberNav.style.display = 'block';
+            // Render member sidebar + bottom nav
+            sidebarManager.init('MIEMBRO');
 
             // Mostrar UI inmediatamente
             hideLoadingScreen();
@@ -409,14 +412,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                   appState.navigateTo(page);
                   const pageName = page.replace('member-', '');
                   memberDashboard.renderPage(pageName);
-                  // Update active state en sidebar
-                  document.querySelectorAll('#member-nav-section .nav-link-sub').forEach(l => l.classList.remove('active'));
-                  const sidebarLink = document.querySelector(`#member-nav-section [data-page="${page}"]`);
-                  if (sidebarLink) sidebarLink.classList.add('active');
-                  // Update active state en bottom nav
-                  document.querySelectorAll('#member-bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
-                  const bottomLink = document.querySelector(`#member-bottom-nav [data-page="${page}"]`);
-                  if (bottomLink) bottomLink.classList.add('active');
+                  // Update active state via SidebarManager
+                  sidebarManager.updateActiveLink(page);
                 });
               });
             };

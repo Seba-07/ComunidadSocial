@@ -35,9 +35,6 @@ export default function LoginForm() {
       addToast(`¡Bienvenido ${user.firstName}!`, 'success');
 
       if (user.role === 'MINISTRO_FE') {
-        localStorage.removeItem('currentUser');
-        localStorage.setItem('currentMinistro', JSON.stringify(user));
-        localStorage.setItem('isMinistroAuthenticated', 'true');
         setTimeout(() => { navigate('/ministro'); }, 300);
       } else if (user.role === 'MUNICIPALIDAD') {
         setTimeout(() => { navigate('/admin'); }, 300);

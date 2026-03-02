@@ -2,17 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../../components/layout/AuthLayout';
 import LoginForm from './LoginForm';
-import LoginSocioForm from './LoginSocioForm';
 import RegisterForm from './RegisterForm';
-import MinistroLoginForm from './MinistroLoginForm';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { useAuthStore } from '../../stores/authStore';
 import './auth.css';
 
 const TABS = [
-  { id: 'login', label: 'Organizador' },
-  { id: 'login-socio', label: 'Socio' },
-  { id: 'login-ministro', label: 'Ministro de Fe' },
+  { id: 'login', label: 'Iniciar Sesión' },
   { id: 'register', label: 'Registrarse' }
 ];
 
@@ -68,8 +64,6 @@ export default function AuthPage() {
         </div>
 
         {activeTab === 'login' && <LoginForm />}
-        {activeTab === 'login-socio' && <LoginSocioForm />}
-        {activeTab === 'login-ministro' && <MinistroLoginForm />}
         {activeTab === 'register' && <RegisterForm />}
       </div>
 

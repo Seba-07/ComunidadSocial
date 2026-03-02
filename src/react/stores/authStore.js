@@ -9,15 +9,25 @@ export const useAuthStore = create((set, get) => ({
 
   hydrate() {
     const userJson = localStorage.getItem('currentUser');
-    const ministroJson = localStorage.getItem('currentMinistro');
     const isAuth = localStorage.getItem('isAuthenticated') === 'true';
-    const isMinistroAuth = localStorage.getItem('isMinistroAuthenticated') === 'true';
 
-    if (ministroJson && isMinistroAuth) {
-      try {
-        set({ user: JSON.parse(ministroJson), isAuthenticated: true });
-      } catch { /* ignore parse errors */ }
-    } else if (userJson && isAuth) {
+    // Legacy migration: if currentMinistro exists but no currentUser, migrate
+    if (!userJson) {
+      const ministroJson = localStorage.getItem('currentMinistro');
+      if (ministroJson) {
+        try {
+          const ministro = JSON.parse(ministroJson);
+          localStorage.setItem('currentUser', ministroJson);
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.removeItem('currentMinistro');
+          localStorage.removeItem('isMinistroAuthenticated');
+          set({ user: ministro, isAuthenticated: true });
+          return;
+        } catch { /* ignore parse errors */ }
+      }
+    }
+
+    if (userJson && isAuth) {
       try {
         set({ user: JSON.parse(userJson), isAuthenticated: true });
       } catch { /* ignore parse errors */ }
