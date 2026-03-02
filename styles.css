@@ -733,11 +733,7 @@ body {
         display: none !important;
     }
 
-    /* When unified sidebar is active, push header and content to the right */
-    .has-unified-sidebar .app-header {
-        left: 260px !important;
-        width: calc(100% - 260px) !important;
-    }
+    /* Header stays full width — sidebar sits below it */
 
     .has-unified-sidebar .main-content {
         margin-left: 260px !important;

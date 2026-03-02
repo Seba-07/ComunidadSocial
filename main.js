@@ -442,10 +442,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Restaurar página guardada al recargar (solo para usuarios no-admin y no-miembro)
       // Los admin se restauran en el bloque de admin setup
       if (user.role !== 'MUNICIPALIDAD' && user.role !== 'MIEMBRO') {
-        const savedPage = sessionStorage.getItem('app_current_page');
-        console.log('🔄 Restaurando página para', user.role, ':', savedPage);
-        if (savedPage && savedPage !== 'admin') {
-          appState.navigateTo(savedPage);
+        // Check URL ?page= parameter (navigation from React secondary nav)
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetPage = urlParams.get('page');
+        if (targetPage) {
+          console.log('🔄 Navegando a página desde URL param:', targetPage);
+          appState.navigateTo(targetPage);
+        } else {
+          const savedPage = sessionStorage.getItem('app_current_page');
+          console.log('🔄 Restaurando página para', user.role, ':', savedPage);
+          if (savedPage && savedPage !== 'admin') {
+            appState.navigateTo(savedPage);
+          }
         }
       }
     } catch (error) {

@@ -230,23 +230,11 @@
     margin-left: 260px;
   }
 
-  /* Push header to the right too */
-  .has-unified-sidebar .main-header,
-  .has-unified-sidebar #main-header,
-  .has-unified-sidebar .app-header {
-    left: 260px;
-    width: calc(100% - 260px);
-  }
+  /* Header stays full width — sidebar sits below it */
 
   /* Hide hamburger menu button on desktop when unified sidebar is active */
   .has-unified-sidebar #menu-btn {
     display: none;
-  }
-
-  /* React pages: header with sidebar-offset class pushed right */
-  .app-header.sidebar-offset {
-    left: 260px;
-    width: calc(100% - 260px);
   }
 }
 

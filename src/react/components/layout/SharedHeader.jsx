@@ -11,8 +11,22 @@ export default function SharedHeader() {
     ? `${(user.firstName || 'U')[0]}${(user.lastName || 'S')[0]}`.toUpperCase()
     : 'US';
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch { /* ignore */ }
+    // Clear any remaining localStorage data
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('currentMinistro');
+    localStorage.removeItem('isMinistroAuthenticated');
+    localStorage.removeItem('user_organizations');
+    window.location.href = '/app/login';
+  }
+
   return (
-    <header className="app-header sidebar-offset" role="banner">
+    <header className="app-header" role="banner">
       <div className="header-content">
         {/* Logo */}
         <a href="/" className="header-logo">
@@ -29,7 +43,7 @@ export default function SharedHeader() {
             <span>{initials}</span>
           </div>
           <span className="user-name">{user?.firstName} {user?.lastName}</span>
-          <button className="btn-secondary-sm" onClick={() => { logout(); window.location.href = '/app/login'; }}>
+          <button className="btn-secondary-sm" onClick={handleLogout}>
             Salir
           </button>
         </div>
