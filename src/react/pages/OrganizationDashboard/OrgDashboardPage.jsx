@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useOrganizationStore } from '../../stores/organizationStore';
 import { useAuthStore } from '../../stores/authStore';
+import SharedSidebar from '../../components/layout/SharedSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import OrgOverview from './OrgOverview';
 import OrgMembers from './OrgMembers';
@@ -11,14 +12,14 @@ import OrgDocumentos from './OrgDocumentos';
 import OrgFinanzas from './OrgFinanzas';
 import OrgComunicaciones from './OrgComunicaciones';
 
-const TABS = [
-  { id: 'overview', label: 'Resumen' },
-  { id: 'members', label: 'Miembros' },
-  { id: 'directorio', label: 'Directorio' },
-  { id: 'asambleas', label: 'Asambleas' },
-  { id: 'documentos', label: 'Documentos' },
-  { id: 'finanzas', label: 'Finanzas' },
-  { id: 'comunicaciones', label: 'Comunicaciones' }
+const ORG_MENU_ITEMS = [
+  { key: 'overview', label: 'Resumen', icon: '📊' },
+  { key: 'members', label: 'Miembros', icon: '👥' },
+  { key: 'directorio', label: 'Directorio', icon: '👤' },
+  { key: 'asambleas', label: 'Asambleas', icon: '🗣️' },
+  { key: 'documentos', label: 'Documentos', icon: '📄' },
+  { key: 'finanzas', label: 'Finanzas', icon: '💰' },
+  { key: 'comunicaciones', label: 'Comunicaciones', icon: '✉️' },
 ];
 
 export default function OrgDashboardPage() {
@@ -26,7 +27,6 @@ export default function OrgDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const { activeOrg, isLoading, error, fetchMyOrganizations, setActiveOrg, refreshActiveOrg } = useOrganizationStore();
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
     fetchMyOrganizations().then((orgs) => {
@@ -34,7 +34,6 @@ export default function OrgDashboardPage() {
       if (id && id !== 'auto') {
         setActiveOrg(id);
       } else {
-        // Auto-select first (or only) org
         setActiveOrg(orgs[0]._id);
       }
     });
@@ -63,71 +62,19 @@ export default function OrgDashboardPage() {
     );
   }
 
+  const sidebarTitle = activeOrg.organizationName || 'Mi Organización';
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-      {/* Header */}
-      <header style={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-        color: 'white',
-        padding: '16px 24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 12
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/icons/logo_renca.png" alt="Logo" style={{ width: 40, height: 'auto' }} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 18 }}>{activeOrg.organizationName}</div>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>Panel de Organización</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <span style={{ fontSize: 14 }}>{user?.firstName} {user?.lastName}</span>
-          <button
-            onClick={() => { logout(); window.location.href = '/app/login'; }}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
-          >
-            Cerrar Sesión
-          </button>
-        </div>
-      </header>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
+      <SharedSidebar
+        title={sidebarTitle}
+        menuItems={ORG_MENU_ITEMS}
+        activeKey={activeTab}
+        onItemClick={setActiveTab}
+      />
 
-      {/* Tab Navigation */}
-      <nav style={{
-        background: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        padding: '0 24px',
-        display: 'flex',
-        gap: 0,
-        overflowX: 'auto',
-        WebkitOverflowScrolling: 'touch'
-      }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '14px 20px',
-              border: 'none',
-              borderBottom: activeTab === tab.id ? '3px solid #2563eb' : '3px solid transparent',
-              background: 'transparent',
-              color: activeTab === tab.id ? '#2563eb' : '#6b7280',
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              fontSize: 14,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      {/* Content */}
-      <main style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+      {/* Main content - offset for fixed sidebar */}
+      <main style={{ flex: 1, overflow: 'auto', marginLeft: 260, padding: 24, maxWidth: 1200 }}>
         {activeTab === 'overview' && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
         {activeTab === 'members' && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
         {activeTab === 'directorio' && <OrgDirectorio org={activeOrg} />}
