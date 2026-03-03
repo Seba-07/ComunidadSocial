@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMinistrosStore } from '../../../stores/ministrosStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { apiService } from '../../../../services/ApiService';
 import Modal from '../../../components/ui/Modal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import SearchBar from '../../../components/ui/SearchBar';
@@ -31,6 +32,17 @@ export default function MinistroManagerView() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [credentials, setCredentials] = useState(null);
+  const [blocksMinistro, setBlocksMinistro] = useState(null); // { id, name, blocks }
+
+  async function viewBlocks(m) {
+    try {
+      const data = await apiService.getMinistroBlocks(m._id);
+      const blocks = (data.blocks || data || []).filter(b => b.active);
+      setBlocksMinistro({ id: m._id, name: `${m.firstName} ${m.lastName}`, blocks });
+    } catch {
+      addToast('Error al cargar bloqueos', 'error');
+    }
+  }
 
   useEffect(() => { fetchMinistros().catch(err => addToast(err.message, 'error')); }, []);
 
@@ -179,6 +191,7 @@ export default function MinistroManagerView() {
                 }}>
                   {m.isActive !== false ? 'Activo' : 'Inactivo'}
                 </span>
+                <button onClick={() => viewBlocks(m)} style={smallBtn}>Bloqueos</button>
                 <button onClick={() => handleToggle(m)} style={smallBtn}>{m.isActive !== false ? 'Desactivar' : 'Activar'}</button>
                 <button onClick={() => openEdit(m)} style={smallBtn}>Editar</button>
                 <button onClick={() => setDeleteTarget(m)} style={{ ...smallBtn, color: '#ef4444' }}>Eliminar</button>
@@ -265,6 +278,49 @@ export default function MinistroManagerView() {
           marginTop: 16, padding: '10px 20px', border: 'none', borderRadius: 10,
           background: '#2563eb', color: 'white', fontSize: 14, cursor: 'pointer'
         }}>Cerrar</button>
+      </Modal>
+
+      {/* Blocks Modal */}
+      <Modal open={!!blocksMinistro} onClose={() => setBlocksMinistro(null)} title={`Bloqueos — ${blocksMinistro?.name || ''}`}>
+        {blocksMinistro && (
+          <div>
+            {blocksMinistro.blocks.length === 0 ? (
+              <p style={{ color: '#6b7280', textAlign: 'center', padding: 20, fontSize: 14 }}>
+                Este ministro no tiene bloqueos activos
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8, maxHeight: 400, overflow: 'auto' }}>
+                {blocksMinistro.blocks
+                  .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+                  .map(b => (
+                    <div key={b._id} style={{
+                      padding: '10px 14px', borderRadius: 8,
+                      border: '1px solid #fecaca', background: '#fef2f2',
+                      fontSize: 13
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, color: '#111827' }}>
+                          {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          background: b.blockType === 'full_day' ? '#dc2626' : '#f59e0b',
+                          color: '#fff'
+                        }}>
+                          {b.blockType === 'full_day' ? 'Día completo' : b.time}
+                        </span>
+                      </div>
+                      {b.reason && (
+                        <div style={{ color: '#6b7280', marginTop: 4, fontSize: 12 }}>
+                          Motivo: {b.reason}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
