@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAdminStore } from '../../../stores/adminStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { ORG_STATUS_LABELS } from '../../../utils/formatters';
+import { apiService } from '../../../../services/ApiService';
 
 function generateCSV(headers, rows) {
   const BOM = '\uFEFF';
@@ -97,6 +98,33 @@ export default function ExportView() {
     addToast('CSV de estadísticas exportado', 'success');
   }
 
+  // Municipal exports
+  const [mExportOrgId, setMExportOrgId] = useState('');
+  const [mExportFrom, setMExportFrom] = useState('');
+  const [mExportTo, setMExportTo] = useState('');
+  const [mExporting, setMExporting] = useState(false);
+
+  const approvedOrgs = organizations.filter(o => ['approved', 'sent_registry'].includes(o.status));
+
+  async function handleMunicipalExport(type) {
+    if (!mExportOrgId) { addToast('Seleccione una organización', 'error'); return; }
+    setMExporting(true);
+    try {
+      if (type === 'members') {
+        await apiService.exportMemberRoster(mExportOrgId);
+        addToast('Nómina de socios exportada', 'success');
+      } else if (type === 'changes') {
+        if (!mExportFrom || !mExportTo) { addToast('Seleccione fechas', 'error'); setMExporting(false); return; }
+        await apiService.exportSemesterChanges(mExportOrgId, mExportFrom, mExportTo);
+        addToast('Reporte de cambios exportado', 'success');
+      }
+    } catch (err) {
+      addToast(err.message || 'Error al exportar', 'error');
+    } finally {
+      setMExporting(false);
+    }
+  }
+
   const exports = [
     {
       key: 'org-csv', label: 'Organizaciones (CSV)',
@@ -114,6 +142,10 @@ export default function ExportView() {
       icon: '\uD83D\uDCC8', action: exportStatsCSV
     }
   ];
+
+  const inputSm = {
+    padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -145,6 +177,59 @@ export default function ExportView() {
             <span style={{ marginLeft: 'auto', color: '#2563eb', fontSize: 20 }}>&darr;</span>
           </div>
         ))}
+      </div>
+
+      {/* Municipal Exports (Ley 19.418) */}
+      <h2 style={{ margin: '32px 0 8px', fontSize: 18, fontWeight: 700, color: '#111827' }}>
+        Exportaciones Municipales (Ley 19.418)
+      </h2>
+      <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+        Reportes oficiales para la secretaría municipal. Solo organizaciones aprobadas.
+      </p>
+
+      <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, maxWidth: 600 }}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Organización</label>
+          <select value={mExportOrgId} onChange={e => setMExportOrgId(e.target.value)}
+            style={{ ...inputSm, width: '100%' }}>
+            <option value="">Seleccionar organización...</option>
+            {approvedOrgs.map(o => (
+              <option key={o._id} value={o._id}>{o.organizationName || o.name}</option>
+            ))}
+          </select>
+          {approvedOrgs.length === 0 && (
+            <p style={{ fontSize: 12, color: '#f59e0b', marginTop: 4 }}>No hay organizaciones aprobadas</p>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={() => handleMunicipalExport('members')} disabled={mExporting || !mExportOrgId}
+            style={{
+              padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none',
+              borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              opacity: (mExporting || !mExportOrgId) ? 0.5 : 1
+            }}>
+            Nómina de Socios (Art. 15)
+          </button>
+        </div>
+
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f3f4f6' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Reporte de Cambios (período)</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="date" value={mExportFrom} onChange={e => setMExportFrom(e.target.value)} style={inputSm} />
+            <span style={{ color: '#9ca3af', fontSize: 13 }}>a</span>
+            <input type="date" value={mExportTo} onChange={e => setMExportTo(e.target.value)} style={inputSm} />
+            <button onClick={() => handleMunicipalExport('changes')}
+              disabled={mExporting || !mExportOrgId || !mExportFrom || !mExportTo}
+              style={{
+                padding: '8px 16px', background: '#fff', color: '#2563eb', border: '1px solid #2563eb',
+                borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                opacity: (mExporting || !mExportOrgId || !mExportFrom || !mExportTo) ? 0.5 : 1
+              }}>
+              Exportar Cambios
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,8 @@ import MemberDocuments from './MemberDocuments';
 import MemberPassword from './MemberPassword';
 import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
 import PrivacyConsentModal from '../../components/ui/PrivacyConsentModal';
+import SettingsPage from '../Settings/SettingsPage';
+import EmailVerificationBanner from '../../components/ui/EmailVerificationBanner';
 
 const MEMBER_MENU_ITEMS = [
   { key: 'overview', label: 'Información', icon: '🏠' },
@@ -20,7 +22,8 @@ const MEMBER_MENU_ITEMS = [
   { key: 'assemblies', label: 'Asambleas', icon: '📢' },
   { key: 'documents', label: 'Documentos', icon: '📄' },
   { key: 'password', label: 'Contraseña', icon: '🔑' },
-  { key: 'privacidad', label: 'Privacidad', icon: '🔒' }
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
 ];
 
 export default function MemberDashboardPage() {
@@ -96,6 +99,7 @@ export default function MemberDashboardPage() {
           header={orgSelectorHeader}
         />
         <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
+          <EmailVerificationBanner />
           {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
           {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}
           {activeTab === 'members' && <MembersList members={activeOrg.members} />}
@@ -110,6 +114,7 @@ export default function MemberDashboardPage() {
           {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
           {activeTab === 'password' && <MemberPassword />}
           {activeTab === 'privacidad' && <OrgPrivacy />}
+          {activeTab === 'configuracion' && <SettingsPage />}
         </main>
       </div>
       {showPrivacyModal && (

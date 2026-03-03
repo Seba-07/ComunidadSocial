@@ -9,11 +9,13 @@ import StatsGrid from '../../components/ui/StatsGrid';
 import AssignmentCard from './AssignmentCard';
 import ValidationWizard from './ValidationWizard';
 import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
+import SettingsPage from '../Settings/SettingsPage';
 
 const MINISTRO_MENU_ITEMS = [
   { key: 'pending', label: 'Asignaciones', icon: '📋' },
   { key: 'completed', label: 'Completadas', icon: '✅' },
-  { key: 'privacidad', label: 'Privacidad', icon: '🔒' }
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
 ];
 
 export default function MinistroDashboardPage() {
@@ -109,6 +111,7 @@ export default function MinistroDashboardPage() {
             )}
 
             {activeView === 'privacidad' && <OrgPrivacy />}
+            {activeView === 'configuracion' && <SettingsPage />}
 
             {activeView === 'completed' && (
               <>

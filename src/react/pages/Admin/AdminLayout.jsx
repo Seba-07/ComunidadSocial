@@ -14,7 +14,9 @@ const MENU_ITEMS = [
   { key: 'timbre', label: 'Timbre/Firma', icon: '✅' },
   { key: 'export', label: 'Exportar', icon: '📥' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
-  { key: 'seguridad', label: 'Incidentes', icon: '🛡️' }
+  { key: 'seguridad', label: 'Incidentes', icon: '🛡️' },
+  { key: 'reg-datos', label: 'Reg. Datos', icon: '📋' },
+  { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
 ];
 
 export { MENU_ITEMS };

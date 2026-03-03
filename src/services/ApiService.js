@@ -215,6 +215,11 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle email not verified
+        if (response.status === 403 && data.code === 'EMAIL_NOT_VERIFIED') {
+          window.dispatchEvent(new CustomEvent('email-not-verified'));
+        }
+
         // Auto-refresh on token expiry
         if (response.status === 401 && data.code === 'TOKEN_EXPIRED' && !options._retried) {
           const refreshed = await this._tryRefreshToken();

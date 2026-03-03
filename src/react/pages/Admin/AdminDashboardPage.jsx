@@ -18,6 +18,8 @@ const TimbreFirmaView = lazy(() => import('./views/TimbreFirmaView'));
 const ExportView = lazy(() => import('./views/ExportView'));
 const OrgPrivacy = lazy(() => import('../OrganizationDashboard/OrgPrivacy'));
 const SecurityIncidentsView = lazy(() => import('./views/SecurityIncidentsView'));
+const DataRegistryView = lazy(() => import('./views/DataRegistryView'));
+const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
 
 const VIEW_MAP = {
   organizations: OrganizationsList,
@@ -32,7 +34,9 @@ const VIEW_MAP = {
   timbre: TimbreFirmaView,
   export: ExportView,
   privacidad: OrgPrivacy,
-  seguridad: SecurityIncidentsView
+  seguridad: SecurityIncidentsView,
+  'reg-datos': DataRegistryView,
+  configuracion: SettingsPage
 };
 
 export default function AdminDashboardPage() {

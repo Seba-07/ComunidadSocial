@@ -17,6 +17,8 @@ import OrgProyectos from './OrgProyectos';
 import OrgActividades from './OrgActividades';
 import OrgMisOrganizaciones from './OrgMisOrganizaciones';
 import OrgPrivacy from './OrgPrivacy';
+import SettingsPage from '../Settings/SettingsPage';
+import EmailVerificationBanner from '../../components/ui/EmailVerificationBanner';
 
 // Org-specific menu items (shown when an org is selected)
 const ORG_MENU_ITEMS = [
@@ -39,6 +41,7 @@ const SECONDARY_MENU_ITEMS = [
   { key: 'biblioteca', label: 'Biblioteca', icon: '📚' },
   { key: 'noticias', label: 'Noticias', icon: '📰' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'configuracion', label: 'Configuración', icon: '⚙️' },
 ];
 
 export default function OrgDashboardPage() {
@@ -138,8 +141,10 @@ export default function OrgDashboardPage() {
           header={orgSelectorHeader}
         />
         <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
+          <EmailVerificationBanner />
           {effectiveTab === 'mis-org' && <OrgMisOrganizaciones />}
           {effectiveTab === 'privacidad' && <OrgPrivacy />}
+          {effectiveTab === 'configuracion' && <SettingsPage />}
           {effectiveTab === 'overview' && activeOrg && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
           {effectiveTab === 'members' && activeOrg && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'directorio' && activeOrg && <OrgDirectorio org={activeOrg} />}
