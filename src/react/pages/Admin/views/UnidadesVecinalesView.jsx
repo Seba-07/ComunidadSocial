@@ -160,15 +160,18 @@ export default function UnidadesVecinalesView() {
               background: !filterMz ? '#2563eb' : 'white', color: !filterMz ? 'white' : '#374151',
               fontSize: 12, cursor: 'pointer'
             }}>Todas</button>
-            {macrozonas.map(mz => (
-              <button key={mz.name || mz} onClick={() => setFilterMz(mz.name || mz)} style={{
-                padding: '5px 12px', borderRadius: 16,
-                border: filterMz === (mz.name || mz) ? '1px solid #2563eb' : '1px solid #d1d5db',
-                background: filterMz === (mz.name || mz) ? '#2563eb' : 'white',
-                color: filterMz === (mz.name || mz) ? 'white' : '#374151',
-                fontSize: 12, cursor: 'pointer'
-              }}>{mz.name || mz}</button>
-            ))}
+            {macrozonas.map(mz => {
+              const name = mz.macrozona || mz.name || mz;
+              return (
+                <button key={name} onClick={() => setFilterMz(name)} style={{
+                  padding: '5px 12px', borderRadius: 16,
+                  border: filterMz === name ? '1px solid #2563eb' : '1px solid #d1d5db',
+                  background: filterMz === name ? '#2563eb' : 'white',
+                  color: filterMz === name ? 'white' : '#374151',
+                  fontSize: 12, cursor: 'pointer'
+                }}>{name}</button>
+              );
+            })}
           </div>
         )}
       </div>
