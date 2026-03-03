@@ -214,7 +214,7 @@ router.get('/macrozonas', async (req, res) => {
  */
 router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas } = req.body;
+    const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas, geometry } = req.body;
 
     // Validar campos requeridos
     if (!numero || !idOficial) {
@@ -232,6 +232,17 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       });
     }
 
+    // Clean geometry coordinates if present
+    let cleanGeometry = null;
+    if (geometry && geometry.type === 'Polygon' && geometry.coordinates) {
+      const cleanCoords = geometry.coordinates.map(ring =>
+        (Array.isArray(ring) ? ring : Object.values(ring)).map(point =>
+          Array.isArray(point) ? point.map(Number) : Object.values(point).map(Number)
+        )
+      );
+      cleanGeometry = { type: 'Polygon', coordinates: cleanCoords };
+    }
+
     const nuevaUnidad = new UnidadVecinal({
       numero,
       idOficial,
@@ -242,7 +253,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       limites: limites || { norte: '', sur: '', oriente: '', poniente: '' },
       palabrasClave: palabrasClave || [],
       notas: notas || '',
-      activa: true
+      activa: true,
+      geometry: cleanGeometry
     });
 
     await nuevaUnidad.save();
@@ -321,7 +333,19 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (macrozona !== undefined) updateData.macrozona = macrozona;
     if (activa !== undefined) updateData.activa = activa;
     if (nombre !== undefined) updateData.nombre = nombre;
-    if (geometry !== undefined) updateData.geometry = geometry;
+    if (geometry !== undefined) {
+      if (geometry && geometry.type === 'Polygon' && geometry.coordinates) {
+        // Ensure coordinates are clean arrays (Mongoose Mixed can convert to objects)
+        const cleanCoords = geometry.coordinates.map(ring =>
+          (Array.isArray(ring) ? ring : Object.values(ring)).map(point =>
+            Array.isArray(point) ? point.map(Number) : Object.values(point).map(Number)
+          )
+        );
+        updateData.geometry = { type: 'Polygon', coordinates: cleanCoords };
+      } else {
+        updateData.geometry = null;
+      }
+    }
 
     const unidad = await UnidadVecinal.findByIdAndUpdate(
       req.params.id,
