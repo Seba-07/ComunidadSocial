@@ -83,7 +83,8 @@ export default function MinistroManagerView() {
       }
       setShowModal(false);
     } catch (err) {
-      addToast(err.message, 'error');
+      const details = err.details?.map(d => d.message).join('. ');
+      addToast(details || err.message, 'error');
     } finally {
       setSaving(false);
     }

@@ -129,7 +129,7 @@ export const createMinistroSchema = z.object({
   address: z.string().max(200).optional(),
   specialty: z.string().max(100).optional(),
   availableHours: z.array(z.string()).optional()
-});
+}).passthrough();
 
 /**
  * Esquema para miembro de organización
