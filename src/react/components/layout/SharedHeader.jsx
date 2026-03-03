@@ -1,8 +1,8 @@
 import { useAuthStore } from '../../stores/authStore';
 
 /**
- * SharedHeader - Sits beside the sidebar (not above it).
- * Uses --sidebar-width CSS variable to offset from the left.
+ * SharedHeader - Minimal top bar beside the sidebar.
+ * Clean design: just user info + logout on the right.
  */
 export default function SharedHeader() {
   const { user, logout } = useAuthStore();
@@ -31,18 +31,14 @@ export default function SharedHeader() {
       style={{ left: 'var(--sidebar-width, 260px)', transition: 'left 0.25s ease' }}
     >
       <div className="header-content">
-        {/* Logo */}
-        <a href="/" className="header-logo">
-          <img src="/icons/logo_renca.png" alt="Logo Renca" className="logo-img" />
-          <div className="header-info">
-            <h1 className="header-title">Comunidad Renca</h1>
-            <p className="header-subtitle">Bienvenido/a</p>
-          </div>
-        </a>
+        {/* Left side - breadcrumb / title area */}
+        <div className="header-left">
+          <span className="header-welcome">Comunidad Social Renca</span>
+        </div>
 
-        {/* User info */}
+        {/* Right side - user info */}
         <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="header-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="header-avatar">
             <span>{initials}</span>
           </div>
           <span className="user-name">{user?.firstName} {user?.lastName}</span>

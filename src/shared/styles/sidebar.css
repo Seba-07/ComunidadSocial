@@ -1,12 +1,11 @@
 /* ============================================================
-   Unified Sidebar - Shared CSS for React + Vanilla JS
-   Blue gradient sidebar used by ALL roles
+   Unified Sidebar - Clean dark style (inspired by Selltron)
    ============================================================ */
 
 /* === Container === */
 .unified-sidebar {
   width: var(--sidebar-width, 260px);
-  background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+  background: #111827;
   color: white;
   display: flex;
   flex-direction: column;
@@ -18,6 +17,7 @@
   z-index: 100;
   transition: width 0.25s ease, transform 0.3s ease;
   overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Vanilla JS sidebar — also full height from top */
@@ -27,29 +27,47 @@
   z-index: 110;
 }
 
-/* === Header === */
+/* === Header (logo + title area) === */
 .unified-sidebar__header {
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  min-height: 68px;
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 64px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unified-sidebar__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.unified-sidebar__header-text {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
 }
 
 .unified-sidebar__title {
   margin: 0;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: opacity 0.2s ease;
+  line-height: 1.3;
 }
 
 .unified-sidebar__subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  opacity: 0.7;
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.5;
   color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -58,9 +76,9 @@
 }
 
 .unified-sidebar__user-name {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-size: 11px;
-  opacity: 0.5;
+  opacity: 0.4;
   color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -71,26 +89,25 @@
 /* === Nav (scrollable area) === */
 .unified-sidebar__nav {
   flex: 1;
-  padding: 8px 0;
+  padding: 12px 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 /* === Section separator === */
 .unified-sidebar__section {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
 }
 
-/* === Section label === */
+/* === Section label (uppercase category) === */
 .unified-sidebar__section-label {
-  padding: 8px 20px 4px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 12px 18px 6px;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.35);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -98,21 +115,21 @@
 
 /* === Menu item === */
 .unified-sidebar__item {
-  width: calc(100% - 16px);
-  margin: 2px 8px;
-  padding: 12px 14px;
+  width: calc(100% - 20px);
+  margin: 1px 10px;
+  padding: 10px 12px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14.5px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease, border-radius 0.15s ease;
-  border-radius: 8px;
+  transition: all 0.15s ease;
+  border-radius: 10px;
   font-family: inherit;
   line-height: 1.4;
   position: relative;
@@ -121,41 +138,39 @@
 
 .unified-sidebar__item:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: white;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .unified-sidebar__item--active {
-  background: rgba(255, 255, 255, 0.12);
+  background: #2563eb;
   color: white;
   font-weight: 500;
 }
 
-/* === Item icon (emoji or SVG) === */
+.unified-sidebar__item--active:hover {
+  background: #1d4ed8;
+}
+
+/* === Item icon (clean, no background box) === */
 .unified-sidebar__item-icon {
-  font-size: 17px;
-  width: 36px;
-  height: 36px;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
   text-align: center;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  transition: transform 0.15s ease;
 }
 
 .unified-sidebar__item:hover .unified-sidebar__item-icon {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.unified-sidebar__item--active .unified-sidebar__item-icon {
-  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 .unified-sidebar__item-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
 }
 
@@ -168,23 +183,42 @@
   transition: opacity 0.2s ease, width 0.25s ease;
 }
 
-/* === Badge === */
+/* === Badge (colored pill) === */
 .unified-sidebar__badge {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
+  font-weight: 600;
   flex-shrink: 0;
   transition: opacity 0.2s ease;
+}
+
+.unified-sidebar__item--active .unified-sidebar__badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* === Submenu arrow (for expandable sections) === */
+.unified-sidebar__arrow {
+  font-size: 12px;
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, opacity 0.15s ease;
+}
+
+.unified-sidebar__item:hover .unified-sidebar__arrow {
+  opacity: 0.7;
 }
 
 /* === Org selector (for Organizador / Directivo) === */
 .unified-sidebar__org-selector {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
   color: white;
   font-size: 13px;
   font-weight: 600;
@@ -199,32 +233,33 @@
 }
 
 .unified-sidebar__org-selector:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .unified-sidebar__org-selector:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .unified-sidebar__org-selector option {
-  background: #1e3a8a;
+  background: #1f2937;
   color: white;
 }
 
 /* === Org selector container (padding wrapper) === */
 .unified-sidebar__org-container {
-  padding: 8px 16px 4px;
+  padding: 8px 18px 4px;
   transition: opacity 0.2s ease;
 }
 
 .unified-sidebar__org-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.5;
+  letter-spacing: 1px;
+  opacity: 0.35;
+  font-weight: 700;
   margin-bottom: 6px;
   display: block;
 }
@@ -242,20 +277,20 @@
 .unified-sidebar__logout {
   width: 100%;
   padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s, color 0.15s, opacity 0.2s;
+  transition: background 0.15s, color 0.15s;
   white-space: nowrap;
   overflow: hidden;
 }
 
 .unified-sidebar__logout:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   color: white;
 }
 
@@ -265,8 +300,8 @@
   padding: 10px;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
   font-family: inherit;
   display: flex;
@@ -280,8 +315,8 @@
 }
 
 .unified-sidebar__toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .unified-sidebar__toggle-btn svg {
@@ -304,7 +339,7 @@
   color: white;
   cursor: pointer;
   padding: 4px;
-  opacity: 0.7;
+  opacity: 0.5;
   transition: opacity 0.15s;
 }
 
@@ -318,7 +353,7 @@
   left: calc(100% + 8px);
   top: 50%;
   transform: translateY(-50%);
-  background: #0f172a;
+  background: #1f2937;
   color: white;
   padding: 6px 12px;
   border-radius: 6px;
@@ -328,7 +363,7 @@
   opacity: 0;
   transition: opacity 0.15s ease;
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .unified-sidebar__tooltip::before {
@@ -338,7 +373,7 @@
   top: 50%;
   transform: translateY(-50%);
   border: 5px solid transparent;
-  border-right-color: #0f172a;
+  border-right-color: #1f2937;
 }
 
 /* ============================================================
@@ -350,15 +385,17 @@
 
 .unified-sidebar--collapsed .unified-sidebar__header {
   padding: 16px 8px;
-  text-align: center;
+  justify-content: center;
 }
 
+.unified-sidebar--collapsed .unified-sidebar__header-text,
 .unified-sidebar--collapsed .unified-sidebar__subtitle,
 .unified-sidebar--collapsed .unified-sidebar__user-name,
 .unified-sidebar--collapsed .unified-sidebar__section-label,
 .unified-sidebar--collapsed .unified-sidebar__org-container,
 .unified-sidebar--collapsed .unified-sidebar__badge,
-.unified-sidebar--collapsed .unified-sidebar__toggle-label {
+.unified-sidebar--collapsed .unified-sidebar__toggle-label,
+.unified-sidebar--collapsed .unified-sidebar__arrow {
   opacity: 0;
   width: 0;
   height: 0;
@@ -376,7 +413,7 @@
 .unified-sidebar--collapsed .unified-sidebar__item {
   width: calc(100% - 16px);
   margin: 2px 8px;
-  padding: 8px;
+  padding: 10px;
   justify-content: center;
 }
 
@@ -422,20 +459,17 @@
     transform: translateX(0);
   }
 
-  /* Push main content to the right - uses CSS variable */
   .has-unified-sidebar .main-content,
   .has-unified-sidebar #main-content {
     margin-left: var(--sidebar-width, 260px);
     transition: margin-left 0.25s ease;
   }
 
-  /* Header sits beside the sidebar */
   .has-unified-sidebar .app-header {
     left: var(--sidebar-width, 260px);
     transition: left 0.25s ease;
   }
 
-  /* Hide hamburger menu button on desktop when unified sidebar is active */
   .has-unified-sidebar #menu-btn {
     display: none;
   }
@@ -456,7 +490,6 @@
     box-shadow: none;
   }
 
-  /* Vanilla JS sidebar: full-height overlay on mobile */
   .side-nav.unified-sidebar {
     top: 0;
     height: 100vh;
@@ -465,14 +498,13 @@
 
   .unified-sidebar.open {
     transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
   }
 
   .unified-sidebar__close-btn {
     display: block;
   }
 
-  /* Hide toggle button on mobile */
   .unified-sidebar__toggle-btn {
     display: none;
   }
@@ -481,8 +513,10 @@
   .unified-sidebar--collapsed .unified-sidebar__item-label,
   .unified-sidebar--collapsed .unified-sidebar__subtitle,
   .unified-sidebar--collapsed .unified-sidebar__user-name,
+  .unified-sidebar--collapsed .unified-sidebar__header-text,
   .unified-sidebar--collapsed .unified-sidebar__section-label,
   .unified-sidebar--collapsed .unified-sidebar__badge,
+  .unified-sidebar--collapsed .unified-sidebar__arrow,
   .unified-sidebar--collapsed .unified-sidebar__toggle-label {
     opacity: 1;
     width: auto;
@@ -504,19 +538,17 @@
     height: auto;
     overflow: visible;
     position: static;
-    padding: 8px 16px 4px;
+    padding: 8px 18px 4px;
   }
 
   .unified-sidebar--collapsed .unified-sidebar__logout {
     font-size: 13px;
   }
 
-  /* Header goes full width on mobile (sidebar is overlay) */
   .has-unified-sidebar .app-header {
     left: 0 !important;
   }
 
-  /* Overlay behind mobile sidebar */
   .unified-sidebar-overlay {
     display: none;
     position: fixed;

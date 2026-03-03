@@ -13,16 +13,14 @@ function getInitialCollapsed() {
 }
 
 /**
- * SharedSidebar - Unified sidebar component for all React-based roles.
- * Positioned below the SharedHeader (top: var(--header-height)).
- * Supports collapse/expand with localStorage persistence.
+ * SharedSidebar - Clean dark sidebar (Selltron-inspired).
+ * Supports collapse/expand, sections with labels, and badges.
  */
 export default function SharedSidebar({ title, subtitle, menuItems, activeKey, onItemClick, header, sections }) {
   const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
 
-  // Sync CSS variable + body class on mount and when collapsed changes
   useEffect(() => {
     const width = collapsed ? '72px' : '260px';
     document.documentElement.style.setProperty('--sidebar-width', width);
@@ -93,6 +91,9 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
     ? title.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
     : '';
 
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+  const showUserName = subtitle && fullName !== subtitle;
+
   const sidebarClasses = [
     'unified-sidebar',
     mobileOpen && 'open',
@@ -101,7 +102,6 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
 
   return (
     <>
-      {/* Overlay for mobile */}
       {mobileOpen && (
         <div
           className="unified-sidebar-overlay active"
@@ -109,7 +109,6 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
         />
       )}
 
-      {/* Sidebar */}
       <aside className={sidebarClasses}>
         {/* Close button (mobile) */}
         <button
@@ -123,24 +122,20 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
           </svg>
         </button>
 
-        {/* Header */}
+        {/* Header with logo */}
         <div className="unified-sidebar__header">
-          <h2 className="unified-sidebar__title">
-            {collapsed ? titleInitials : title}
-          </h2>
-          {subtitle && (
-            <p className="unified-sidebar__subtitle">{subtitle}</p>
-          )}
-          {(() => {
-            const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
-            // Don't show name if it's the same as the subtitle (avoids duplication)
-            if (subtitle && fullName === subtitle) return null;
-            return (
-              <p className={subtitle ? 'unified-sidebar__user-name' : 'unified-sidebar__subtitle'}>
-                {fullName}
-              </p>
-            );
-          })()}
+          <img src="/icons/logo_renca.png" alt="" className="unified-sidebar__logo" />
+          <div className="unified-sidebar__header-text">
+            <h2 className="unified-sidebar__title">
+              {collapsed ? titleInitials : title}
+            </h2>
+            {subtitle && (
+              <p className="unified-sidebar__subtitle">{subtitle}</p>
+            )}
+            {showUserName && (
+              <p className="unified-sidebar__user-name">{fullName}</p>
+            )}
+          </div>
         </div>
 
         {/* Optional extra header content (org selector, etc.) */}
