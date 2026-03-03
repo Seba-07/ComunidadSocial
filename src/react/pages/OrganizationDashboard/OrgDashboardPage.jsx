@@ -77,24 +77,25 @@ export default function OrgDashboardPage() {
     );
   }
 
-  // If no active org, show Mis Organizaciones tab by default
-  const effectiveTab = !activeOrg && activeTab !== 'mis-org' ? 'mis-org' : activeTab;
+  // If no active org, allow secondary tabs (mis-org, privacidad, configuracion) but force mis-org for org-specific tabs
+  const SECONDARY_KEYS = new Set(['mis-org', 'privacidad', 'configuracion']);
+  const effectiveTab = !activeOrg && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
 
   const sidebarTitle = 'Mi Organización';
   const hasMultipleOrgs = organizations.length > 1;
 
-  // Handle tab clicks - some navigate away
+  // Handle tab clicks - some open in new tab (legacy vanilla JS pages)
   function handleTabClick(key) {
     if (key === 'guia') {
-      window.location.href = '/?page=guia-constitucion';
+      window.open('/?page=guia-constitucion', '_blank');
       return;
     }
     if (key === 'biblioteca') {
-      window.location.href = '/?page=biblioteca';
+      window.open('/?page=biblioteca', '_blank');
       return;
     }
     if (key === 'noticias') {
-      window.location.href = '/?page=noticias';
+      window.open('/?page=noticias', '_blank');
       return;
     }
     setActiveTab(key);
