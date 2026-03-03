@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { storeDocument, deleteDocument } from '../services/storageService.js';
 
 const router = express.Router();
 
@@ -56,8 +57,9 @@ router.post('/me/timbre-virtual', authenticate, requireRole('MUNICIPALIDAD'), as
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    const result = await storeDocument(imagen, { type: 'timbre', memberId: req.userId });
     user.timbreVirtual = {
-      imagen: imagen,
+      imagen: result.stored === 's3' ? `s3:${result.s3Key}` : imagen,
       fechaSubida: new Date(),
       activo: true
     };
@@ -92,8 +94,9 @@ router.post('/me/firma-digital', authenticate, requireRole('MUNICIPALIDAD'), asy
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    const result = await storeDocument(imagen, { type: 'firma', memberId: req.userId });
     user.firmaDigital = {
-      imagen: imagen,
+      imagen: result.stored === 's3' ? `s3:${result.s3Key}` : imagen,
       fechaSubida: new Date(),
       activo: true
     };

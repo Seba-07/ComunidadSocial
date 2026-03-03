@@ -142,10 +142,8 @@ userSchema.methods.toJSON = function() {
 };
 
 // Indexes para queries eficientes
-userSchema.index({ role: 1 });
-userSchema.index({ role: 1, active: 1 });
+userSchema.index({ role: 1, active: 1 }); // Cubre queries solo por role (prefijo)
 userSchema.index({ organizationIds: 1 }); // Para buscar miembros de una org
-userSchema.index({ organizationId: 1 }); // Legacy index
 userSchema.index({ createdAt: -1 });
 
 export default mongoose.model('User', userSchema);

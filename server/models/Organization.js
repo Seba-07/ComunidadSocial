@@ -521,16 +521,13 @@ const organizationSchema = new mongoose.Schema({
 
 // Index for efficient queries
 organizationSchema.index({ userId: 1 });
-organizationSchema.index({ status: 1 });
-organizationSchema.index({ status: 1, createdAt: -1 }); // Para filtrar por status y ordenar
+organizationSchema.index({ status: 1, createdAt: -1 }); // Filtrar por status y ordenar (cubre queries solo por status)
 organizationSchema.index({ 'ministroData.ministroId': 1 });
-organizationSchema.index({ electionDate: 1 }); // Para buscar por fecha de elección
+organizationSchema.index({ electionDate: 1 });
 organizationSchema.index({ createdAt: -1 });
-organizationSchema.index({ organizationType: 1 }); // Para filtrar por tipo
-organizationSchema.index({ comuna: 1, status: 1 }); // Para filtrar por comuna
-// Índices compuestos adicionales para queries frecuentes
-organizationSchema.index({ organizationType: 1, status: 1, createdAt: -1 }); // Filtrar por tipo + status
-organizationSchema.index({ isNormalized: 1, schemaVersion: 1 }); // Para migración
+organizationSchema.index({ comuna: 1, status: 1 });
+organizationSchema.index({ organizationType: 1, status: 1, createdAt: -1 }); // Cubre queries solo por tipo
+organizationSchema.index({ isNormalized: 1, schemaVersion: 1 });
 
 // ============ MIDDLEWARE PARA LIMITAR ARRAYS Y VALIDAR DATOS ============
 const MAX_STATUS_HISTORY = 100;

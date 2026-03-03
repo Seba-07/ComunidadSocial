@@ -4,6 +4,7 @@ import Organization from '../models/Organization.js';
 import Counter from '../models/Counter.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { withTransactionFallback } from '../utils/withTransaction.js';
+import { storeDocument, isS3Configured } from '../services/storageService.js';
 
 const router = express.Router();
 
@@ -318,6 +319,21 @@ router.post('/:id/validate', authenticate, requireRole('MINISTRO_FE', 'MUNICIPAL
     // DEBUG: Log what data arrives from frontend
     console.log('🔍 VALIDATE - wizardData received:', JSON.stringify(wizardData?.provisionalDirectorio, null, 2));
     console.log('🔍 VALIDATE - President name:', wizardData?.provisionalDirectorio?.president?.name);
+
+    // Store group photo in S3 if available (largest blob, up to 2MB)
+    if (wizardData?.groupPhoto && isS3Configured()) {
+      try {
+        const photoResult = await storeDocument(wizardData.groupPhoto, {
+          organizationId: assignment.organizationId?.toString(),
+          type: 'group_photo'
+        });
+        if (photoResult?.stored === 's3') {
+          wizardData.groupPhoto = `s3:${photoResult.s3Key}`;
+        }
+      } catch (err) {
+        console.warn('[validate] S3 group photo upload failed, keeping base64:', err.message);
+      }
+    }
 
     assignment.signaturesValidated = true;
     assignment.validatedAt = new Date();

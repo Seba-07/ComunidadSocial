@@ -12,6 +12,9 @@
     "migrate:normalize": "node scripts/migrate-to-normalized.js",
     "migrate:normalize:dry": "node scripts/migrate-to-normalized.js --dry-run",
     "migrate:rollback": "node scripts/migrate-to-normalized.js --rollback",
+    "clean-db": "node scripts/clean-db.js",
+    "optimize-indexes": "node scripts/optimize-indexes.js",
+    "backup": "node scripts/backup-db.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

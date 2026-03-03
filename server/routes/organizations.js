@@ -17,6 +17,9 @@ import * as assemblyService from '../services/assemblyService.js';
 
 const router = express.Router();
 
+// Fields to exclude from list queries (heavy base64 data, legacy embedded arrays)
+const LIST_EXCLUDE = '-members -electoralCommission -comisionElectoral -certificatesStep5 -assemblies -estatutos -estatutosSnapshot -validationData -ministroSignature -memberIds -documentIds';
+
 /**
  * Normaliza un RUT para comparaciones (sin puntos, guiones, en mayúsculas)
  */
@@ -285,6 +288,7 @@ router.get('/availability/booked-slots', async (req, res) => {
 router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organizations = await Organization.find()
+      .select(LIST_EXCLUDE)
       .populate('userId', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .lean();
@@ -299,6 +303,7 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 router.get('/my', authenticate, async (req, res) => {
   try {
     const organizations = await Organization.find({ userId: req.userId })
+      .select(LIST_EXCLUDE)
       .sort({ createdAt: -1 })
       .lean();
     res.json(organizations);
@@ -711,7 +716,10 @@ router.delete('/:id', authenticate, async (req, res) => {
         CertificateFiles.deleteMany({ organizationId: orgId }),
         Notification.deleteMany({ organizationId: orgId }),
         Document.deleteMany({ organizationId: orgId }),
-        Member.deleteMany({ organizationId: orgId })
+        Member.deleteMany({ organizationId: orgId }),
+        Assembly.deleteMany({ organizationId: orgId }),
+        Assignment.deleteMany({ organizationId: orgId }),
+        MinistroBlock.deleteMany({ organizationId: orgId })
       ]);
       await Organization.findByIdAndDelete(orgId);
 
@@ -811,7 +819,8 @@ router.post('/:id/approve-deletion', authenticate, requireRole('MUNICIPALIDAD'),
       CertificateFiles.deleteMany({ organizationId: orgId }),
       Notification.deleteMany({ organizationId: orgId }),
       Document.deleteMany({ organizationId: orgId }),
-      Member.deleteMany({ organizationId: orgId })
+      Member.deleteMany({ organizationId: orgId }),
+      Assembly.deleteMany({ organizationId: orgId })
     ]);
 
     // 5. Delete the organization itself
@@ -1313,6 +1322,7 @@ router.post('/:id/resubmit', authenticate, async (req, res) => {
 router.get('/status/:status', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const organizations = await Organization.find({ status: req.params.status })
+      .select(LIST_EXCLUDE)
       .populate('userId', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .lean();
@@ -2189,6 +2199,7 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
 
 import GeneratedDocuments from '../models/GeneratedDocuments.js';
 import CertificateFiles from '../models/CertificateFiles.js';
+import Assembly from '../models/Assembly.js';
 
 // Guardar documentos generados del wizard (colección separada para evitar límite BSON 16MB)
 router.post('/:id/generated-documents', authenticate, validateObjectId(), async (req, res) => {

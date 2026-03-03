@@ -138,12 +138,35 @@ app.use('/api/org-documents', orgDocumentsRoutes);
 app.use('/api/ministro-blocks', ministroBlocksRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
+app.get('/api/health', async (req, res) => {
+  const mongoState = mongoose.connection.readyState;
+  const mongoLabels = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+
+  const health = {
+    status: mongoState === 1 ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
+    uptime: Math.floor(process.uptime()),
+    mongodb: mongoLabels[mongoState] || 'unknown',
+    memory: {
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB',
+      heap: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB'
+    }
+  };
+
+  // Include DB stats if connected and ?details=true
+  if (mongoState === 1 && req.query.details === 'true') {
+    try {
+      const dbStats = await mongoose.connection.db.stats();
+      health.db = {
+        collections: dbStats.collections,
+        dataSize: (dbStats.dataSize / 1024 / 1024).toFixed(2) + ' MB',
+        indexSize: (dbStats.indexSize / 1024 / 1024).toFixed(2) + ' MB',
+        objects: dbStats.objects
+      };
+    } catch { /* ignore */ }
+  }
+
+  res.status(health.status === 'ok' ? 200 : 503).json(health);
 });
 
 // Error handling middleware

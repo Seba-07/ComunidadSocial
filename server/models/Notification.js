@@ -77,4 +77,7 @@ notificationSchema.index({ userId: 1, read: 1 });
 notificationSchema.index({ ministroId: 1, read: 1 });
 notificationSchema.index({ createdAt: -1 });
 
+// TTL: auto-delete notifications after 90 days
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
 export default mongoose.model('Notification', notificationSchema);
