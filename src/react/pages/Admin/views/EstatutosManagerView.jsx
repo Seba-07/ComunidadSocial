@@ -361,7 +361,7 @@ export default function EstatutosManagerView() {
               </div>
               <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
                 <span>{(t.articulos || []).length} artículos</span>
-                <span>{(t.directorio?.cargos || []).length} cargos</span>
+                <span>{(t.directorio?.cargos || []).filter(c => c.required).length}/{(t.directorio?.cargos || []).length} cargos</span>
                 {t.version && <span>v{t.version}</span>}
               </div>
             </div>
