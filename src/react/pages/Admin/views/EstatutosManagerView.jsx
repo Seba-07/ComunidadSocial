@@ -222,18 +222,24 @@ export default function EstatutosManagerView() {
           {editTab === 'directorio' && (
             <div>
               <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-                {[
-                  { key: 'minMiembros', label: 'Mínimo miembros para constituir' },
-                  { key: 'miembrosComision', label: 'Miembros comisión electoral' },
-                  { key: 'duracionMandato', label: 'Duración mandato (años)' }
-                ].map(f => (
-                  <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>{f.label}</label>
-                    <input type="number" value={selectedTemplate[f.key] || ''}
-                      onChange={e => setSelectedTemplate(t => ({ ...t, [f.key]: parseInt(e.target.value) || '' }))}
-                      style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-                  </div>
-                ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Mínimo miembros para constituir</label>
+                  <input type="number" value={selectedTemplate.miembrosMinimos ?? ''}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, miembrosMinimos: parseInt(e.target.value) || 15 }))}
+                    style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Miembros comisión electoral</label>
+                  <input type="number" value={selectedTemplate.comisionElectoral?.cantidad ?? ''}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, comisionElectoral: { ...(t.comisionElectoral || {}), cantidad: parseInt(e.target.value) || 3 } }))}
+                    style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Duración mandato (años)</label>
+                  <input type="number" value={selectedTemplate.directorio?.duracionMandato ?? ''}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, directorio: { ...(t.directorio || {}), duracionMandato: parseInt(e.target.value) || 2 } }))}
+                    style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                </div>
               </div>
 
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Cargos del Directorio</h3>
@@ -355,7 +361,7 @@ export default function EstatutosManagerView() {
               </div>
               <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
                 <span>{(t.articulos || []).length} artículos</span>
-                <span>{(t.directorio?.cargos || t.cargos || []).length} cargos</span>
+                <span>{(t.directorio?.cargos || []).length} cargos</span>
                 {t.version && <span>v{t.version}</span>}
               </div>
             </div>

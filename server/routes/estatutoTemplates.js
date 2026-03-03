@@ -236,7 +236,11 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (descripcion !== undefined) template.descripcion = descripcion;
     if (categoria !== undefined) template.categoria = categoria;
     if (articulos !== undefined) template.articulos = articulos;
-    if (directorio !== undefined) template.directorio = directorio;
+    if (directorio !== undefined) {
+      template.directorio = directorio;
+      // Remove legacy root-level cargos if present (migrated to directorio.cargos)
+      if (template.cargos) { template.set('cargos', undefined); }
+    }
     if (miembrosMinimos !== undefined) template.miembrosMinimos = miembrosMinimos;
     if (comisionElectoral !== undefined) template.comisionElectoral = comisionElectoral;
     if (placeholders !== undefined) template.placeholders = placeholders;
