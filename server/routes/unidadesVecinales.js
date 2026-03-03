@@ -37,14 +37,32 @@ router.get('/buscar', async (req, res) => {
     }
 
     // Step 1: Try geocoding with Nominatim
+    // Clean address: remove "bodega X", "depto X", "oficina X", postal codes, region text
     let coords = null;
     try {
-      const searchQuery = `${direccion}, Renca, Santiago, Chile`;
-      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=cl`;
-      const response = await fetch(nominatimUrl, {
-        headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' }
-      });
-      const results = await response.json();
+      let cleanAddr = direccion
+        .replace(/,?\s*(bodega|depto|dpto|oficina|of\.|local|piso|block|torre)\s*\d*\w*/gi, '')
+        .replace(/\b\d{7}\b/g, '')  // Remove 7-digit postal codes
+        .replace(/,?\s*Región\s+Metropolitana\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Try full address first
+      let results = [];
+      const tryGeocode = async (q) => {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=cl`;
+        const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' } });
+        return resp.json();
+      };
+
+      results = await tryGeocode(`${cleanAddr}, Renca, Santiago, Chile`);
+
+      // If no result, try without "Avenida/Calle/Pasaje" prefix
+      if (results.length === 0) {
+        const simplified = cleanAddr.replace(/^(avenida|av\.|calle|pasaje|psje\.|pje\.)\s+/i, '');
+        results = await tryGeocode(`${simplified}, Renca, Chile`);
+      }
+
       if (results.length > 0) {
         coords = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
       }
@@ -105,12 +123,24 @@ router.get('/geocode', async (req, res) => {
     const { address } = req.query;
     if (!address) return res.status(400).json({ error: 'Address required' });
 
-    const searchQuery = `${address}, Renca, Santiago, Chile`;
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=cl`;
-    const response = await fetch(nominatimUrl, {
-      headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' }
-    });
-    const results = await response.json();
+    const cleanAddr = address
+      .replace(/,?\s*(bodega|depto|dpto|oficina|of\.|local|piso|block|torre)\s*\d*\w*/gi, '')
+      .replace(/\b\d{7}\b/g, '')
+      .replace(/,?\s*Región\s+Metropolitana\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const tryGeocode = async (q) => {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=cl`;
+      const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' } });
+      return resp.json();
+    };
+
+    let results = await tryGeocode(`${cleanAddr}, Renca, Santiago, Chile`);
+    if (results.length === 0) {
+      const simplified = cleanAddr.replace(/^(avenida|av\.|calle|pasaje|psje\.|pje\.)\s+/i, '');
+      results = await tryGeocode(`${simplified}, Renca, Chile`);
+    }
 
     if (results.length === 0) {
       return res.json({ found: false });

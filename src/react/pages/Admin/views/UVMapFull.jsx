@@ -19,13 +19,6 @@ const MZ_COLORS = {
   5: '#8b5cf6', 6: '#ec4899', 7: '#06b6d4'
 };
 
-// Approximate Renca boundary for visual reference
-const RENCA_BOUNDARY = [
-  [-33.370, -70.750], [-33.370, -70.700], [-33.380, -70.690],
-  [-33.390, -70.688], [-33.400, -70.690], [-33.410, -70.695],
-  [-33.420, -70.700], [-33.420, -70.730], [-33.410, -70.745],
-  [-33.400, -70.750], [-33.390, -70.752], [-33.380, -70.752]
-];
 
 export default function UVMapFull({
   uvList, selectedUv, onSelectUv, onDataChange,
@@ -55,11 +48,6 @@ export default function UVMapFull({
       attribution: '&copy; OSM',
       maxZoom: 19
     }).addTo(map);
-
-    // Renca boundary outline
-    L.polygon(RENCA_BOUNDARY, {
-      color: '#374151', weight: 2, fillOpacity: 0.02, dashArray: '8 4'
-    }).addTo(map).bindTooltip('Comuna de Renca', { permanent: false, direction: 'center' });
 
     // Draw layer
     const drawnItems = new L.FeatureGroup();
