@@ -80,23 +80,49 @@ export default function EstatutosManagerView() {
 
   function updateCargo(idx, field, value) {
     setSelectedTemplate(t => {
-      const cargos = [...(t.cargos || [])];
+      const dir = t.directorio || { cargos: [], totalRequerido: 5 };
+      const cargos = [...(dir.cargos || [])];
       cargos[idx] = { ...cargos[idx], [field]: value };
-      return { ...t, cargos };
+      return { ...t, directorio: { ...dir, cargos } };
     });
   }
 
   function addCargo() {
-    setSelectedTemplate(t => ({
-      ...t,
-      cargos: [...(t.cargos || []), { nombre: '', id: '', required: true, color: '#2563eb' }]
-    }));
+    setSelectedTemplate(t => {
+      const dir = t.directorio || { cargos: [], totalRequerido: 5 };
+      const cargos = dir.cargos || [];
+      const newOrden = cargos.length + 1;
+      return {
+        ...t,
+        directorio: {
+          ...dir,
+          cargos: [...cargos, { id: `director_${newOrden}`, nombre: 'Director/a', required: false, color: '#6366f1', orden: newOrden }]
+        }
+      };
+    });
   }
 
   function deleteCargo(idx) {
+    setSelectedTemplate(t => {
+      const dir = t.directorio || { cargos: [] };
+      return { ...t, directorio: { ...dir, cargos: dir.cargos.filter((_, i) => i !== idx) } };
+    });
+  }
+
+  function addDefaultCargos() {
     setSelectedTemplate(t => ({
       ...t,
-      cargos: t.cargos.filter((_, i) => i !== idx)
+      directorio: {
+        ...(t.directorio || {}),
+        cargos: [
+          { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+          { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+          { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+          { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+          { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+        ],
+        totalRequerido: 5
+      }
     }));
   }
 
@@ -210,13 +236,21 @@ export default function EstatutosManagerView() {
                 ))}
               </div>
 
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Cargos</h3>
-              <button onClick={addCargo} style={{
-                padding: '6px 14px', border: 'none', borderRadius: 8, background: '#2563eb',
-                color: 'white', fontSize: 13, cursor: 'pointer', marginBottom: 12
-              }}>Agregar Cargo</button>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Cargos del Directorio</h3>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                {!(selectedTemplate.directorio?.cargos?.length) && (
+                  <button onClick={addDefaultCargos} style={{
+                    padding: '6px 14px', border: 'none', borderRadius: 8, background: '#10b981',
+                    color: 'white', fontSize: 13, cursor: 'pointer'
+                  }}>Cargar cargos predefinidos</button>
+                )}
+                <button onClick={addCargo} style={{
+                  padding: '6px 14px', border: 'none', borderRadius: 8, background: '#2563eb',
+                  color: 'white', fontSize: 13, cursor: 'pointer'
+                }}>+ Agregar Cargo</button>
+              </div>
 
-              {(selectedTemplate.cargos || []).map((cargo, i) => (
+              {(selectedTemplate.directorio?.cargos || []).map((cargo, i) => (
                 <div key={i} style={{
                   display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8,
                   padding: 10, background: '#f9fafb', borderRadius: 8
@@ -321,7 +355,7 @@ export default function EstatutosManagerView() {
               </div>
               <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
                 <span>{(t.articulos || []).length} artículos</span>
-                <span>{(t.cargos || []).length} cargos</span>
+                <span>{(t.directorio?.cargos || t.cargos || []).length} cargos</span>
                 {t.version && <span>v{t.version}</span>}
               </div>
             </div>

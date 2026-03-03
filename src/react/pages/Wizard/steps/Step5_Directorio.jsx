@@ -5,11 +5,11 @@ import { apiService } from '@services/ApiService.js';
 import FileUpload from '../../../components/ui/FileUpload';
 
 const DEFAULT_CARGOS = [
-  { id: 'presidente', nombre: 'Presidente', required: true },
-  { id: 'secretario', nombre: 'Secretario', required: true },
-  { id: 'tesorero', nombre: 'Tesorero', required: true },
-  { id: 'director1', nombre: 'Director', required: false },
-  { id: 'director2', nombre: 'Director', required: false }
+  { id: 'presidente', nombre: 'Presidente/a', required: true, orden: 1 },
+  { id: 'vicepresidente', nombre: 'Vicepresidente/a', required: true, orden: 2 },
+  { id: 'secretario', nombre: 'Secretario/a', required: true, orden: 3 },
+  { id: 'tesorero', nombre: 'Tesorero/a', required: true, orden: 4 },
+  { id: 'director1', nombre: 'Director/a', required: true, orden: 5 }
 ];
 
 export default function Step5_Directorio({ onNext, onPrev }) {
@@ -21,13 +21,16 @@ export default function Step5_Directorio({ onNext, onPrev }) {
   const certs = formData.certificates || {};
   const [cargos, setCargos] = useState(DEFAULT_CARGOS);
 
-  // Load cargos config for org type
+  // Load cargos from template configuration for this org type
   useEffect(() => {
     if (formData.organization?.type) {
       apiService.get(`/organization-types/${formData.organization.type}`)
         .then(data => {
-          if (data.cargos?.length) setCargos(data.cargos);
-          else if (data.type?.cargos?.length) setCargos(data.type.cargos);
+          // Prioritize directorio.cargos from template, then fallback
+          const templateCargos = data.directorio?.cargos || data.cargos;
+          if (templateCargos?.length) {
+            setCargos(templateCargos.sort((a, b) => (a.orden || 0) - (b.orden || 0)));
+          }
         })
         .catch(() => {});
     }

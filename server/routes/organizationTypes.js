@@ -94,12 +94,22 @@ router.get('/:tipo', async (req, res) => {
     // Intentar obtener plantilla si existe
     const template = await EstatutoTemplate.findOne({ tipoOrganizacion: tipo });
 
+    // Get directorio cargos from template or defaults
+    const defaultConfig = EstatutoTemplate.getDefaultConfig(tipo);
+    const cargos = template?.directorio?.cargos?.length
+      ? template.directorio.cargos
+      : defaultConfig.directorio.cargos;
+
     res.json({
       value: tipo,
       label: tipos[tipo].nombre,
       categoria: tipos[tipo].categoria,
       hasTemplate: !!template,
-      templatePublished: template?.publicado || false
+      templatePublished: template?.publicado || false,
+      cargos,
+      directorio: template?.directorio || defaultConfig.directorio,
+      miembrosMinimos: template?.miembrosMinimos || defaultConfig.miembrosMinimos,
+      comisionElectoral: template?.comisionElectoral || defaultConfig.comisionElectoral
     });
   } catch (error) {
     console.error('Get type info error:', error);

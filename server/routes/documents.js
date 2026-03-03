@@ -61,14 +61,25 @@ const generateActaHTML = (org) => {
   const unidadVecinal = org.unidadVecinal || org.neighborhood || '';
   const today = formatDate(new Date());
 
-  // Obtener directorio
+  // Obtener directorio — build unified list from both old and new format
   const directorio = org.provisionalDirectorio || {};
-  const presidentName = directorio.president ?
-    `${directorio.president.firstName || ''} ${directorio.president.lastName || ''}`.trim() : '_______________';
-  const secretaryName = directorio.secretary ?
-    `${directorio.secretary.firstName || ''} ${directorio.secretary.lastName || ''}`.trim() : '_______________';
-  const treasurerName = directorio.treasurer ?
-    `${directorio.treasurer.firstName || ''} ${directorio.treasurer.lastName || ''}`.trim() : '_______________';
+  const dirMembers = [];
+  const getName = (m) => m ? `${m.firstName || ''} ${m.lastName || ''}`.trim() : null;
+
+  // Fixed fields (old format)
+  if (directorio.president) dirMembers.push({ cargo: 'Presidente/a', name: getName(directorio.president), rut: directorio.president.rut, orden: 1 });
+  if (directorio.vicePresident) dirMembers.push({ cargo: 'Vicepresidente/a', name: getName(directorio.vicePresident), rut: directorio.vicePresident.rut, orden: 2 });
+  if (directorio.secretary) dirMembers.push({ cargo: 'Secretario/a', name: getName(directorio.secretary), rut: directorio.secretary.rut, orden: 3 });
+  if (directorio.treasurer) dirMembers.push({ cargo: 'Tesorero/a', name: getName(directorio.treasurer), rut: directorio.treasurer.rut, orden: 4 });
+  // Additional members (directors, custom cargos)
+  (directorio.additionalMembers || []).forEach((m, i) => {
+    if (m) dirMembers.push({ cargo: m.cargoNombre || m.cargo || `Director/a ${i + 1}`, name: getName(m), rut: m.rut, orden: m.orden || 5 + i });
+  });
+  dirMembers.sort((a, b) => a.orden - b.orden);
+
+  const directorioHTML = dirMembers.length > 0
+    ? dirMembers.map(d => `<strong>${d.cargo}:</strong> ${d.name || '_______________'}${d.rut ? ` (RUT: ${d.rut})` : ''}`).join('<br>\n      ')
+    : '<strong>Presidente/a:</strong> _______________<br>\n      <strong>Secretario/a:</strong> _______________<br>\n      <strong>Tesorero/a:</strong> _______________';
 
   return `
 <!DOCTYPE html>
@@ -166,9 +177,7 @@ const generateActaHTML = (org) => {
       La Asamblea acuerda por unanimidad designar el siguiente Directorio Provisorio:
     </p>
     <p style="text-indent: 0; padding-left: 2cm;">
-      <strong>Presidente/a:</strong> ${presidentName}<br>
-      <strong>Secretario/a:</strong> ${secretaryName}<br>
-      <strong>Tesorero/a:</strong> ${treasurerName}
+      ${directorioHTML}
     </p>
 
     <p class="section-title">TERCERO: ESTATUTOS</p>

@@ -501,19 +501,60 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
 
     // Asegurar que provisionalDirectorio se guarde explícitamente
     if (req.body.provisionalDirectorio) {
-      // Helper para limpiar datos de miembro (remover certificados base64)
       const cleanMember = (member) => {
         if (!member) return null;
         const { certificado, certificate, ...cleanData } = member;
         return cleanData;
       };
 
+      const pDir = req.body.provisionalDirectorio;
+
+      // Map from wizard cargo IDs (español) to Organization model fields (English)
+      const CARGO_TO_FIELD = {
+        'presidente': 'president',
+        'secretario': 'secretary',
+        'tesorero': 'treasurer',
+        'vicepresidente': 'vicePresident'
+      };
+
+      // If data comes in new format (keyed by cargo IDs like 'presidente', 'secretario')
+      // map to the Organization model fields
+      let president = pDir.president || null;
+      let secretary = pDir.secretary || null;
+      let treasurer = pDir.treasurer || null;
+      let vicePresident = pDir.vicePresident || null;
+      let additionalMembers = pDir.additionalMembers || [];
+
+      // Check if wizard sent data keyed by Spanish cargo IDs
+      if (pDir.presidente && !pDir.president) {
+        president = pDir.presidente;
+      }
+      if (pDir.secretario && !pDir.secretary) {
+        secretary = pDir.secretario;
+      }
+      if (pDir.tesorero && !pDir.treasurer) {
+        treasurer = pDir.tesorero;
+      }
+      if (pDir.vicepresidente && !pDir.vicePresident) {
+        vicePresident = pDir.vicepresidente;
+      }
+
+      // Collect all other cargo entries as additionalMembers (directors, custom cargos)
+      const knownKeys = new Set(['president', 'secretary', 'treasurer', 'vicePresident',
+        'presidente', 'secretario', 'tesorero', 'vicepresidente',
+        'additionalMembers', 'designatedAt', 'type', 'expiresAt']);
+      Object.entries(pDir).forEach(([key, val]) => {
+        if (!knownKeys.has(key) && val && typeof val === 'object' && val.rut) {
+          additionalMembers.push({ ...val, cargo: key, cargoNombre: val.cargoNombre || key });
+        }
+      });
+
       orgData.provisionalDirectorio = {
-        president: cleanMember(req.body.provisionalDirectorio.president),
-        secretary: cleanMember(req.body.provisionalDirectorio.secretary),
-        treasurer: cleanMember(req.body.provisionalDirectorio.treasurer),
-        // Incluir miembros adicionales (vicepresidente, directores, etc.)
-        additionalMembers: (req.body.provisionalDirectorio.additionalMembers || []).map(cleanMember),
+        president: cleanMember(president),
+        secretary: cleanMember(secretary),
+        treasurer: cleanMember(treasurer),
+        vicePresident: cleanMember(vicePresident),
+        additionalMembers: additionalMembers.map(cleanMember),
         designatedAt: new Date(),
         type: 'PROVISIONAL'
       };
