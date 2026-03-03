@@ -37,9 +37,6 @@ const ORG_MENU_ITEMS = [
 // Secondary items (always shown, below org section)
 const SECONDARY_MENU_ITEMS = [
   { key: 'mis-org', label: 'Mis Organizaciones', icon: '🏠' },
-  { key: 'guia', label: 'Guía', icon: '📑' },
-  { key: 'biblioteca', label: 'Biblioteca', icon: '📚' },
-  { key: 'noticias', label: 'Noticias', icon: '📰' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' },
 ];
@@ -84,20 +81,7 @@ export default function OrgDashboardPage() {
   const sidebarTitle = 'Mi Organización';
   const hasMultipleOrgs = organizations.length > 1;
 
-  // Handle tab clicks - some open in new tab (legacy vanilla JS pages)
   function handleTabClick(key) {
-    if (key === 'guia') {
-      window.open('/?page=guia-constitucion', '_blank');
-      return;
-    }
-    if (key === 'biblioteca') {
-      window.open('/?page=biblioteca', '_blank');
-      return;
-    }
-    if (key === 'noticias') {
-      window.open('/?page=noticias', '_blank');
-      return;
-    }
     setActiveTab(key);
   }
 
