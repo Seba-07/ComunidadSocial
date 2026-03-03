@@ -115,11 +115,15 @@ export default function OrgDashboardPage() {
     </div>
   ) : null;
 
-  // Sidebar sections: org items + secondary items
-  const sidebarSections = [
-    { items: ORG_MENU_ITEMS },
-    { items: SECONDARY_MENU_ITEMS },
-  ];
+  // Sidebar sections: only show org items when an org is active
+  const sidebarSections = activeOrg
+    ? [
+        { label: activeOrg.organizationName, items: ORG_MENU_ITEMS },
+        { items: SECONDARY_MENU_ITEMS },
+      ]
+    : [
+        { items: SECONDARY_MENU_ITEMS },
+      ];
 
   return (
     <>
@@ -127,6 +131,7 @@ export default function OrgDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title={sidebarTitle}
+          subtitle="Organizador"
           sections={sidebarSections}
           activeKey={effectiveTab}
           onItemClick={handleTabClick}

@@ -73,12 +73,12 @@ body {
     left: 0;
     right: 0;
     height: var(--header-height);
-    background: rgba(15, 23, 42, 0.95);
+    background: linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(241,245,249,0.98) 25%, rgba(30,58,138,0.97) 55%, rgba(15,23,42,0.97) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: white;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.12);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     z-index: var(--z-fixed, 100);
 }
 
@@ -98,7 +98,7 @@ body {
     flex: 1;
     justify-content: flex-start;
     text-decoration: none;
-    color: white;
+    color: #0f172a;
     transition: var(--cs-transition, all 0.2s ease);
 }
 
@@ -107,13 +107,10 @@ body {
 }
 
 .logo-img {
-    height: 44px;
+    height: 48px;
     width: auto;
     object-fit: contain;
     transition: var(--cs-transition, all 0.2s ease);
-    background: white;
-    border-radius: 10px;
-    padding: 4px 7px;
 }
 
 .header-logo:hover .logo-img {
@@ -124,12 +121,12 @@ body {
     font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: white;
+    color: #0f172a;
 }
 
 .header-subtitle {
     margin: 3px 0 0;
-    color: rgba(255, 255, 255, 0.75);
+    color: #64748b;
     font-size: 14px;
     font-weight: 400;
 }
@@ -9185,7 +9182,7 @@ body {
 /* Make header logo clickable */
 a.header-logo {
     text-decoration: none;
-    color: white;
+    color: #0f172a;
     display: flex;
     align-items: center;
     gap: 12px;

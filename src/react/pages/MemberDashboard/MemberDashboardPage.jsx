@@ -89,6 +89,7 @@ export default function MemberDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title={sidebarTitle}
+          subtitle="Socio"
           menuItems={MEMBER_MENU_ITEMS}
           activeKey={activeTab}
           onItemClick={setActiveTab}

@@ -80,6 +80,7 @@ export default function MinistroDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title="Ministro de Fe"
+          subtitle="Validación de Actos"
           menuItems={menuItems}
           activeKey={activeView}
           onItemClick={setActiveView}

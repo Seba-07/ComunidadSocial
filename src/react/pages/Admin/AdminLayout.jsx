@@ -33,6 +33,7 @@ export default function AdminLayout({ activeView, onViewChange, children, orgCou
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title="Panel Admin"
+          subtitle="Administrador Sistema"
           menuItems={items}
           activeKey={activeView}
           onItemClick={onViewChange}

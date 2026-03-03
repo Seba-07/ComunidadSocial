@@ -17,7 +17,7 @@ function getInitialCollapsed() {
  * Positioned below the SharedHeader (top: var(--header-height)).
  * Supports collapse/expand with localStorage persistence.
  */
-export default function SharedSidebar({ title, menuItems, activeKey, onItemClick, header, sections }) {
+export default function SharedSidebar({ title, subtitle, menuItems, activeKey, onItemClick, header, sections }) {
   const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
@@ -78,6 +78,9 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
   const renderItems = sections ? (
     sections.map((section, i) => (
       <div key={i} className={i > 0 ? 'unified-sidebar__section' : undefined}>
+        {section.label && (
+          <div className="unified-sidebar__section-label">{section.label}</div>
+        )}
         {section.items.map(renderItem)}
       </div>
     ))
@@ -125,7 +128,10 @@ export default function SharedSidebar({ title, menuItems, activeKey, onItemClick
           <h2 className="unified-sidebar__title">
             {collapsed ? titleInitials : title}
           </h2>
-          <p className="unified-sidebar__subtitle">
+          {subtitle && (
+            <p className="unified-sidebar__subtitle">{subtitle}</p>
+          )}
+          <p className={subtitle ? 'unified-sidebar__user-name' : 'unified-sidebar__subtitle'}>
             {user?.firstName} {user?.lastName}
           </p>
         </div>
