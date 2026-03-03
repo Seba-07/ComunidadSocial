@@ -33,6 +33,10 @@ export default function UVMapFull({
   const [createForm, setCreateForm] = useState({ nombre: '', macrozona: 1 });
   const [drawnGeometry, setDrawnGeometry] = useState(null);
   const [saving, setSaving] = useState(false);
+  // Address test
+  const [testAddress, setTestAddress] = useState('');
+  const [testResult, setTestResult] = useState(null); // { coords, uv, searching }
+  const testMarkerRef = useRef(null);
 
   // Initialize map once
   useEffect(() => {
@@ -216,19 +220,130 @@ export default function UVMapFull({
     drawnItemsRef.current?.clearLayers();
   }
 
+  // Test address search
+  async function handleTestAddress() {
+    if (!testAddress.trim() || testAddress.trim().length < 5) {
+      addToast('Ingresa una dirección para buscar', 'error'); return;
+    }
+    setTestResult({ searching: true });
+
+    // Remove previous marker
+    if (testMarkerRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeLayer(testMarkerRef.current);
+      testMarkerRef.current = null;
+    }
+
+    try {
+      const result = await apiService.get(`/unidades-vecinales/buscar?direccion=${encodeURIComponent(testAddress)}`);
+
+      const map = mapInstanceRef.current;
+      if (result.coords && map) {
+        // Add marker
+        const marker = L.marker([result.coords.lat, result.coords.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="width:14px;height:14px;background:#dc2626;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+          })
+        }).addTo(map);
+        testMarkerRef.current = marker;
+        map.setView([result.coords.lat, result.coords.lng], 16);
+      }
+
+      if (result.encontrada) {
+        const uv = result.unidadVecinal;
+        setTestResult({
+          found: true,
+          uvNumero: uv.numero,
+          uvNombre: uv.nombre,
+          macrozona: uv.macrozona,
+          coords: result.coords
+        });
+        // Highlight the matched UV
+        onSelectUv(uv._id);
+      } else {
+        setTestResult({ found: false, coords: result.coords });
+      }
+    } catch (err) {
+      setTestResult({ found: false, error: err.message });
+    }
+  }
+
+  function clearTest() {
+    setTestAddress('');
+    setTestResult(null);
+    if (testMarkerRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeLayer(testMarkerRef.current);
+      testMarkerRef.current = null;
+    }
+  }
+
   const selectedData = uvList.find(u => u._id === selectedUv);
 
   return (
     <div style={{ display: 'flex', gap: 0, height: 650, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
       {/* Side Panel */}
       <div style={{ width: 280, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
-        {/* Search */}
-        <div style={{ padding: '12px 12px 8px' }}>
+        {/* Search UV */}
+        <div style={{ padding: '12px 12px 4px' }}>
           <input
             value={search} onChange={e => onSearchChange(e.target.value)}
-            placeholder="Buscar UV..."
+            placeholder="Filtrar UV..."
             style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, boxSizing: 'border-box' }}
           />
+        </div>
+
+        {/* Test address */}
+        <div style={{ padding: '4px 12px 8px' }}>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <input
+              value={testAddress}
+              onChange={e => setTestAddress(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleTestAddress()}
+              placeholder="Probar dirección..."
+              style={{ flex: 1, padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 12, boxSizing: 'border-box' }}
+            />
+            <button onClick={handleTestAddress} disabled={testResult?.searching}
+              style={{ padding: '7px 10px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+              {testResult?.searching ? '...' : 'Buscar'}
+            </button>
+          </div>
+          {testResult && !testResult.searching && (
+            <div style={{
+              marginTop: 6, padding: '8px 10px', borderRadius: 8, fontSize: 12,
+              background: testResult.found ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${testResult.found ? '#bbf7d0' : '#fecaca'}`
+            }}>
+              {testResult.found ? (
+                <div>
+                  <div style={{ fontWeight: 600, color: '#166534' }}>
+                    UV {testResult.uvNumero} {testResult.uvNombre ? `— ${testResult.uvNombre}` : ''}
+                  </div>
+                  <div style={{ color: '#166534', marginTop: 2 }}>
+                    Macrozona {testResult.macrozona}
+                  </div>
+                  {testResult.coords && (
+                    <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>
+                      {testResult.coords.lat.toFixed(5)}, {testResult.coords.lng.toFixed(5)}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ color: '#991b1b' }}>
+                  No se encontró UV para esta dirección
+                  {testResult.coords && (
+                    <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>
+                      Coordenadas: {testResult.coords.lat.toFixed(5)}, {testResult.coords.lng.toFixed(5)}
+                    </div>
+                  )}
+                </div>
+              )}
+              <button onClick={clearTest} style={{ marginTop: 4, fontSize: 11, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                Limpiar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Action buttons */}
