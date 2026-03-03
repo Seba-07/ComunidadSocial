@@ -45,6 +45,11 @@ const unidadVecinalSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null
   },
+  // Color for map polygon display
+  color: {
+    type: String,
+    default: null
+  },
   activa: {
     type: Boolean,
     default: true

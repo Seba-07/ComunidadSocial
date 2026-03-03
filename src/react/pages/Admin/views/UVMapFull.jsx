@@ -16,6 +16,18 @@ L.Icon.Default.mergeOptions({
 const MZ_COLORS = { 1: '#ef4444', 2: '#f59e0b', 3: '#10b981', 4: '#3b82f6', 5: '#8b5cf6', 6: '#ec4899', 7: '#06b6d4' };
 const MZ_NAMES = { 1: 'Cerro Renca', 2: 'Huamachuco', 3: 'Central', 4: 'Sur/Mapocho', 5: 'Lo Velásquez', 6: 'Oriente', 7: 'Sur-Poniente' };
 
+const COLOR_PALETTE = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+  '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
+  '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
+  '#f43f5e', '#78716c', '#64748b', '#111827'
+];
+
+function getUvColor(uv) {
+  return uv.color || MZ_COLORS[uv.macrozona] || '#6b7280';
+}
+
 const panelInput = { width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 13, boxSizing: 'border-box', background: '#fff' };
 const panelSelect = { ...panelInput, cursor: 'pointer' };
 const btnSm = (bg, color) => ({ padding: '6px 12px', background: bg, color, border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' });
@@ -29,7 +41,7 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
   const testMarkerRef = useRef(null);
 
   const [mode, setMode] = useState('view'); // view | create | drawPoly | reDraw
-  const [createForm, setCreateForm] = useState({ nombre: '', macrozona: 1 });
+  const [createForm, setCreateForm] = useState({ nombre: '', macrozona: 1, color: '' });
   const [drawnGeometry, setDrawnGeometry] = useState(null);
   const [saving, setSaving] = useState(false);
   const [testAddress, setTestAddress] = useState('');
@@ -71,11 +83,10 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
     try {
       const geojson = await apiService.get('/unidades-vecinales/geojson');
       geojson.features.forEach(f => {
-        const mz = f.properties.macrozona;
-        const color = MZ_COLORS[mz] || '#6b7280';
+        const color = f.properties.color || MZ_COLORS[f.properties.macrozona] || '#6b7280';
         const isSel = f.properties._id === selectedUv;
         const layer = L.geoJSON(f, {
-          style: { color: isSel ? '#2563eb' : color, weight: isSel ? 4 : 2, fillOpacity: isSel ? 0.3 : 0.12, fillColor: color },
+          style: { color: isSel ? '#2563eb' : color, weight: isSel ? 4 : 2, fillOpacity: isSel ? 0.3 : 0.15, fillColor: color },
           onEachFeature: (feat, l) => {
             l.bindTooltip(`<strong>UV ${feat.properties.numero}</strong>${feat.properties.nombre ? '<br>' + feat.properties.nombre : ''}`, { direction: 'center' });
             l.on('click', () => { onSelectUv(feat.properties._id); setEditForm(null); });
@@ -92,9 +103,9 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
   useEffect(() => {
     Object.entries(polyLayersRef.current).forEach(([id, layer]) => {
       layer.eachLayer(l => {
-        const mz = l.feature?.properties?.macrozona;
-        const color = MZ_COLORS[mz] || '#6b7280';
-        l.setStyle(id === selectedUv ? { weight: 4, fillOpacity: 0.3, color: '#2563eb' } : { weight: 2, fillOpacity: 0.12, color });
+        const p = l.feature?.properties;
+        const color = p?.color || MZ_COLORS[p?.macrozona] || '#6b7280';
+        l.setStyle(id === selectedUv ? { weight: 4, fillOpacity: 0.35, color: '#2563eb' } : { weight: 2, fillOpacity: 0.15, color });
       });
     });
   }, [selectedUv]);
@@ -107,7 +118,7 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
     try {
       const maxNum = uvList.reduce((mx, u) => Math.max(mx, parseInt(u.numero) || 0), 0);
       const num = String(maxNum + 1).padStart(3, '0');
-      await apiService.post('/unidades-vecinales', { numero: num, idOficial: `RENCA-${num}`, nombre: createForm.nombre.trim(), macrozona: parseInt(createForm.macrozona), geometry: drawnGeometry, poblaciones: [], calles: [] });
+      await apiService.post('/unidades-vecinales', { numero: num, idOficial: `RENCA-${num}`, nombre: createForm.nombre.trim(), macrozona: parseInt(createForm.macrozona), geometry: drawnGeometry, color: createForm.color || null, poblaciones: [], calles: [] });
       addToast(`UV ${num} creada`, 'success');
       resetMode(); onDataChange();
     } catch (err) { addToast(err.message || 'Error', 'error'); }
@@ -180,13 +191,13 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
   }
 
   // === EDIT UV ===
-  function openEditUv(uv) { setEditForm({ nombre: uv.nombre || '', macrozona: uv.macrozona || 1, poblaciones: [...(uv.poblaciones || [])] }); setEditPobInput(''); }
+  function openEditUv(uv) { setEditForm({ nombre: uv.nombre || '', macrozona: uv.macrozona || 1, poblaciones: [...(uv.poblaciones || [])], color: uv.color || '' }); setEditPobInput(''); }
 
   async function handleSaveEdit() {
     if (!selectedUv || !editForm) return;
     setSavingEdit(true);
     try {
-      await apiService.put(`/unidades-vecinales/${selectedUv}`, { nombre: editForm.nombre, macrozona: parseInt(editForm.macrozona), poblaciones: editForm.poblaciones });
+      await apiService.put(`/unidades-vecinales/${selectedUv}`, { nombre: editForm.nombre, macrozona: parseInt(editForm.macrozona), poblaciones: editForm.poblaciones, color: editForm.color || null });
       addToast('UV actualizada', 'success'); setEditForm(null); onDataChange();
     } catch (err) { addToast(err.message || 'Error', 'error'); }
     finally { setSavingEdit(false); }
@@ -255,9 +266,16 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
             <div style={{ fontSize: 13, fontWeight: 600, color: '#1d4ed8', marginBottom: 8 }}>Nueva UV — dibuja el polígono en el mapa</div>
             <input value={createForm.nombre} onChange={e => setCreateForm(f => ({ ...f, nombre: e.target.value }))}
               placeholder="Nombre" style={{ ...panelInput, marginBottom: 6 }} />
-            <select value={createForm.macrozona} onChange={e => setCreateForm(f => ({ ...f, macrozona: e.target.value }))} style={{ ...panelSelect, marginBottom: 8 }}>
+            <select value={createForm.macrozona} onChange={e => setCreateForm(f => ({ ...f, macrozona: e.target.value }))} style={{ ...panelSelect, marginBottom: 6 }}>
               {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>MZ {n} — {MZ_NAMES[n]}</option>)}
             </select>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>Color</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 8 }}>
+              {COLOR_PALETTE.map(c => (
+                <button key={c} onClick={() => setCreateForm(f => ({ ...f, color: f.color === c ? '' : c }))}
+                  style={{ width: 20, height: 20, borderRadius: 5, background: c, border: createForm.color === c ? '3px solid #111827' : '2px solid #e5e7eb', cursor: 'pointer', padding: 0, boxSizing: 'border-box' }} />
+              ))}
+            </div>
             <div style={{ fontSize: 11, color: drawnGeometry ? '#16a34a' : '#6b7280', marginBottom: 6, fontWeight: drawnGeometry ? 600 : 400 }}>
               {drawnGeometry ? 'Polígono dibujado' : 'Usa la herramienta de polígono en el mapa'}
             </div>
@@ -289,7 +307,7 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
           {filteredList.map(uv => {
             const active = uv._id === selectedUv;
             const hasPoly = !!uv.geometry?.coordinates;
-            const mzColor = MZ_COLORS[uv.macrozona] || '#6b7280';
+            const mzColor = getUvColor(uv);
             return (
               <button key={uv._id} onClick={() => { onSelectUv(uv._id); setEditForm(null); }}
                 style={{
@@ -320,8 +338,11 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
                   <button onClick={() => openEditUv(selectedData)} style={{ fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Editar</button>
                 </div>
                 {selectedData.nombre && <div style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>{selectedData.nombre}</div>}
-                <div style={{ display: 'inline-block', fontSize: 11, padding: '2px 8px', borderRadius: 8, background: (MZ_COLORS[selectedData.macrozona] || '#6b7280') + '18', color: MZ_COLORS[selectedData.macrozona] || '#6b7280', fontWeight: 700, marginBottom: 6 }}>
-                  Macrozona {selectedData.macrozona} — {MZ_NAMES[selectedData.macrozona] || ''}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ width: 14, height: 14, borderRadius: 4, background: getUvColor(selectedData), flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                    Macrozona {selectedData.macrozona} — {MZ_NAMES[selectedData.macrozona] || ''}
+                  </span>
                 </div>
                 {selectedData.poblaciones?.length > 0 && (
                   <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
@@ -349,6 +370,16 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
                 <select value={editForm.macrozona} onChange={e => setEditForm(f => ({ ...f, macrozona: e.target.value }))} style={{ ...panelSelect, marginBottom: 8 }}>
                   {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>MZ {n} — {MZ_NAMES[n]}</option>)}
                 </select>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>Color del polígono</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                  {COLOR_PALETTE.map(c => (
+                    <button key={c} onClick={() => setEditForm(f => ({ ...f, color: f.color === c ? '' : c }))}
+                      style={{
+                        width: 22, height: 22, borderRadius: 6, background: c, border: editForm.color === c ? '3px solid #111827' : '2px solid #e5e7eb',
+                        cursor: 'pointer', padding: 0, boxSizing: 'border-box'
+                      }} title={c} />
+                  ))}
+                </div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 2 }}>Poblaciones</label>
                 <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
                   <input value={editPobInput} onChange={e => setEditPobInput(e.target.value)}

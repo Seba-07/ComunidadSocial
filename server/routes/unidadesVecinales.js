@@ -103,7 +103,8 @@ router.get('/geojson', async (req, res) => {
         numero: uv.numero,
         nombre: uv.nombre,
         macrozona: uv.macrozona,
-        poblaciones: uv.poblaciones
+        poblaciones: uv.poblaciones,
+        color: uv.color
       },
       geometry: uv.geometry
     }));
@@ -214,7 +215,7 @@ router.get('/macrozonas', async (req, res) => {
  */
 router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas, geometry } = req.body;
+    const { numero, idOficial, nombre, macrozona, poblaciones, calles, limites, palabrasClave, notas, geometry, color } = req.body;
 
     // Validar campos requeridos
     if (!numero || !idOficial) {
@@ -254,7 +255,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       palabrasClave: palabrasClave || [],
       notas: notas || '',
       activa: true,
-      geometry: cleanGeometry
+      geometry: cleanGeometry,
+      color: color || null
     });
 
     await nuevaUnidad.save();
@@ -322,7 +324,7 @@ router.get('/:id', async (req, res) => {
  */
 router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre, geometry } = req.body;
+    const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre, geometry, color } = req.body;
 
     const updateData = {};
     if (poblaciones !== undefined) updateData.poblaciones = poblaciones;
@@ -333,6 +335,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (macrozona !== undefined) updateData.macrozona = macrozona;
     if (activa !== undefined) updateData.activa = activa;
     if (nombre !== undefined) updateData.nombre = nombre;
+    if (color !== undefined) updateData.color = color;
     if (geometry !== undefined) {
       if (geometry && geometry.type === 'Polygon' && geometry.coordinates) {
         // Ensure coordinates are clean arrays (Mongoose Mixed can convert to objects)
