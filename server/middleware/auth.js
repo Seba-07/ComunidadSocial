@@ -104,32 +104,8 @@ export const requireRole = (...roles) => {
  * Skips for MIEMBRO (created by system) and MUNICIPALIDAD (admin).
  */
 export const requireVerifiedEmail = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-
-  // Skip for admin and system-created members
-  if (['MUNICIPALIDAD', 'MIEMBRO'].includes(req.user.role)) {
-    return next();
-  }
-
-  // Skip if already verified
-  if (req.user.emailVerified) {
-    return next();
-  }
-
-  // Allow 7 days grace period
-  const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
-  const accountAge = Date.now() - new Date(req.user.createdAt).getTime();
-
-  if (accountAge > GRACE_PERIOD_MS) {
-    return res.status(403).json({
-      error: 'Debe verificar su correo electrónico para continuar. Revise su bandeja de entrada o solicite un nuevo enlace de verificación.',
-      code: 'EMAIL_NOT_VERIFIED'
-    });
-  }
-
-  next();
+  // Disabled until SMTP is configured — always allow
+  return next();
 };
 
 export const generateToken = (user) => {

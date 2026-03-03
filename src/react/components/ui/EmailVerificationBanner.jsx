@@ -15,6 +15,8 @@ export default function EmailVerificationBanner() {
     return () => window.removeEventListener('email-not-verified', handleError);
   }, []);
 
+  // Disabled until SMTP is configured
+  if (true) return null;
   if (!user || user.emailVerified || dismissed) return null;
 
   async function handleResend() {
