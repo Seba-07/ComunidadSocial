@@ -10,10 +10,12 @@ import AssignmentCard from './AssignmentCard';
 import ValidationWizard from './ValidationWizard';
 import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
 import SettingsPage from '../Settings/SettingsPage';
+import MiHorario from './MiHorario';
 
 const MINISTRO_MENU_ITEMS = [
   { key: 'pending', label: 'Asignaciones', icon: '📋' },
   { key: 'completed', label: 'Completadas', icon: '✅' },
+  { key: 'horario', label: 'Mi Horario', icon: '📅' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
 ];
@@ -110,6 +112,7 @@ export default function MinistroDashboardPage() {
               </>
             )}
 
+            {activeView === 'horario' && <MiHorario />}
             {activeView === 'privacidad' && <OrgPrivacy />}
             {activeView === 'configuracion' && <SettingsPage />}
 
