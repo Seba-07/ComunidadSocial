@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /api/unidades-vecinales/buscar
- * Buscar unidad vecinal por dirección
+ * Buscar UV por dirección: geocoding Nominatim → punto-en-polígono → fallback texto
  */
 router.get('/buscar', async (req, res) => {
   try {
@@ -36,23 +36,114 @@ router.get('/buscar', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere una dirección para buscar' });
     }
 
-    const unidadVecinal = await UnidadVecinal.buscarPorDireccion(direccion);
+    // Step 1: Try geocoding with Nominatim
+    let coords = null;
+    try {
+      const searchQuery = `${direccion}, Renca, Santiago, Chile`;
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=cl`;
+      const response = await fetch(nominatimUrl, {
+        headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' }
+      });
+      const results = await response.json();
+      if (results.length > 0) {
+        coords = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+      }
+    } catch (err) {
+      console.warn('Nominatim geocoding failed:', err.message);
+    }
+
+    // Step 2: Search (geo first, then text fallback)
+    const unidadVecinal = await UnidadVecinal.buscarPorDireccion(direccion, coords);
 
     if (!unidadVecinal) {
       return res.json({
         encontrada: false,
+        coords,
         mensaje: 'No se encontró una unidad vecinal para esta dirección',
         sugerencia: 'El administrador debe asignar la unidad vecinal manualmente'
       });
     }
 
-    res.json({
-      encontrada: true,
-      unidadVecinal
-    });
+    res.json({ encontrada: true, unidadVecinal, coords });
   } catch (error) {
     console.error('Error al buscar unidad vecinal:', error);
     res.status(500).json({ error: 'Error al buscar unidad vecinal' });
+  }
+});
+
+/**
+ * GET /api/unidades-vecinales/geojson
+ * All UVs as GeoJSON FeatureCollection (for map display)
+ */
+router.get('/geojson', async (req, res) => {
+  try {
+    const uvs = await UnidadVecinal.find({ activa: true }).lean();
+    const features = uvs.filter(uv => uv.geometry?.coordinates).map(uv => ({
+      type: 'Feature',
+      properties: {
+        _id: uv._id,
+        numero: uv.numero,
+        nombre: uv.nombre,
+        macrozona: uv.macrozona,
+        poblaciones: uv.poblaciones
+      },
+      geometry: uv.geometry
+    }));
+    res.json({ type: 'FeatureCollection', features });
+  } catch (error) {
+    console.error('Error generating GeoJSON:', error);
+    res.status(500).json({ error: 'Error al generar GeoJSON' });
+  }
+});
+
+/**
+ * GET /api/unidades-vecinales/geocode?address=
+ * Proxy to Nominatim geocoding (avoids CORS issues from frontend)
+ */
+router.get('/geocode', async (req, res) => {
+  try {
+    const { address } = req.query;
+    if (!address) return res.status(400).json({ error: 'Address required' });
+
+    const searchQuery = `${address}, Renca, Santiago, Chile`;
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=cl`;
+    const response = await fetch(nominatimUrl, {
+      headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' }
+    });
+    const results = await response.json();
+
+    if (results.length === 0) {
+      return res.json({ found: false });
+    }
+
+    res.json({
+      found: true,
+      lat: parseFloat(results[0].lat),
+      lng: parseFloat(results[0].lon),
+      displayName: results[0].display_name
+    });
+  } catch (error) {
+    console.error('Geocode error:', error);
+    res.status(500).json({ error: 'Error al geocodificar' });
+  }
+});
+
+/**
+ * GET /api/unidades-vecinales/find-by-point?lat=&lng=
+ * Find UV containing a geographic point
+ */
+router.get('/find-by-point', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' });
+
+    const uv = await UnidadVecinal.findByPoint(parseFloat(lng), parseFloat(lat));
+    if (!uv) return res.json({ encontrada: false });
+
+    res.json({ encontrada: true, unidadVecinal: uv });
+  } catch (error) {
+    console.error('Find by point error:', error);
+    res.status(500).json({ error: 'Error al buscar por punto' });
   }
 });
 
@@ -189,7 +280,7 @@ router.get('/:id', async (req, res) => {
  */
 router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre } = req.body;
+    const { poblaciones, calles, palabrasClave, limites, notas, macrozona, activa, nombre, geometry } = req.body;
 
     const updateData = {};
     if (poblaciones !== undefined) updateData.poblaciones = poblaciones;
@@ -200,6 +291,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (macrozona !== undefined) updateData.macrozona = macrozona;
     if (activa !== undefined) updateData.activa = activa;
     if (nombre !== undefined) updateData.nombre = nombre;
+    if (geometry !== undefined) updateData.geometry = geometry;
 
     const unidad = await UnidadVecinal.findByIdAndUpdate(
       req.params.id,

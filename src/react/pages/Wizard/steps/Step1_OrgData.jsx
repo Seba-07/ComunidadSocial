@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '../../../../services/ApiService';
+
+const UVMiniMap = lazy(() => import('./UVMiniMap'));
 
 const CONTACT_PREFS = [
   { value: 'email', label: 'Email' },
@@ -16,7 +18,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
 
   // UV auto-detection state
   const [uvOptions, setUvOptions] = useState([]);
-  const [uvDetected, setUvDetected] = useState(null); // { numero, nombre }
+  const [uvDetected, setUvDetected] = useState(null); // { numero, nombre, geometry, coords }
   const [uvSearching, setUvSearching] = useState(false);
   const debounceRef = useRef(null);
 
@@ -52,8 +54,12 @@ export default function Step1_OrgData({ onNext, isFirst }) {
         const result = await apiService.get(`/unidades-vecinales/buscar?direccion=${encodeURIComponent(fullAddress)}`);
         if (result.encontrada && result.unidadVecinal) {
           const uv = result.unidadVecinal;
-          setUvDetected({ numero: uv.numero, nombre: uv.nombre });
-          // Auto-fill if empty or different
+          setUvDetected({
+            numero: uv.numero,
+            nombre: uv.nombre,
+            geometry: uv.geometry || null,
+            coords: result.coords || null
+          });
           if (!org.neighborhood || org.neighborhood !== uv.numero) {
             update('neighborhood', uv.numero);
           }
@@ -202,6 +208,13 @@ export default function Step1_OrgData({ onNext, isFirst }) {
             <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>
               No se detectó unidad vecinal. Puedes seleccionarla manualmente.
             </p>
+          )}
+          {uvDetected?.geometry?.coordinates && (
+            <div style={{ marginTop: 8 }}>
+              <Suspense fallback={<div style={{ height: 180, background: '#f3f4f6', borderRadius: 8 }} />}>
+                <UVMiniMap geometry={uvDetected.geometry} coords={uvDetected.coords} label={`UV ${uvDetected.numero}`} />
+              </Suspense>
+            </div>
           )}
         </div>
 

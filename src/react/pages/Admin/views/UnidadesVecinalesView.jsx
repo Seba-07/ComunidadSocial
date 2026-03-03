@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
 import Modal from '../../../components/ui/Modal';
@@ -6,6 +6,8 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import SearchBar from '../../../components/ui/SearchBar';
 import StatsGrid from '../../../components/ui/StatsGrid';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+
+const UVMapEditor = lazy(() => import('./UVMapEditor'));
 
 const EMPTY_UV = {
   numero: '', idOficial: '', nombre: '', macrozona: '',
@@ -26,6 +28,7 @@ export default function UnidadesVecinalesView() {
   const [tagInput, setTagInput] = useState({ poblaciones: '', calles: '' });
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showMap, setShowMap] = useState(false);
 
   async function loadData() {
     setIsLoading(true);
@@ -140,12 +143,27 @@ export default function UnidadesVecinalesView() {
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Unidades Vecinales</h1>
-        <button onClick={openCreate} style={{
-          padding: '10px 20px', border: 'none', borderRadius: 10,
-          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer'
-        }}>Nueva Unidad</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setShowMap(!showMap)} style={{
+            padding: '10px 20px', border: '1px solid #d1d5db', borderRadius: 10,
+            background: showMap ? '#111827' : 'white', color: showMap ? 'white' : '#374151',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer'
+          }}>{showMap ? 'Cerrar Mapa' : 'Ver Mapa'}</button>
+          <button onClick={openCreate} style={{
+            padding: '10px 20px', border: 'none', borderRadius: 10,
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer'
+          }}>Nueva Unidad</button>
+        </div>
       </div>
+
+      {showMap && (
+        <div style={{ marginBottom: 20 }}>
+          <Suspense fallback={<div style={{ height: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: 12, border: '1px solid #e5e7eb' }}>Cargando mapa...</div>}>
+            <UVMapEditor uvList={unidades} onPolygonSaved={loadData} />
+          </Suspense>
+        </div>
+      )}
 
       <StatsGrid stats={stats} />
 
@@ -181,8 +199,15 @@ export default function UnidadesVecinalesView() {
           <div key={uv._id} style={{
             background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#2563eb' }}>UV {uv.numero}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#2563eb' }}>UV {uv.numero}</h3>
+                {uv.geometry?.coordinates ? (
+                  <span title="Polígono definido" style={{ color: '#16a34a', fontSize: 12 }}>&#9679;</span>
+                ) : (
+                  <span title="Sin polígono" style={{ color: '#d1d5db', fontSize: 12 }}>&#9675;</span>
+                )}
+              </div>
               {uv.macrozona && <span style={{
                 padding: '2px 8px', borderRadius: 10, background: '#ede9fe',
                 color: '#7c3aed', fontSize: 11, fontWeight: 600
