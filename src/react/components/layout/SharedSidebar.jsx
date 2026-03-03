@@ -131,9 +131,16 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
           {subtitle && (
             <p className="unified-sidebar__subtitle">{subtitle}</p>
           )}
-          <p className={subtitle ? 'unified-sidebar__user-name' : 'unified-sidebar__subtitle'}>
-            {user?.firstName} {user?.lastName}
-          </p>
+          {(() => {
+            const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+            // Don't show name if it's the same as the subtitle (avoids duplication)
+            if (subtitle && fullName === subtitle) return null;
+            return (
+              <p className={subtitle ? 'unified-sidebar__user-name' : 'unified-sidebar__subtitle'}>
+                {fullName}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Optional extra header content (org selector, etc.) */}
