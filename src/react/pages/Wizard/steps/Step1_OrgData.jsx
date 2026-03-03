@@ -1,5 +1,7 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { apiService } from '../../../../services/ApiService';
 
 const CONTACT_PREFS = [
   { value: 'email', label: 'Email' },
@@ -12,8 +14,68 @@ export default function Step1_OrgData({ onNext, isFirst }) {
   const addToast = useUiStore(s => s.addToast);
   const org = formData.organization;
 
+  // UV auto-detection state
+  const [uvOptions, setUvOptions] = useState([]);
+  const [uvDetected, setUvDetected] = useState(null); // { numero, nombre }
+  const [uvSearching, setUvSearching] = useState(false);
+  const debounceRef = useRef(null);
+
+  // Load UV options for dropdown on mount
+  useEffect(() => {
+    apiService.get('/unidades-vecinales').then(data => {
+      const uvs = data.unidades || data || [];
+      setUvOptions(uvs.map(uv => ({
+        value: uv.numero,
+        label: `UV ${uv.numero}${uv.nombre ? ` - ${uv.nombre}` : ''}`,
+        nombre: uv.nombre
+      })));
+    }).catch(() => {});
+  }, []);
+
   function update(field, value) {
     updateFormData('organization', { [field]: value });
+  }
+
+  // Auto-detect UV when street changes
+  const searchUV = useCallback((street, number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const fullAddress = `${street || ''} ${number || ''}`.trim();
+    if (fullAddress.length < 5) {
+      setUvDetected(null);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setUvSearching(true);
+      try {
+        const result = await apiService.get(`/unidades-vecinales/buscar?direccion=${encodeURIComponent(fullAddress)}`);
+        if (result.encontrada && result.unidadVecinal) {
+          const uv = result.unidadVecinal;
+          setUvDetected({ numero: uv.numero, nombre: uv.nombre });
+          // Auto-fill if empty or different
+          if (!org.neighborhood || org.neighborhood !== uv.numero) {
+            update('neighborhood', uv.numero);
+          }
+        } else {
+          setUvDetected(null);
+        }
+      } catch {
+        setUvDetected(null);
+      } finally {
+        setUvSearching(false);
+      }
+    }, 600);
+  }, [org.neighborhood]);
+
+  function handleStreetChange(value) {
+    update('street', value);
+    searchUV(value, org.streetNumber);
+  }
+
+  function handleNumberChange(value) {
+    update('streetNumber', value);
+    searchUV(org.street, value);
   }
 
   function validate() {
@@ -82,12 +144,12 @@ export default function Step1_OrgData({ onNext, isFirst }) {
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <div>
             <label style={labelStyle}>Calle *</label>
-            <input value={org.street} onChange={e => update('street', e.target.value)}
+            <input value={org.street} onChange={e => handleStreetChange(e.target.value)}
               placeholder="Calle" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Número</label>
-            <input value={org.streetNumber || ''} onChange={e => update('streetNumber', e.target.value)}
+            <input value={org.streetNumber || ''} onChange={e => handleNumberChange(e.target.value)}
               placeholder="N°" style={inputStyle} />
           </div>
         </div>
@@ -103,10 +165,44 @@ export default function Step1_OrgData({ onNext, isFirst }) {
           </div>
         </div>
 
+        {/* Unidad Vecinal with auto-detection */}
         <div>
-          <label style={labelStyle}>Unidad Vecinal</label>
-          <input value={org.neighborhood || ''} onChange={e => update('neighborhood', e.target.value)}
-            placeholder="Número de unidad vecinal" style={inputStyle} />
+          <label style={labelStyle}>
+            Unidad Vecinal
+            {uvSearching && (
+              <span style={{ fontWeight: 400, fontSize: 12, color: '#6b7280', marginLeft: 8 }}>
+                Buscando...
+              </span>
+            )}
+          </label>
+          <select
+            value={org.neighborhood || ''}
+            onChange={e => { update('neighborhood', e.target.value); setUvDetected(null); }}
+            style={inputStyle}
+          >
+            <option value="">Seleccionar unidad vecinal...</option>
+            {uvOptions.map(uv => (
+              <option key={uv.value} value={uv.value}>{uv.label}</option>
+            ))}
+          </select>
+          {uvDetected && (
+            <div style={{
+              marginTop: 6, padding: '6px 12px', borderRadius: 8,
+              background: '#f0fdf4', border: '1px solid #bbf7d0',
+              fontSize: 12, color: '#166534', display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <span>&#10003;</span>
+              <span>
+                Detectada automáticamente: <strong>UV {uvDetected.numero}</strong>
+                {uvDetected.nombre ? ` — ${uvDetected.nombre}` : ''}
+              </span>
+            </div>
+          )}
+          {!uvDetected && org.street && org.street.length >= 5 && !uvSearching && (
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>
+              No se detectó unidad vecinal. Puedes seleccionarla manualmente.
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -138,7 +234,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
 }
 
 const labelStyle = { display: 'block', fontWeight: 600, fontSize: 14, color: '#374151', marginBottom: 6 };
-const inputStyle = { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: 10, fontSize: 14 };
+const inputStyle = { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: 10, fontSize: 14, boxSizing: 'border-box' };
 const nextBtn = {
   padding: '12px 28px', border: 'none', borderRadius: 10,
   background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
