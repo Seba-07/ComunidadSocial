@@ -35,8 +35,12 @@ export default function UVMapFull({
   const [saving, setSaving] = useState(false);
   // Address test
   const [testAddress, setTestAddress] = useState('');
-  const [testResult, setTestResult] = useState(null); // { coords, uv, searching }
+  const [testResult, setTestResult] = useState(null);
   const testMarkerRef = useRef(null);
+  // Edit UV fields
+  const [editForm, setEditForm] = useState(null);
+  const [editPobInput, setEditPobInput] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Initialize map once
   useEffect(() => {
@@ -279,6 +283,42 @@ export default function UVMapFull({
     }
   }
 
+  // Open edit form for selected UV
+  function openEditUv(uv) {
+    setEditForm({
+      nombre: uv.nombre || '',
+      macrozona: uv.macrozona || 1,
+      poblaciones: [...(uv.poblaciones || [])]
+    });
+    setEditPobInput('');
+  }
+
+  async function handleSaveEdit() {
+    if (!selectedUv || !editForm) return;
+    setSavingEdit(true);
+    try {
+      await apiService.put(`/unidades-vecinales/${selectedUv}`, {
+        nombre: editForm.nombre,
+        macrozona: parseInt(editForm.macrozona),
+        poblaciones: editForm.poblaciones
+      });
+      addToast('UV actualizada', 'success');
+      setEditForm(null);
+      onDataChange();
+    } catch (err) {
+      addToast(err.message || 'Error al actualizar', 'error');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  function addPoblacion() {
+    const val = editPobInput.trim();
+    if (!val || editForm.poblaciones.includes(val)) return;
+    setEditForm(f => ({ ...f, poblaciones: [...f.poblaciones, val] }));
+    setEditPobInput('');
+  }
+
   const selectedData = uvList.find(u => u._id === selectedUv);
 
   return (
@@ -339,9 +379,12 @@ export default function UVMapFull({
                   )}
                 </div>
               )}
-              <button onClick={clearTest} style={{ marginTop: 4, fontSize: 11, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                Limpiar
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <span style={{ fontSize: 10, color: '#9ca3af' }}>Precisión aprox. (OpenStreetMap)</span>
+                <button onClick={clearTest} style={{ fontSize: 11, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                  Limpiar
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -431,28 +474,79 @@ export default function UVMapFull({
           })}
         </div>
 
-        {/* Selected UV detail */}
+        {/* Selected UV detail + edit */}
         {selectedData && mode === 'view' && (
-          <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 12 }}>
-            <div style={{ fontWeight: 700, color: '#111827', marginBottom: 4 }}>UV {selectedData.numero} — {selectedData.nombre || 'Sin nombre'}</div>
-            {selectedData.macrozona && <div style={{ color: '#6b7280' }}>Macrozona {selectedData.macrozona}</div>}
-            {selectedData.poblaciones?.length > 0 && (
-              <div style={{ color: '#6b7280', marginTop: 4 }}>Poblaciones: {selectedData.poblaciones.slice(0, 3).join(', ')}{selectedData.poblaciones.length > 3 ? '...' : ''}</div>
+          <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 12, maxHeight: 280, overflow: 'auto' }}>
+            {!editForm ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ fontWeight: 700, color: '#111827' }}>UV {selectedData.numero} — {selectedData.nombre || 'Sin nombre'}</div>
+                  <button onClick={() => openEditUv(selectedData)} style={{ fontSize: 11, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                    Editar
+                  </button>
+                </div>
+                {selectedData.macrozona && (
+                  <div style={{ display: 'inline-block', fontSize: 11, padding: '1px 6px', borderRadius: 6, background: MZ_COLORS[selectedData.macrozona] + '20', color: MZ_COLORS[selectedData.macrozona], fontWeight: 600 }}>
+                    Macrozona {selectedData.macrozona}
+                  </div>
+                )}
+                {selectedData.poblaciones?.length > 0 && (
+                  <div style={{ color: '#6b7280', marginTop: 4 }}>Poblaciones: {selectedData.poblaciones.join(', ')}</div>
+                )}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  {selectedData.geometry?.coordinates ? (
+                    <button onClick={() => handleDeletePolygon(selectedData._id)} style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', background: '#fff', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer' }}>
+                      Borrar polígono
+                    </button>
+                  ) : (
+                    <button onClick={() => startEditPoly(selectedData._id)} style={{ padding: '5px 10px', fontSize: 11, color: '#fff', background: '#111827', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                      Dibujar polígono
+                    </button>
+                  )}
+                  <button onClick={() => onDeleteUv(selectedData)} style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', background: '#fff', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer' }}>
+                    Eliminar
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Edit mode */
+              <>
+                <div style={{ fontWeight: 600, color: '#111827', marginBottom: 6 }}>Editar UV {selectedData.numero}</div>
+                <input value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
+                  placeholder="Nombre" style={{ width: '100%', padding: 6, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, marginBottom: 6, boxSizing: 'border-box' }} />
+                <select value={editForm.macrozona} onChange={e => setEditForm(f => ({ ...f, macrozona: e.target.value }))}
+                  style={{ width: '100%', padding: 6, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, marginBottom: 6, boxSizing: 'border-box' }}>
+                  {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>Macrozona {n}</option>)}
+                </select>
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 3 }}>Poblaciones</div>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                    <input value={editPobInput} onChange={e => setEditPobInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPoblacion())}
+                      placeholder="Agregar..." style={{ flex: 1, padding: 5, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, boxSizing: 'border-box' }} />
+                    <button onClick={addPoblacion} style={{ padding: '5px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}>+</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {editForm.poblaciones.map((p, i) => (
+                      <span key={i} style={{ padding: '2px 6px', background: '#e5e7eb', borderRadius: 6, fontSize: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        {p}
+                        <button onClick={() => setEditForm(f => ({ ...f, poblaciones: f.poblaciones.filter((_, j) => j !== i) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#6b7280', padding: 0, lineHeight: 1 }}>&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => setEditForm(null)} style={{ flex: 1, padding: 6, background: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}>
+                    Cancelar
+                  </button>
+                  <button onClick={handleSaveEdit} disabled={savingEdit}
+                    style={{ flex: 1, padding: 6, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: savingEdit ? 0.6 : 1 }}>
+                    {savingEdit ? '...' : 'Guardar'}
+                  </button>
+                </div>
+              </>
             )}
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {selectedData.geometry?.coordinates ? (
-                <button onClick={() => handleDeletePolygon(selectedData._id)} style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', background: '#fff', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer' }}>
-                  Borrar polígono
-                </button>
-              ) : (
-                <button onClick={() => startEditPoly(selectedData._id)} style={{ padding: '5px 10px', fontSize: 11, color: '#fff', background: '#111827', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-                  Dibujar polígono
-                </button>
-              )}
-              <button onClick={() => onDeleteUv(selectedData)} style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', background: '#fff', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer' }}>
-                Eliminar UV
-              </button>
-            </div>
           </div>
         )}
       </div>
