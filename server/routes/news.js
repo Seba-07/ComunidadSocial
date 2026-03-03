@@ -48,7 +48,9 @@ const upload = multer({
  */
 router.get('/', async (req, res) => {
   try {
-    const { category, search, includeUnpublished, limit = 20, page = 1 } = req.query;
+    const { category, search, includeUnpublished } = req.query;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const page = Math.max(1, parseInt(req.query.page) || 1);
     const filter = {};
 
     // Solo mostrar publicadas a usuarios no autenticados o no admin
@@ -60,11 +62,11 @@ router.get('/', async (req, res) => {
       filter.category = category;
     }
 
-    if (search) {
-      filter.$text = { $search: search };
+    if (search && typeof search === 'string' && search.length <= 100) {
+      filter.$text = { $search: search.slice(0, 100) };
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (page - 1) * limit;
 
     const [news, total] = await Promise.all([
       News.find(filter)

@@ -213,9 +213,10 @@ router.post('/login-socio', authLimiter, async (req, res) => {
     const cleanRut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
 
     // Buscar usuario MIEMBRO por apellido (case-insensitive) y activo
+    const escapedLastName = lastName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const user = await User.findOne({
       role: 'MIEMBRO',
-      lastName: { $regex: new RegExp(`^${lastName.trim()}$`, 'i') },
+      lastName: { $regex: new RegExp(`^${escapedLastName}$`, 'i') },
       active: true
     });
 

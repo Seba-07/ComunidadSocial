@@ -109,26 +109,30 @@ async function createMemberAccounts(organization) {
     return { createdAccounts, errors, message: 'No hay miembros para crear cuentas' };
   }
 
+  // Batch lookup: find all existing users by RUT or email in one query (avoids N+1)
+  const ruts = organization.members.map(m => m.rut).filter(Boolean);
+  const emails = organization.members.map(m => m.email).filter(Boolean);
+  const existingUsers = await User.find({
+    $or: [
+      { rut: { $in: ruts } },
+      { email: { $in: emails } }
+    ]
+  });
+  const userByRut = new Map(existingUsers.map(u => [u.rut, u]));
+  const userByEmail = new Map(existingUsers.filter(u => u.email).map(u => [u.email, u]));
+
   for (const member of organization.members) {
     try {
-      // Verificar si ya existe un usuario con este RUT o email
-      const existingUser = await User.findOne({
-        $or: [
-          { rut: member.rut },
-          { email: member.email }
-        ].filter(condition => Object.values(condition).every(v => v)) // Solo buscar si tiene valor
-      });
+      const existingUser = userByRut.get(member.rut) || (member.email && userByEmail.get(member.email));
 
       if (existingUser) {
         // Si ya existe, asociar a la organización si es MIEMBRO (soporta múltiples orgs)
         if (existingUser.role === 'MIEMBRO') {
-          // Agregar al array organizationIds sin duplicar
           if (!existingUser.organizationIds) existingUser.organizationIds = [];
           const orgIdStr = organization._id.toString();
           if (!existingUser.organizationIds.some(id => id.toString() === orgIdStr)) {
             existingUser.organizationIds.push(organization._id);
           }
-          // Mantener legacy organizationId para backward compat
           if (!existingUser.organizationId) existingUser.organizationId = organization._id;
           await existingUser.save();
           createdAccounts.push({
@@ -187,9 +191,9 @@ async function createMemberAccounts(organization) {
   return { createdAccounts, errors };
 }
 
-// PUBLIC: Get booked time slots (for calendar availability)
+// Get booked time slots (for calendar availability)
 // Returns only date/time pairs without sensitive organization data
-router.get('/availability/booked-slots', async (req, res) => {
+router.get('/availability/booked-slots', authenticate, async (req, res) => {
   try {
     // Get organizations with scheduled dates (not cancelled/rejected)
     const organizations = await Organization.find({
@@ -287,12 +291,23 @@ router.get('/availability/booked-slots', async (req, res) => {
 // Get all organizations (Admin only)
 router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const organizations = await Organization.find()
-      .select(LIST_EXCLUDE)
-      .populate('userId', 'firstName lastName email')
-      .sort({ createdAt: -1 })
-      .lean();
-    res.json(organizations);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const skip = (page - 1) * limit;
+    const statusFilter = req.query.status ? { status: req.query.status } : {};
+
+    const [organizations, total] = await Promise.all([
+      Organization.find(statusFilter)
+        .select(LIST_EXCLUDE)
+        .populate('userId', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Organization.countDocuments(statusFilter)
+    ]);
+
+    res.json({ organizations, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (error) {
     console.error('Get organizations error:', error);
     res.status(500).json({ error: 'Error al obtener organizaciones' });

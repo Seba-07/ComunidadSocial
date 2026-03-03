@@ -79,7 +79,8 @@ class OrganizationsService {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
       if (currentUser?.role === 'MUNICIPALIDAD') {
-        this.organizations = await apiService.getOrganizations();
+        const data = await apiService.getOrganizations();
+        this.organizations = data.organizations || data || [];
       } else {
         this.organizations = await apiService.getMyOrganizations();
       }
@@ -151,8 +152,8 @@ class OrganizationsService {
    */
   async getAllAsync() {
     try {
-      const orgs = await apiService.getOrganizations();
-      this.organizations = orgs;
+      const data = await apiService.getOrganizations();
+      this.organizations = data.organizations || data || [];
       this._saveToLocalStorage();
 
       // Limpiar reservas de organizaciones que ya no existen

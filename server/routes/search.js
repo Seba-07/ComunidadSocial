@@ -34,7 +34,8 @@ router.get('/', authenticate, async (req, res) => {
     }
 
     const searchTerm = q.trim();
-    const regex = new RegExp(searchTerm, 'i');
+    const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
 
     const results = {
       organizations: [],
