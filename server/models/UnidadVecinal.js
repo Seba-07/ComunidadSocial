@@ -40,17 +40,10 @@ const unidadVecinalSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   }],
-  // GeoJSON polygon for geographic boundary
+  // GeoJSON polygon for geographic boundary (stored as raw Mixed to avoid Mongoose type conflicts)
   geometry: {
-    type: {
-      type: String,
-      enum: ['Polygon'],
-      default: undefined
-    },
-    coordinates: {
-      type: [[[Number]]],
-      default: undefined
-    }
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   },
   activa: {
     type: Boolean,

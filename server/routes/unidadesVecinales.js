@@ -326,7 +326,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     const unidad = await UnidadVecinal.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
+      { new: true }
     );
 
     if (!unidad) {
@@ -335,8 +335,18 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
 
     res.json(unidad);
   } catch (error) {
-    console.error('Error al actualizar unidad vecinal:', error);
-    res.status(500).json({ error: 'Error al actualizar unidad vecinal' });
+    console.error('Error al actualizar unidad vecinal:', error.message, error.code);
+    // If 2dsphere index error, try dropping and retrying
+    if (error.code === 16755 || error.message?.includes('2dsphere')) {
+      try {
+        await UnidadVecinal.collection.dropIndex('geometry_2dsphere');
+        const unidad = await UnidadVecinal.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        return res.json(unidad);
+      } catch (retryErr) {
+        console.error('Retry failed:', retryErr.message);
+      }
+    }
+    res.status(500).json({ error: 'Error al actualizar unidad vecinal: ' + error.message });
   }
 });
 
