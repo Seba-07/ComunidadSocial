@@ -1,0 +1,248 @@
+{
+  "registroTratamientoDatos": {
+    "version": "1.0",
+    "fechaCreacion": "2026-03-03",
+    "responsable": "Ilustre Municipalidad de Renca",
+    "normativa": ["Ley 19.628", "Ley 21.719", "Ley 19.418"],
+    "plataforma": "Comunidad Social Renca"
+  },
+  "categoriasDatos": [
+    {
+      "id": "identificacion",
+      "nombre": "Datos de Identificación",
+      "campos": [
+        {
+          "campo": "rut",
+          "descripcion": "Rol Único Tributario",
+          "tipoDato": "Identificador legal",
+          "obligatorio": true,
+          "proposito": "Identificación única de persona natural según legislación chilena",
+          "baseLegal": "Ley 19.418 (registro de miembros), Ley 21.719 Art. 13 (obligación legal)",
+          "retencion": "Mientras dure la membresía activa; anonimizado tras eliminación de cuenta",
+          "destinatarios": ["Sistema interno", "Municipalidad (con consentimiento)"],
+          "medidas": ["Enmascaramiento en API para roles no privilegiados", "Cifrado en tránsito (TLS)"]
+        },
+        {
+          "campo": "firstName / lastName",
+          "descripcion": "Nombre y apellido",
+          "tipoDato": "Identificación personal",
+          "obligatorio": true,
+          "proposito": "Identificación en la plataforma y documentos oficiales",
+          "baseLegal": "Ley 19.418 (constitución de organizaciones)",
+          "retencion": "Mientras dure la cuenta activa; anonimizado a 'Usuario Eliminado' tras eliminación",
+          "destinatarios": ["Sistema interno", "Miembros de la organización", "Municipalidad"],
+          "medidas": ["Control de acceso por rol"]
+        },
+        {
+          "campo": "email",
+          "descripcion": "Correo electrónico",
+          "tipoDato": "Contacto",
+          "obligatorio": true,
+          "proposito": "Autenticación, recuperación de cuenta, notificaciones (con consentimiento)",
+          "baseLegal": "Ejecución de contrato (servicio de plataforma), Consentimiento (notificaciones)",
+          "retencion": "Mientras dure la cuenta activa; reemplazado por hash tras eliminación",
+          "destinatarios": ["Sistema interno"],
+          "medidas": ["Enmascaramiento en API", "Cifrado en tránsito"]
+        },
+        {
+          "campo": "phone",
+          "descripcion": "Número de teléfono",
+          "tipoDato": "Contacto",
+          "obligatorio": false,
+          "proposito": "Contacto alternativo para gestión organizacional",
+          "baseLegal": "Consentimiento",
+          "retencion": "Mientras dure la cuenta activa; eliminado tras eliminación de cuenta",
+          "destinatarios": ["Sistema interno", "Dirigentes de la organización (con enmascaramiento)"],
+          "medidas": ["Enmascaramiento en API", "Cifrado en tránsito"]
+        },
+        {
+          "campo": "address / region / commune",
+          "descripcion": "Dirección, región y comuna",
+          "tipoDato": "Ubicación",
+          "obligatorio": false,
+          "proposito": "Gestión territorial de organizaciones comunitarias",
+          "baseLegal": "Ley 19.418 (territorialidad de juntas de vecinos)",
+          "retencion": "Mientras dure la cuenta activa; eliminado tras eliminación de cuenta",
+          "destinatarios": ["Sistema interno", "Municipalidad"],
+          "medidas": ["Control de acceso por rol"]
+        }
+      ]
+    },
+    {
+      "id": "autenticacion",
+      "nombre": "Datos de Autenticación",
+      "campos": [
+        {
+          "campo": "password",
+          "descripcion": "Contraseña cifrada",
+          "tipoDato": "Credencial",
+          "obligatorio": true,
+          "proposito": "Autenticación segura en la plataforma",
+          "baseLegal": "Ejecución de contrato",
+          "retencion": "Mientras dure la cuenta activa",
+          "destinatarios": ["Ninguno (no accesible, solo hash)"],
+          "medidas": ["Cifrado bcrypt (salt 10 rounds)", "Excluido de toJSON()", "Rate limiting en login"]
+        }
+      ]
+    },
+    {
+      "id": "organizacional",
+      "nombre": "Datos Organizacionales",
+      "campos": [
+        {
+          "campo": "role",
+          "descripcion": "Rol en la plataforma (ORGANIZADOR, MIEMBRO, MUNICIPALIDAD, MINISTRO_FE)",
+          "tipoDato": "Clasificación",
+          "obligatorio": true,
+          "proposito": "Control de acceso y permisos",
+          "baseLegal": "Ejecución de contrato",
+          "retencion": "Mientras dure la cuenta activa",
+          "destinatarios": ["Sistema interno"],
+          "medidas": ["Control de acceso basado en roles"]
+        },
+        {
+          "campo": "organizationIds",
+          "descripcion": "Organizaciones a las que pertenece",
+          "tipoDato": "Relación",
+          "obligatorio": false,
+          "proposito": "Gestión de membresía en organizaciones comunitarias",
+          "baseLegal": "Ley 19.418",
+          "retencion": "Mientras dure la membresía activa",
+          "destinatarios": ["Sistema interno", "Municipalidad"],
+          "medidas": ["Validación de pertenencia antes de acceso"]
+        }
+      ]
+    },
+    {
+      "id": "miembros_org",
+      "nombre": "Datos de Miembros de Organización",
+      "campos": [
+        {
+          "campo": "birthDate",
+          "descripcion": "Fecha de nacimiento",
+          "tipoDato": "Dato sensible",
+          "obligatorio": false,
+          "proposito": "Verificación de requisitos etarios Ley 19.418 (14+ miembros, 18+ directivos)",
+          "baseLegal": "Ley 19.418 Art. 40, Art. 21",
+          "retencion": "Mientras dure la membresía en la organización",
+          "destinatarios": ["Sistema interno", "Ministro de Fe (durante validación)"],
+          "medidas": ["Acceso limitado a roles privilegiados"]
+        },
+        {
+          "campo": "signature",
+          "descripcion": "Firma digital del miembro",
+          "tipoDato": "Dato biométrico",
+          "obligatorio": false,
+          "proposito": "Validación de acta constitutiva por Ministro de Fe",
+          "baseLegal": "Ley 19.418 (constitución de organizaciones)",
+          "retencion": "Mientras la organización esté activa",
+          "destinatarios": ["Ministro de Fe asignado"],
+          "medidas": ["Almacenamiento Base64/S3", "Acceso limitado"]
+        }
+      ]
+    },
+    {
+      "id": "tecnico",
+      "nombre": "Datos Técnicos",
+      "campos": [
+        {
+          "campo": "ipAddress",
+          "descripcion": "Dirección IP del cliente",
+          "tipoDato": "Técnico",
+          "obligatorio": false,
+          "proposito": "Seguridad, auditoría, registro de consentimiento",
+          "baseLegal": "Interés legítimo (seguridad)",
+          "retencion": "365 días (TTL en audit log)",
+          "destinatarios": ["Sistema interno"],
+          "medidas": ["Solo almacenado en logs de auditoría y registros de consentimiento"]
+        },
+        {
+          "campo": "userAgent",
+          "descripcion": "Información del navegador",
+          "tipoDato": "Técnico",
+          "obligatorio": false,
+          "proposito": "Auditoría de seguridad",
+          "baseLegal": "Interés legítimo (seguridad)",
+          "retencion": "365 días (TTL en audit log)",
+          "destinatarios": ["Sistema interno"],
+          "medidas": ["Solo almacenado en logs de auditoría"]
+        }
+      ]
+    },
+    {
+      "id": "consentimiento",
+      "nombre": "Registros de Consentimiento",
+      "campos": [
+        {
+          "campo": "Consent (modelo completo)",
+          "descripcion": "Registro de consentimientos otorgados/retirados por el usuario",
+          "tipoDato": "Legal",
+          "obligatorio": true,
+          "proposito": "Cumplimiento Ley 21.719 - registro de consentimiento informado",
+          "baseLegal": "Ley 21.719 Art. 12",
+          "retencion": "Eliminado junto con la cuenta del usuario",
+          "destinatarios": ["Usuario titular", "Sistema interno"],
+          "medidas": ["Índice único por usuario+propósito", "Registro de IP y timestamp"]
+        }
+      ]
+    }
+  ],
+  "flujosTransferencia": [
+    {
+      "origen": "Usuario (registro)",
+      "destino": "Base de datos MongoDB",
+      "datos": ["Identificación", "Autenticación"],
+      "baseLegal": "Ejecución de contrato",
+      "medidas": ["TLS en tránsito", "Cifrado de contraseña"]
+    },
+    {
+      "origen": "Base de datos",
+      "destino": "Municipalidad (admin)",
+      "datos": ["Identificación de usuarios", "Datos organizacionales"],
+      "baseLegal": "Ley 19.418 (fiscalización)",
+      "medidas": ["Control de acceso por rol MUNICIPALIDAD", "Audit log"]
+    },
+    {
+      "origen": "Base de datos",
+      "destino": "Ministro de Fe",
+      "datos": ["Datos de miembros", "Firmas", "Documentos constitutivos"],
+      "baseLegal": "Ley 19.418 (validación de acto constitutivo)",
+      "medidas": ["Acceso limitado a asignaciones propias", "Audit log"]
+    },
+    {
+      "origen": "Base de datos",
+      "destino": "Miembros de organización",
+      "datos": ["Nombres de miembros (enmascarado RUT/email/teléfono)"],
+      "baseLegal": "Ley 19.418 (transparencia organizacional)",
+      "medidas": ["Enmascaramiento de PII", "Solo datos de su propia organización"]
+    },
+    {
+      "origen": "Base de datos",
+      "destino": "Usuario (exportación ARCOP)",
+      "datos": ["Todos los datos propios del usuario"],
+      "baseLegal": "Ley 21.719 (derecho de portabilidad)",
+      "medidas": ["Autenticación requerida", "Solo datos propios", "Audit log"]
+    }
+  ],
+  "medidasSeguridad": {
+    "cifrado": {
+      "enTransito": "TLS 1.2+ (HTTPS obligatorio)",
+      "enReposo": "Contraseñas: bcrypt (10 rounds)",
+      "tokens": "JWT con secreto seguro, cookies HttpOnly"
+    },
+    "controlAcceso": {
+      "autenticacion": "JWT + cookies HttpOnly",
+      "autorizacion": "RBAC (ORGANIZADOR, MIEMBRO, MUNICIPALIDAD, MINISTRO_FE)",
+      "rateLimiting": "Login: 5/15min, Registro: 3/hora, Operaciones sensibles: 3/hora"
+    },
+    "auditoria": {
+      "acciones": "CREATE, UPDATE, DELETE, STATUS_CHANGE, LOGIN, EXPORT, OPPOSE",
+      "retencion": "365 días (TTL automático)",
+      "campos": "userId, action, resource, ipAddress, timestamp, details"
+    },
+    "anonimizacion": {
+      "eliminacionCuenta": "Datos reemplazados por valores genéricos, cuenta desactivada",
+      "metodo": "Pseudoanonimización (mantiene ID para integridad referencial)"
+    }
+  }
+}

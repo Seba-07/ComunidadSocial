@@ -8,10 +8,12 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatsGrid from '../../components/ui/StatsGrid';
 import AssignmentCard from './AssignmentCard';
 import ValidationWizard from './ValidationWizard';
+import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
 
 const MINISTRO_MENU_ITEMS = [
   { key: 'pending', label: 'Asignaciones', icon: '📋' },
-  { key: 'completed', label: 'Completadas', icon: '✅' }
+  { key: 'completed', label: 'Completadas', icon: '✅' },
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' }
 ];
 
 export default function MinistroDashboardPage() {
@@ -104,6 +106,8 @@ export default function MinistroDashboardPage() {
                 )}
               </>
             )}
+
+            {activeView === 'privacidad' && <OrgPrivacy />}
 
             {activeView === 'completed' && (
               <>

@@ -11,6 +11,9 @@ import LoadingSpinner from './components/ui/LoadingSpinner';
 const AdminDashboardPage = lazy(() => import('./pages/Admin/AdminDashboardPage'));
 const WizardPage = lazy(() => import('./pages/Wizard/WizardPage'));
 const MinistroDashboardPage = lazy(() => import('./pages/Ministro/MinistroDashboardPage'));
+const PrivacyPage = lazy(() => import('./pages/Legal/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/Legal/TermsPage'));
+const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated } = useAuthStore();
@@ -51,6 +54,9 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/privacy" element={<SuspenseWrapper><PrivacyPage /></SuspenseWrapper>} />
+        <Route path="/terms" element={<SuspenseWrapper><TermsPage /></SuspenseWrapper>} />
+        <Route path="/verify-email" element={<SuspenseWrapper><VerifyEmailPage /></SuspenseWrapper>} />
         <Route
           path="/member"
           element={

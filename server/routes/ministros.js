@@ -1,9 +1,11 @@
 import express from 'express';
 import User from '../models/User.js';
-import { authenticate, requireRole, generateToken, COOKIE_OPTIONS } from '../middleware/auth.js';
+import { authenticate, requireRole, generateToken, generateRefreshToken, COOKIE_OPTIONS, REFRESH_COOKIE_OPTIONS } from '../middleware/auth.js';
 import { authLimiter, sensitiveLimiter, allowFields, ALLOWED_FIELDS } from '../middleware/security.js';
 import { validate, createMinistroSchema, loginSchema } from '../middleware/validation.js';
 import crypto from 'crypto';
+import { maskPiiFields } from '../middleware/dataMasking.js';
+import AuditLog from '../models/AuditLog.js';
 
 const router = express.Router();
 
@@ -11,6 +13,17 @@ const router = express.Router();
 router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const ministros = await User.find({ role: 'MINISTRO_FE' }).sort({ createdAt: -1 });
+
+    AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'ACCESS_PII',
+      resource: 'MINISTRO',
+      details: { type: 'list_all_ministros', count: ministros.length },
+      ipAddress: req.ip
+    });
+
     res.json(ministros);
   } catch (error) {
     console.error('Get ministros error:', error);
@@ -22,7 +35,12 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 router.get('/active', authenticate, async (req, res) => {
   try {
     const ministros = await User.find({ role: 'MINISTRO_FE', active: true })
-      .select('firstName lastName rut email phone specialty availableHours');
+      .select('firstName lastName rut email phone specialty availableHours')
+      .lean();
+    // Mask PII for non-admin users
+    if (req.user.role !== 'MUNICIPALIDAD') {
+      ministros.forEach(m => maskPiiFields(m, { maskRutField: false }));
+    }
     res.json(ministros);
   } catch (error) {
     console.error('Get active ministros error:', error);
@@ -33,9 +51,14 @@ router.get('/active', authenticate, async (req, res) => {
 // Get ministro by ID
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' });
+    const ministro = await User.findOne({ _id: req.params.id, role: 'MINISTRO_FE' }).lean();
     if (!ministro) {
       return res.status(404).json({ error: 'Ministro no encontrado' });
+    }
+    // Mask PII for non-admin, non-self users
+    const isSelf = req.userId.toString() === req.params.id;
+    if (req.user.role !== 'MUNICIPALIDAD' && !isSelf) {
+      maskPiiFields(ministro, { maskRutField: false });
     }
     res.json(ministro);
   } catch (error) {
@@ -201,8 +224,10 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     }
 
     const token = generateToken(ministro);
+    const refreshToken = generateRefreshToken(ministro);
 
     res.cookie('auth_token', token, COOKIE_OPTIONS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
       token,

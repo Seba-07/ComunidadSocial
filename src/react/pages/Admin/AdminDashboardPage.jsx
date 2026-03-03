@@ -16,6 +16,8 @@ const MetricsDashboardView = lazy(() => import('./views/MetricsDashboardView'));
 const AuditLogView = lazy(() => import('./views/AuditLogView'));
 const TimbreFirmaView = lazy(() => import('./views/TimbreFirmaView'));
 const ExportView = lazy(() => import('./views/ExportView'));
+const OrgPrivacy = lazy(() => import('../OrganizationDashboard/OrgPrivacy'));
+const SecurityIncidentsView = lazy(() => import('./views/SecurityIncidentsView'));
 
 const VIEW_MAP = {
   organizations: OrganizationsList,
@@ -28,7 +30,9 @@ const VIEW_MAP = {
   metrics: MetricsDashboardView,
   audit: AuditLogView,
   timbre: TimbreFirmaView,
-  export: ExportView
+  export: ExportView,
+  privacidad: OrgPrivacy,
+  seguridad: SecurityIncidentsView
 };
 
 export default function AdminDashboardPage() {

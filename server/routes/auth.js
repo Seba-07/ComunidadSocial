@@ -1,11 +1,29 @@
 import express from 'express';
+import crypto from 'crypto';
 import User from '../models/User.js';
+import Consent from '../models/Consent.js';
 import Organization from '../models/Organization.js';
-import { generateToken, authenticate, COOKIE_OPTIONS } from '../middleware/auth.js';
+import { generateToken, generateRefreshToken, authenticate, COOKIE_OPTIONS, REFRESH_COOKIE_OPTIONS } from '../middleware/auth.js';
 import { authLimiter, registerLimiter, sensitiveLimiter } from '../middleware/security.js';
 import { validate, registerSchema, loginSchema, changePasswordSchema } from '../middleware/validation.js';
+import { emailService } from '../services/emailService.js';
+import jwt from 'jsonwebtoken';
+
+const EFFECTIVE_JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
 
 const router = express.Router();
+
+// Helper: generate email verification token
+function generateVerificationToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Helper: get frontend base URL
+function getFrontendUrl() {
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
+  if (process.env.RAILWAY_ENVIRONMENT) return 'https://comunidadsocial.vercel.app';
+  return 'http://localhost:5173';
+}
 
 // Register - Rate limited: 3 registros por hora por IP + validación Zod
 router.post('/register', registerLimiter, validate(registerSchema), async (req, res) => {
@@ -22,6 +40,9 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       });
     }
 
+    // Generate email verification token
+    const verificationToken = generateVerificationToken();
+
     const user = new User({
       rut,
       firstName,
@@ -30,13 +51,38 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       password,
       phone,
       address,
-      role: 'ORGANIZADOR'
+      role: 'ORGANIZADOR',
+      privacyAcceptedAt: new Date(),
+      privacyPolicyVersion: '1.0',
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     });
 
     await user.save();
+
+    // Create essential consent record
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    await Consent.create({
+      userId: user._id,
+      purpose: 'essential',
+      granted: true,
+      grantedAt: new Date(),
+      version: '1.0',
+      ipAddress: clientIp
+    });
+
+    // Send verification email (non-blocking)
+    const verifyUrl = `${getFrontendUrl()}/app/verify-email?token=${verificationToken}`;
+    emailService.sendVerificationEmail({
+      email, userName: firstName, verifyUrl
+    }).catch(err => console.error('Verification email error:', err.message));
+
     const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
 
     res.cookie('auth_token', token, COOKIE_OPTIONS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
@@ -49,7 +95,8 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
         email: user.email,
         phone: user.phone || '',
         address: user.address || '',
-        role: user.role
+        role: user.role,
+        emailVerified: false
       }
     });
   } catch (error) {
@@ -78,8 +125,10 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     }
 
     const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
 
     res.cookie('auth_token', token, COOKIE_OPTIONS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
       message: 'Inicio de sesión exitoso',
@@ -95,13 +144,112 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
         region: user.region || '',
         commune: user.commune || '',
         role: user.role,
-        mustChangePassword: user.mustChangePassword
+        mustChangePassword: user.mustChangePassword,
+        emailVerified: user.emailVerified
       },
       mustChangePassword: user.mustChangePassword
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+// Refresh token - get new access token using refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    let refreshToken = null;
+
+    if (req.cookies && req.cookies.refresh_token) {
+      refreshToken = req.cookies.refresh_token;
+    }
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token requerido' });
+    }
+
+    const decoded = jwt.verify(refreshToken, EFFECTIVE_JWT_SECRET);
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.active) {
+      return res.status(401).json({ error: 'Usuario no válido' });
+    }
+
+    // Check token version
+    if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({ error: 'Sesión invalidada' });
+    }
+
+    // Issue new access token
+    const newToken = generateToken(user);
+    res.cookie('auth_token', newToken, COOKIE_OPTIONS);
+
+    res.json({ message: 'Token renovado', token: newToken });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Refresh token expirado. Inicie sesión nuevamente.' });
+    }
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+});
+
+// Verify email
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token de verificación inválido o expirado' });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.json({ message: 'Email verificado exitosamente', emailVerified: true });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ error: 'Error al verificar email' });
+  }
+});
+
+// Resend verification email
+router.post('/resend-verification', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (user.emailVerified) {
+      return res.json({ message: 'Email ya verificado' });
+    }
+
+    // Generate new token
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    const verifyUrl = `${getFrontendUrl()}/app/verify-email?token=${verificationToken}`;
+    await emailService.sendVerificationEmail({
+      email: user.email, userName: user.firstName, verifyUrl
+    });
+
+    res.json({ message: 'Email de verificación reenviado' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Error al reenviar verificación' });
   }
 });
 
@@ -121,7 +269,8 @@ router.get('/me', authenticate, async (req, res) => {
     role: user.role,
     active: user.active,
     createdAt: user.createdAt,
-    mustChangePassword: user.mustChangePassword
+    mustChangePassword: user.mustChangePassword,
+    emailVerified: user.emailVerified
   };
   // Incluir organizationIds para MIEMBRO
   if (user.role === 'MIEMBRO') {
@@ -169,7 +318,7 @@ router.post('/profile', authenticate, async (req, res) => {
   }
 });
 
-// Change password - Rate limited: 3 intentos por hora (operación sensible) + validación Zod
+// Change password - Rate limited + invalidates all other sessions
 router.post('/change-password', authenticate, sensitiveLimiter, validate(changePasswordSchema), async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -181,7 +330,6 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
       return res.status(400).json({ error: 'Contraseña actual incorrecta' });
     }
 
-    // Validar nueva contraseña (mínimo 6 caracteres + una mayúscula)
     if (newPassword.length < 6) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
@@ -191,9 +339,17 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
 
     user.password = newPassword;
     user.mustChangePassword = false;
+    // Increment tokenVersion to invalidate all existing sessions
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
-    res.json({ message: 'Contraseña actualizada exitosamente' });
+    // Issue new tokens with updated tokenVersion
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    res.json({ message: 'Contraseña actualizada exitosamente. Otras sesiones han sido cerradas.', token });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ error: 'Error al cambiar contraseña' });
@@ -239,7 +395,9 @@ router.post('/login-socio', authLimiter, async (req, res) => {
     }
 
     const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
     res.cookie('auth_token', token, COOKIE_OPTIONS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
       message: 'Inicio de sesión exitoso',
@@ -253,7 +411,8 @@ router.post('/login-socio', authLimiter, async (req, res) => {
         role: user.role,
         organizationIds: orgIds,
         organizations: organizations,
-        mustChangePassword: user.mustChangePassword
+        mustChangePassword: user.mustChangePassword,
+        privacyAcceptedAt: user.privacyAcceptedAt || null
       },
       mustChangePassword: user.mustChangePassword
     });
@@ -263,9 +422,55 @@ router.post('/login-socio', authLimiter, async (req, res) => {
   }
 });
 
-// Logout - Eliminar cookie de autenticación
-router.post('/logout', (req, res) => {
+// Accept privacy policy (for members on first login)
+router.post('/accept-privacy', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (user.privacyAcceptedAt) {
+      return res.json({ message: 'Política ya aceptada', privacyAcceptedAt: user.privacyAcceptedAt });
+    }
+
+    user.privacyAcceptedAt = new Date();
+    user.privacyPolicyVersion = '1.0';
+    await user.save();
+
+    // Ensure essential consent exists
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    await Consent.findOneAndUpdate(
+      { userId: user._id, purpose: 'essential' },
+      { $set: { granted: true, grantedAt: new Date(), version: '1.0', ipAddress: clientIp } },
+      { upsert: true }
+    );
+
+    res.json({ message: 'Política de privacidad aceptada', privacyAcceptedAt: user.privacyAcceptedAt });
+  } catch (error) {
+    console.error('Accept privacy error:', error);
+    res.status(500).json({ error: 'Error al aceptar política de privacidad' });
+  }
+});
+
+// Logout - Eliminar cookies e invalidar sesiones
+router.post('/logout', async (req, res) => {
+  // Try to invalidate token version if authenticated
+  try {
+    let token = req.cookies?.auth_token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (token) {
+      const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET);
+      await User.findByIdAndUpdate(decoded.userId, { $inc: { tokenVersion: 1 } });
+    }
+  } catch {
+    // Token may be expired/invalid, just clear cookies
+  }
+
   res.clearCookie('auth_token', { path: '/' });
+  res.clearCookie('refresh_token', { path: '/' });
   res.json({ message: 'Sesión cerrada exitosamente' });
 });
 

@@ -7,7 +7,7 @@ import { validateRut, formatRut } from '../../utils/validators';
 
 export default function RegisterForm() {
   const [form, setForm] = useState({
-    firstName: '', lastName: '', rut: '', email: '', password: '', passwordConfirm: ''
+    firstName: '', lastName: '', rut: '', email: '', password: '', passwordConfirm: '', privacyAccepted: false
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +35,7 @@ export default function RegisterForm() {
     if (form.password.length < 6) errs.password = 'La contraseña debe tener al menos 6 caracteres';
     else if (!/[A-Z]/.test(form.password)) errs.password = 'Debe contener al menos una mayúscula';
     if (form.password !== form.passwordConfirm) errs.passwordConfirm = 'Las contraseñas no coinciden';
+    if (!form.privacyAccepted) errs.privacyAccepted = 'Debe aceptar la política de privacidad';
     return errs;
   }
 
@@ -51,7 +52,8 @@ export default function RegisterForm() {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
-        password: form.password
+        password: form.password,
+        privacyAccepted: true
       });
 
       localStorage.setItem('isAuthenticated', 'true');
@@ -146,12 +148,32 @@ export default function RegisterForm() {
         onChange={set('passwordConfirm')}
         error={errors.passwordConfirm}
       />
+      <div style={{ margin: '12px 0' }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 13, color: '#374151', lineHeight: 1.4 }}>
+          <input
+            type="checkbox"
+            checked={form.privacyAccepted}
+            onChange={(e) => setForm((f) => ({ ...f, privacyAccepted: e.target.checked }))}
+            style={{ marginTop: 2, accentColor: '#2563eb' }}
+          />
+          <span>
+            He leído y acepto la{' '}
+            <a href="/app/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+              Política de Privacidad
+            </a>{' '}
+            y los{' '}
+            <a href="/app/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+              Términos de Uso
+            </a>
+          </span>
+        </label>
+        {errors.privacyAccepted && (
+          <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 24 }}>{errors.privacyAccepted}</p>
+        )}
+      </div>
       <button type="submit" className="btn-auth" disabled={submitting}>
         {submitting ? 'Creando cuenta...' : 'Crear Cuenta'}
       </button>
-      <div className="form-footer">
-        Al registrarte, aceptas los términos y condiciones del servicio
-      </div>
     </form>
   );
 }

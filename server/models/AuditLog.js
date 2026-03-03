@@ -26,7 +26,9 @@ const auditLogSchema = new mongoose.Schema({
       'REJECT',
       'UPLOAD',
       'DOWNLOAD',
-      'EXPORT'
+      'EXPORT',
+      'OPPOSE',
+      'ACCESS_PII'
     ],
     required: true
   },
@@ -44,7 +46,8 @@ const auditLogSchema = new mongoose.Schema({
       'NOTIFICATION',
       'GUIA',
       'LIBRARY_DOCUMENT',
-      'SYSTEM'
+      'SYSTEM',
+      'CONSENT'
     ],
     required: true
   },

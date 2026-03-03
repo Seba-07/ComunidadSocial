@@ -5,7 +5,7 @@ import Organization from '../models/Organization.js';
 import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate, requireRole, requireVerifiedEmail } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
 import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
 import MinistroBlock from '../models/MinistroBlock.js';
@@ -14,6 +14,9 @@ import Member from '../models/Member.js';
 import logger from '../utils/logger.js';
 import { emailService } from '../services/emailService.js';
 import * as assemblyService from '../services/assemblyService.js';
+import Consent from '../models/Consent.js';
+import { maskOrganizationPii, maskPiiFields } from '../middleware/dataMasking.js';
+import AuditLog from '../models/AuditLog.js';
 
 const router = express.Router();
 
@@ -170,6 +173,17 @@ async function createMemberAccounts(organization) {
       });
 
       await newUser.save();
+
+      // Create essential consent for new member (Ley 21.719)
+      // Note: created on behalf by organizer per Ley 19.418; full consent on first login
+      await Consent.create({
+        userId: newUser._id,
+        purpose: 'essential',
+        granted: true,
+        grantedAt: new Date(),
+        version: '1.0',
+        ipAddress: 'system:member-creation'
+      }).catch(err => console.error('Consent creation error for member:', err.message));
 
       createdAccounts.push({
         rut: member.rut,
@@ -376,7 +390,9 @@ router.get('/my-organization', authenticate, async (req, res) => {
       };
     });
 
-    res.json({ organizations: enriched });
+    // Mask PII for MIEMBRO users (they see their own data unmasked via frontend)
+    const masked = enriched.map(org => maskOrganizationPii(org));
+    res.json({ organizations: masked });
   } catch (error) {
     console.error('Get my organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
@@ -402,7 +418,12 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
       return res.status(403).json({ error: 'No tienes permisos para ver esta organización' });
     }
 
-    res.json(organization);
+    // Mask PII for members (non-admin, non-owner)
+    if (!isAdmin && !isOwner) {
+      res.json(maskOrganizationPii(organization));
+    } else {
+      res.json(organization);
+    }
   } catch (error) {
     console.error('Get organization error:', error);
     res.status(500).json({ error: 'Error al obtener organización' });
@@ -410,7 +431,7 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
 });
 
 // Create organization (request ministro) - Con validación Zod
-router.post('/', authenticate, validate(createOrganizationSchema), async (req, res) => {
+router.post('/', authenticate, requireVerifiedEmail, validate(createOrganizationSchema), async (req, res) => {
   try {
     // DEBUG: Log incoming data (solo en desarrollo)
     logger.debug('CREATE ORG - provisionalDirectorio recibido:', JSON.stringify(req.body.provisionalDirectorio, null, 2));
@@ -585,7 +606,7 @@ router.post('/', authenticate, validate(createOrganizationSchema), async (req, r
 });
 
 // Update organization - Protegido contra mass assignment
-router.put('/:id', authenticate, validateObjectId(), async (req, res) => {
+router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
 
@@ -1817,6 +1838,19 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
       };
     });
 
+    // Log PII access
+    AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'ACCESS_PII',
+      resource: 'ORGANIZATION',
+      resourceId: organization._id,
+      resourceName: organization.organizationName,
+      details: { type: 'view_members_with_accounts', memberCount: organization.members.length },
+      ipAddress: req.ip
+    });
+
     res.json({
       organization: {
         _id: organization._id,
@@ -2344,6 +2378,199 @@ router.get('/:id/generated-documents', authenticate, validateObjectId(), async (
   } catch (error) {
     console.error('Get generated documents error:', error);
     res.status(500).json({ error: 'Error al obtener documentos' });
+  }
+});
+
+// ==================== EXPORTACIONES MUNICIPALES (Ley 19.418) ====================
+
+// Export member roster as CSV (Art. 15 - Nómina de socios)
+router.get('/:id/export/members', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id)
+      .select('organizationName organizationType members')
+      .lean();
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const lines = [
+      `"Nómina de Socios - ${org.organizationName}"`,
+      `"Tipo: ${org.organizationType}"`,
+      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      '',
+      '"N°","RUT","Nombre","Apellido","Cargo","Email","Teléfono","Dirección","Fecha Nacimiento"'
+    ];
+
+    (org.members || []).forEach((m, i) => {
+      lines.push(
+        `${i + 1},"${m.rut || ''}","${m.firstName || ''}","${m.lastName || ''}","${m.role || 'member'}","${m.email || ''}","${m.phone || ''}","${m.address || ''}","${m.birthDate ? new Date(m.birthDate).toLocaleDateString('es-CL') : ''}"`
+      );
+    });
+
+    // Audit log
+    AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'EXPORT',
+      resource: 'ORGANIZATION',
+      resourceId: org._id,
+      resourceName: org.organizationName,
+      details: { type: 'export_member_roster', memberCount: (org.members || []).length },
+      ipAddress: req.ip
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=nomina_socios_${org._id}.csv`);
+    res.send('\uFEFF' + lines.join('\n'));
+  } catch (error) {
+    console.error('Export members error:', error);
+    res.status(500).json({ error: 'Error al exportar nómina' });
+  }
+});
+
+// Export semester changes report
+router.get('/:id/export/changes', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Parámetros from y to son requeridos (YYYY-MM-DD)' });
+    }
+
+    const org = await Organization.findById(req.params.id)
+      .select('organizationName organizationType')
+      .lean();
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    toDate.setHours(23, 59, 59, 999);
+
+    // Get audit logs for member changes in this org during the period
+    const changes = await AuditLog.find({
+      resource: 'ORGANIZATION',
+      resourceId: new mongoose.Types.ObjectId(req.params.id),
+      action: { $in: ['UPDATE', 'CREATE'] },
+      timestamp: { $gte: fromDate, $lte: toDate },
+      'details.type': { $in: ['add_member', 'remove_member', 'addMember', 'removeMemberRut', 'member_added', 'member_removed'] }
+    }).sort({ timestamp: 1 }).lean();
+
+    const lines = [
+      `"Reporte de Cambios - ${org.organizationName}"`,
+      `"Período: ${from} a ${to}"`,
+      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      '',
+      '"Fecha","Acción","Usuario","Detalle"'
+    ];
+
+    changes.forEach(c => {
+      const date = new Date(c.timestamp).toLocaleDateString('es-CL');
+      const action = c.action;
+      const user = c.userName || 'Sistema';
+      const detail = JSON.stringify(c.details || {}).replace(/"/g, "'");
+      lines.push(`"${date}","${action}","${user}","${detail}"`);
+    });
+
+    if (changes.length === 0) {
+      lines.push('"Sin cambios en el período"');
+    }
+
+    // Audit log
+    AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'EXPORT',
+      resource: 'ORGANIZATION',
+      resourceId: org._id,
+      resourceName: org.organizationName,
+      details: { type: 'export_semester_changes', from, to, changesCount: changes.length },
+      ipAddress: req.ip
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=cambios_${org._id}_${from}_${to}.csv`);
+    res.send('\uFEFF' + lines.join('\n'));
+  } catch (error) {
+    console.error('Export changes error:', error);
+    res.status(500).json({ error: 'Error al exportar cambios' });
+  }
+});
+
+// Export election results (Art. 21 bis)
+router.get('/:id/export/election-results/:assemblyId', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id)
+      .select('organizationName organizationType assemblies provisionalDirectorio')
+      .lean();
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = (org.assemblies || []).find(a => a._id.toString() === req.params.assemblyId);
+    if (!assembly) {
+      return res.status(404).json({ error: 'Asamblea no encontrada' });
+    }
+
+    const lines = [
+      `"Resultados de Elección - ${org.organizationName}"`,
+      `"Tipo: ${org.organizationType}"`,
+      `"Asamblea: ${assembly.title || 'Sin título'}"`,
+      `"Fecha: ${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL') : 'N/A'}"`,
+      `"Estado: ${assembly.status || 'N/A'}"`,
+      `"Quórum: ${assembly.attendees?.length || 0} asistentes"`,
+      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      ''
+    ];
+
+    // Election items from agenda
+    const electionItems = (assembly.agendaItems || []).filter(item =>
+      item.type === 'election' || item.type === 'votacion'
+    );
+
+    if (electionItems.length > 0) {
+      for (const item of electionItems) {
+        lines.push(`"Punto: ${item.title || item.description || 'Elección'}"`);
+        lines.push('"Candidato","Cargo","Votos","Resultado"');
+
+        (item.candidates || []).forEach(c => {
+          lines.push(`"${c.name || c.firstName || ''}","${c.cargo || c.role || ''}","${c.votes || 0}","${c.elected ? 'ELECTO' : ''}"`);
+        });
+        lines.push('');
+      }
+    } else {
+      lines.push('"No se encontraron ítems de elección en esta asamblea"');
+    }
+
+    // Current directorio
+    if (org.provisionalDirectorio) {
+      lines.push('');
+      lines.push('"Directorio Actual"');
+      lines.push('"Cargo","Nombre","RUT"');
+      const dir = org.provisionalDirectorio;
+      if (dir.president) lines.push(`"Presidente","${dir.president.firstName || ''} ${dir.president.lastName || ''}","${dir.president.rut || ''}"`);
+      if (dir.secretary) lines.push(`"Secretario","${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}","${dir.secretary.rut || ''}"`);
+      if (dir.treasurer) lines.push(`"Tesorero","${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}","${dir.treasurer.rut || ''}"`);
+      (dir.additionalMembers || []).forEach(m => {
+        lines.push(`"${m.cargo || 'Director'}","${m.firstName || m.name || ''} ${m.lastName || ''}","${m.rut || ''}"`);
+      });
+    }
+
+    // Audit log
+    AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'EXPORT',
+      resource: 'ORGANIZATION',
+      resourceId: org._id,
+      resourceName: org.organizationName,
+      details: { type: 'export_election_results', assemblyId: req.params.assemblyId },
+      ipAddress: req.ip
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=eleccion_${org._id}_${req.params.assemblyId}.csv`);
+    res.send('\uFEFF' + lines.join('\n'));
+  } catch (error) {
+    console.error('Export election results error:', error);
+    res.status(500).json({ error: 'Error al exportar resultados' });
   }
 });
 

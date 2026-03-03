@@ -215,6 +215,16 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Auto-refresh on token expiry
+        if (response.status === 401 && data.code === 'TOKEN_EXPIRED' && !options._retried) {
+          const refreshed = await this._tryRefreshToken();
+          if (refreshed) {
+            // Retry original request with new token
+            config.headers = this.getHeaders();
+            return this.request(endpoint, { ...options, _retried: true });
+          }
+        }
+
         const err = new Error(data.error || 'Error en la solicitud');
         if (data.details) {
           err.details = data.details;
@@ -298,6 +308,28 @@ class ApiService {
     return this.request(endpoint, { method: 'DELETE', body });
   }
 
+  /**
+   * Intenta renovar el access token usando el refresh token cookie
+   */
+  async _tryRefreshToken() {
+    try {
+      const url = `${this.baseUrl}/auth/refresh`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // ==================== AUTH ====================
 
   /**
@@ -322,7 +354,8 @@ class ApiService {
         region: data.user.region || '',
         commune: data.user.commune || '',
         role: data.user.role,
-        mustChangePassword: data.user.mustChangePassword
+        mustChangePassword: data.user.mustChangePassword,
+        emailVerified: data.user.emailVerified || false
       };
       localStorage.setItem('currentUser', JSON.stringify(safeUser));
     }
@@ -345,7 +378,8 @@ class ApiService {
         email: data.user.email,
         phone: data.user.phone || '',
         address: data.user.address || '',
-        role: data.user.role
+        role: data.user.role,
+        emailVerified: data.user.emailVerified || false
       };
       localStorage.setItem('currentUser', JSON.stringify(safeUser));
     }
@@ -636,7 +670,8 @@ class ApiService {
         role: data.user.role,
         organizationIds: data.user.organizationIds || [],
         organizations: data.user.organizations || [],
-        mustChangePassword: data.user.mustChangePassword
+        mustChangePassword: data.user.mustChangePassword,
+        privacyAcceptedAt: data.user.privacyAcceptedAt || null
       };
       localStorage.setItem('currentUser', JSON.stringify(safeUser));
     }
@@ -838,6 +873,123 @@ class ApiService {
 
   async createBlockFromConfirmation(data) {
     return this.post('/ministro-blocks/create-from-confirmation', data);
+  }
+
+  // ==================== PRIVACY & CONSENT (Ley 21.719) ====================
+
+  async getMyConsents() {
+    return this.get('/users/me/consents');
+  }
+
+  async updateMyConsents(consents) {
+    return this.put('/users/me/consents', { consents });
+  }
+
+  async exportMyData(format = 'json') {
+    if (format === 'csv') {
+      const url = `${this.baseUrl}/users/me/export?format=csv`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al exportar datos');
+      }
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'mis_datos.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return { success: true };
+    }
+    return this.get('/users/me/export?format=json');
+  }
+
+  async deleteMyAccount(reason) {
+    return this.deleteWithBody('/users/me/account', { reason });
+  }
+
+  async acceptPrivacy() {
+    return this.post('/auth/accept-privacy');
+  }
+
+  async resendVerificationEmail() {
+    return this.post('/auth/resend-verification');
+  }
+
+  async opposeDataProcessing(purpose, reason) {
+    return this.post('/users/me/oppose', { purpose, reason });
+  }
+
+  async getArcopHistory() {
+    return this.get('/users/me/arcop-history');
+  }
+
+  // ==================== SECURITY INCIDENTS ====================
+
+  async getSecurityIncidents() {
+    return this.get('/security-incidents');
+  }
+
+  async reportSecurityIncident(data) {
+    return this.post('/security-incidents', data);
+  }
+
+  async updateSecurityIncident(id, updates) {
+    return this.put(`/security-incidents/${id}`, updates);
+  }
+
+  // ==================== MUNICIPAL EXPORTS (Ley 19.418) ====================
+
+  async exportMemberRoster(orgId) {
+    const url = `${this.baseUrl}/organizations/${orgId}/export/members`;
+    const response = await fetch(url, { method: 'GET', headers: this.getHeaders(), credentials: 'include' });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Error al exportar'); }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `nomina_socios_${orgId}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  async exportSemesterChanges(orgId, from, to) {
+    const url = `${this.baseUrl}/organizations/${orgId}/export/changes?from=${from}&to=${to}`;
+    const response = await fetch(url, { method: 'GET', headers: this.getHeaders(), credentials: 'include' });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Error al exportar'); }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `cambios_${orgId}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  async exportElectionResults(orgId, assemblyId) {
+    const url = `${this.baseUrl}/organizations/${orgId}/export/election-results/${assemblyId}`;
+    const response = await fetch(url, { method: 'GET', headers: this.getHeaders(), credentials: 'include' });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Error al exportar'); }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `eleccion_${orgId}_${assemblyId}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
   }
 
   // ==================== HEALTH CHECK ====================

@@ -16,6 +16,7 @@ import OrgElecciones from './OrgElecciones';
 import OrgProyectos from './OrgProyectos';
 import OrgActividades from './OrgActividades';
 import OrgMisOrganizaciones from './OrgMisOrganizaciones';
+import OrgPrivacy from './OrgPrivacy';
 
 // Org-specific menu items (shown when an org is selected)
 const ORG_MENU_ITEMS = [
@@ -37,6 +38,7 @@ const SECONDARY_MENU_ITEMS = [
   { key: 'guia', label: 'Guía', icon: '📑' },
   { key: 'biblioteca', label: 'Biblioteca', icon: '📚' },
   { key: 'noticias', label: 'Noticias', icon: '📰' },
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
 ];
 
 export default function OrgDashboardPage() {
@@ -132,6 +134,7 @@ export default function OrgDashboardPage() {
         />
         <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
           {effectiveTab === 'mis-org' && <OrgMisOrganizaciones />}
+          {effectiveTab === 'privacidad' && <OrgPrivacy />}
           {effectiveTab === 'overview' && activeOrg && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
           {effectiveTab === 'members' && activeOrg && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'directorio' && activeOrg && <OrgDirectorio org={activeOrg} />}

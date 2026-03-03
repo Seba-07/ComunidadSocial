@@ -94,7 +94,10 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   phone: phoneSchema,
-  address: z.string().max(200).optional()
+  address: z.string().max(200).optional(),
+  privacyAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'Debe aceptar la política de privacidad' })
+  })
 });
 
 /**

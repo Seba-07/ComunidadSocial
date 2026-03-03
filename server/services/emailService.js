@@ -496,6 +496,51 @@ const emailService = {
 
     await this.sendEmail({ to: email, subject, html });
   },
+  // -----------------------------------------------------------------------
+  // Verificación de email (Ley 21.719)
+  // -----------------------------------------------------------------------
+
+  async sendVerificationEmail({ email, userName, verifyUrl }) {
+    const bodyHtml = `
+      <h2>Bienvenido a Comunidad Social Renca</h2>
+      <p>Hola <strong>${userName}</strong>,</p>
+      <p>Tu cuenta ha sido creada exitosamente. Para completar tu registro, verifica tu correo electrónico haciendo clic en el siguiente botón:</p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${verifyUrl}" class="btn">Verificar Email</a>
+      </div>
+
+      <p>Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:</p>
+      <p style="word-break: break-all; color: #6b7280; font-size: 13px;">${verifyUrl}</p>
+
+      <div class="divider"></div>
+      <p style="color: #6b7280; font-size: 13px;">Este enlace expira en 24 horas. Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
+    `;
+
+    const subject = 'Verifica tu correo - Comunidad Social Renca';
+    const html = buildEmailTemplate('Verificación de Email', bodyHtml);
+
+    await this.sendEmail({ to: email, subject, html });
+  },
+
+  async sendVerificationReminder({ email, userName, verifyUrl }) {
+    const bodyHtml = `
+      <h2>Recordatorio: Verifica tu email</h2>
+      <p>Hola <strong>${userName}</strong>,</p>
+      <p>Aún no has verificado tu correo electrónico. Para seguir usando todas las funciones de la plataforma, verifica tu email:</p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${verifyUrl}" class="btn">Verificar Email</a>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px;">Si no verificas tu email dentro de 7 días desde tu registro, algunas funcionalidades serán restringidas.</p>
+    `;
+
+    const subject = 'Recordatorio: Verifica tu correo - Comunidad Social Renca';
+    const html = buildEmailTemplate('Verificación de Email', bodyHtml);
+
+    await this.sendEmail({ to: email, subject, html });
+  },
 };
 
 export { emailService };

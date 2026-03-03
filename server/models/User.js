@@ -108,6 +108,33 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     }
+  },
+  // Campos de privacidad (Ley 21.719)
+  privacyAcceptedAt: {
+    type: Date,
+    default: null
+  },
+  privacyPolicyVersion: {
+    type: String,
+    default: null
+  },
+  // Verificación de email
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    default: null
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null
+  },
+  // Seguridad: versión de token para invalidación de sesiones
+  tokenVersion: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

@@ -10,6 +10,8 @@ import MemberDirectorio from './MemberDirectorio';
 import AssemblyList from './AssemblyList';
 import MemberDocuments from './MemberDocuments';
 import MemberPassword from './MemberPassword';
+import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
+import PrivacyConsentModal from '../../components/ui/PrivacyConsentModal';
 
 const MEMBER_MENU_ITEMS = [
   { key: 'overview', label: 'Información', icon: '🏠' },
@@ -17,17 +19,26 @@ const MEMBER_MENU_ITEMS = [
   { key: 'members', label: 'Miembros', icon: '🤝' },
   { key: 'assemblies', label: 'Asambleas', icon: '📢' },
   { key: 'documents', label: 'Documentos', icon: '📄' },
-  { key: 'password', label: 'Contraseña', icon: '🔑' }
+  { key: 'password', label: 'Contraseña', icon: '🔑' },
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' }
 ];
 
 export default function MemberDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const { organizations, activeOrg, isLoading, error, fetchMemberOrganization, refreshActiveOrg, setActiveOrg } = useOrganizationStore();
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     fetchMemberOrganization();
   }, []);
+
+  // Show privacy consent modal for members who haven't accepted yet
+  useEffect(() => {
+    if (user && !user.privacyAcceptedAt) {
+      setShowPrivacyModal(true);
+    }
+  }, [user]);
 
   if (isLoading && !activeOrg) {
     return <LoadingSpinner text="Cargando organización..." />;
@@ -97,8 +108,12 @@ export default function MemberDashboardPage() {
           )}
           {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
           {activeTab === 'password' && <MemberPassword />}
+          {activeTab === 'privacidad' && <OrgPrivacy />}
         </main>
       </div>
+      {showPrivacyModal && (
+        <PrivacyConsentModal onAccepted={() => setShowPrivacyModal(false)} />
+      )}
     </>
   );
 }

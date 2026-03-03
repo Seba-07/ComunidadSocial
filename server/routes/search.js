@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import News from '../models/News.js';
 import LibraryDocument from '../models/LibraryDocument.js';
 import { authenticate } from '../middleware/auth.js';
+import { maskEmail } from '../middleware/dataMasking.js';
 
 const router = express.Router();
 
@@ -73,6 +74,10 @@ router.get('/', authenticate, async (req, res) => {
         .select('firstName lastName email role')
         .limit(10)
         .lean();
+      // Mask emails for non-admin users
+      if (req.user.role !== 'MUNICIPALIDAD') {
+        results.users.forEach(u => { u.email = maskEmail(u.email); });
+      }
     }
 
     // Buscar en Noticias

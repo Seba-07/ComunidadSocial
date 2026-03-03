@@ -22,18 +22,25 @@ const isDeployed = process.env.NODE_ENV === 'production' ||
                    !!process.env.RAILWAY_ENVIRONMENT ||
                    !!process.env.RAILWAY_PROJECT_ID;
 
-// Opciones para cookies HttpOnly
-// Cross-origin (Vercel frontend + Railway backend) requiere sameSite: 'none' + secure: true
-// sameSite: 'lax' bloquea cookies en fetch() cross-origin
+// Opciones para cookies HttpOnly - access token (4 horas)
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isDeployed,
   sameSite: isDeployed ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días (mismo que JWT)
+  maxAge: 4 * 60 * 60 * 1000, // 4 horas
   path: '/'
 };
 
-console.log(`🍪 Cookie config: secure=${isDeployed}, sameSite=${isDeployed ? 'none' : 'lax'} (NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${!!process.env.RAILWAY_ENVIRONMENT})`);
+// Opciones para refresh token cookie (30 días)
+export const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: isDeployed,
+  sameSite: isDeployed ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+  path: '/'
+};
+
+console.log(`Cookie config: secure=${isDeployed}, sameSite=${isDeployed ? 'none' : 'lax'} (NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${!!process.env.RAILWAY_ENVIRONMENT})`);
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -59,6 +66,11 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Usuario no válido o inactivo' });
     }
 
+    // Verify token version (session invalidation on password change)
+    if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({ error: 'Sesión invalidada. Por favor inicie sesión nuevamente.' });
+    }
+
     req.user = user;
     req.userId = user._id;
     next();
@@ -67,7 +79,7 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Token inválido' });
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expirado' });
+      return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
     }
     res.status(500).json({ error: 'Error de autenticación' });
   }
@@ -87,14 +99,60 @@ export const requireRole = (...roles) => {
   };
 };
 
+/**
+ * Middleware: require verified email after 7 days of registration.
+ * Skips for MIEMBRO (created by system) and MUNICIPALIDAD (admin).
+ */
+export const requireVerifiedEmail = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  // Skip for admin and system-created members
+  if (['MUNICIPALIDAD', 'MIEMBRO'].includes(req.user.role)) {
+    return next();
+  }
+
+  // Skip if already verified
+  if (req.user.emailVerified) {
+    return next();
+  }
+
+  // Allow 7 days grace period
+  const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
+  const accountAge = Date.now() - new Date(req.user.createdAt).getTime();
+
+  if (accountAge > GRACE_PERIOD_MS) {
+    return res.status(403).json({
+      error: 'Debe verificar su correo electrónico para continuar. Revise su bandeja de entrada o solicite un nuevo enlace de verificación.',
+      code: 'EMAIL_NOT_VERIFIED'
+    });
+  }
+
+  next();
+};
+
 export const generateToken = (user) => {
   return jwt.sign(
     {
       userId: user._id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      tokenVersion: user.tokenVersion || 0
     },
     EFFECTIVE_JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '4h' }
+  );
+};
+
+export const generateRefreshToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user._id,
+      type: 'refresh',
+      tokenVersion: user.tokenVersion || 0
+    },
+    EFFECTIVE_JWT_SECRET,
+    { expiresIn: '30d' }
   );
 };

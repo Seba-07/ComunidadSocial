@@ -31,6 +31,7 @@ import auditLogRoutes from './routes/auditLog.js';
 import searchRoutes from './routes/search.js';
 import orgDocumentsRoutes from './routes/organizationDocuments.js';
 import ministroBlocksRoutes from './routes/ministroBlocks.js';
+import securityIncidentsRoutes from './routes/securityIncidents.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -136,6 +137,7 @@ app.use('/api/audit-log', auditLogRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/org-documents', orgDocumentsRoutes);
 app.use('/api/ministro-blocks', ministroBlocksRoutes);
+app.use('/api/security-incidents', securityIncidentsRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

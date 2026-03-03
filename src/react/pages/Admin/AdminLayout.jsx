@@ -12,7 +12,9 @@ const MENU_ITEMS = [
   { key: 'metrics', label: 'Métricas', icon: '📊' },
   { key: 'audit', label: 'Historial', icon: '📋' },
   { key: 'timbre', label: 'Timbre/Firma', icon: '✅' },
-  { key: 'export', label: 'Exportar', icon: '📥' }
+  { key: 'export', label: 'Exportar', icon: '📥' },
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'seguridad', label: 'Incidentes', icon: '🛡️' }
 ];
 
 export { MENU_ITEMS };
