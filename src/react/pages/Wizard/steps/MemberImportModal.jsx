@@ -12,7 +12,7 @@ const FIELD_MAPPINGS = {
   firstName: ['nombre', 'nombres', 'first_name', 'firstname', 'primer_nombre'],
   lastName: ['apellido', 'apellidos', 'last_name', 'lastname', 'primer_apellido'],
   rut: ['rut', 'run', 'cedula'],
-  birthDate: ['fecha_nacimiento', 'nacimiento', 'birth_date', 'birthdate', 'fecha_nac', 'fec_nac'],
+  birthDate: ['fecha_nacimiento', 'fecha_de_nacimiento', 'nacimiento', 'birth_date', 'birthdate', 'fecha_nac', 'fec_nac'],
   email: ['email', 'correo', 'mail', 'e-mail', 'correo_electronico'],
   phone: ['telefono', 'phone', 'celular', 'fono', 'tel'],
   genero: ['genero', 'sexo', 'gender']
