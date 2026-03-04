@@ -58,14 +58,6 @@ function isDirectivoMember(org, user) {
 }
 
 /**
- * Normaliza un RUT para comparaciones consistentes.
- * Remueve puntos, guiones y convierte a mayúsculas.
- */
-function normalizeRut(rut) {
-  return (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-}
-
-/**
  * Verifica si el quórum de una asamblea se cumple.
  * @returns {{ met: boolean, required: number, actual: number, message: string }}
  */
