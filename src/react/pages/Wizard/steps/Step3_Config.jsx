@@ -80,14 +80,71 @@ export default function Step3_Config({ onNext, onPrev }) {
         </div>
 
         <div>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Disolución</h3>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Directorio</h3>
           <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-            Entidad beneficiaria en caso de disolución
+            Duración del mandato
           </label>
-          <input value={config.beneficiarioDisolucion || ''}
-            onChange={e => update('beneficiarioDisolucion', e.target.value)}
-            placeholder="Nombre de entidad..."
-            style={{ width: '100%', maxWidth: 400, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+          <select value={config.duracionMandato ?? 2}
+            onChange={e => update('duracionMandato', parseInt(e.target.value))}
+            style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+            <option value={2}>2 años</option>
+            <option value={3}>3 años</option>
+          </select>
+        </div>
+
+        <div>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Citaciones a Asambleas</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Método de citación</label>
+              <select value={config.metodoCitacion || 'carta_certificada'}
+                onChange={e => update('metodoCitacion', e.target.value)}
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+                <option value="carta_certificada">Carta certificada</option>
+                <option value="correo_electronico">Correo electrónico</option>
+                <option value="aviso_sede">Cartelera en sede</option>
+                <option value="comunicacion_directa">Comunicación directa</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Días de anticipación</label>
+              <input type="number" min={5} max={30} value={config.diasAnticipacion ?? 10}
+                onChange={e => update('diasAnticipacion', parseInt(e.target.value) || 10)}
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Incorporación (UTM)</h3>
+          <input type="number" step="0.01" min={0} value={config.cuotaIncorporacion ?? 0.5}
+            onChange={e => update('cuotaIncorporacion', parseFloat(e.target.value) || 0)}
+            style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Monto que pagan nuevos socios al ingresar</p>
+        </div>
+
+        <div>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Disolución</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                Entidad beneficiaria
+              </label>
+              <input value={config.beneficiarioDisolucion || ''}
+                onChange={e => update('beneficiarioDisolucion', e.target.value)}
+                placeholder="Nombre de entidad..."
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                RUT de la entidad
+              </label>
+              <input value={config.rutDisolucion || ''}
+                onChange={e => update('rutDisolucion', e.target.value)}
+                placeholder="12.345.678-9"
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+          </div>
         </div>
       </div>
 

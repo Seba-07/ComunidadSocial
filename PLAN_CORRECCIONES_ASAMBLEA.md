@@ -359,3 +359,37 @@
 | `server/models/User.js` | V-12 | Campo qrTokenGeneratedAt |
 | `server/routes/users.js` | V-12 | Guardar qrTokenGeneratedAt al generar token |
 | `server/middleware/security.js` | V-02 | qrCheckinLimiter (30/min) |
+
+---
+
+## FASE 4: Robustecimiento Legal de Estatutos (10 → 14 Artículos)
+
+### Estado: EN PROGRESO
+### Fecha inicio: 2026-03-04
+
+> **Objetivo**: Expandir los estatutos de 10 artículos genéricos a 14 artículos con texto legal
+> completo basado en Ley 19.418. Agregar 4 artículos nuevos, ampliar placeholders de 8 a 19,
+> y mejorar el wizard con objetivos sugeridos y nuevos campos de configuración.
+
+### Artículos NUEVOS: 5 (Pérdida Calidad Socio), 7 (Funciones Directivos), 9 (Citaciones/Quórum), 10 (Comisión Revisora Cuentas)
+
+---
+
+### E1: Plan de Trabajo
+- [x] **E1a**: Agregar sección FASE 4 a este archivo con checkboxes
+
+### A — Backend (Seed + Migración)
+- [x] **A1**: Actualizar `ARTICULOS_BASE` en `server/scripts/seed-estatutos.js` (10 → 14 artículos con texto legal completo)
+- [x] **A2**: Actualizar `PLACEHOLDERS_BASE` en `server/scripts/seed-estatutos.js` (8 → 19 placeholders)
+- [x] **A3**: Crear script `server/scripts/reseed-estatutos-v14.js` para migrar 34 templates existentes en BD
+
+### B — WizardStore + Step 3 Config
+- [x] **B1**: Actualizar `src/react/stores/wizardStore.js` — agregar 5 campos a config + objectives a organization + fix merge profundo
+- [x] **B2**: Actualizar `src/react/pages/Wizard/steps/Step3_Config.jsx` — 5 nuevos inputs (duración mandato, método citación, días anticipación, cuota inc., RUT disolución)
+
+### C — Step 1 Objetivos Sugeridos
+- [x] **C1**: Agregar constante `OBJETIVOS_SUGERIDOS` con mapa tipo→objetivos en `Step1_OrgData.jsx`
+- [x] **C2**: Agregar UI de checkboxes + textarea personalizado en `Step1_OrgData.jsx`
+
+### D — Step 4 Placeholder Replacement
+- [x] **D1**: Expandir `replacePlaceholders()` en `Step4_Estatutos.jsx` de 7 a 19 sustituciones + backward compat doble/simple llave

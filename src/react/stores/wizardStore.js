@@ -6,7 +6,7 @@ const EXPIRY_DAYS = 7;
 
 const initialFormData = {
   organization: {
-    type: '', name: '', description: '', address: '', street: '',
+    type: '', name: '', description: '', objectives: '', address: '', street: '',
     streetNumber: '', postalCode: '', region: 'Región Metropolitana',
     commune: 'Renca', neighborhood: '', email: '', phone: '', contactPreference: 'email'
   },
@@ -15,7 +15,12 @@ const initialFormData = {
     asambleas: ['Marzo', 'Noviembre'],
     cuotaMin: 0.1,
     cuotaMax: 0.5,
-    beneficiarioDisolucion: ''
+    beneficiarioDisolucion: '',
+    duracionMandato: 2,
+    metodoCitacion: 'carta_certificada',
+    diasAnticipacion: 10,
+    cuotaIncorporacion: 0.5,
+    rutDisolucion: ''
   },
   estatutos: { type: 'template', content: null, customFile: null },
   directorioProvisorio: {},
@@ -114,7 +119,12 @@ export const useWizardStore = create((set, get) => ({
 
       set({
         currentStep: saved.currentStep || 0,
-        formData: { ...initialFormData, ...saved.formData },
+        formData: {
+          ...initialFormData,
+          ...saved.formData,
+          organization: { ...initialFormData.organization, ...(saved.formData?.organization || {}) },
+          config: { ...initialFormData.config, ...(saved.formData?.config || {}) }
+        },
         existingOrgId: saved.existingOrgId || null,
         templateConfig: saved.templateConfig || null
       });

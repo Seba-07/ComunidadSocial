@@ -47,20 +47,44 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     }
   }
 
+  const CITACION_LABELS = {
+    carta_certificada: 'carta certificada al domicilio registrado',
+    correo_electronico: 'correo electrónico al correo registrado',
+    aviso_sede: 'aviso publicado en la sede de la organización',
+    comunicacion_directa: 'comunicación directa a cada socio'
+  };
+
   function replacePlaceholders(text) {
     if (!text) return text;
+    const config = formData.config || {};
     const values = {
-      '{NOMBRE_ORGANIZACION}': formData.organization?.name || '_______________',
-      '{TIPO_ORGANIZACION}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
-      '{MIEMBROS_MINIMOS}': String(templateConfig?.miembrosMinimos || 15),
-      '{COMUNA}': formData.organization?.commune || 'Renca',
-      '{REGION}': formData.organization?.region || 'Región Metropolitana',
-      '{DIRECCION}': formData.organization?.street || '_______________',
-      '{NUM_MIEMBROS}': String(formData.members?.length || 0),
+      '{{NOMBRE_ORGANIZACION}}': formData.organization?.name || '_______________',
+      '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
+      '{{OBJETIVOS}}': formData.organization?.objectives || 'promover la integración, participación y desarrollo de la comunidad',
+      '{{COMUNA}}': formData.organization?.commune || 'Renca',
+      '{{REGION}}': formData.organization?.region || 'Región Metropolitana',
+      '{{DIRECCION}}': formData.organization?.street || '_______________',
+      '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
+      '{{NUM_MIEMBROS}}': String(formData.members?.length || 0),
+      '{{CUOTA_MENSUAL}}': config.cuotaMin && config.cuotaMax
+        ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
+        : '_______________',
+      '{{DURACION_MANDATO}}': String(config.duracionMandato || 2),
+      '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
+      '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
+      '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
+      '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '_______________',
+      '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || 'Corporación Municipal de Renca',
+      '{{RUT_DISOLUCION}}': config.rutDisolucion || '_______________',
+      '{{FECHA_DIA}}': '_______________',
+      '{{FECHA_MES}}': '_______________',
+      '{{FECHA_ANIO}}': '_______________',
     };
     let result = text;
     for (const [key, val] of Object.entries(values)) {
       result = result.replaceAll(key, val);
+      // Backward compat: single-brace format
+      result = result.replaceAll(key.replace('{{', '{').replace('}}', '}'), val);
     }
     return result;
   }
