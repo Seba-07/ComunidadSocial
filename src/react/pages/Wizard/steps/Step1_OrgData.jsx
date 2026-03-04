@@ -253,59 +253,108 @@ export default function Step1_OrgData({ onNext, isFirst }) {
             rows={3} placeholder="Descripción breve..." style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
 
-        {org.type && (
-          <div>
-            <label style={labelStyle}>Objetivos de la Organización</label>
-            <div style={{
-              background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
-              padding: 12, marginBottom: 12, fontSize: 13, color: '#1e40af'
-            }}>
-              Estos objetivos aparecerán en el Artículo 2 de los estatutos. Selecciona los que apliquen o agrega uno personalizado.
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {getObjetivos(org.type, templateConfig).map((obj, i) => {
-                const selected = (org.objectives || '').includes(obj);
-                return (
-                  <label key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer',
-                    padding: '8px 12px', borderRadius: 8,
-                    background: selected ? '#f0fdf4' : '#f9fafb',
-                    border: selected ? '1px solid #86efac' : '1px solid #e5e7eb',
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => {
-                        const current = (org.objectives || '').split('\n').filter(Boolean);
-                        const updated = selected
-                          ? current.filter(o => o !== obj)
-                          : [...current, obj];
-                        update('objectives', updated.join('\n'));
-                      }}
-                      style={{ marginTop: 2 }}
-                    />
-                    <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{obj}</span>
+        {org.type && (() => {
+          const sugeridos = getObjetivos(org.type, templateConfig);
+          const seleccionados = (org.objectives || '').split('\n').filter(Boolean);
+          const personalizados = seleccionados.filter(o => !sugeridos.includes(o));
+
+          function toggleObj(obj) {
+            const current = (org.objectives || '').split('\n').filter(Boolean);
+            const exists = current.includes(obj);
+            const updated = exists ? current.filter(o => o !== obj) : [...current, obj];
+            update('objectives', updated.join('\n'));
+          }
+
+          function addCustomObj() {
+            if (!customObj.trim()) return;
+            const current = (org.objectives || '').split('\n').filter(Boolean);
+            if (!current.includes(customObj.trim())) {
+              current.push(customObj.trim());
+              update('objectives', current.join('\n'));
+            }
+            setCustomObj('');
+          }
+
+          function removeObj(obj) {
+            const current = (org.objectives || '').split('\n').filter(Boolean);
+            update('objectives', current.filter(o => o !== obj).join('\n'));
+          }
+
+          return (
+            <div>
+              <label style={labelStyle}>Objetivos de la Organización</label>
+              <div style={{
+                background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+                padding: 12, marginBottom: 12, fontSize: 13, color: '#1e40af'
+              }}>
+                Estos objetivos aparecerán en el Artículo 2 de los estatutos. Selecciona los que apliquen o agrega uno personalizado.
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {sugeridos.map((obj, i) => {
+                  const selected = seleccionados.includes(obj);
+                  return (
+                    <label key={i} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer',
+                      padding: '8px 12px', borderRadius: 8,
+                      background: selected ? '#f0fdf4' : '#f9fafb',
+                      border: selected ? '1px solid #86efac' : '1px solid #e5e7eb',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleObj(obj)}
+                        style={{ marginTop: 2 }}
+                      />
+                      <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{obj}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {personalizados.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 6, display: 'block' }}>
+                    Objetivos personalizados
                   </label>
-                );
-              })}
+                  {personalizados.map((obj, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6,
+                      padding: '8px 12px', borderRadius: 8,
+                      background: '#fef3c7', border: '1px solid #fcd34d'
+                    }}>
+                      <span style={{ flex: 1, fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{obj}</span>
+                      <button type="button" onClick={() => removeObj(obj)} style={{
+                        background: 'none', border: 'none', color: '#ef4444',
+                        fontSize: 16, cursor: 'pointer', padding: '0 4px', lineHeight: 1
+                      }} title="Eliminar objetivo">&times;</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <input
+                  value={customObj}
+                  onChange={e => setCustomObj(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomObj();
+                    }
+                  }}
+                  placeholder="Agregar objetivo personalizado (Enter para agregar)"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button type="button" onClick={addCustomObj} disabled={!customObj.trim()} style={{
+                  padding: '10px 16px', border: 'none', borderRadius: 8, background: '#2563eb',
+                  color: 'white', fontSize: 13, fontWeight: 600,
+                  cursor: customObj.trim() ? 'pointer' : 'not-allowed',
+                  opacity: customObj.trim() ? 1 : 0.5
+                }}>Agregar</button>
+              </div>
             </div>
-            <input
-              value={customObj}
-              onChange={e => setCustomObj(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && customObj.trim()) {
-                  e.preventDefault();
-                  const current = (org.objectives || '').split('\n').filter(Boolean);
-                  current.push(customObj.trim());
-                  update('objectives', current.join('\n'));
-                  setCustomObj('');
-                }
-              }}
-              placeholder="Agregar objetivo personalizado (Enter para agregar)"
-              style={{ ...inputStyle, marginTop: 8 }}
-            />
-          </div>
-        )}
+          );
+        })()}
 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <div>
