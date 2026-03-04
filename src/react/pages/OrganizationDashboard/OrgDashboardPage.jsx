@@ -17,6 +17,9 @@ import OrgProyectos from './OrgProyectos';
 import OrgActividades from './OrgActividades';
 import OrgMisOrganizaciones from './OrgMisOrganizaciones';
 import OrgPrivacy from './OrgPrivacy';
+import OrgGuia from './OrgGuia';
+import OrgBiblioteca from './OrgBiblioteca';
+import OrgNoticias from './OrgNoticias';
 import SettingsPage from '../Settings/SettingsPage';
 import EmailVerificationBanner from '../../components/ui/EmailVerificationBanner';
 
@@ -37,6 +40,9 @@ const ORG_MENU_ITEMS = [
 // Secondary items (always shown, below org section)
 const SECONDARY_MENU_ITEMS = [
   { key: 'mis-org', label: 'Mis Organizaciones', icon: '🏠' },
+  { key: 'guia', label: 'Guía', icon: '📑' },
+  { key: 'biblioteca', label: 'Biblioteca', icon: '📚' },
+  { key: 'noticias', label: 'Noticias', icon: '📰' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' },
 ];
@@ -75,7 +81,7 @@ export default function OrgDashboardPage() {
   }
 
   // If no active org, allow secondary tabs (mis-org, privacidad, configuracion) but force mis-org for org-specific tabs
-  const SECONDARY_KEYS = new Set(['mis-org', 'privacidad', 'configuracion']);
+  const SECONDARY_KEYS = new Set(['mis-org', 'guia', 'biblioteca', 'noticias', 'privacidad', 'configuracion']);
   const effectiveTab = !activeOrg && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
 
   const sidebarTitle = 'Mi Organización';
@@ -128,6 +134,9 @@ export default function OrgDashboardPage() {
         <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
           <EmailVerificationBanner />
           {effectiveTab === 'mis-org' && <OrgMisOrganizaciones />}
+          {effectiveTab === 'guia' && <OrgGuia />}
+          {effectiveTab === 'biblioteca' && <OrgBiblioteca />}
+          {effectiveTab === 'noticias' && <OrgNoticias />}
           {effectiveTab === 'privacidad' && <OrgPrivacy />}
           {effectiveTab === 'configuracion' && <SettingsPage />}
           {effectiveTab === 'overview' && activeOrg && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
