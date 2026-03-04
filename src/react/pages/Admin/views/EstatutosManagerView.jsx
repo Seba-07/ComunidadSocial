@@ -5,6 +5,28 @@ import Modal from '../../../components/ui/Modal';
 import Tabs from '../../../components/ui/Tabs';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
+const PLACEHOLDERS = [
+  { key: '{{NOMBRE_ORGANIZACION}}', label: 'Nombre Org.' },
+  { key: '{{TIPO_ORGANIZACION}}', label: 'Tipo Org.' },
+  { key: '{{OBJETIVOS}}', label: 'Objetivos' },
+  { key: '{{COMUNA}}', label: 'Comuna' },
+  { key: '{{REGION}}', label: 'Región' },
+  { key: '{{DIRECCION}}', label: 'Dirección' },
+  { key: '{{MIEMBROS_MINIMOS}}', label: 'Mín. Socios' },
+  { key: '{{NUM_MIEMBROS}}', label: 'N° Miembros' },
+  { key: '{{CUOTA_MENSUAL}}', label: 'Cuota Mensual' },
+  { key: '{{DURACION_MANDATO}}', label: 'Duración Mandato' },
+  { key: '{{MESES_ASAMBLEA}}', label: 'Meses Asamblea' },
+  { key: '{{METODO_CITACION}}', label: 'Método Citación' },
+  { key: '{{DIAS_ANTICIPACION}}', label: 'Días Anticipación' },
+  { key: '{{CUOTA_INC}}', label: 'Cuota Incorporación' },
+  { key: '{{ENTIDAD_DISOLUCION}}', label: 'Entidad Disolución' },
+  { key: '{{RUT_DISOLUCION}}', label: 'RUT Disolución' },
+  { key: '{{FECHA_DIA}}', label: 'Día' },
+  { key: '{{FECHA_MES}}', label: 'Mes' },
+  { key: '{{FECHA_ANIO}}', label: 'Año' },
+];
+
 export default function EstatutosManagerView() {
   const addToast = useUiStore(s => s.addToast);
   const [templates, setTemplates] = useState([]);
@@ -18,6 +40,24 @@ export default function EstatutosManagerView() {
   const [editingObjIdx, setEditingObjIdx] = useState(null);
   const [objInput, setObjInput] = useState('');
   const [collapsedCats, setCollapsedCats] = useState({});
+  const contenidoRef = useRef(null);
+
+  function insertPlaceholder(key) {
+    const ta = contenidoRef.current;
+    if (!ta) {
+      setArticuloForm(f => ({ ...f, contenido: (f.contenido || '') + key }));
+      return;
+    }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = articuloForm.contenido || '';
+    const newText = text.substring(0, start) + key + text.substring(end);
+    setArticuloForm(f => ({ ...f, contenido: newText }));
+    setTimeout(() => {
+      ta.selectionStart = ta.selectionEnd = start + key.length;
+      ta.focus();
+    }, 0);
+  }
   const editorRef = useRef(null);
 
   async function loadTemplates() {
@@ -502,7 +542,23 @@ export default function EstatutosManagerView() {
             </div>
             <div>
               <label style={{ fontWeight: 600, fontSize: 13, display: 'block', marginBottom: 4 }}>Contenido</label>
-              <textarea value={articuloForm.contenido} onChange={e => setArticuloForm(f => ({ ...f, contenido: e.target.value }))}
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: '#6b7280' }}>Insertar campo dinámico:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  {PLACEHOLDERS.map(p => (
+                    <button key={p.key} type="button" title={p.key}
+                      onClick={() => insertPlaceholder(p.key)}
+                      style={{
+                        padding: '3px 8px', fontSize: 11, borderRadius: 4,
+                        border: '1px solid #bfdbfe', background: '#eff6ff',
+                        color: '#1d4ed8', cursor: 'pointer', fontWeight: 500
+                      }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea ref={contenidoRef} value={articuloForm.contenido} onChange={e => setArticuloForm(f => ({ ...f, contenido: e.target.value }))}
                 rows={8} style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical' }} />
             </div>
           </div>
