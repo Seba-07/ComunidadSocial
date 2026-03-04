@@ -41,6 +41,9 @@ Roles: ORGANIZADOR, MIEMBRO, MIEMBRO_DIRECTIVO, MUNICIPALIDAD, MINISTRO_FE.
 - CSS: no crear módulos CSS. Seguir BEM-ish en styles.css. Estado con `.show`, `.active`, `.open`
 - Modals en React: inline styles, no CSS classes. Click-outside con `e.target === e.currentTarget`
 - Commits: verbo imperativo + objeto, sin prefijos `feat:/fix:`. Incluir refs legales si aplica
+- **Al terminar una tarea**: siempre hacer commit + push. Reglas:
+  - **En rama main**: preguntar "¿Hago commit + push a main?" y ejecutar si confirma
+  - **En worktree/branch**: preguntar "¿Push a la rama actual o merge a main (producción)?" y ejecutar según respuesta
 
 ## Errores comunes a evitar
 1. Crear componente React con clases CSS nuevas sin revisar conflictos con styles.css

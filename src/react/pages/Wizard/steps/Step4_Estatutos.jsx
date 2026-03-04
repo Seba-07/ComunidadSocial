@@ -69,7 +69,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{CUOTA_MENSUAL}}': config.cuotaMin && config.cuotaMax
         ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
         : '_______________',
-      '{{DURACION_MANDATO}}': String(config.duracionMandato || 2),
+      '{{DURACION_MANDATO}}': String(config.duracionMandato || 3),
       '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
       '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
       '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
