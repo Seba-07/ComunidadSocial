@@ -136,6 +136,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: undefined
   },
+  qrTokenGeneratedAt: {
+    type: Date,
+    default: null
+  },
   // Seguridad: versión de token para invalidación de sesiones
   tokenVersion: {
     type: Number,

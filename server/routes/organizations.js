@@ -6,7 +6,7 @@ import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole, requireVerifiedEmail } from '../middleware/auth.js';
-import { allowFields, ALLOWED_FIELDS, validateObjectId } from '../middleware/security.js';
+import { allowFields, ALLOWED_FIELDS, validateObjectId, qrCheckinLimiter } from '../middleware/security.js';
 import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
 import MinistroBlock from '../models/MinistroBlock.js';
 import Document from '../models/Document.js';
@@ -58,6 +58,14 @@ function isDirectivoMember(org, user) {
 }
 
 /**
+ * Normaliza un RUT para comparaciones consistentes.
+ * Remueve puntos, guiones y convierte a mayúsculas.
+ */
+function normalizeRut(rut) {
+  return (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+}
+
+/**
  * Verifica si el quórum de una asamblea se cumple.
  * @returns {{ met: boolean, required: number, actual: number, message: string }}
  */
@@ -68,13 +76,15 @@ function checkQuorum(assembly, org) {
 
   if (quorumType === 'percentage') {
     const totalMembers = org.members?.length || 0;
-    if (totalMembers === 0) return { met: false, required: 0, actual: 0, message: 'No hay miembros registrados' };
+    if (totalMembers === 0) return { met: false, required: 0, actual: 0, message: 'No hay miembros registrados en la organización' };
+    if (quorumValue <= 0) return { met: false, required: 1, actual: attendeeCount, totalMembers, message: 'Valor de quórum no configurado (0%). Debe ser mayor a 0%' };
     const required = Math.ceil(totalMembers * (quorumValue / 100));
     return {
       met: attendeeCount >= required, required, actual: attendeeCount, totalMembers,
       message: `Se requieren ${required} asistentes (${quorumValue}% de ${totalMembers}). Presentes: ${attendeeCount}`
     };
   }
+  if (quorumValue <= 0) return { met: false, required: 1, actual: attendeeCount, message: 'Valor de quórum no configurado (0). Debe ser mayor a 0' };
   return {
     met: attendeeCount >= quorumValue, required: quorumValue, actual: attendeeCount,
     message: `Se requieren ${quorumValue} asistentes. Presentes: ${attendeeCount}`
@@ -2253,19 +2263,32 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
     if (!agendaItem.votingOpen) return res.status(400).json({ error: 'La votación no está abierta' });
 
     const voterRut = req.user.rut;
+    const normalizedVoterRut = normalizeRut(voterRut);
     // Verificar duplicado en voterRegistry (nuevo) o votes (legacy)
-    const alreadyVoted = (agendaItem.voterRegistry || []).some(v => v.voterRut === voterRut)
-      || (agendaItem.votes || []).some(v => v.voterRut === voterRut);
+    const alreadyVoted = (agendaItem.voterRegistry || []).some(v => normalizeRut(v.voterRut) === normalizedVoterRut)
+      || (agendaItem.votes || []).some(v => normalizeRut(v.voterRut) === normalizedVoterRut);
     if (alreadyVoted) return res.status(400).json({ error: 'Ya has votado en este punto' });
+
+    // Validar que cada voto referencia un candidato/lista válido
+    for (const vote of votes) {
+      if (vote.candidateRut && !agendaItem.candidates.some(c => c.rut === vote.candidateRut)) {
+        return res.status(400).json({ error: `Candidato no válido: ${vote.candidateRut}` });
+      }
+      if (vote.lista && !agendaItem.candidates.some(c => c.lista === vote.lista)) {
+        return res.status(400).json({ error: `Lista no válida: ${vote.lista}` });
+      }
+    }
 
     // Registrar quién votó (sin elección) — Voto secreto Ley 19.418
     if (!agendaItem.voterRegistry) agendaItem.voterRegistry = [];
     agendaItem.voterRegistry.push({ voterRut, votedAt: new Date() });
 
-    // Registrar votos anónimos (sin identidad)
+    // Registrar votos anónimos (sin identidad) — inserción en posición aleatoria
+    // para evitar correlación por índice con voterRegistry (Art. 24 Ley 19.418)
     if (!agendaItem.anonymousVotes) agendaItem.anonymousVotes = [];
     for (const vote of votes) {
-      agendaItem.anonymousVotes.push({
+      const randomIndex = Math.floor(Math.random() * (agendaItem.anonymousVotes.length + 1));
+      agendaItem.anonymousVotes.splice(randomIndex, 0, {
         cargo: vote.cargo || null,
         candidateRut: vote.candidateRut || null,
         lista: vote.lista || null,
@@ -2304,7 +2327,8 @@ router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectI
     const { rut, firstName, lastName } = req.body;
     const attendeeRut = rut || req.user.rut;
 
-    const already = assembly.attendees.some(a => a.rut === attendeeRut);
+    const normalizedRut = normalizeRut(attendeeRut);
+    const already = assembly.attendees.some(a => normalizeRut(a.rut) === normalizedRut);
     if (already) return res.status(400).json({ error: 'Ya registrado' });
 
     assembly.attendees.push({
@@ -2324,7 +2348,7 @@ router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectI
 });
 
 // Registrar asistencia por QR (escaneo inverso — organizador escanea QR del socio)
-router.post('/:id/assemblies/:assemblyId/checkin-qr', authenticate, validateObjectId(), async (req, res) => {
+router.post('/:id/assemblies/:assemblyId/checkin-qr', qrCheckinLimiter, authenticate, validateObjectId(), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
@@ -2346,23 +2370,23 @@ router.post('/:id/assemblies/:assemblyId/checkin-qr', authenticate, validateObje
     const memberUser = await User.findOne({ qrToken });
     if (!memberUser) return res.status(404).json({ error: 'Credencial QR no reconocida' });
 
+    // Verificar expiración del token QR (365 días)
+    if (memberUser.qrTokenGeneratedAt) {
+      const QR_TOKEN_TTL_MS = 365 * 24 * 60 * 60 * 1000; // 1 año
+      if (Date.now() - new Date(memberUser.qrTokenGeneratedAt).getTime() > QR_TOKEN_TTL_MS) {
+        return res.status(410).json({ error: 'Credencial QR expirada. El socio debe regenerarla desde su perfil.' });
+      }
+    }
+
     // Verificar que pertenezca a la organización
     const memberOrgIds = memberUser.getAllOrgIds();
     const isMemberOfOrg = memberOrgIds.includes(org._id.toString())
-      || (org.members || []).some(m => {
-        const cleanMemberRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-        const cleanUserRut = (memberUser.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-        return cleanMemberRut === cleanUserRut;
-      });
+      || (org.members || []).some(m => normalizeRut(m.rut) === normalizeRut(memberUser.rut));
     if (!isMemberOfOrg) return res.status(403).json({ error: 'El socio no pertenece a esta organización' });
 
     // Verificar duplicado
     const attendeeRut = memberUser.rut;
-    const already = assembly.attendees.some(a => {
-      const cleanA = (a.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-      const cleanB = (attendeeRut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
-      return cleanA === cleanB;
-    });
+    const already = assembly.attendees.some(a => normalizeRut(a.rut) === normalizeRut(attendeeRut));
     if (already) return res.status(400).json({ error: 'Ya registrado', memberName: `${memberUser.firstName} ${memberUser.lastName}` });
 
     assembly.attendees.push({
@@ -2457,6 +2481,14 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
     const { agendaItemId } = req.body;
     const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
     if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+
+    // Guard contra race condition: rechazar toggles rápidos (<2s desde último cambio)
+    if (agendaItem.votingClosedAt) {
+      const elapsed = Date.now() - new Date(agendaItem.votingClosedAt).getTime();
+      if (elapsed < 2000) {
+        return res.status(429).json({ error: 'Acción demasiado rápida, espere un momento' });
+      }
+    }
 
     // Al ABRIR votación, verificar quórum
     if (!agendaItem.votingOpen) {
@@ -2737,60 +2769,106 @@ router.get('/:id/export/changes', authenticate, requireRole('MUNICIPALIDAD'), va
 router.get('/:id/export/election-results/:assemblyId', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id)
-      .select('organizationName organizationType assemblies provisionalDirectorio')
+      .select('organizationName organizationType members provisionalDirectorio')
       .lean();
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    const assembly = (org.assemblies || []).find(a => a._id.toString() === req.params.assemblyId);
-    if (!assembly) {
-      return res.status(404).json({ error: 'Asamblea no encontrada' });
-    }
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
+    // Quórum info
+    const quorumInfo = checkQuorum(assembly, org);
     const lines = [
-      `"Resultados de Elección - ${org.organizationName}"`,
-      `"Tipo: ${org.organizationType}"`,
+      `"Resultados de Asamblea - ${org.organizationName}"`,
+      `"Tipo Organización: ${org.organizationType}"`,
       `"Asamblea: ${assembly.title || 'Sin título'}"`,
-      `"Fecha: ${assembly.date ? new Date(assembly.date).toLocaleDateString('es-CL') : 'N/A'}"`,
+      `"Tipo Asamblea: ${assembly.type || 'ordinaria'}"`,
+      `"Fecha: ${assembly.date || 'N/A'}"`,
       `"Estado: ${assembly.status || 'N/A'}"`,
-      `"Quórum: ${assembly.attendees?.length || 0} asistentes"`,
+      '',
+      '"QUÓRUM"',
+      `"Tipo quórum: ${assembly.quorumType === 'percentage' ? 'Porcentaje' : 'Número fijo'}"`,
+      `"Valor configurado: ${assembly.quorumValue ?? 50}${assembly.quorumType === 'percentage' ? '%' : ''}"`,
+      `"Miembros totales: ${org.members?.length || 0}"`,
+      `"Asistentes: ${quorumInfo.actual}"`,
+      `"Requeridos: ${quorumInfo.required}"`,
+      `"Quórum cumplido: ${quorumInfo.met ? 'SÍ' : 'NO'}"`,
+      '',
       `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
       ''
     ];
 
-    // Election items from agenda
-    const electionItems = (assembly.agendaItems || []).filter(item =>
-      item.type === 'election' || item.type === 'votacion'
-    );
+    // Agenda items con resultados
+    const itemsWithResults = (assembly.agendaItems || []).filter(item => item.result);
 
-    if (electionItems.length > 0) {
-      for (const item of electionItems) {
-        lines.push(`"Punto: ${item.title || item.description || 'Elección'}"`);
-        lines.push('"Candidato","Cargo","Votos","Resultado"');
+    if (itemsWithResults.length > 0) {
+      for (const item of itemsWithResults) {
+        lines.push(`"Punto: ${item.title || 'Sin título'}"`,
+          `"Tipo: ${item.type}"`,
+          `"Modo votación: ${item.result.mode || 'N/A'}"`);
 
-        (item.candidates || []).forEach(c => {
-          lines.push(`"${c.name || c.firstName || ''}","${c.cargo || c.role || ''}","${c.votes || 0}","${c.elected ? 'ELECTO' : ''}"`);
-        });
+        if (item.result.mode === 'per_cargo') {
+          lines.push('"Candidato","Cargo","Votos","Resultado"');
+          // Listar todos los candidatos con sus votos
+          const votesByCargo = item.result.votesByCargo || {};
+          for (const [cargo, candidates] of Object.entries(votesByCargo)) {
+            const winnerRut = item.result.winners?.[cargo]?.rut;
+            for (const [candidateRut, voteCount] of Object.entries(candidates)) {
+              const candidate = (item.candidates || []).find(c => c.rut === candidateRut);
+              const name = candidate ? `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() : candidateRut;
+              const isWinner = candidateRut === winnerRut;
+              lines.push(`"${name}","${cargo}","${voteCount}","${isWinner ? 'ELECTO' : ''}"`);
+            }
+          }
+        } else if (item.result.mode === 'per_lista') {
+          lines.push('"Lista","Votos","Resultado"');
+          const votesByLista = item.result.votesByLista || {};
+          for (const [lista, voteCount] of Object.entries(votesByLista)) {
+            const isWinner = lista === item.result.winningLista;
+            lines.push(`"${lista}","${voteCount}","${isWinner ? 'GANADORA' : ''}"`);
+          }
+          if (item.result.winningCandidates?.length) {
+            lines.push('', '"Candidatos de lista ganadora:"', '"Nombre","Cargo","RUT"');
+            for (const c of item.result.winningCandidates) {
+              lines.push(`"${c.firstName || ''} ${c.lastName || ''}","${c.cargo || ''}","${c.rut || ''}"`);
+            }
+          }
+        } else if (item.result.mode === 'mano_alzada') {
+          lines.push('"Resolución","Votos a Favor","Votos en Contra","Abstenciones","Observaciones"');
+          lines.push(`"${item.result.resolucion === 'aprobado' ? 'APROBADO' : 'RECHAZADO'}","${item.result.votosAFavor ?? ''}","${item.result.votosEnContra ?? ''}","${item.result.abstenciones ?? ''}","${(item.result.observaciones || '').replace(/"/g, '""')}"`);
+        }
+
         lines.push('');
       }
     } else {
-      lines.push('"No se encontraron ítems de elección en esta asamblea"');
+      // Items de elección sin resultado (aún no finalizados)
+      const electionItems = (assembly.agendaItems || []).filter(item => item.type === 'eleccion_directorio');
+      if (electionItems.length > 0) {
+        lines.push('"Puntos de elección sin resultado (asamblea no finalizada):"');
+        for (const item of electionItems) {
+          const voteCount = (item.anonymousVotes?.length || item.votes?.length || 0);
+          lines.push(`"${item.title || 'Elección'}","Votos registrados: ${voteCount}"`);
+        }
+      } else {
+        lines.push('"No se encontraron ítems con resultados en esta asamblea"');
+      }
     }
 
-    // Current directorio
+    // Directorio actual
     if (org.provisionalDirectorio) {
-      lines.push('');
-      lines.push('"Directorio Actual"');
-      lines.push('"Cargo","Nombre","RUT"');
+      lines.push('', '"DIRECTORIO ACTUAL"', '"Cargo","Nombre","RUT"');
       const dir = org.provisionalDirectorio;
-      if (dir.president) lines.push(`"Presidente","${dir.president.firstName || ''} ${dir.president.lastName || ''}","${dir.president.rut || ''}"`);
-      if (dir.secretary) lines.push(`"Secretario","${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}","${dir.secretary.rut || ''}"`);
-      if (dir.treasurer) lines.push(`"Tesorero","${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}","${dir.treasurer.rut || ''}"`);
+      const p = dir.president || dir.presidente;
+      const s = dir.secretary || dir.secretario;
+      const t = dir.treasurer || dir.tesorero;
+      if (p) lines.push(`"Presidente","${p.firstName || ''} ${p.lastName || ''}","${p.rut || ''}"`);
+      if (s) lines.push(`"Secretario","${s.firstName || ''} ${s.lastName || ''}","${s.rut || ''}"`);
+      if (t) lines.push(`"Tesorero","${t.firstName || ''} ${t.lastName || ''}","${t.rut || ''}"`);
       (dir.additionalMembers || []).forEach(m => {
-        lines.push(`"${m.cargo || 'Director'}","${m.firstName || m.name || ''} ${m.lastName || ''}","${m.rut || ''}"`);
+        lines.push(`"${m.cargoNombre || m.cargo || 'Director'}","${m.firstName || ''} ${m.lastName || ''}","${m.rut || ''}"`);
       });
     }
 
-    // Audit log
     AuditLog.logAction({
       userId: req.userId,
       userName: `${req.user.firstName} ${req.user.lastName}`,

@@ -84,6 +84,18 @@ export const sensitiveLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Rate limiter para check-in por QR (previene enumeración de tokens)
+export const qrCheckinLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 30, // 30 escaneos por minuto (suficiente para check-in rápido)
+  message: {
+    error: 'Demasiados escaneos QR. Espere un momento.',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ============================================
 // HEADERS DE SEGURIDAD (Helmet)
 // ============================================

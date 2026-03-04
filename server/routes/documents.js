@@ -1,6 +1,8 @@
 import express from 'express';
 import puppeteer from 'puppeteer';
 import Organization from '../models/Organization.js';
+import Assembly from '../models/Assembly.js';
+import * as assemblyService from '../services/assemblyService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -54,7 +56,7 @@ const getOrgTypeName = (type) => {
 };
 
 // Helper: Generar HTML para Acta Constitutiva
-const generateActaHTML = (org) => {
+const generateActaHTML = (org, assembly = null) => {
   const tipoOrg = getOrgTypeName(org.organizationType || org.type);
   const orgName = org.organizationName || org.name || '';
   const address = org.address || org.direccion || '';
@@ -66,11 +68,15 @@ const generateActaHTML = (org) => {
   const dirMembers = [];
   const getName = (m) => m ? `${m.firstName || ''} ${m.lastName || ''}`.trim() : null;
 
-  // Fixed fields (old format)
-  if (directorio.president) dirMembers.push({ cargo: 'Presidente/a', name: getName(directorio.president), rut: directorio.president.rut, orden: 1 });
-  if (directorio.vicePresident) dirMembers.push({ cargo: 'Vicepresidente/a', name: getName(directorio.vicePresident), rut: directorio.vicePresident.rut, orden: 2 });
-  if (directorio.secretary) dirMembers.push({ cargo: 'Secretario/a', name: getName(directorio.secretary), rut: directorio.secretary.rut, orden: 3 });
-  if (directorio.treasurer) dirMembers.push({ cargo: 'Tesorero/a', name: getName(directorio.treasurer), rut: directorio.treasurer.rut, orden: 4 });
+  // Fixed fields — soporta llaves en inglés (backend) y español (wizard)
+  const president = directorio.president || directorio.presidente;
+  const vicePresident = directorio.vicePresident || directorio.vicepresidente;
+  const secretary = directorio.secretary || directorio.secretario;
+  const treasurer = directorio.treasurer || directorio.tesorero;
+  if (president) dirMembers.push({ cargo: 'Presidente/a', name: getName(president), rut: president.rut, orden: 1 });
+  if (vicePresident) dirMembers.push({ cargo: 'Vicepresidente/a', name: getName(vicePresident), rut: vicePresident.rut, orden: 2 });
+  if (secretary) dirMembers.push({ cargo: 'Secretario/a', name: getName(secretary), rut: secretary.rut, orden: 3 });
+  if (treasurer) dirMembers.push({ cargo: 'Tesorero/a', name: getName(treasurer), rut: treasurer.rut, orden: 4 });
   // Additional members (directors, custom cargos)
   (directorio.additionalMembers || []).forEach((m, i) => {
     if (m) dirMembers.push({ cargo: m.cargoNombre || m.cargo || `Director/a ${i + 1}`, name: getName(m), rut: m.rut, orden: m.orden || 5 + i });
@@ -165,12 +171,25 @@ const generateActaHTML = (org) => {
       que se denominará "${orgName}".
     </p>
 
-    <p class="section-title">PRIMERO: ASISTENCIA</p>
+    <p class="section-title">PRIMERO: ASISTENCIA Y QUÓRUM</p>
     <p>
-      Asisten a esta Asamblea Constitutiva un total de ______ personas, mayores de 14 años,
+      ${assembly && assembly.attendees?.length
+        ? `Asisten a esta Asamblea Constitutiva un total de <strong>${assembly.attendees.length}</strong> personas`
+        : 'Asisten a esta Asamblea Constitutiva un total de ______ personas'}, mayores de 14 años,
       que residen en la comuna de Renca${unidadVecinal ? `, específicamente en la Unidad Vecinal ${unidadVecinal}` : ''},
       cuyos nombres, RUT, domicilios y firmas se encuentran en el registro de asistentes anexo a la presente acta.
     </p>
+    ${assembly ? `<p>
+      ${(() => {
+        const totalMembers = org.members?.length || 0;
+        const attendeeCount = assembly.attendees?.length || 0;
+        const qType = assembly.quorumType || 'percentage';
+        const qValue = assembly.quorumValue ?? 50;
+        const required = qType === 'percentage' ? Math.ceil(totalMembers * (qValue / 100)) : qValue;
+        const met = attendeeCount >= required;
+        return `Verificado el quórum reglamentario de ${qType === 'percentage' ? `${qValue}% (${required} socios requeridos de ${totalMembers} miembros hábiles)` : `${qValue} socios requeridos`}, con ${attendeeCount} socios presentes, se declara el quórum <strong>${met ? 'CUMPLIDO' : 'NO CUMPLIDO'}</strong>.`;
+      })()}
+    </p>` : ''}
 
     <p class="section-title">SEGUNDO: DIRECTORIO PROVISORIO</p>
     <p>
@@ -181,10 +200,17 @@ const generateActaHTML = (org) => {
     </p>
 
     <p class="section-title">TERCERO: ESTATUTOS</p>
-    <p>
-      La Asamblea aprueba por unanimidad los estatutos que regirán la organización,
-      los cuales se adjuntan como anexo a la presente acta.
-    </p>
+    ${(() => {
+      if (!assembly) return `<p>La Asamblea aprueba por unanimidad los estatutos que regirán la organización, los cuales se adjuntan como anexo a la presente acta.</p>`;
+      const estatutosItem = (assembly.agendaItems || []).find(item =>
+        item.type === 'reforma_estatutos' || item.type === 'aprobacion_presupuesto' || item.type === 'custom'
+      );
+      if (estatutosItem?.result?.mode === 'mano_alzada') {
+        const r = estatutosItem.result;
+        return `<p>Sometidos a votación a mano alzada los estatutos que regirán la organización, se obtiene el siguiente resultado: <strong>${r.resolucion === 'aprobado' ? 'APROBADO' : 'RECHAZADO'}</strong>${r.votosAFavor != null ? ` con ${r.votosAFavor} votos a favor, ${r.votosEnContra || 0} en contra y ${r.abstenciones || 0} abstenciones` : ''}.${r.observaciones ? ` Observaciones: ${r.observaciones}` : ''} Los estatutos aprobados se adjuntan como anexo.</p>`;
+      }
+      return `<p>La Asamblea aprueba los estatutos que regirán la organización, los cuales se adjuntan como anexo a la presente acta.</p>`;
+    })()}
 
     <p class="section-title">CUARTO: DOMICILIO</p>
     <p>
@@ -194,7 +220,11 @@ const generateActaHTML = (org) => {
 
     <p class="section-title">QUINTO: CIERRE</p>
     <p>
-      No habiendo más que tratar, se levanta la sesión siendo las _______ horas del mismo día.
+      No habiendo más que tratar, se levanta la sesión siendo las ${
+        assembly?.finishedAt
+          ? new Date(assembly.finishedAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+          : '_______'
+      } horas del mismo día.
     </p>
   </div>
 
@@ -351,8 +381,13 @@ router.get('/:orgId/generate-acta', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    // Generar HTML
-    const html = generateActaHTML(org);
+    // Buscar asamblea finalizada más reciente para enriquecer el acta
+    const assembly = await Assembly.findOne({ organizationId: orgId, status: 'finalizada' })
+      .sort({ finishedAt: -1 })
+      .lean();
+
+    // Generar HTML (con datos de asamblea si existe)
+    const html = generateActaHTML(org, assembly);
 
     // Lanzar Puppeteer
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
@@ -457,13 +492,366 @@ router.get('/:orgId/preview-acta', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    const html = generateActaHTML(org);
+    const assembly = await Assembly.findOne({ organizationId: orgId, status: 'finalizada' })
+      .sort({ finishedAt: -1 })
+      .lean();
+
+    const html = generateActaHTML(org, assembly);
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
 
   } catch (error) {
     console.error('Error generating acta preview:', error);
     res.status(500).json({ error: 'Error al generar preview del acta' });
+  }
+});
+
+// ============================================================
+// ACTA DE ESCRUTINIO — Resultados detallados de votación
+// ============================================================
+
+const generateActaEscrutinioHTML = (org, assembly) => {
+  const tipoOrg = getOrgTypeName(org.organizationType || org.type);
+  const orgName = org.organizationName || org.name || '';
+  const totalMembers = org.members?.length || 0;
+  const attendeeCount = assembly.attendees?.length || 0;
+  const qType = assembly.quorumType || 'percentage';
+  const qValue = assembly.quorumValue ?? 50;
+  const required = qType === 'percentage' ? Math.ceil(totalMembers * (qValue / 100)) : qValue;
+  const quorumMet = attendeeCount >= required;
+
+  // Métodos de check-in
+  const qrCount = (assembly.attendees || []).filter(a => a.method === 'qr').length;
+  const manualCount = attendeeCount - qrCount;
+
+  // Generar secciones por punto de agenda con resultado
+  const agendaSections = (assembly.agendaItems || []).filter(item => item.result).map(item => {
+    const r = item.result;
+    if (r.mode === 'per_cargo') {
+      const rows = [];
+      const votesByCargo = r.votesByCargo || {};
+      for (const [cargo, candidates] of Object.entries(votesByCargo)) {
+        const winnerRut = r.winners?.[cargo]?.rut;
+        for (const [candidateRut, voteCount] of Object.entries(candidates)) {
+          const candidate = (item.candidates || []).find(c => c.rut === candidateRut);
+          const name = candidate ? `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() : candidateRut;
+          rows.push(`<tr${candidateRut === winnerRut ? ' style="background:#d1fae5;font-weight:bold"' : ''}>
+            <td>${name}</td><td>${cargo}</td><td style="text-align:center">${voteCount}</td>
+            <td style="text-align:center">${candidateRut === winnerRut ? 'ELECTO' : ''}</td></tr>`);
+        }
+      }
+      return `<h3>${item.title || 'Elección de Directorio'}</h3>
+        <p>Modo de votación: <strong>Voto secreto por cargo</strong></p>
+        <p>Total votos emitidos: ${item.anonymousVotes?.length || item.votes?.length || 0}</p>
+        <table><thead><tr><th>Candidato</th><th>Cargo</th><th>Votos</th><th>Resultado</th></tr></thead>
+        <tbody>${rows.join('')}</tbody></table>`;
+    } else if (r.mode === 'per_lista') {
+      const listaRows = Object.entries(r.votesByLista || {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([lista, votes]) => `<tr${lista === r.winningLista ? ' style="background:#d1fae5;font-weight:bold"' : ''}>
+          <td>${lista}</td><td style="text-align:center">${votes}</td>
+          <td style="text-align:center">${lista === r.winningLista ? 'GANADORA' : ''}</td></tr>`);
+      const candidateRows = (r.winningCandidates || []).map(c =>
+        `<tr><td>${c.firstName || ''} ${c.lastName || ''}</td><td>${c.cargo || ''}</td><td>${c.rut || ''}</td></tr>`);
+      return `<h3>${item.title || 'Elección de Directorio'}</h3>
+        <p>Modo de votación: <strong>Voto secreto por lista</strong></p>
+        <table><thead><tr><th>Lista</th><th>Votos</th><th>Resultado</th></tr></thead>
+        <tbody>${listaRows.join('')}</tbody></table>
+        ${candidateRows.length ? `<p style="margin-top:12px"><strong>Candidatos de la lista ganadora (${r.winningLista}):</strong></p>
+        <table><thead><tr><th>Nombre</th><th>Cargo</th><th>RUT</th></tr></thead>
+        <tbody>${candidateRows.join('')}</tbody></table>` : ''}`;
+    } else if (r.mode === 'mano_alzada') {
+      return `<h3>${item.title || 'Punto de Agenda'}</h3>
+        <p>Modo de votación: <strong>Mano alzada</strong></p>
+        <table><thead><tr><th>Resolución</th><th>A Favor</th><th>En Contra</th><th>Abstenciones</th></tr></thead>
+        <tbody><tr style="background:${r.resolucion === 'aprobado' ? '#d1fae5' : '#fee2e2'}">
+          <td><strong>${r.resolucion === 'aprobado' ? 'APROBADO' : 'RECHAZADO'}</strong></td>
+          <td style="text-align:center">${r.votosAFavor ?? '-'}</td>
+          <td style="text-align:center">${r.votosEnContra ?? '-'}</td>
+          <td style="text-align:center">${r.abstenciones ?? '-'}</td>
+        </tr></tbody></table>
+        ${r.observaciones ? `<p><em>Observaciones: ${r.observaciones}</em></p>` : ''}`;
+    }
+    return `<h3>${item.title || 'Punto de Agenda'}</h3><p>Resultado registrado.</p>`;
+  }).join('\n');
+
+  // Directorio electo
+  const dir = org.provisionalDirectorio || {};
+  const president = dir.president || dir.presidente;
+  const secretary = dir.secretary || dir.secretario;
+  const treasurer = dir.treasurer || dir.tesorero;
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Acta de Escrutinio - ${orgName}</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; }
+  h1 { font-size: 16pt; text-align: center; margin-bottom: 5px; }
+  h2 { font-size: 13pt; text-align: center; font-weight: normal; color: #333; margin-top: 0; }
+  h3 { font-size: 12pt; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+  th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; }
+  th { background: #1e40af; color: #fff; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin: 10px 0; font-size: 10pt; }
+  .info-grid span { padding: 2px 0; }
+  .label { font-weight: bold; }
+  .quorum-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: bold; font-size: 10pt; }
+  .met { background: #d1fae5; color: #065f46; }
+  .not-met { background: #fee2e2; color: #991b1b; }
+  .signature-area { margin-top: 50px; display: flex; justify-content: space-between; flex-wrap: wrap; }
+  .signature-box { width: 30%; text-align: center; margin-bottom: 40px; }
+  .signature-line { border-top: 1px solid #000; margin-top: 50px; padding-top: 5px; font-size: 10pt; }
+  .footer { margin-top: 30px; text-align: center; font-size: 9pt; color: #666; }
+</style></head>
+<body>
+  <h1>ACTA DE ESCRUTINIO</h1>
+  <h2>${tipoOrg} "${orgName}"</h2>
+
+  <div class="info-grid">
+    <span><span class="label">Tipo de Asamblea:</span> ${assembly.type === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}</span>
+    <span><span class="label">Fecha:</span> ${assembly.date || 'N/A'}</span>
+    <span><span class="label">Título:</span> ${assembly.title || 'Sin título'}</span>
+    <span><span class="label">Estado:</span> ${assembly.status}</span>
+    <span><span class="label">Inicio:</span> ${assembly.startedAt ? new Date(assembly.startedAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+    <span><span class="label">Cierre:</span> ${assembly.finishedAt ? new Date(assembly.finishedAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+  </div>
+
+  <h3>Quórum</h3>
+  <div class="info-grid">
+    <span><span class="label">Miembros hábiles:</span> ${totalMembers}</span>
+    <span><span class="label">Asistentes:</span> ${attendeeCount}</span>
+    <span><span class="label">Quórum requerido:</span> ${qType === 'percentage' ? `${qValue}% (${required} socios)` : `${qValue} socios`}</span>
+    <span><span class="label">Verificación:</span> ${manualCount > 0 ? `${manualCount} manual` : ''}${manualCount > 0 && qrCount > 0 ? ' / ' : ''}${qrCount > 0 ? `${qrCount} por QR` : ''}</span>
+  </div>
+  <p>Quórum: <span class="quorum-badge ${quorumMet ? 'met' : 'not-met'}">${quorumMet ? 'CUMPLIDO' : 'NO CUMPLIDO'}</span></p>
+
+  <h3>Resultados por Punto de Agenda</h3>
+  ${agendaSections || '<p>No se registraron resultados de votación.</p>'}
+
+  ${president || secretary || treasurer ? `<h3>Directorio Resultante</h3>
+  <table><thead><tr><th>Cargo</th><th>Nombre</th><th>RUT</th></tr></thead><tbody>
+    ${president ? `<tr><td>Presidente/a</td><td>${president.firstName || ''} ${president.lastName || ''}</td><td>${president.rut || ''}</td></tr>` : ''}
+    ${secretary ? `<tr><td>Secretario/a</td><td>${secretary.firstName || ''} ${secretary.lastName || ''}</td><td>${secretary.rut || ''}</td></tr>` : ''}
+    ${treasurer ? `<tr><td>Tesorero/a</td><td>${treasurer.firstName || ''} ${treasurer.lastName || ''}</td><td>${treasurer.rut || ''}</td></tr>` : ''}
+    ${(dir.additionalMembers || []).map(m => `<tr><td>${m.cargoNombre || m.cargo || 'Director/a'}</td><td>${m.firstName || ''} ${m.lastName || ''}</td><td>${m.rut || ''}</td></tr>`).join('')}
+  </tbody></table>` : ''}
+
+  <div class="signature-area">
+    <div class="signature-box"><div class="signature-line">Presidente/a de Mesa</div></div>
+    <div class="signature-box"><div class="signature-line">Secretario/a</div></div>
+    <div class="signature-box"><div class="signature-line">Ministro de Fe</div></div>
+  </div>
+
+  <div class="footer">
+    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca<br>
+    Generado el ${formatDate(new Date())} — Este documento constituye acta oficial de escrutinio conforme al Art. 24, Ley 19.418
+  </div>
+</body></html>`;
+};
+
+// ============================================================
+// LISTA DE ASISTENCIA — Nómina de presentes con check-in
+// ============================================================
+
+const generateListaAsistenciaHTML = (org, assembly) => {
+  const orgName = org.organizationName || org.name || '';
+  const tipoOrg = getOrgTypeName(org.organizationType || org.type);
+  const attendees = assembly.attendees || [];
+  const totalMembers = org.members?.length || 0;
+  const qType = assembly.quorumType || 'percentage';
+  const qValue = assembly.quorumValue ?? 50;
+  const required = qType === 'percentage' ? Math.ceil(totalMembers * (qValue / 100)) : qValue;
+  const quorumMet = attendees.length >= required;
+
+  const rows = attendees.map((a, i) => {
+    const time = a.checkedInAt ? new Date(a.checkedInAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
+    const method = a.method === 'qr' ? 'QR' : a.method === 'self' ? 'Digital' : 'Manual';
+    return `<tr${i % 2 === 1 ? ' style="background:#f8fafc"' : ''}>
+      <td style="text-align:center">${i + 1}</td>
+      <td>${(a.firstName || '')} ${(a.lastName || '')}</td>
+      <td>${a.rut || ''}</td>
+      <td style="text-align:center">${time}</td>
+      <td style="text-align:center">${method}</td>
+      <td></td></tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Lista de Asistencia - ${orgName}</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
+  h1 { font-size: 14pt; text-align: center; margin-bottom: 3px; }
+  h2 { font-size: 11pt; text-align: center; font-weight: normal; color: #333; margin-top: 0; }
+  .info { font-size: 10pt; margin: 10px 0; }
+  .info span { margin-right: 20px; }
+  .label { font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  th, td { border: 1px solid #999; padding: 5px 8px; }
+  th { background: #1e40af; color: #fff; font-size: 9pt; }
+  td { font-size: 9pt; }
+  .quorum-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+  .met { background: #d1fae5; color: #065f46; }
+  .not-met { background: #fee2e2; color: #991b1b; }
+  .footer { margin-top: 20px; text-align: center; font-size: 9pt; color: #666; }
+  .summary { margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 4px; font-size: 10pt; }
+</style></head>
+<body>
+  <h1>LISTA DE ASISTENCIA</h1>
+  <h2>${tipoOrg} "${orgName}"</h2>
+
+  <div class="info">
+    <span><span class="label">Asamblea:</span> ${assembly.title || 'Sin título'}</span>
+    <span><span class="label">Tipo:</span> ${assembly.type === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}</span>
+    <span><span class="label">Fecha:</span> ${assembly.date || 'N/A'}</span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:5%">N°</th>
+      <th style="width:30%">Nombre Completo</th>
+      <th style="width:15%">RUT</th>
+      <th style="width:12%">Hora Check-in</th>
+      <th style="width:10%">Método</th>
+      <th style="width:18%">Firma</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <div class="summary">
+    <span class="label">Total asistentes:</span> ${attendees.length} de ${totalMembers} miembros hábiles |
+    <span class="label">Quórum (${qType === 'percentage' ? `${qValue}%` : qValue}):</span> ${required} requeridos →
+    <span class="quorum-badge ${quorumMet ? 'met' : 'not-met'}">${quorumMet ? 'CUMPLIDO' : 'NO CUMPLIDO'}</span>
+  </div>
+
+  <div class="footer">
+    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca<br>
+    ${formatDate(new Date())}
+  </div>
+</body></html>`;
+};
+
+/**
+ * GET /api/documents/:orgId/generate-acta-escrutinio/:assemblyId
+ * Genera el PDF del Acta de Escrutinio (resultados de votación)
+ */
+router.get('/:orgId/generate-acta-escrutinio/:assemblyId', authenticate, async (req, res) => {
+  let browser = null;
+  try {
+    const { orgId, assemblyId } = req.params;
+    const org = await Organization.findById(orgId);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = await Assembly.findOne({
+      organizationId: orgId,
+      $or: [{ _id: assemblyId }, { legacyId: assemblyId }]
+    }).lean();
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    if (assembly.status !== 'finalizada') return res.status(400).json({ error: 'La asamblea debe estar finalizada para generar el acta de escrutinio' });
+
+    const html = generateActaEscrutinioHTML(org, assembly);
+
+    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2cm', right: '1.5cm', bottom: '2cm', left: '1.5cm' } });
+    await browser.close();
+    browser = null;
+
+    const fileName = `Acta_Escrutinio_${(org.organizationName || 'Org').replace(/\s+/g, '_')}_${assemblyId}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdf);
+  } catch (error) {
+    console.error('Error generating acta escrutinio PDF:', error);
+    if (browser) await browser.close();
+    res.status(500).json({ error: 'Error al generar acta de escrutinio' });
+  }
+});
+
+/**
+ * GET /api/documents/:orgId/preview-acta-escrutinio/:assemblyId
+ * Preview HTML del Acta de Escrutinio (sin PDF)
+ */
+router.get('/:orgId/preview-acta-escrutinio/:assemblyId', authenticate, async (req, res) => {
+  try {
+    const { orgId, assemblyId } = req.params;
+    const org = await Organization.findById(orgId);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = await Assembly.findOne({
+      organizationId: orgId,
+      $or: [{ _id: assemblyId }, { legacyId: assemblyId }]
+    }).lean();
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const html = generateActaEscrutinioHTML(org, assembly);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    console.error('Error generating acta escrutinio preview:', error);
+    res.status(500).json({ error: 'Error al generar preview' });
+  }
+});
+
+/**
+ * GET /api/documents/:orgId/generate-lista-asistencia/:assemblyId
+ * Genera el PDF de la Lista de Asistencia
+ */
+router.get('/:orgId/generate-lista-asistencia/:assemblyId', authenticate, async (req, res) => {
+  let browser = null;
+  try {
+    const { orgId, assemblyId } = req.params;
+    const org = await Organization.findById(orgId);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = await Assembly.findOne({
+      organizationId: orgId,
+      $or: [{ _id: assemblyId }, { legacyId: assemblyId }]
+    }).lean();
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const html = generateListaAsistenciaHTML(org, assembly);
+
+    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2cm', right: '1.5cm', bottom: '2cm', left: '1.5cm' } });
+    await browser.close();
+    browser = null;
+
+    const fileName = `Lista_Asistencia_${(org.organizationName || 'Org').replace(/\s+/g, '_')}_${assemblyId}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdf);
+  } catch (error) {
+    console.error('Error generating attendance list PDF:', error);
+    if (browser) await browser.close();
+    res.status(500).json({ error: 'Error al generar lista de asistencia' });
+  }
+});
+
+/**
+ * GET /api/documents/:orgId/preview-lista-asistencia/:assemblyId
+ * Preview HTML de la Lista de Asistencia
+ */
+router.get('/:orgId/preview-lista-asistencia/:assemblyId', authenticate, async (req, res) => {
+  try {
+    const { orgId, assemblyId } = req.params;
+    const org = await Organization.findById(orgId);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = await Assembly.findOne({
+      organizationId: orgId,
+      $or: [{ _id: assemblyId }, { legacyId: assemblyId }]
+    }).lean();
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    const html = generateListaAsistenciaHTML(org, assembly);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    console.error('Error generating attendance list preview:', error);
+    res.status(500).json({ error: 'Error al generar preview' });
   }
 });
 

@@ -212,8 +212,9 @@ router.post('/me/generate-qr-token', authenticate, async (req, res) => {
     }
 
     user.qrToken = randomUUID();
+    user.qrTokenGeneratedAt = new Date();
     await user.save();
-    res.json({ qrToken: user.qrToken });
+    res.json({ qrToken: user.qrToken, generatedAt: user.qrTokenGeneratedAt });
   } catch (error) {
     console.error('Generate QR token error:', error);
     res.status(500).json({ error: 'Error al generar token QR' });
