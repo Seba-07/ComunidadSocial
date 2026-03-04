@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 
@@ -7,9 +8,16 @@ const MONTHS = [
 ];
 
 export default function Step3_Config({ onNext, onPrev }) {
-  const { formData, updateFormData } = useWizardStore();
+  const { formData, updateFormData, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const config = formData.config || {};
+
+  // Set default duracionMandato from template when it loads
+  useEffect(() => {
+    if (templateConfig?.mandatoOpciones?.length && !config.duracionMandato) {
+      updateFormData('config', { duracionMandato: templateConfig.mandatoOpciones[0] });
+    }
+  }, [templateConfig]);
 
   function update(field, value) {
     updateFormData('config', { [field]: value });
@@ -79,18 +87,38 @@ export default function Step3_Config({ onNext, onPrev }) {
           </div>
         </div>
 
-        <div>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Directorio</h3>
-          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-            Duración del mandato
-          </label>
-          <select value={config.duracionMandato ?? 2}
-            onChange={e => update('duracionMandato', parseInt(e.target.value))}
-            style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
-            <option value={2}>2 años</option>
-            <option value={3}>3 años</option>
-          </select>
-        </div>
+        {(() => {
+          const mandatoTipo = templateConfig?.mandatoTipo || 'fijo';
+          const mandatoOpciones = templateConfig?.mandatoOpciones || [3];
+          const isFijo = mandatoTipo === 'fijo';
+
+          return (
+            <div>
+              <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Directorio</h3>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                Duración del mandato
+              </label>
+              {isFijo ? (
+                <>
+                  <input value={`${mandatoOpciones[0]} año${mandatoOpciones[0] > 1 ? 's' : ''}`}
+                    disabled
+                    style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, background: '#f3f4f6', color: '#6b7280' }} />
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280' }}>
+                    Duración establecida por normativa para esta organización.
+                  </p>
+                </>
+              ) : (
+                <select value={config.duracionMandato ?? mandatoOpciones[0]}
+                  onChange={e => update('duracionMandato', parseInt(e.target.value))}
+                  style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+                  {mandatoOpciones.map(n => (
+                    <option key={n} value={n}>{n} año{n > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          );
+        })()}
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Citaciones a Asambleas</h3>

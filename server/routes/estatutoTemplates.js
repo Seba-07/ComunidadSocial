@@ -68,7 +68,7 @@ router.get('/:tipo/config', async (req, res) => {
       tipoOrganizacion: req.params.tipo,
       activo: true,
       publicado: true
-    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig objetivosSugeridos');
+    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig objetivosSugeridos mandatoTipo mandatoOpciones requiereDirectorioProvisorio');
 
     if (!template) {
       // Devolver configuración DEFAULT si no existe plantilla
@@ -165,7 +165,10 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       miembrosMinimos,
       comisionElectoral,
       placeholders,
-      objetivosSugeridos
+      objetivosSugeridos,
+      mandatoTipo,
+      mandatoOpciones,
+      requiereDirectorioProvisorio
     } = req.body;
 
     // Verificar que no existe
@@ -189,6 +192,9 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       comisionElectoral: comisionElectoral || { cantidad: 3 },
       placeholders: placeholders || [],
       objetivosSugeridos: objetivosSugeridos || [],
+      mandatoTipo: mandatoTipo || 'fijo',
+      mandatoOpciones: mandatoOpciones || [3],
+      requiereDirectorioProvisorio: requiereDirectorioProvisorio !== false,
       creadoPor: req.user._id,
       modificadoPor: req.user._id
     });
@@ -225,12 +231,15 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
       edadConfig,
       placeholders,
       objetivosSugeridos,
+      mandatoTipo,
+      mandatoOpciones,
+      requiereDirectorioProvisorio,
       publicado,
       descripcionCambio
     } = req.body;
 
     // Crear versión antes de modificar (si hay cambios significativos)
-    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral || edadConfig || objetivosSugeridos;
+    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral || edadConfig || objetivosSugeridos || mandatoTipo !== undefined || mandatoOpciones || requiereDirectorioProvisorio !== undefined;
     if (hasSignificantChanges) {
       template.crearVersion(req.user._id, descripcionCambio || 'Actualización de plantilla');
     }
@@ -250,6 +259,9 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (edadConfig !== undefined) template.edadConfig = edadConfig;
     if (placeholders !== undefined) template.placeholders = placeholders;
     if (objetivosSugeridos !== undefined) template.objetivosSugeridos = objetivosSugeridos;
+    if (mandatoTipo !== undefined) template.mandatoTipo = mandatoTipo;
+    if (mandatoOpciones !== undefined) template.mandatoOpciones = mandatoOpciones;
+    if (requiereDirectorioProvisorio !== undefined) template.requiereDirectorioProvisorio = requiereDirectorioProvisorio;
     if (publicado !== undefined) template.publicado = publicado;
 
     template.modificadoPor = req.user._id;
@@ -435,6 +447,9 @@ router.post('/:id/restaurar/:version', authenticate, requireRole('MUNICIPALIDAD'
     if (snapshot.imagenesDocumento) template.imagenesDocumento = snapshot.imagenesDocumento;
     if (snapshot.documentoCompleto) template.documentoCompleto = snapshot.documentoCompleto;
     if (snapshot.objetivosSugeridos) template.objetivosSugeridos = snapshot.objetivosSugeridos;
+    if (snapshot.mandatoTipo) template.mandatoTipo = snapshot.mandatoTipo;
+    if (snapshot.mandatoOpciones) template.mandatoOpciones = snapshot.mandatoOpciones;
+    if (snapshot.requiereDirectorioProvisorio !== undefined) template.requiereDirectorioProvisorio = snapshot.requiereDirectorioProvisorio;
 
     template.modificadoPor = req.user._id;
     await template.save();
@@ -503,6 +518,9 @@ router.post('/:id/duplicar', authenticate, requireRole('MUNICIPALIDAD'), async (
       comisionElectoral: template.comisionElectoral,
       placeholders: template.placeholders,
       objetivosSugeridos: template.objetivosSugeridos || [],
+      mandatoTipo: template.mandatoTipo || 'fijo',
+      mandatoOpciones: template.mandatoOpciones || [3],
+      requiereDirectorioProvisorio: template.requiereDirectorioProvisorio !== false,
       // No copiar imágenes (deberán subirse nuevas)
       imagenesDocumento: [],
       publicado: false,

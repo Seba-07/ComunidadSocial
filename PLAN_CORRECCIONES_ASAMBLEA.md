@@ -393,3 +393,53 @@
 
 ### D — Step 4 Placeholder Replacement
 - [x] **D1**: Expandir `replacePlaceholders()` en `Step4_Estatutos.jsx` de 7 a 19 sustituciones + backward compat doble/simple llave
+
+---
+
+## FASE 5: Lógica Dinámica de Directorios y Mandatos
+
+### Estado: COMPLETADO
+### Fecha: 2026-03-04
+
+> **Objetivo**: Configurar duración de mandato y tipo de directorio (provisorio vs definitivo)
+> por tipo de organización según Ley 19.418 y normativas específicas. Permitir al admin
+> gestionar estos campos y reflejar dinámicamente en el wizard.
+
+### Reglas implementadas
+
+| Tipo de Organización | mandatoTipo | mandatoOpciones | requiereDirectorioProvisorio |
+|----------------------|-------------|-----------------|------------------------------|
+| Regla general (Ley 19.418) | fijo | [3] | true |
+| CENTRO_ESTUDIANTES, CONSEJO_ESCOLAR | fijo | [1] | false |
+| CENTRO_PADRES | variable | [1, 2] | false |
+| ORG_INDIGENA | variable | [2, 3, 4] | false |
+| CLUB_DEPORTIVO | variable | [1, 2, 3, 4] | true |
+
+### Tareas
+
+#### Schema + Rutas
+- [x] **F5-01**: Agregar campos `mandatoTipo`, `mandatoOpciones`, `requiereDirectorioProvisorio` al schema `EstatutoTemplate.js`
+- [x] **F5-02**: Actualizar `crearVersion()`, `obtenerSnapshot()`, `getDefaultConfig()` con nuevos campos
+- [x] **F5-03**: Actualizar rutas GET config, PUT, POST, restore, duplicate en `estatutoTemplates.js`
+
+#### Migración
+- [x] **F5-04**: Crear y ejecutar `server/scripts/seed-mandato-config.js` — 37 templates actualizados
+
+#### Admin UI
+- [x] **F5-05**: Secciones colapsables por categoría en lista de plantillas (`EstatutosManagerView.jsx`)
+- [x] **F5-06**: Controles de mandatoTipo (fijo/variable), mandatoOpciones, y requiereDirectorioProvisorio en pestaña Directorio
+
+#### Wizard
+- [x] **F5-07**: Step 3 — Duración de mandato dinámica: input deshabilitado si fijo, dropdown si variable
+- [x] **F5-08**: Step 5 — Títulos dinámicos: "Directorio Provisorio" vs "Directorio Definitivo" según `requiereDirectorioProvisorio`
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/models/EstatutoTemplate.js` | 3 campos nuevos en schema, snapshot, config |
+| `server/routes/estatutoTemplates.js` | Nuevos campos en GET, PUT, POST, restore, duplicate |
+| `server/scripts/seed-mandato-config.js` | Script de migración (NUEVO) |
+| `src/react/pages/Admin/views/EstatutosManagerView.jsx` | Secciones colapsables + controles mandato en Directorio tab |
+| `src/react/pages/Wizard/steps/Step3_Config.jsx` | Duración mandato dinámica (fijo/variable) |
+| `src/react/pages/Wizard/steps/Step5_Directorio.jsx` | Títulos dinámicos provisorio/definitivo |

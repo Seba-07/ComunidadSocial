@@ -17,6 +17,7 @@ export default function EstatutosManagerView() {
   const [saving, setSaving] = useState(false);
   const [editingObjIdx, setEditingObjIdx] = useState(null);
   const [objInput, setObjInput] = useState('');
+  const [collapsedCats, setCollapsedCats] = useState({});
   const editorRef = useRef(null);
 
   async function loadTemplates() {
@@ -270,12 +271,48 @@ export default function EstatutosManagerView() {
                     onChange={e => setSelectedTemplate(t => ({ ...t, comisionElectoral: { ...(t.comisionElectoral || {}), cantidad: parseInt(e.target.value) || 3 } }))}
                     style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
                 </div>
+              </div>
+
+              {/* Configuración de Mandato */}
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 12px' }}>Configuración de Mandato</h3>
+              <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Duración mandato (años)</label>
-                  <input type="number" value={selectedTemplate.directorio?.duracionMandato ?? ''}
-                    onChange={e => setSelectedTemplate(t => ({ ...t, directorio: { ...(t.directorio || {}), duracionMandato: parseInt(e.target.value) || 2 } }))}
-                    style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Tipo de mandato</label>
+                  <select value={selectedTemplate.mandatoTipo || 'fijo'}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, mandatoTipo: e.target.value }))}
+                    style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+                    <option value="fijo">Fijo (no editable por organizador)</option>
+                    <option value="variable">Variable (organizador elige)</option>
+                  </select>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>
+                    {selectedTemplate.mandatoTipo === 'variable' ? 'Opciones de años permitidas' : 'Duración fija (años)'}
+                  </label>
+                  <input value={(selectedTemplate.mandatoOpciones || [3]).join(', ')}
+                    onChange={e => {
+                      const nums = e.target.value.split(',').map(s => parseInt(s.trim())).filter(n => n > 0 && !isNaN(n));
+                      setSelectedTemplate(t => ({
+                        ...t,
+                        mandatoOpciones: nums.length ? nums : [3],
+                        directorio: { ...(t.directorio || {}), duracionMandato: nums[0] || 3 }
+                      }));
+                    }}
+                    placeholder="ej: 1, 2, 3"
+                    style={{ width: 160, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>
+                    {selectedTemplate.mandatoTipo === 'variable' ? 'separar con comas' : ''}
+                  </span>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                  <input type="checkbox"
+                    checked={selectedTemplate.requiereDirectorioProvisorio !== false}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, requiereDirectorioProvisorio: e.target.checked }))} />
+                  <span style={{ fontWeight: 600 }}>Requiere Directorio Provisorio</span>
+                  <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 4 }}>
+                    (si no, el wizard asigna Directorio Definitivo)
+                  </span>
+                </label>
               </div>
 
               {/* Configuración de Edad */}
@@ -515,18 +552,22 @@ export default function EstatutosManagerView() {
         <span>Publicadas: {templates.filter(t => t.publicado).length}</span>
       </div>
 
-      {sortedCategories.map(cat => (
-        <div key={cat} style={{ marginBottom: 24 }}>
-          <h2 style={{
-            fontSize: 15, fontWeight: 700, color: '#374151', margin: '0 0 10px',
-            padding: '8px 14px', background: '#f3f4f6', borderRadius: 8
+      {sortedCategories.map(cat => {
+        const collapsed = collapsedCats[cat];
+        return (
+        <div key={cat} style={{ marginBottom: 16 }}>
+          <button onClick={() => setCollapsedCats(s => ({ ...s, [cat]: !s[cat] }))} style={{
+            width: '100%', textAlign: 'left', fontSize: 15, fontWeight: 700, color: '#374151',
+            margin: 0, padding: '10px 14px', background: '#f3f4f6', borderRadius: 8,
+            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
           }}>
+            <span style={{ fontSize: 12, transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>&#9660;</span>
             {CATEGORY_LABELS[cat] || cat}
-            <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: 8, fontSize: 13 }}>
+            <span style={{ fontWeight: 400, color: '#9ca3af', fontSize: 13 }}>
               ({grouped[cat].length})
             </span>
-          </h2>
-          <div style={{ display: 'grid', gap: 8 }}>
+          </button>
+          {!collapsed && <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
             {grouped[cat].map(t => (
               <div key={t._id} style={{
                 background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
@@ -563,9 +604,10 @@ export default function EstatutosManagerView() {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

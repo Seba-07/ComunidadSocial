@@ -33,6 +33,8 @@ export default function Step5_Directorio({ onNext, onPrev }) {
 
   const edadConfig = templateConfig?.edadConfig || {};
   const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
+  const esDefinitivo = templateConfig?.requiereDirectorioProvisorio === false;
+  const tipoDirectorio = esDefinitivo ? 'Definitivo' : 'Provisorio';
 
   // Load cargos from template config or API fallback
   useEffect(() => {
@@ -151,14 +153,16 @@ export default function Step5_Directorio({ onNext, onPrev }) {
   return (
     <div>
       <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
-        Directorio Provisorio y Comisión Electoral
+        Directorio {tipoDirectorio} y Comisión Electoral
       </h2>
       <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280' }}>
-        Asigna miembros a los cargos del directorio y la comisión electoral.
+        {esDefinitivo
+          ? 'Asigna los miembros del directorio definitivo y la comisión electoral.'
+          : 'Asigna miembros a los cargos del directorio provisorio. Se confirmarán en la asamblea constitutiva.'}
       </p>
 
       {/* Directorio */}
-      <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Directorio Provisorio</h3>
+      <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Directorio {tipoDirectorio}</h3>
       <div style={{ display: 'grid', gap: 12, marginBottom: 24 }}>
         {cargos.map(cargo => {
           const assigned = directorio[cargo.id];

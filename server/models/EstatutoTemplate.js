@@ -259,6 +259,23 @@ const estatutoTemplateSchema = new mongoose.Schema({
     default: []
   },
 
+  // Configuración de mandato
+  mandatoTipo: {
+    type: String,
+    enum: ['fijo', 'variable'],
+    default: 'fijo'
+  },
+  mandatoOpciones: {
+    type: [Number],
+    default: [3]
+  },
+
+  // Directorio provisorio vs definitivo
+  requiereDirectorioProvisorio: {
+    type: Boolean,
+    default: true
+  },
+
   // Imágenes para el documento PDF
   imagenesDocumento: [imagenDocumentoSchema],
 
@@ -331,7 +348,10 @@ estatutoTemplateSchema.methods.crearVersion = function(userId, descripcion) {
       miembrosMinimos: this.miembrosMinimos,
       comisionElectoral: this.comisionElectoral.toObject ? this.comisionElectoral.toObject() : this.comisionElectoral,
       edadConfig: this.edadConfig.toObject ? this.edadConfig.toObject() : this.edadConfig,
-      objetivosSugeridos: this.objetivosSugeridos || []
+      objetivosSugeridos: this.objetivosSugeridos || [],
+      mandatoTipo: this.mandatoTipo,
+      mandatoOpciones: this.mandatoOpciones,
+      requiereDirectorioProvisorio: this.requiereDirectorioProvisorio
     }
   });
   this.version += 1;
@@ -354,6 +374,9 @@ estatutoTemplateSchema.methods.obtenerSnapshot = function() {
     documentoCompleto: this.documentoCompleto,
     edadConfig: this.edadConfig,
     objetivosSugeridos: this.objetivosSugeridos,
+    mandatoTipo: this.mandatoTipo,
+    mandatoOpciones: this.mandatoOpciones,
+    requiereDirectorioProvisorio: this.requiereDirectorioProvisorio,
     fechaSnapshot: new Date()
   };
 };
@@ -383,7 +406,10 @@ estatutoTemplateSchema.statics.getDefaultConfig = function(tipoOrganizacion) {
       menoresEnComisionElectoral: false
     },
     placeholders: [],
-    objetivosSugeridos: []
+    objetivosSugeridos: [],
+    mandatoTipo: 'fijo',
+    mandatoOpciones: [3],
+    requiereDirectorioProvisorio: true
   };
 };
 
