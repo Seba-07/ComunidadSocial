@@ -220,13 +220,14 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
       directorio,
       miembrosMinimos,
       comisionElectoral,
+      edadConfig,
       placeholders,
       publicado,
       descripcionCambio
     } = req.body;
 
     // Crear versión antes de modificar (si hay cambios significativos)
-    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral;
+    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral || edadConfig;
     if (hasSignificantChanges) {
       template.crearVersion(req.user._id, descripcionCambio || 'Actualización de plantilla');
     }
@@ -243,6 +244,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     }
     if (miembrosMinimos !== undefined) template.miembrosMinimos = miembrosMinimos;
     if (comisionElectoral !== undefined) template.comisionElectoral = comisionElectoral;
+    if (edadConfig !== undefined) template.edadConfig = edadConfig;
     if (placeholders !== undefined) template.placeholders = placeholders;
     if (publicado !== undefined) template.publicado = publicado;
 
