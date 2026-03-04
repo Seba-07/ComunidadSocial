@@ -289,8 +289,6 @@ export default function Step1_OrgData({ onNext, isFirst }) {
               })}
             </div>
             <input
-              value=""
-              onChange={() => {}}
               onKeyDown={e => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
                   e.preventDefault();
