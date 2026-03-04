@@ -112,6 +112,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/app/admin';
         return;
       }
+      if (parsed.role === 'ORGANIZADOR' || parsed.role === 'MIEMBRO_DIRECTIVO') {
+        console.log('🏠 Organizador detectado, redirigiendo al dashboard de organización...');
+        window.location.href = '/app/org/auto';
+        return;
+      }
     } catch (e) {
       localStorage.removeItem('currentUser');
     }
