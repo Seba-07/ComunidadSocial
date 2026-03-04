@@ -19,9 +19,6 @@ import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
 import { indexedDBService } from './src/infrastructure/database/IndexedDBService.js';
-import guiaConstitucionManager from './src/presentation/guia/GuiaConstitucionManager.js';
-import bibliotecaManager from './src/presentation/biblioteca/BibliotecaManager.js';
-import newsManager from './src/presentation/news/NewsManager.js';
 
 // Componente de estado de conexión (se auto-inicializa)
 import './src/shared/components/ConnectionStatus.js';
@@ -780,12 +777,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadProfileData();
       } else if (page === 'mis-organizaciones') {
         renderOrganizations();
-      } else if (page === 'guia-constitucion') {
-        guiaConstitucionManager.init();
-      } else if (page === 'biblioteca') {
-        bibliotecaManager.init();
-      } else if (page === 'noticias') {
-        newsManager.init();
       }
     });
   }
@@ -801,12 +792,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           loadProfileData();
         } else if (page === 'mis-organizaciones') {
           renderOrganizations();
-        } else if (page === 'guia-constitucion') {
-          guiaConstitucionManager.init();
-        } else if (page === 'biblioteca') {
-          bibliotecaManager.init();
-        } else if (page === 'noticias') {
-          newsManager.init();
         }
       }
     });
@@ -820,12 +805,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         appState.navigateTo(page);
         if (page === 'mis-organizaciones') {
           renderOrganizations();
-        } else if (page === 'guia-constitucion') {
-          guiaConstitucionManager.init();
-        } else if (page === 'biblioteca') {
-          bibliotecaManager.init();
-        } else if (page === 'noticias') {
-          newsManager.init();
         }
       }
     });
@@ -1054,12 +1033,6 @@ window.addEventListener('page-navigate', (e) => {
     loadProfileData();
   } else if (page === 'mis-organizaciones') {
     renderOrganizations();
-  } else if (page === 'guia-constitucion') {
-    guiaConstitucionManager.init();
-  } else if (page === 'biblioteca') {
-    bibliotecaManager.init();
-  } else if (page === 'noticias') {
-    newsManager.init();
   }
 });
 
@@ -5315,12 +5288,6 @@ function setupAdminUI() {
             adminDashboard.init();
           } else if (page === 'profile') {
             loadProfileData();
-          } else if (page === 'guia-constitucion') {
-            guiaConstitucionManager.init();
-          } else if (page === 'biblioteca') {
-            bibliotecaManager.init();
-          } else if (page === 'noticias') {
-            newsManager.init();
           }
           // Cerrar sidebar en movil
           const sideNavEl = document.getElementById('side-nav');

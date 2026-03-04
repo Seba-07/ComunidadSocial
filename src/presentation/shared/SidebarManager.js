@@ -23,9 +23,6 @@ const ORG_NAV_ITEMS = [
 // Secondary nav items (below org section, separated)
 const SECONDARY_NAV_ITEMS = [
   { page: 'mis-organizaciones', icon: '🏠', label: 'Mis Organizaciones' },
-  { page: 'guia-constitucion', icon: '📑', label: 'Guía' },
-  { page: 'biblioteca', icon: '📚', label: 'Biblioteca' },
-  { page: 'noticias', icon: '📰', label: 'Noticias' },
 ];
 
 // Member sidebar items
@@ -44,9 +41,6 @@ const BOTTOM_ICONS = {
   members: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
   directorio: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
   docs: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-  guia: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
-  biblioteca: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-  noticias: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/><path d="M21 13v6a2 2 0 0 1-2 2"/><path d="M21 6h-8a2 2 0 0 0-2 2v7"/></svg>',
   crearOrg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
 };
 
@@ -54,9 +48,6 @@ const BOTTOM_ICONS = {
 const ORG_BOTTOM_NAV = [
   { page: 'home', icon: 'home', label: 'Inicio' },
   { page: 'mis-organizaciones', icon: 'crearOrg', label: 'Mis Orgs' },
-  { page: 'guia-constitucion', icon: 'guia', label: 'Guía' },
-  { page: 'biblioteca', icon: 'biblioteca', label: 'Biblioteca' },
-  { page: 'noticias', icon: 'noticias', label: 'Noticias' },
 ];
 
 // Member bottom nav items
