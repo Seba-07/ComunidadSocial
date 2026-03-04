@@ -4,7 +4,7 @@ import { useUiStore } from '../../../stores/uiStore';
 import { validateRut, formatRut } from '../../../utils/validators';
 import DataTable from '../../../components/ui/DataTable';
 import Modal from '../../../components/ui/Modal';
-import MemberImportModal from './MemberImportModal';
+import MemberImportModal, { downloadMemberTemplate } from './MemberImportModal';
 
 const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '' };
 
@@ -195,6 +195,13 @@ export default function Step2_Members({ onNext, onPrev }) {
           background: '#f0fdf4', color: '#065f46', fontSize: 14, fontWeight: 600, cursor: 'pointer'
         }}>
           Subir Nómina (Excel/CSV)
+        </button>
+        <button onClick={downloadMemberTemplate} style={{
+          padding: '10px 16px', border: 'none', borderRadius: 10,
+          background: 'transparent', color: '#2563eb', fontSize: 13, cursor: 'pointer',
+          textDecoration: 'underline',
+        }}>
+          Descargar plantilla
         </button>
         {members.length === 0 && (
           <button onClick={() => {

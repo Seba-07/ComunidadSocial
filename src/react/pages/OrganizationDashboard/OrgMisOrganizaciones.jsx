@@ -75,11 +75,30 @@ function ProgressTracker({ status }) {
   );
 }
 
+const WIZARD_STEP_LABELS = [
+  'Datos Generales', 'Miembros', 'Directorio', 'Estatutos', 'Certificados', 'Acta Constitutiva', 'Revisión'
+];
+
+function getWizardDraft() {
+  try {
+    const raw = localStorage.getItem('wizard_progress');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Expire after 7 days (same as wizardStore)
+    if (data.savedAt && Date.now() - data.savedAt > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('wizard_progress');
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
 export default function OrgMisOrganizaciones() {
   const navigate = useNavigate();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [draft, setDraft] = useState(() => getWizardDraft());
 
   useEffect(() => {
     loadOrgs();
@@ -163,6 +182,65 @@ export default function OrgMisOrganizaciones() {
           + Crear Nueva Organización
         </button>
       </div>
+
+      {/* Local Draft */}
+      {draft && (
+        <div style={{
+          marginBottom: 24, background: '#fefce8', borderRadius: 12,
+          border: '2px dashed #d97706', padding: 20,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827' }}>
+                  {draft.formData?.organization?.organizationName || 'Nueva Organización'}
+                </h4>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  color: '#92400e', background: '#fef3c7',
+                }}>
+                  Borrador local
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280' }}>
+                <span>Paso {(draft.currentStep || 0) + 1} de 7: {WIZARD_STEP_LABELS[draft.currentStep || 0]}</span>
+                {(draft.formData?.members?.length || 0) > 0 && (
+                  <span>{draft.formData.members.length} miembros</span>
+                )}
+                {draft.savedAt && (
+                  <span>Guardado: {new Date(draft.savedAt).toLocaleDateString('es-CL')}</span>
+                )}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('wizard_progress');
+                  setDraft(null);
+                }}
+                style={{
+                  padding: '8px 16px', borderRadius: 8,
+                  background: 'white', color: '#6b7280',
+                  border: '1px solid #d1d5db', fontSize: 13, cursor: 'pointer',
+                }}
+              >
+                Descartar
+              </button>
+              <button
+                onClick={() => navigate('/wizard')}
+                style={{
+                  padding: '8px 16px', borderRadius: 8,
+                  background: '#d97706', color: 'white',
+                  border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Orgs */}
       {pendingOrgs.length > 0 && (
@@ -266,7 +344,7 @@ export default function OrgMisOrganizaciones() {
       )}
 
       {/* Empty state */}
-      {orgs.length === 0 && (
+      {orgs.length === 0 && !draft && (
         <div style={{
           background: 'white',
           borderRadius: 16,

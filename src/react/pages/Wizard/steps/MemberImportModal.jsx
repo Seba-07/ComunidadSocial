@@ -96,6 +96,23 @@ function validateRow(row, existingRuts, seenRuts) {
   return { errors, warnings };
 }
 
+export function downloadMemberTemplate() {
+  const BOM = '\uFEFF';
+  const rows = [
+    ['Nombre', 'Apellido', 'RUT', 'Fecha de Nacimiento', 'Email', 'Teléfono', 'Género'],
+    ['Juan', 'Pérez', '12.345.678-5', '15/03/1990', 'juan@email.com', '912345678', 'masculino'],
+    ['María', 'González', '23.456.789-0', '20/07/1985', '', '', 'femenino'],
+  ];
+  const csv = BOM + rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'plantilla_nomina_socios.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function MemberImportModal({ open, onClose, existingMembers = [], onImport, edadConfig }) {
   const [step, setStep] = useState(1);
   const [rawData, setRawData] = useState([]);
@@ -246,10 +263,22 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
         {step === 1 && (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-            <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+            <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 16 }}>
               Sube un archivo CSV o Excel con los datos de los miembros.<br />
               Columnas esperadas: <strong>Nombre, Apellido, RUT, Fecha de Nacimiento</strong>
             </p>
+            <button
+              onClick={downloadMemberTemplate}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 18px', background: '#f0fdf4', color: '#065f46',
+                border: '1px solid #10b981', borderRadius: 8, fontSize: 13,
+                fontWeight: 500, cursor: 'pointer', marginBottom: 16,
+              }}
+            >
+              Descargar Plantilla CSV
+            </button>
+            <br />
             <label style={{
               display: 'inline-block', padding: '12px 32px', background: '#2563eb', color: 'white',
               borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer'
