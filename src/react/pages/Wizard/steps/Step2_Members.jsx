@@ -4,6 +4,7 @@ import { useUiStore } from '../../../stores/uiStore';
 import { validateRut, formatRut } from '../../../utils/validators';
 import DataTable from '../../../components/ui/DataTable';
 import Modal from '../../../components/ui/Modal';
+import MemberImportModal from './MemberImportModal';
 
 const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '' };
 
@@ -41,6 +42,7 @@ export default function Step2_Members({ onNext, onPrev }) {
   const { formData, addMember, removeMember, updateMember, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_MEMBER });
 
@@ -188,6 +190,12 @@ export default function Step2_Members({ onNext, onPrev }) {
         }}>
           Agregar Miembro
         </button>
+        <button onClick={() => setShowImport(true)} style={{
+          padding: '10px 20px', border: '1px solid #10b981', borderRadius: 10,
+          background: '#f0fdf4', color: '#065f46', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+        }}>
+          Subir Nómina (Excel/CSV)
+        </button>
         {members.length === 0 && (
           <button onClick={() => {
             TEST_MEMBERS.forEach(m => addMember(m));
@@ -241,6 +249,17 @@ export default function Step2_Members({ onNext, onPrev }) {
           <button onClick={saveMember} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: '#2563eb', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
         </div>
       </Modal>
+
+      <MemberImportModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        existingMembers={members}
+        edadConfig={templateConfig?.edadConfig}
+        onImport={(imported) => {
+          imported.forEach(m => addMember(m));
+          addToast(`${imported.length} miembros importados exitosamente`, 'success');
+        }}
+      />
     </div>
   );
 }

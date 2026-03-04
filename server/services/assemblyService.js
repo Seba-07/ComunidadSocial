@@ -61,6 +61,8 @@ export async function createAssembly(org, data) {
       votingMode: item.votingMode || null,
       candidates: [],
       votes: [],
+      voterRegistry: [],
+      anonymousVotes: [],
       votingOpen: false
     })),
     attendance: 0,

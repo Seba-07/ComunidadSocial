@@ -6,6 +6,16 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
   const attendees = wizardData.attendees || [];
   const presentCount = attendees.filter(a => a.present).length;
 
+  // Check for missing directorio certificates
+  const certs = org?.certificatesStep5 || [];
+  const certCargoIds = certs.map(c => c.memberId || c.memberName);
+  const missingCerts = directorio.filter(d => {
+    const id = d.cargo || '';
+    const fullName = `${d.firstName || d.name || ''} ${d.lastName || ''}`.trim();
+    return !certCargoIds.includes(id) && !certCargoIds.includes(fullName);
+  });
+  const hasMissingCerts = missingCerts.length > 0 && (org?.certificatesPending !== false);
+
   return (
     <div>
       <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
@@ -63,6 +73,19 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
         </Section>
       )}
 
+      {/* Missing certificates warning */}
+      {hasMissingCerts && (
+        <div style={{
+          background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10,
+          padding: 16, marginBottom: 16
+        }}>
+          <p style={{ margin: 0, fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
+            No se puede aprobar: faltan certificados de antecedentes para {missingCerts.length} miembro(s) del directorio.
+            El organizador debe subirlos desde el panel de la organización.
+          </p>
+        </div>
+      )}
+
       {/* Legal warning */}
       <div style={{
         background: '#fefce8', border: '1px solid #fde68a', borderRadius: 10,
@@ -76,12 +99,12 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={onSubmit} disabled={isSubmitting} style={{
+        <button onClick={onSubmit} disabled={isSubmitting || hasMissingCerts} style={{
           padding: '14px 32px', border: 'none', borderRadius: 10,
-          background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
-          color: 'white', fontSize: 16, fontWeight: 700, cursor: isSubmitting ? 'wait' : 'pointer'
+          background: (isSubmitting || hasMissingCerts) ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white', fontSize: 16, fontWeight: 700, cursor: (isSubmitting || hasMissingCerts) ? 'not-allowed' : 'pointer'
         }}>
-          {isSubmitting ? 'Enviando...' : 'Confirmar Validación'}
+          {isSubmitting ? 'Enviando...' : hasMissingCerts ? 'Certificados Pendientes' : 'Confirmar Validación'}
         </button>
       </div>
     </div>

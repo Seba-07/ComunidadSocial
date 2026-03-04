@@ -20,7 +20,19 @@ const STATUS_COLORS = {
   cancelada: '#ef4444'
 };
 
-export default function AssemblyList({ assemblies = [], orgId, currentUser, onRefresh }) {
+function calcQuorumMet(assembly, org) {
+  const attendeeCount = assembly.attendees?.length || 0;
+  const quorumValue = assembly.quorumValue ?? 50;
+  const quorumType = assembly.quorumType || 'percentage';
+  if (quorumType === 'percentage') {
+    const totalMembers = org?.members?.length || 0;
+    const required = totalMembers > 0 ? Math.ceil(totalMembers * (quorumValue / 100)) : 0;
+    return { met: totalMembers > 0 && attendeeCount >= required, required, actual: attendeeCount };
+  }
+  return { met: attendeeCount >= quorumValue, required: quorumValue, actual: attendeeCount };
+}
+
+export default function AssemblyList({ assemblies = [], orgId, org, currentUser, onRefresh }) {
   const [selectedAssembly, setSelectedAssembly] = useState(null);
 
   const active = assemblies.filter((a) => ['convocada', 'en_curso'].includes(a.status));
@@ -68,6 +80,7 @@ export default function AssemblyList({ assemblies = [], orgId, currentUser, onRe
           <AssemblyDetail
             assembly={selectedAssembly}
             orgId={orgId}
+            org={org}
             currentUser={currentUser}
             onRefresh={onRefresh}
           />
@@ -133,7 +146,7 @@ function AssemblyCard({ assembly, onClick }) {
   );
 }
 
-function AssemblyDetail({ assembly, orgId, currentUser, onRefresh }) {
+function AssemblyDetail({ assembly, orgId, org, currentUser, onRefresh }) {
   const a = assembly;
 
   return (
@@ -142,7 +155,7 @@ function AssemblyDetail({ assembly, orgId, currentUser, onRefresh }) {
         <InfoPill label="Estado" value={STATUS_LABELS[a.status] || a.status} />
         <InfoPill label="Tipo" value={a.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'} />
         <InfoPill label="Fecha" value={formatDate(a.date)} />
-        <InfoPill label="Asistentes" value={`${a.attendees?.length || 0} / ${a.quorumValue || '?'}`} />
+        <InfoPill label="Asistentes" value={(() => { const q = calcQuorumMet(a, org); return `${q.actual} / ${q.required} ${q.met ? '(Cumplido)' : '(No cumplido)'}`; })()} />
       </div>
 
       {a.agendaItems?.length > 0 && (
@@ -161,8 +174,26 @@ function AssemblyDetail({ assembly, orgId, currentUser, onRefresh }) {
                 />
               )}
               {item.result && (
-                <div style={{ marginTop: 8, fontSize: 13, color: '#059669', fontWeight: 500 }}>
-                  Resultado registrado
+                <div style={{
+                  marginTop: 8, fontSize: 13, fontWeight: 500, padding: 8, borderRadius: 8,
+                  background: item.result.mode === 'mano_alzada'
+                    ? (item.result.resolucion === 'aprobado' ? '#d1fae5' : '#fee2e2')
+                    : '#d1fae5',
+                  color: item.result.mode === 'mano_alzada' && item.result.resolucion === 'rechazado' ? '#991b1b' : '#059669'
+                }}>
+                  {item.result.mode === 'mano_alzada' ? (
+                    <>
+                      <strong>{item.result.resolucion === 'aprobado' ? 'Aprobado (mano alzada)' : 'Rechazado (mano alzada)'}</strong>
+                      {(item.result.votosAFavor != null || item.result.votosEnContra != null) && (
+                        <div style={{ fontSize: 12, marginTop: 4 }}>
+                          {item.result.votosAFavor != null && <span>A favor: {item.result.votosAFavor} </span>}
+                          {item.result.votosEnContra != null && <span>En contra: {item.result.votosEnContra} </span>}
+                          {item.result.abstenciones != null && <span>Abstenciones: {item.result.abstenciones}</span>}
+                        </div>
+                      )}
+                      {item.result.observaciones && <div style={{ fontStyle: 'italic', fontSize: 12, marginTop: 4 }}>{item.result.observaciones}</div>}
+                    </>
+                  ) : 'Resultado registrado'}
                 </div>
               )}
             </div>

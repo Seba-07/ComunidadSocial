@@ -131,6 +131,11 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // QR Token para credencial y check-in
+  qrToken: {
+    type: String,
+    default: undefined
+  },
   // Seguridad: versión de token para invalidación de sesiones
   tokenVersion: {
     type: Number,
@@ -171,6 +176,7 @@ userSchema.methods.toJSON = function() {
 // Indexes para queries eficientes
 userSchema.index({ role: 1, active: 1 }); // Cubre queries solo por role (prefijo)
 userSchema.index({ organizationIds: 1 }); // Para buscar miembros de una org
+userSchema.index({ qrToken: 1 }, { sparse: true }); // Para check-in por QR
 userSchema.index({ createdAt: -1 });
 
 export default mongoose.model('User', userSchema);

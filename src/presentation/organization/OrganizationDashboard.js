@@ -3376,11 +3376,11 @@ class OrganizationDashboard {
             const typeLabel = agendaTypeLabels[item.type] || item.type;
             const isElection = item.type === 'eleccion_directorio';
             const candidateCount = (item.candidates || []).length;
-            const voteCount = (item.votes || []).length;
+            const voteCount = (item.anonymousVotes || item.votes || []).length;
             const candidates = item.candidates || [];
 
             // Voting UI para MIEMBRO directivo
-            const alreadyVoted = currentUserRut && (item.votes || []).some(v => v.voterRut === currentUserRut);
+            const alreadyVoted = currentUserRut && (item.voterRegistry || item.votes || []).some(v => v.voterRut === currentUserRut);
             const canVote = isDirectivoMiembro && assembly.status === 'en_curso' && item.votingOpen && !alreadyVoted && isElection;
 
             let directivoVotingUI = '';

@@ -135,11 +135,12 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     const requiredCargos = cargos.filter(c => c.required);
     for (const cargo of requiredCargos) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
-      if (!certs[cargo.id]) return `Sube el certificado de antecedentes para: ${cargo.nombre}`;
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
     return null;
   }
+
+  const pendingCerts = cargos.filter(c => directorio[c.id] && !certs[c.id]);
 
   function handleNext() {
     const err = validate();
@@ -200,16 +201,21 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                 </select>
               )}
 
-              {/* Certificate upload - required for directorio */}
+              {/* Certificate upload - optional, can be uploaded later */}
               {assigned && (
                 <div style={{ marginTop: 8 }}>
                   <FileUpload
                     accept=".pdf,.jpg,.jpeg,.png"
-                    label="Certificado de Antecedentes *"
+                    label="Certificado de Antecedentes (opcional)"
                     maxSizeMB={5}
                     onFile={file => handleCertificate(cargo.id, file)}
                     value={certs[cargo.id]}
                   />
+                  {certs[cargo.id] ? (
+                    <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>Certificado subido</span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>Pendiente — podrás subirlo después desde el panel</span>
+                  )}
                 </div>
               )}
             </div>
@@ -248,6 +254,13 @@ export default function Step5_Directorio({ onNext, onPrev }) {
             </option>
           ))}
         </select>
+      )}
+
+      {pendingCerts.length > 0 && (
+        <div style={{ padding: 12, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 10, marginTop: 16, fontSize: 13, color: '#92400e' }}>
+          <strong>Documentación pendiente</strong> — Faltan certificados para: {pendingCerts.map(c => c.nombre).join(', ')}.
+          Podrás subirlos desde el panel de tu organización.
+        </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>

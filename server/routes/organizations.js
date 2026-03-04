@@ -58,6 +58,30 @@ function isDirectivoMember(org, user) {
 }
 
 /**
+ * Verifica si el quórum de una asamblea se cumple.
+ * @returns {{ met: boolean, required: number, actual: number, message: string }}
+ */
+function checkQuorum(assembly, org) {
+  const attendeeCount = assembly.attendees?.length || 0;
+  const quorumValue = assembly.quorumValue ?? 50;
+  const quorumType = assembly.quorumType || 'percentage';
+
+  if (quorumType === 'percentage') {
+    const totalMembers = org.members?.length || 0;
+    if (totalMembers === 0) return { met: false, required: 0, actual: 0, message: 'No hay miembros registrados' };
+    const required = Math.ceil(totalMembers * (quorumValue / 100));
+    return {
+      met: attendeeCount >= required, required, actual: attendeeCount, totalMembers,
+      message: `Se requieren ${required} asistentes (${quorumValue}% de ${totalMembers}). Presentes: ${attendeeCount}`
+    };
+  }
+  return {
+    met: attendeeCount >= quorumValue, required: quorumValue, actual: attendeeCount,
+    message: `Se requieren ${quorumValue} asistentes. Presentes: ${attendeeCount}`
+  };
+}
+
+/**
  * Sincroniza los roles de member[] con el provisionalDirectorio de la org.
  * Establece 'president', 'secretary', 'treasurer', 'director' según corresponda.
  */
@@ -391,7 +415,19 @@ router.get('/my-organization', authenticate, async (req, res) => {
     });
 
     // Mask PII for MIEMBRO users (they see their own data unmasked via frontend)
-    const masked = enriched.map(org => maskOrganizationPii(org));
+    const masked = enriched.map(org => {
+      const m = maskOrganizationPii(org);
+      // Voto secreto: no enviar anonymousVotes a MIEMBRO
+      if (m.assemblies) {
+        for (const asm of m.assemblies) {
+          for (const item of (asm.agendaItems || [])) {
+            item.anonymousVotesCount = (item.anonymousVotes || []).length;
+            delete item.anonymousVotes;
+          }
+        }
+      }
+      return m;
+    });
     res.json({ organizations: masked });
   } catch (error) {
     console.error('Get my organization error:', error);
@@ -420,7 +456,18 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
 
     // Mask PII for members (non-admin, non-owner)
     if (!isAdmin && !isOwner) {
-      res.json(maskOrganizationPii(organization));
+      const masked = maskOrganizationPii(organization);
+      // Voto secreto: no enviar anonymousVotes a MIEMBRO, solo voterRegistry y conteo
+      if (masked.assemblies) {
+        for (const asm of masked.assemblies) {
+          for (const item of (asm.agendaItems || [])) {
+            item.anonymousVotesCount = (item.anonymousVotes || []).length;
+            delete item.anonymousVotes;
+            // Keep voterRegistry for duplicate vote check
+          }
+        }
+      }
+      res.json(masked);
     } else {
       res.json(organization);
     }
@@ -1961,6 +2008,8 @@ router.put('/:id/assemblies/:assemblyId', authenticate, validateObjectId(), asyn
         votingMode: item.votingMode || null,
         candidates: item.candidates || [],
         votes: item.votes || [],
+        voterRegistry: item.voterRegistry || [],
+        anonymousVotes: item.anonymousVotes || [],
         votingOpen: item.votingOpen || false,
         votingClosedAt: item.votingClosedAt || null,
         result: item.result || null
@@ -2035,6 +2084,16 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
     if (action === 'convocar') assembly.convokedAt = new Date();
     if (action === 'iniciar') assembly.startedAt = new Date();
     if (action === 'finalizar') {
+      // Verificar quórum antes de finalizar
+      const quorum = checkQuorum(assembly, org);
+      if (!quorum.met) {
+        return res.status(422).json({
+          error: 'No se puede finalizar sin quórum',
+          detail: quorum.message,
+          quorumRequired: quorum.required,
+          quorumActual: quorum.actual
+        });
+      }
       assembly.finishedAt = new Date();
       // Cerrar todas las votaciones abiertas
       assembly.agendaItems.forEach(item => {
@@ -2046,11 +2105,13 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
 
       // Procesar resultados de elección de directorio
       const electionItem = assembly.agendaItems.find(item => item.type === 'eleccion_directorio');
-      if (electionItem && electionItem.votes.length > 0) {
+      // Usar anonymousVotes (nuevo) con fallback a votes (legacy)
+      const electionVotes = electionItem ? (electionItem.anonymousVotes?.length > 0 ? electionItem.anonymousVotes : electionItem.votes) : [];
+      if (electionItem && electionVotes.length > 0) {
         if (electionItem.votingMode === 'per_cargo') {
           // Contar votos por cargo y determinar ganadores
           const votesByCargo = {};
-          electionItem.votes.forEach(v => {
+          electionVotes.forEach(v => {
             if (!votesByCargo[v.cargo]) votesByCargo[v.cargo] = {};
             votesByCargo[v.cargo][v.candidateRut] = (votesByCargo[v.cargo][v.candidateRut] || 0) + 1;
           });
@@ -2082,7 +2143,7 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
         } else if (electionItem.votingMode === 'per_lista') {
           // Contar votos por lista
           const votesByLista = {};
-          electionItem.votes.forEach(v => {
+          electionVotes.forEach(v => {
             votesByLista[v.lista] = (votesByLista[v.lista] || 0) + 1;
           });
           const sorted = Object.entries(votesByLista).sort((a, b) => b[1] - a[1]);
@@ -2192,12 +2253,19 @@ router.post('/:id/assemblies/:assemblyId/vote', authenticate, validateObjectId()
     if (!agendaItem.votingOpen) return res.status(400).json({ error: 'La votación no está abierta' });
 
     const voterRut = req.user.rut;
-    const alreadyVoted = agendaItem.votes.some(v => v.voterRut === voterRut);
+    // Verificar duplicado en voterRegistry (nuevo) o votes (legacy)
+    const alreadyVoted = (agendaItem.voterRegistry || []).some(v => v.voterRut === voterRut)
+      || (agendaItem.votes || []).some(v => v.voterRut === voterRut);
     if (alreadyVoted) return res.status(400).json({ error: 'Ya has votado en este punto' });
 
+    // Registrar quién votó (sin elección) — Voto secreto Ley 19.418
+    if (!agendaItem.voterRegistry) agendaItem.voterRegistry = [];
+    agendaItem.voterRegistry.push({ voterRut, votedAt: new Date() });
+
+    // Registrar votos anónimos (sin identidad)
+    if (!agendaItem.anonymousVotes) agendaItem.anonymousVotes = [];
     for (const vote of votes) {
-      agendaItem.votes.push({
-        voterRut,
+      agendaItem.anonymousVotes.push({
         cargo: vote.cargo || null,
         candidateRut: vote.candidateRut || null,
         lista: vote.lista || null,
@@ -2255,6 +2323,122 @@ router.post('/:id/assemblies/:assemblyId/checkin', authenticate, validateObjectI
   }
 });
 
+// Registrar asistencia por QR (escaneo inverso — organizador escanea QR del socio)
+router.post('/:id/assemblies/:assemblyId/checkin-qr', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    // Solo owner, admin o directivo pueden escanear
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos para escanear' });
+
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea no está en curso' });
+
+    const { qrToken } = req.body;
+    if (!qrToken) return res.status(400).json({ error: 'Token QR requerido' });
+
+    // Buscar usuario por qrToken
+    const memberUser = await User.findOne({ qrToken });
+    if (!memberUser) return res.status(404).json({ error: 'Credencial QR no reconocida' });
+
+    // Verificar que pertenezca a la organización
+    const memberOrgIds = memberUser.getAllOrgIds();
+    const isMemberOfOrg = memberOrgIds.includes(org._id.toString())
+      || (org.members || []).some(m => {
+        const cleanMemberRut = (m.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        const cleanUserRut = (memberUser.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        return cleanMemberRut === cleanUserRut;
+      });
+    if (!isMemberOfOrg) return res.status(403).json({ error: 'El socio no pertenece a esta organización' });
+
+    // Verificar duplicado
+    const attendeeRut = memberUser.rut;
+    const already = assembly.attendees.some(a => {
+      const cleanA = (a.rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      const cleanB = (attendeeRut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      return cleanA === cleanB;
+    });
+    if (already) return res.status(400).json({ error: 'Ya registrado', memberName: `${memberUser.firstName} ${memberUser.lastName}` });
+
+    assembly.attendees.push({
+      rut: attendeeRut,
+      firstName: memberUser.firstName,
+      lastName: memberUser.lastName,
+      checkedInAt: new Date(),
+      method: 'qr'
+    });
+    assembly.attendance = assembly.attendees.length;
+
+    await assemblyService.saveAssembly(org, assembly);
+    res.json({
+      message: 'Asistencia registrada por QR',
+      memberName: `${memberUser.firstName} ${memberUser.lastName}`,
+      attendance: assembly.attendance
+    });
+  } catch (error) {
+    console.error('QR checkin error:', error);
+    res.status(500).json({ error: 'Error al registrar asistencia por QR' });
+  }
+});
+
+// Registrar resultado de votación a mano alzada
+router.post('/:id/assemblies/:assemblyId/mano-alzada', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+    if (assembly.status !== 'en_curso') return res.status(400).json({ error: 'La asamblea no está en curso' });
+
+    // Verificar quórum
+    const quorum = checkQuorum(assembly, org);
+    if (!quorum.met) {
+      return res.status(422).json({
+        error: 'Quórum no alcanzado para votación',
+        detail: quorum.message,
+        quorumRequired: quorum.required,
+        quorumActual: quorum.actual
+      });
+    }
+
+    const { agendaItemId, resolucion, votosAFavor, votosEnContra, abstenciones, observaciones } = req.body;
+    if (!agendaItemId) return res.status(400).json({ error: 'agendaItemId requerido' });
+    if (!['aprobado', 'rechazado'].includes(resolucion)) return res.status(400).json({ error: 'Resolución debe ser aprobado o rechazado' });
+
+    const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
+    if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+    if (agendaItem.result) return res.status(400).json({ error: 'Este punto ya tiene un resultado registrado' });
+
+    agendaItem.result = {
+      mode: 'mano_alzada',
+      resolucion,
+      votosAFavor: votosAFavor != null ? Number(votosAFavor) : undefined,
+      votosEnContra: votosEnContra != null ? Number(votosEnContra) : undefined,
+      abstenciones: abstenciones != null ? Number(abstenciones) : undefined,
+      observaciones: observaciones || '',
+      closedAt: new Date()
+    };
+    agendaItem.votingOpen = false;
+
+    await assemblyService.saveAssembly(org, assembly);
+    res.json({ message: 'Resultado de votación a mano alzada registrado', result: agendaItem.result });
+  } catch (error) {
+    console.error('Mano alzada error:', error);
+    res.status(500).json({ error: 'Error al registrar votación a mano alzada' });
+  }
+});
+
 // Abrir/cerrar votación de un punto de agenda
 router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateObjectId(), async (req, res) => {
   try {
@@ -2273,6 +2457,19 @@ router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateO
     const { agendaItemId } = req.body;
     const agendaItem = assembly.agendaItems.find(item => item.id === agendaItemId);
     if (!agendaItem) return res.status(404).json({ error: 'Punto de agenda no encontrado' });
+
+    // Al ABRIR votación, verificar quórum
+    if (!agendaItem.votingOpen) {
+      const quorum = checkQuorum(assembly, org);
+      if (!quorum.met) {
+        return res.status(422).json({
+          error: 'Quórum no alcanzado',
+          detail: quorum.message,
+          quorumRequired: quorum.required,
+          quorumActual: quorum.actual
+        });
+      }
+    }
 
     agendaItem.votingOpen = !agendaItem.votingOpen;
     if (!agendaItem.votingOpen) agendaItem.votingClosedAt = new Date();

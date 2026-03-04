@@ -8,7 +8,7 @@ export default function VotingPanel({ agendaItem, orgId, assemblyId, currentUser
   const addToast = useUiStore((s) => s.addToast);
 
   const userRut = currentUser?.rut;
-  const alreadyVoted = agendaItem.votes?.some((v) => v.voterRut === userRut);
+  const alreadyVoted = (agendaItem.voterRegistry || agendaItem.votes)?.some((v) => v.voterRut === userRut);
 
   if (alreadyVoted) {
     return (

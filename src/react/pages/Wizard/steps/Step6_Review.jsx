@@ -88,9 +88,21 @@ export default function Step6_Review({ onNext, onPrev }) {
           <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center' }}>
             <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || cargo}:</span>
             <span style={{ color: '#6b7280', flex: 1 }}>{data.firstName} {data.lastName} - {data.rut}</span>
-            {certs[cargo] && <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>}
+            {certs[cargo]
+              ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
+              : <span style={{ fontSize: 11, color: '#d97706' }}>Pendiente</span>}
           </div>
         ))}
+        {(() => {
+          const missing = Object.keys(directorio).filter(c => !certs[c]);
+          if (missing.length === 0) return null;
+          return (
+            <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400e' }}>
+              <strong>Documentación Pendiente</strong> — Faltan certificados para: {missing.map(c => directorio[c]?.cargo || c).join(', ')}.
+              Podrás subirlos desde el panel de tu organización.
+            </div>
+          );
+        })()}
       </Section>
 
       {/* Comisión */}

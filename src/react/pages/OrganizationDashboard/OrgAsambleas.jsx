@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { formatDate } from '../../utils/formatters';
+
+const QRScannerLazy = lazy(() => import('../../components/ui/QRScanner'));
 
 const STATUS_LABELS = { draft: 'Borrador', convocada: 'Convocada', en_curso: 'En Curso', finalizada: 'Finalizada', cancelada: 'Cancelada' };
 const STATUS_COLORS = { draft: '#6b7280', convocada: '#3b82f6', en_curso: '#10b981', finalizada: '#8b5cf6', cancelada: '#ef4444' };
@@ -40,9 +42,10 @@ export default function OrgAsambleas({ org, onRefresh }) {
       await apiService.updateAssemblyStatus(org._id, assemblyId, action);
       const labels = { convocar: 'Asamblea convocada', iniciar: 'Asamblea iniciada', finalizar: 'Asamblea finalizada', cancelar: 'Asamblea cancelada' };
       addToast(labels[action] || 'Estado actualizado', 'success');
+      if (action === 'finalizar') setSelectedAssembly(null);
       onRefresh();
     } catch (error) {
-      addToast(error.message || 'Error al actualizar estado', 'error');
+      addToast(error.detail || error.message || 'Error al actualizar estado', 'error');
     }
   }
 
@@ -90,7 +93,7 @@ export default function OrgAsambleas({ org, onRefresh }) {
       {assemblies.length === 0 && <p style={{ color: '#6b7280', textAlign: 'center', padding: 48 }}>No hay asambleas registradas</p>}
 
       <CreateAssemblyModal open={showCreate} onClose={() => setShowCreate(false)} orgId={org._id} onCreated={() => { setShowCreate(false); onRefresh(); }} addToast={addToast} />
-      <AssemblyDetailModal assembly={selectedAssembly} onClose={() => setSelectedAssembly(null)} orgId={org._id} onRefresh={onRefresh} addToast={addToast} />
+      <AssemblyDetailModal assembly={selectedAssembly} onClose={() => setSelectedAssembly(null)} orgId={org._id} org={org} onRefresh={onRefresh} addToast={addToast} />
       <ElectionsModal open={showElections} onClose={() => setShowElections(false)} elections={elections} org={org} />
     </div>
   );
@@ -155,14 +158,31 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
 }
 
 // ========== Assembly Detail Modal ==========
-function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) {
+function calcQuorumMet(assembly, org) {
+  const attendeeCount = assembly.attendees?.length || 0;
+  const quorumValue = assembly.quorumValue;
+  const quorumType = assembly.quorumType || 'percentage';
+  if (quorumValue == null) return { met: false, required: '?' };
+  if (quorumType === 'percentage') {
+    const totalMembers = org?.members?.length || 0;
+    if (totalMembers === 0) return { met: false, required: 0 };
+    const required = Math.ceil(totalMembers * (quorumValue / 100));
+    return { met: attendeeCount >= required, required };
+  }
+  return { met: attendeeCount >= quorumValue, required: quorumValue };
+}
+
+function AssemblyDetailModal({ assembly, onClose, orgId, org, onRefresh, addToast }) {
   const [checkinRut, setCheckinRut] = useState('');
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [qrPaused, setQrPaused] = useState(false);
   const [candidateForm, setCandidateForm] = useState(null); // { agendaItemId }
   if (!assembly) return null;
   const a = assembly;
   const id = a.id || a._id;
   const attendeeCount = a.attendees?.length || 0;
-  const quorumMet = a.quorumValue ? attendeeCount >= a.quorumValue : false;
+  const quorumInfo = calcQuorumMet(a, org);
+  const quorumMet = quorumInfo.met;
 
   async function handleCheckin() {
     if (!checkinRut.trim()) { addToast('Ingresa un RUT', 'error'); return; }
@@ -182,7 +202,7 @@ function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) 
       addToast('Votación actualizada', 'success');
       onRefresh();
     } catch (error) {
-      addToast(error.message || 'Error', 'error');
+      addToast(error.detail || error.message || 'Error', 'error');
     }
   }
 
@@ -196,7 +216,7 @@ function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) 
         <div style={{ background: quorumMet ? '#d1fae5' : '#fee2e2', borderRadius: 8, padding: '8px 12px' }}>
           <span style={{ fontSize: 11, color: '#6b7280', display: 'block' }}>Quórum</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: quorumMet ? '#059669' : '#ef4444' }}>
-            {attendeeCount} / {a.quorumValue || '?'} {quorumMet ? '(Cumplido)' : '(No cumplido)'}
+            {attendeeCount} / {quorumInfo.required} {quorumMet ? '(Cumplido)' : '(No cumplido)'}
           </span>
         </div>
       </div>
@@ -206,7 +226,36 @@ function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) 
       {/* Checkin (only when en_curso) */}
       {a.status === 'en_curso' && (
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#065f46', marginBottom: 8 }}>Registrar Asistencia</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#065f46' }}>Registrar Asistencia</span>
+            <button onClick={() => setShowQrScanner(prev => !prev)} style={{
+              padding: '6px 14px', background: showQrScanner ? '#ef4444' : '#7c3aed', color: 'white',
+              border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 12
+            }}>
+              {showQrScanner ? 'Cerrar Scanner' : 'Escanear QR'}
+            </button>
+          </div>
+          {showQrScanner && (
+            <div style={{ marginBottom: 12 }}>
+              <Suspense fallback={<div style={{ textAlign: 'center', padding: 16, color: '#6b7280' }}>Cargando scanner...</div>}>
+              <QRScannerLazy
+                paused={qrPaused}
+                onScan={async (token) => {
+                  if (qrPaused) return;
+                  setQrPaused(true);
+                  try {
+                    const result = await apiService.checkinQr(orgId, id, token);
+                    addToast(`${result.memberName} registrado por QR`, 'success');
+                    onRefresh();
+                  } catch (error) {
+                    addToast(error.message || 'QR no reconocido', 'error');
+                  }
+                  setTimeout(() => setQrPaused(false), 2000);
+                }}
+              />
+              </Suspense>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <input type="text" placeholder="RUT del asistente" value={checkinRut} onChange={(e) => setCheckinRut(e.target.value)}
               style={{ flex: 1, padding: '8px 12px', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 14 }} />
@@ -264,23 +313,50 @@ function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) 
                   </div>
                 )}
 
+                {/* Mano alzada button — for non-election items when en_curso and no result yet */}
+                {a.status === 'en_curso' && item.type !== 'eleccion_directorio' && !item.result && (
+                  <ManoAlzadaForm agendaItemId={itemId} orgId={orgId} assemblyId={id} onDone={onRefresh} addToast={addToast} />
+                )}
+
                 {/* Votes count */}
-                {item.votes?.length > 0 && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>{item.votes.length} voto(s) registrado(s)</div>
+                {((item.anonymousVotes?.length || item.votes?.length || 0) > 0) && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>{item.anonymousVotes?.length || item.votes?.length} voto(s) registrado(s)</div>
                 )}
 
                 {/* Results */}
                 {item.result && (
-                  <div style={{ marginTop: 8, padding: 8, background: '#d1fae5', borderRadius: 8, fontSize: 13, color: '#065f46' }}>
-                    Resultado registrado
-                    {item.result.winners && (
-                      <div style={{ marginTop: 4 }}>
-                        {Object.entries(item.result.winners).map(([cargo, winner]) => (
-                          <div key={cargo}><strong>{cargo}:</strong> {winner.firstName || winner.name} {winner.lastName || ''}</div>
-                        ))}
-                      </div>
+                  <div style={{
+                    marginTop: 8, padding: 10, borderRadius: 8, fontSize: 13,
+                    background: item.result.mode === 'mano_alzada'
+                      ? (item.result.resolucion === 'aprobado' ? '#d1fae5' : '#fee2e2')
+                      : '#d1fae5',
+                    color: item.result.mode === 'mano_alzada' && item.result.resolucion === 'rechazado' ? '#991b1b' : '#065f46'
+                  }}>
+                    {item.result.mode === 'mano_alzada' ? (
+                      <>
+                        <strong>{item.result.resolucion === 'aprobado' ? 'Aprobado por mayoría (mano alzada)' : 'Rechazado (mano alzada)'}</strong>
+                        {(item.result.votosAFavor != null || item.result.votosEnContra != null) && (
+                          <div style={{ marginTop: 4, fontSize: 12 }}>
+                            {item.result.votosAFavor != null && <span>A favor: {item.result.votosAFavor} </span>}
+                            {item.result.votosEnContra != null && <span>En contra: {item.result.votosEnContra} </span>}
+                            {item.result.abstenciones != null && <span>Abstenciones: {item.result.abstenciones}</span>}
+                          </div>
+                        )}
+                        {item.result.observaciones && <div style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12 }}>{item.result.observaciones}</div>}
+                      </>
+                    ) : (
+                      <>
+                        Resultado registrado
+                        {item.result.winners && (
+                          <div style={{ marginTop: 4 }}>
+                            {Object.entries(item.result.winners).map(([cargo, winner]) => (
+                              <div key={cargo}><strong>{cargo}:</strong> {winner.firstName || winner.name} {winner.lastName || ''}</div>
+                            ))}
+                          </div>
+                        )}
+                        {item.result.winningLista && <div style={{ marginTop: 4 }}><strong>Lista ganadora:</strong> {item.result.winningLista}</div>}
+                      </>
                     )}
-                    {item.result.winningLista && <div style={{ marginTop: 4 }}><strong>Lista ganadora:</strong> {item.result.winningLista}</div>}
                   </div>
                 )}
               </div>
@@ -301,6 +377,80 @@ function AssemblyDetailModal({ assembly, onClose, orgId, onRefresh, addToast }) 
         />
       )}
     </Modal>
+  );
+}
+
+// ========== Mano Alzada Form ==========
+function ManoAlzadaForm({ agendaItemId, orgId, assemblyId, onDone, addToast }) {
+  const [open, setOpen] = useState(false);
+  const [resolucion, setResolucion] = useState('aprobado');
+  const [votosAFavor, setVotosAFavor] = useState('');
+  const [votosEnContra, setVotosEnContra] = useState('');
+  const [abstenciones, setAbstenciones] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      await apiService.registerManoAlzada(orgId, assemblyId, {
+        agendaItemId,
+        resolucion,
+        votosAFavor: votosAFavor !== '' ? Number(votosAFavor) : undefined,
+        votosEnContra: votosEnContra !== '' ? Number(votosEnContra) : undefined,
+        abstenciones: abstenciones !== '' ? Number(abstenciones) : undefined,
+        observaciones
+      });
+      addToast('Resultado registrado exitosamente', 'success');
+      setOpen(false);
+      onDone();
+    } catch (error) {
+      addToast(error.detail || error.message || 'Error al registrar', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{
+        marginTop: 8, padding: '6px 14px', fontSize: 12, border: '1px solid #d97706',
+        borderRadius: 8, background: '#fffbeb', cursor: 'pointer', color: '#92400e', fontWeight: 600
+      }}>
+        Someter a votación a mano alzada
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 8, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, color: '#92400e', marginBottom: 10 }}>Registrar resultado de votación presencial</div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer' }}>
+          <input type="radio" checked={resolucion === 'aprobado'} onChange={() => setResolucion('aprobado')} /> Aprobado
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer' }}>
+          <input type="radio" checked={resolucion === 'rechazado'} onChange={() => setResolucion('rechazado')} /> Rechazado
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <input type="number" min={0} placeholder="A favor" value={votosAFavor} onChange={e => setVotosAFavor(e.target.value)}
+          style={{ flex: 1, padding: '6px 10px', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12 }} />
+        <input type="number" min={0} placeholder="En contra" value={votosEnContra} onChange={e => setVotosEnContra(e.target.value)}
+          style={{ flex: 1, padding: '6px 10px', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12 }} />
+        <input type="number" min={0} placeholder="Abstenciones" value={abstenciones} onChange={e => setAbstenciones(e.target.value)}
+          style={{ flex: 1, padding: '6px 10px', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12 }} />
+      </div>
+      <textarea placeholder="Observaciones (opcional)" value={observaciones} onChange={e => setObservaciones(e.target.value)}
+        rows={2} style={{ width: '100%', padding: '6px 10px', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12, resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={() => setOpen(false)} style={{ padding: '6px 14px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6, background: 'white', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={handleSubmit} disabled={submitting} style={{
+          padding: '6px 14px', fontSize: 12, border: 'none', borderRadius: 6,
+          background: resolucion === 'aprobado' ? '#059669' : '#dc2626', color: 'white', fontWeight: 600, cursor: 'pointer'
+        }}>{submitting ? 'Registrando...' : 'Registrar Resultado'}</button>
+      </div>
+    </div>
   );
 }
 
@@ -443,7 +593,7 @@ function ElectionsModal({ open, onClose, elections, org }) {
 
 // ========== Create Assembly Modal ==========
 function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
-  const [form, setForm] = useState({ title: '', type: 'ordinaria', date: '', time: '', description: '' });
+  const [form, setForm] = useState({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50 });
   const [agendaItems, setAgendaItems] = useState([{ title: '', type: 'custom' }]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -463,7 +613,7 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
       const validItems = agendaItems.filter((item) => item.title.trim());
       await apiService.createAssembly(orgId, { ...form, agendaItems: validItems });
       addToast('Asamblea creada exitosamente', 'success');
-      setForm({ title: '', type: 'ordinaria', date: '', time: '', description: '' });
+      setForm({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50 });
       setAgendaItems([{ title: '', type: 'custom' }]);
       onCreated();
     } catch (error) {
@@ -483,6 +633,19 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
             <option value="extraordinaria">Extraordinaria</option>
           </select>
         </FormField>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <FormField label="Quórum" id="asm-quorum-type" style={{ flex: 1 }}>
+            <select id="asm-quorum-type" value={form.quorumType} onChange={set('quorumType')} style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
+              <option value="percentage">Porcentaje (%)</option>
+              <option value="fixed">Número fijo</option>
+            </select>
+          </FormField>
+          <FormField label={form.quorumType === 'percentage' ? 'Porcentaje (%)' : 'Mínimo asistentes'} id="asm-quorum-value" style={{ flex: 1 }}>
+            <input id="asm-quorum-value" type="number" min={0} max={form.quorumType === 'percentage' ? 100 : 9999} value={form.quorumValue}
+              onChange={(e) => setForm((f) => ({ ...f, quorumValue: Number(e.target.value) }))}
+              style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16, boxSizing: 'border-box' }} />
+          </FormField>
+        </div>
         <FormField label="Fecha *" id="asm-date" type="date" value={form.date} onChange={set('date')} />
         <FormField label="Hora" id="asm-time" type="time" value={form.time} onChange={set('time')} />
         <FormField label="Descripción" id="asm-desc">

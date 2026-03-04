@@ -126,6 +126,9 @@ export default function OrgDocumentos({ org, onRefresh }) {
         </div>
       </div>
 
+      {/* Certificados de Directorio (post-wizard upload) */}
+      <DirectorioCertificados org={org} onRefresh={onRefresh} addToast={addToast} />
+
       {/* Assembly Actas */}
       {assemblyActas.length > 0 && (
         <div style={{ marginBottom: 32 }}>
@@ -210,6 +213,92 @@ function LegalDoc({ name, icon = '📋', onDownload }) {
           Descargar PDF
         </button>
       )}
+    </div>
+  );
+}
+
+// ========== Certificados de Directorio (post-wizard upload) ==========
+function DirectorioCertificados({ org, onRefresh, addToast }) {
+  const directorio = org?.provisionalDirectorio || {};
+  const certs = org?.certificatesStep5 || [];
+  const cargos = Object.entries(directorio).filter(([, data]) => data?.rut);
+
+  if (cargos.length === 0) return null;
+
+  // Check which cargos have certificates
+  function hasCert(cargoKey, data) {
+    return certs.some(c =>
+      (c.memberId && c.memberId === cargoKey) ||
+      (c.memberName && data && c.memberName === `${data.firstName} ${data.lastName}`)
+    );
+  }
+
+  const pending = cargos.filter(([key, data]) => !hasCert(key, data));
+  if (pending.length === 0 && !org.certificatesPending) return null;
+
+  async function handleUploadCert(cargoKey, file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { addToast('El archivo no puede superar 5MB', 'error'); return; }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        await apiService.post(`/organizations/${org._id}/sync-certificates`, {
+          certificates: { [cargoKey]: { name: file.name, data: reader.result } }
+        });
+        addToast('Certificado subido exitosamente', 'success');
+        if (onRefresh) onRefresh();
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      addToast(error.message || 'Error al subir certificado', 'error');
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados de Directorio</h4>
+      {pending.length > 0 && (
+        <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#92400e' }}>
+          Faltan {pending.length} certificado(s) de antecedentes por subir.
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {cargos.map(([key, data]) => {
+          const uploaded = hasCert(key, data);
+          return (
+            <div key={key} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 20 }}>📋</span>
+                <div>
+                  <span style={{ fontWeight: 500, fontSize: 14 }}>{data.cargo || key}</span>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{data.firstName} {data.lastName}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {uploaded ? (
+                  <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Subido</span>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 12, color: '#d97706', fontWeight: 600 }}>Pendiente</span>
+                    <label style={{
+                      padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6,
+                      background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600
+                    }}>
+                      Subir
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
+                        onChange={(e) => handleUploadCert(key, e.target.files[0])} />
+                    </label>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

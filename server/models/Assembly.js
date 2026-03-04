@@ -10,6 +10,7 @@ const candidateSchema = new mongoose.Schema({
   lista: String
 }, { _id: false });
 
+// DEPRECATED: mantener para datos históricos, no usar para nuevos votos
 const voteSchema = new mongoose.Schema({
   voterRut: String,
   cargo: String,
@@ -18,14 +19,34 @@ const voteSchema = new mongoose.Schema({
   votedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
+// Registro de quién votó (solo identidad, sin elección) — Ley 19.418 Art. 24
+const voterRegistrySchema = new mongoose.Schema({
+  voterRut: String,
+  votedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+// Voto anónimo (solo elección, sin identidad) — Voto secreto
+const anonymousVoteSchema = new mongoose.Schema({
+  cargo: String,
+  candidateRut: String,
+  lista: String,
+  votedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const agendaResultSchema = new mongoose.Schema({
-  mode: { type: String, enum: ['per_cargo', 'per_lista', null], default: null },
+  mode: { type: String, enum: ['per_cargo', 'per_lista', 'mano_alzada', null], default: null },
   winners: mongoose.Schema.Types.Mixed,
   winningLista: String,
   listaResults: [{ lista: String, votes: Number }],
   totalVotes: Number,
   closedAt: Date,
-  appliedToDirectorio: { type: Boolean, default: false }
+  appliedToDirectorio: { type: Boolean, default: false },
+  // Mano alzada fields
+  resolucion: { type: String, enum: ['aprobado', 'rechazado', null], default: null },
+  votosAFavor: Number,
+  votosEnContra: Number,
+  abstenciones: Number,
+  observaciones: String
 }, { _id: false, strict: false });
 
 const agendaItemSchema = new mongoose.Schema({
@@ -39,11 +60,13 @@ const agendaItemSchema = new mongoose.Schema({
   description: String,
   votingMode: {
     type: String,
-    enum: ['per_cargo', 'per_lista', null],
+    enum: ['per_cargo', 'per_lista', 'mano_alzada', null],
     default: null
   },
   candidates: [candidateSchema],
-  votes: [voteSchema],
+  votes: [voteSchema],                       // DEPRECATED: datos históricos
+  voterRegistry: [voterRegistrySchema],      // Quién votó (sin elección)
+  anonymousVotes: [anonymousVoteSchema],     // Qué se votó (sin identidad)
   votingOpen: { type: Boolean, default: false },
   votingClosedAt: Date,
   result: agendaResultSchema,
@@ -54,7 +77,8 @@ const assemblyAttendeeSchema = new mongoose.Schema({
   rut: String,
   firstName: String,
   lastName: String,
-  checkedInAt: { type: Date, default: Date.now }
+  checkedInAt: { type: Date, default: Date.now },
+  method: { type: String, enum: ['manual', 'qr', 'self'], default: 'manual' }
 }, { _id: false });
 
 // ============ MAIN ASSEMBLY SCHEMA ============

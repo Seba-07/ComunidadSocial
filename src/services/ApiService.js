@@ -234,6 +234,9 @@ class ApiService {
         if (data.details) {
           err.details = data.details;
         }
+        if (data.detail) {
+          err.detail = data.detail;
+        }
         throw err;
       }
 
@@ -711,6 +714,22 @@ class ApiService {
 
   async checkinAssembly(orgId, assemblyId, attendee) {
     return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/checkin`, attendee || {});
+  }
+
+  async checkinQr(orgId, assemblyId, qrToken) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/checkin-qr`, { qrToken });
+  }
+
+  async generateQrToken(regenerate = false) {
+    return this.post('/users/me/generate-qr-token', { regenerate });
+  }
+
+  async getQrToken() {
+    return this.get('/users/me/qr-token');
+  }
+
+  async registerManoAlzada(orgId, assemblyId, data) {
+    return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/mano-alzada`, data);
   }
 
   async toggleVoting(orgId, assemblyId, agendaItemId) {

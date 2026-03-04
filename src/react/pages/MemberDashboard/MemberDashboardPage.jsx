@@ -12,6 +12,7 @@ import MemberDocuments from './MemberDocuments';
 import MemberPassword from './MemberPassword';
 import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
 import PrivacyConsentModal from '../../components/ui/PrivacyConsentModal';
+import MemberCredencial from './MemberCredencial';
 import SettingsPage from '../Settings/SettingsPage';
 import EmailVerificationBanner from '../../components/ui/EmailVerificationBanner';
 
@@ -20,6 +21,7 @@ const MEMBER_MENU_ITEMS = [
   { key: 'directorio', label: 'Directorio', icon: '📇' },
   { key: 'members', label: 'Miembros', icon: '🤝' },
   { key: 'assemblies', label: 'Asambleas', icon: '📢' },
+  { key: 'credencial', label: 'Mi Credencial', icon: '🪪' },
   { key: 'documents', label: 'Documentos', icon: '📄' },
   { key: 'password', label: 'Contraseña', icon: '🔑' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
@@ -107,10 +109,12 @@ export default function MemberDashboardPage() {
             <AssemblyList
               assemblies={activeOrg.assemblies || []}
               orgId={activeOrg._id}
+              org={activeOrg}
               currentUser={user}
               onRefresh={refreshActiveOrg}
             />
           )}
+          {activeTab === 'credencial' && <MemberCredencial user={user} />}
           {activeTab === 'documents' && <MemberDocuments org={activeOrg} />}
           {activeTab === 'password' && <MemberPassword />}
           {activeTab === 'privacidad' && <OrgPrivacy />}

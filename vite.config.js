@@ -66,6 +66,12 @@ export default defineConfig({
             if (id.includes('dompurify')) {
               return 'vendor-security';
             }
+            if (id.includes('papaparse') || id.includes('xlsx')) {
+              return 'vendor-import';
+            }
+            if (id.includes('qrcode') || id.includes('html5-qrcode')) {
+              return 'vendor-qr';
+            }
             return 'vendor';
           }
 

@@ -42,17 +42,32 @@ const candidateSchema = new mongoose.Schema({
   lista: String  // para modo per_lista (nombre de la lista)
 }, { _id: false });
 
+// DEPRECATED: mantener para datos históricos
 const voteSchema = new mongoose.Schema({
   voterRut: String,
-  cargo: String,          // para modo per_cargo
-  candidateRut: String,   // para modo per_cargo
-  lista: String,          // para modo per_lista
+  cargo: String,
+  candidateRut: String,
+  lista: String,
+  votedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+// Registro de quién votó (sin elección) — Ley 19.418 Art. 24
+const voterRegistrySchema = new mongoose.Schema({
+  voterRut: String,
+  votedAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+// Voto anónimo (sin identidad) — Voto secreto
+const anonymousVoteSchema = new mongoose.Schema({
+  cargo: String,
+  candidateRut: String,
+  lista: String,
   votedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
 // Result schema for agenda item voting results
 const agendaResultSchema = new mongoose.Schema({
-  mode: { type: String, enum: ['per_cargo', 'per_lista', null], default: null },
+  mode: { type: String, enum: ['per_cargo', 'per_lista', 'mano_alzada', null], default: null },
   // per_cargo results: winners keyed by cargo name
   winners: mongoose.Schema.Types.Mixed, // { [cargo]: { rut, firstName, lastName, votes } }
   // per_lista results
@@ -61,7 +76,13 @@ const agendaResultSchema = new mongoose.Schema({
   // Common fields
   totalVotes: Number,
   closedAt: Date,
-  appliedToDirectorio: { type: Boolean, default: false }
+  appliedToDirectorio: { type: Boolean, default: false },
+  // Mano alzada fields
+  resolucion: { type: String, enum: ['aprobado', 'rechazado', null], default: null },
+  votosAFavor: Number,
+  votosEnContra: Number,
+  abstenciones: Number,
+  observaciones: String
 }, { _id: false, strict: false });
 
 const agendaItemSchema = new mongoose.Schema({
@@ -75,11 +96,13 @@ const agendaItemSchema = new mongoose.Schema({
   description: String,
   votingMode: {
     type: String,
-    enum: ['per_cargo', 'per_lista', null],
+    enum: ['per_cargo', 'per_lista', 'mano_alzada', null],
     default: null
   },
   candidates: [candidateSchema],
-  votes: [voteSchema],
+  votes: [voteSchema],                       // DEPRECATED: datos históricos
+  voterRegistry: [voterRegistrySchema],      // Quién votó (sin elección)
+  anonymousVotes: [anonymousVoteSchema],     // Qué se votó (sin identidad)
   votingOpen: { type: Boolean, default: false },
   votingClosedAt: Date,
   result: agendaResultSchema,
@@ -90,7 +113,8 @@ const assemblyAttendeeSchema = new mongoose.Schema({
   rut: String,
   firstName: String,
   lastName: String,
-  checkedInAt: { type: Date, default: Date.now }
+  checkedInAt: { type: Date, default: Date.now },
+  method: { type: String, enum: ['manual', 'qr', 'self'], default: 'manual' }
 }, { _id: false });
 
 const assemblySchema = new mongoose.Schema({
@@ -293,6 +317,9 @@ const organizationSchema = new mongoose.Schema({
     default: 'draft'
   },
   statusHistory: [statusHistorySchema],
+
+  // Certificados de directorio pendientes de subir
+  certificatesPending: { type: Boolean, default: true },
 
   // Ministro de Fe data
   electionDate: Date,

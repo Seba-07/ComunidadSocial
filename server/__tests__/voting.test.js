@@ -98,10 +98,11 @@ describe('Voting System', () => {
       expect(res.status).toBe(200);
       expect(res.body.message).toContain('exitosamente');
 
-      // Verify votes are stored
+      // Verify votes are stored (anonymous votes + voter registry)
       const updated = await Organization.findById(org._id);
       const agenda = updated.assemblies[0].agendaItems[0];
-      expect(agenda.votes.length).toBe(2);
+      expect(agenda.anonymousVotes.length).toBe(2);
+      expect(agenda.voterRegistry.length).toBe(1);
     });
 
     it('should prevent duplicate voting', async () => {

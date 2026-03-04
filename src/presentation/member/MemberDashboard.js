@@ -856,7 +856,7 @@ class MemberDashboard {
           ${(assembly.agendaItems || []).map((item, idx) => {
             const typeLabel = agendaTypeLabels[item.type] || item.type;
             const isElection = item.type === 'eleccion_directorio';
-            const alreadyVoted = (item.votes || []).some(v => v.voterRut === voterRut);
+            const alreadyVoted = (item.voterRegistry || item.votes || []).some(v => v.voterRut === voterRut);
             const canVote = assembly.status === 'en_curso' && item.votingOpen && !alreadyVoted;
             const candidates = item.candidates || [];
 

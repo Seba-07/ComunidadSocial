@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomUUID } from 'crypto';
 import User from '../models/User.js';
 import Consent from '../models/Consent.js';
 import Organization from '../models/Organization.js';
@@ -196,6 +197,36 @@ router.post('/me/timbre-virtual/toggle', authenticate, requireRole('MUNICIPALIDA
   } catch (error) {
     console.error('Toggle timbre error:', error);
     res.status(500).json({ error: 'Error al cambiar estado del timbre' });
+  }
+});
+
+// Generate or return QR token for member credential
+router.post('/me/generate-qr-token', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const regenerate = req.body?.regenerate === true;
+    if (user.qrToken && !regenerate) {
+      return res.json({ qrToken: user.qrToken });
+    }
+
+    user.qrToken = randomUUID();
+    await user.save();
+    res.json({ qrToken: user.qrToken });
+  } catch (error) {
+    console.error('Generate QR token error:', error);
+    res.status(500).json({ error: 'Error al generar token QR' });
+  }
+});
+
+// Get current QR token
+router.get('/me/qr-token', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('qrToken');
+    res.json({ qrToken: user?.qrToken || null });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener token QR' });
   }
 });
 
