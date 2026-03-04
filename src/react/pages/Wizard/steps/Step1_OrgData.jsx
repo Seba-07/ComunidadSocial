@@ -121,6 +121,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
   const [uvOptions, setUvOptions] = useState([]);
   const [uvDetected, setUvDetected] = useState(null); // { numero, nombre, geometry, coords }
   const [uvSearching, setUvSearching] = useState(false);
+  const [customObj, setCustomObj] = useState('');
   const debounceRef = useRef(null);
 
   // Load UV options for dropdown on mount
@@ -289,13 +290,15 @@ export default function Step1_OrgData({ onNext, isFirst }) {
               })}
             </div>
             <input
+              value={customObj}
+              onChange={e => setCustomObj(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter' && e.target.value.trim()) {
+                if (e.key === 'Enter' && customObj.trim()) {
                   e.preventDefault();
                   const current = (org.objectives || '').split('\n').filter(Boolean);
-                  current.push(e.target.value.trim());
+                  current.push(customObj.trim());
                   update('objectives', current.join('\n'));
-                  e.target.value = '';
+                  setCustomObj('');
                 }
               }}
               placeholder="Agregar objetivo personalizado (Enter para agregar)"
