@@ -242,6 +242,54 @@ export default function EstatutosManagerView() {
                 </div>
               </div>
 
+              {/* Configuración de Edad */}
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 12px' }}>Configuración de Edad</h3>
+              <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                  <input type="checkbox"
+                    checked={selectedTemplate.edadConfig?.permiteMenores !== false}
+                    onChange={e => setSelectedTemplate(t => ({
+                      ...t,
+                      edadConfig: { ...(t.edadConfig || {}), permiteMenores: e.target.checked }
+                    }))} />
+                  <span style={{ fontWeight: 600 }}>Permite menores de edad</span>
+                </label>
+
+                {selectedTemplate.edadConfig?.permiteMenores !== false && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 24 }}>
+                      <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Edad mínima para ser miembro</label>
+                      <input type="number" min={10} max={18}
+                        value={selectedTemplate.edadConfig?.edadMinima ?? 14}
+                        onChange={e => setSelectedTemplate(t => ({
+                          ...t,
+                          edadConfig: { ...(t.edadConfig || {}), edadMinima: parseInt(e.target.value) || 14 }
+                        }))}
+                        style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>años</span>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginLeft: 24 }}>
+                      <input type="checkbox"
+                        checked={selectedTemplate.edadConfig?.menoresEnDirectorio === true}
+                        onChange={e => setSelectedTemplate(t => ({
+                          ...t,
+                          edadConfig: { ...(t.edadConfig || {}), menoresEnDirectorio: e.target.checked }
+                        }))} />
+                      Menores pueden integrar el directorio
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginLeft: 24 }}>
+                      <input type="checkbox"
+                        checked={selectedTemplate.edadConfig?.menoresEnComisionElectoral === true}
+                        onChange={e => setSelectedTemplate(t => ({
+                          ...t,
+                          edadConfig: { ...(t.edadConfig || {}), menoresEnComisionElectoral: e.target.checked }
+                        }))} />
+                      Menores pueden integrar la comisión electoral
+                    </label>
+                  </>
+                )}
+              </div>
+
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Cargos del Directorio</h3>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 {!(selectedTemplate.directorio?.cargos?.length) && (

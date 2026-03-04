@@ -228,6 +228,26 @@ const estatutoTemplateSchema = new mongoose.Schema({
     }
   },
 
+  // Configuración de edad
+  edadConfig: {
+    permiteMenores: {
+      type: Boolean,
+      default: true
+    },
+    edadMinima: {
+      type: Number,
+      default: 14
+    },
+    menoresEnDirectorio: {
+      type: Boolean,
+      default: false
+    },
+    menoresEnComisionElectoral: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   // Placeholders para campos dinámicos
   placeholders: [placeholderSchema],
 
@@ -301,7 +321,8 @@ estatutoTemplateSchema.methods.crearVersion = function(userId, descripcion) {
       imagenesDocumento: this.imagenesDocumento.toObject ? this.imagenesDocumento.toObject() : this.imagenesDocumento,
       documentoCompleto: this.documentoCompleto,
       miembrosMinimos: this.miembrosMinimos,
-      comisionElectoral: this.comisionElectoral.toObject ? this.comisionElectoral.toObject() : this.comisionElectoral
+      comisionElectoral: this.comisionElectoral.toObject ? this.comisionElectoral.toObject() : this.comisionElectoral,
+      edadConfig: this.edadConfig.toObject ? this.edadConfig.toObject() : this.edadConfig
     }
   });
   this.version += 1;
@@ -322,6 +343,7 @@ estatutoTemplateSchema.methods.obtenerSnapshot = function() {
     placeholders: this.placeholders,
     imagenesDocumento: this.imagenesDocumento,
     documentoCompleto: this.documentoCompleto,
+    edadConfig: this.edadConfig,
     fechaSnapshot: new Date()
   };
 };
@@ -343,6 +365,12 @@ estatutoTemplateSchema.statics.getDefaultConfig = function(tipoOrganizacion) {
     miembrosMinimos: 15,
     comisionElectoral: {
       cantidad: 3
+    },
+    edadConfig: {
+      permiteMenores: true,
+      edadMinima: 14,
+      menoresEnDirectorio: false,
+      menoresEnComisionElectoral: false
     },
     placeholders: []
   };

@@ -7,7 +7,7 @@ import Modal from '../../../components/ui/Modal';
 
 const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '' };
 
-// TEST DATA - 15 members (13 adults + 2 minors)
+// TEST DATA - 15 members (13 adults + 2 minors 15-16 years old)
 const TEST_MEMBERS = [
   { firstName: 'María', lastName: 'González', rut: '12.456.789-0', email: 'maria.gonzalez@test.cl', phone: '+56 9 1234 5001', birthDate: '1985-03-15', genero: 'femenino' },
   { firstName: 'Juan', lastName: 'Pérez', rut: '11.234.567-8', email: 'juan.perez@test.cl', phone: '+56 9 1234 5002', birthDate: '1978-07-22', genero: 'masculino' },
@@ -22,20 +22,31 @@ const TEST_MEMBERS = [
   { firstName: 'Valentina', lastName: 'Soto', rut: '17.654.321-0', email: 'valentina.soto@test.cl', phone: '+56 9 1234 5011', birthDate: '1993-06-19', genero: 'femenino' },
   { firstName: 'Luis', lastName: 'Ramírez', rut: '10.234.567-1', email: 'luis.ramirez@test.cl', phone: '+56 9 1234 5012', birthDate: '1975-10-05', genero: 'masculino' },
   { firstName: 'Sofía', lastName: 'Díaz', rut: '18.765.432-3', email: 'sofia.diaz@test.cl', phone: '+56 9 1234 5013', birthDate: '1998-01-11', genero: 'femenino' },
-  // 2 menores de edad
-  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-9', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5014', birthDate: '2012-03-20', genero: 'masculino' },
-  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-0', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5015', birthDate: '2013-08-14', genero: 'femenino' },
+  // 2 menores de edad (15-16 años)
+  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-9', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5014', birthDate: '2010-03-20', genero: 'masculino' },
+  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-0', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5015', birthDate: '2009-08-14', genero: 'femenino' },
 ];
 
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function Step2_Members({ onNext, onPrev }) {
-  const { formData, addMember, removeMember, updateMember } = useWizardStore();
+  const { formData, addMember, removeMember, updateMember, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const [showForm, setShowForm] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_MEMBER });
 
   const members = formData.members || [];
-  const minMembers = formData.organization?.type === 'JUNTA_VECINOS' ? 200 : 15;
+  const minMembers = templateConfig?.miembrosMinimos
+    || (formData.organization?.type === 'JUNTA_VECINOS' ? 200 : 15);
 
   function openAdd() {
     setForm({ ...EMPTY_MEMBER });
@@ -50,8 +61,8 @@ export default function Step2_Members({ onNext, onPrev }) {
   }
 
   function saveMember() {
-    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.rut?.trim()) {
-      addToast('Nombre, apellido y RUT son requeridos', 'error');
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.rut?.trim() || !form.birthDate) {
+      addToast('Nombre, apellido, RUT y fecha de nacimiento son requeridos', 'error');
       return;
     }
 
@@ -79,6 +90,38 @@ export default function Step2_Members({ onNext, onPrev }) {
       addToast(`Se requieren al menos ${minMembers} miembros (tienes ${members.length})`, 'error');
       return;
     }
+
+    // Age validation
+    const edadConfig = templateConfig?.edadConfig || {};
+    const permiteMenores = edadConfig.permiteMenores !== false;
+    const edadMinima = edadConfig.edadMinima ?? 14;
+
+    // Check all members have birthDate
+    const sinFecha = members.filter(m => !m.birthDate);
+    if (sinFecha.length > 0) {
+      addToast(`${sinFecha.length} miembro(s) no tienen fecha de nacimiento registrada`, 'error');
+      return;
+    }
+
+    if (!permiteMenores) {
+      const menores = members.filter(m => calculateAge(m.birthDate) < 18);
+      if (menores.length > 0) {
+        const nombres = menores.slice(0, 3).map(m => `${m.firstName} ${m.lastName}`).join(', ');
+        addToast(`Esta organización no permite menores de edad. ${menores.length} miembro(s) son menores: ${nombres}${menores.length > 3 ? '...' : ''}`, 'error');
+        return;
+      }
+    } else {
+      const muyJovenes = members.filter(m => {
+        const age = calculateAge(m.birthDate);
+        return age !== null && age < edadMinima;
+      });
+      if (muyJovenes.length > 0) {
+        const nombres = muyJovenes.map(m => `${m.firstName} ${m.lastName}`).join(', ');
+        addToast(`Los siguientes miembros no cumplen la edad mínima (${edadMinima} años): ${nombres}`, 'error');
+        return;
+      }
+    }
+
     onNext();
   }
 
@@ -86,7 +129,24 @@ export default function Step2_Members({ onNext, onPrev }) {
     { key: 'firstName', label: 'Nombre', sortable: true },
     { key: 'lastName', label: 'Apellido', sortable: true },
     { key: 'rut', label: 'RUT', sortable: true },
-    { key: 'email', label: 'Email' },
+    {
+      key: 'birthDate', label: 'Edad', sortable: true,
+      render: (val) => {
+        const age = calculateAge(val);
+        if (age === null) return <span style={{ color: '#9ca3af' }}>--</span>;
+        return (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {age}
+            {age < 18 && (
+              <span style={{
+                padding: '1px 6px', borderRadius: 8, fontSize: 10, fontWeight: 600,
+                background: '#fef3c7', color: '#92400e'
+              }}>Menor</span>
+            )}
+          </span>
+        );
+      }
+    },
     {
       key: 'actions', label: '', sortable: false,
       render: (_, row) => {
@@ -158,7 +218,7 @@ export default function Step2_Members({ onNext, onPrev }) {
             { key: 'rut', label: 'RUT *', placeholder: '12.345.678-9' },
             { key: 'email', label: 'Email', type: 'email' },
             { key: 'phone', label: 'Teléfono' },
-            { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' }
+            { key: 'birthDate', label: 'Fecha de nacimiento *', type: 'date' }
           ].map(f => (
             <div key={f.key}>
               <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{f.label}</label>

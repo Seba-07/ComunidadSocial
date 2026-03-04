@@ -68,7 +68,7 @@ router.get('/:tipo/config', async (req, res) => {
       tipoOrganizacion: req.params.tipo,
       activo: true,
       publicado: true
-    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders');
+    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig');
 
     if (!template) {
       // Devolver configuración DEFAULT si no existe plantilla

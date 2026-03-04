@@ -13,13 +13,14 @@ import Step3_Config from './steps/Step3_Config';
 import Step4_Estatutos from './steps/Step4_Estatutos';
 import Step5_Directorio from './steps/Step5_Directorio';
 import Step6_Review from './steps/Step6_Review';
+import Step7_Schedule from './steps/Step7_Schedule';
 
 const STEPS = [
-  'Datos', 'Miembros', 'Configuración', 'Estatutos', 'Directorio', 'Revisión'
+  'Datos', 'Miembros', 'Configuración', 'Estatutos', 'Directorio', 'Revisión', 'Agendar'
 ];
 
 const STEP_COMPONENTS = [
-  Step1_OrgData, Step2_Members, Step3_Config, Step4_Estatutos, Step5_Directorio, Step6_Review
+  Step1_OrgData, Step2_Members, Step3_Config, Step4_Estatutos, Step5_Directorio, Step6_Review, Step7_Schedule
 ];
 
 // Sidebar menu items matching the org dashboard secondary section

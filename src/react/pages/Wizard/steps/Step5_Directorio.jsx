@@ -12,8 +12,18 @@ const DEFAULT_CARGOS = [
   { id: 'director1', nombre: 'Director/a', required: true, orden: 5 }
 ];
 
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function Step5_Directorio({ onNext, onPrev }) {
-  const { formData, updateFormData, setFormDataField } = useWizardStore();
+  const { formData, updateFormData, setFormDataField, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const members = formData.members || [];
   const directorio = formData.directorioProvisorio || {};
@@ -21,12 +31,16 @@ export default function Step5_Directorio({ onNext, onPrev }) {
   const certs = formData.certificates || {};
   const [cargos, setCargos] = useState(DEFAULT_CARGOS);
 
-  // Load cargos from template configuration for this org type
+  const edadConfig = templateConfig?.edadConfig || {};
+  const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
+
+  // Load cargos from template config or API fallback
   useEffect(() => {
-    if (formData.organization?.type) {
+    if (templateConfig?.directorio?.cargos?.length) {
+      setCargos(templateConfig.directorio.cargos.sort((a, b) => (a.orden || 0) - (b.orden || 0)));
+    } else if (formData.organization?.type) {
       apiService.get(`/organization-types/${formData.organization.type}`)
         .then(data => {
-          // Prioritize directorio.cargos from template, then fallback
           const templateCargos = data.directorio?.cargos || data.cargos;
           if (templateCargos?.length) {
             setCargos(templateCargos.sort((a, b) => (a.orden || 0) - (b.orden || 0)));
@@ -34,18 +48,30 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         })
         .catch(() => {});
     }
-  }, [formData.organization?.type]);
+  }, [formData.organization?.type, templateConfig]);
 
   const selectedRuts = new Set(
     [...Object.values(directorio).map(d => d?.rut), ...comision.members.map(m => m?.rut)]
       .filter(Boolean).map(r => r.replace(/\./g, '').replace(/-/g, ''))
   );
 
-  function getAvailableMembers(excludeRut) {
+  function getAvailableMembers(excludeRut, forDirectorio = false, forComision = false) {
     return members.filter(m => {
       const norm = (m.rut || '').replace(/\./g, '').replace(/-/g, '');
       if (excludeRut && norm === excludeRut.replace(/\./g, '').replace(/-/g, '')) return true;
-      return !selectedRuts.has(norm);
+      if (selectedRuts.has(norm)) return false;
+
+      // Age filter for directorio
+      if (forDirectorio && !edadConfig.menoresEnDirectorio) {
+        const age = calculateAge(m.birthDate);
+        if (age !== null && age < 18) return false;
+      }
+      // Age filter for commission
+      if (forComision && !edadConfig.menoresEnComisionElectoral) {
+        const age = calculateAge(m.birthDate);
+        if (age !== null && age < 18) return false;
+      }
+      return true;
     });
   }
 
@@ -60,11 +86,17 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     const updated = { ...directorio };
     delete updated[cargoId];
     setFormDataField('directorioProvisorio', updated);
+    // Also remove certificate
+    if (certs[cargoId]) {
+      const updatedCerts = { ...certs };
+      delete updatedCerts[cargoId];
+      setFormDataField('certificates', updatedCerts);
+    }
   }
 
   function addComisionMember(memberIdx) {
-    if (comision.members.length >= 3) {
-      addToast('La comisión electoral requiere exactamente 3 miembros', 'error');
+    if (comision.members.length >= comisionSize) {
+      addToast(`La comisión electoral requiere exactamente ${comisionSize} miembros`, 'error');
       return;
     }
     const m = members[memberIdx];
@@ -103,8 +135,9 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     const requiredCargos = cargos.filter(c => c.required);
     for (const cargo of requiredCargos) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
+      if (!certs[cargo.id]) return `Sube el certificado de antecedentes para: ${cargo.nombre}`;
     }
-    if (comision.members.length < 3) return 'La comisión electoral requiere 3 miembros';
+    if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
     return null;
   }
 
@@ -159,7 +192,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                   style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }}
                 >
                   <option value="">Seleccionar miembro...</option>
-                  {getAvailableMembers().map((m, i) => (
+                  {getAvailableMembers(null, true).map((m, i) => (
                     <option key={m.rut || i} value={members.indexOf(m)}>
                       {m.firstName} {m.lastName} - {m.rut}
                     </option>
@@ -167,12 +200,12 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                 </select>
               )}
 
-              {/* Certificate upload */}
+              {/* Certificate upload - required for directorio */}
               {assigned && (
                 <div style={{ marginTop: 8 }}>
                   <FileUpload
                     accept=".pdf,.jpg,.jpeg,.png"
-                    label="Certificado (opcional)"
+                    label="Certificado de Antecedentes *"
                     maxSizeMB={5}
                     onFile={file => handleCertificate(cargo.id, file)}
                     value={certs[cargo.id]}
@@ -186,7 +219,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
 
       {/* Comisión Electoral */}
       <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-        Comisión Electoral ({comision.members.length}/3)
+        Comisión Electoral ({comision.members.length}/{comisionSize})
       </h3>
       <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
         {comision.members.map((m, i) => (
@@ -202,29 +235,20 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         ))}
       </div>
 
-      {comision.members.length < 3 && (
+      {comision.members.length < comisionSize && (
         <select
           value=""
           onChange={e => { if (e.target.value) addComisionMember(parseInt(e.target.value)); }}
           style={{ width: '100%', maxWidth: 400, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, marginBottom: 16 }}
         >
           <option value="">Agregar miembro a comisión...</option>
-          {getAvailableMembers().map((m, i) => (
+          {getAvailableMembers(null, false, true).map((m, i) => (
             <option key={m.rut || i} value={members.indexOf(m)}>
               {m.firstName} {m.lastName} - {m.rut}
             </option>
           ))}
         </select>
       )}
-
-      <div>
-        <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6 }}>
-          Fecha estimada de elección
-        </label>
-        <input type="date" value={comision.electionDate || ''}
-          onChange={e => setFormDataField('comisionElectoral', { ...comision, electionDate: e.target.value })}
-          style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-      </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>

@@ -6,7 +6,7 @@ const MONTHS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-export default function Calendar({ events = {}, onDayClick, selectedDate, renderDayContent }) {
+export default function Calendar({ events = {}, onDayClick, selectedDate, renderDayContent, onMonthChange }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
 
@@ -29,19 +29,28 @@ export default function Calendar({ events = {}, onDayClick, selectedDate, render
   }, [year, month]);
 
   function prevMonth() {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
+    let newYear = year, newMonth = month;
+    if (month === 0) { newYear = year - 1; newMonth = 11; }
+    else { newMonth = month - 1; }
+    setYear(newYear);
+    setMonth(newMonth);
+    onMonthChange?.(newYear, newMonth + 1);
   }
 
   function nextMonth() {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
+    let newYear = year, newMonth = month;
+    if (month === 11) { newYear = year + 1; newMonth = 0; }
+    else { newMonth = month + 1; }
+    setYear(newYear);
+    setMonth(newMonth);
+    onMonthChange?.(newYear, newMonth + 1);
   }
 
   function goToday() {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth());
+    onMonthChange?.(now.getFullYear(), now.getMonth() + 1);
   }
 
   const todayStr = new Date().toISOString().split('T')[0];

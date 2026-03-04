@@ -1,28 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { apiService } from '@services/ApiService.js';
 import FileUpload from '../../../components/ui/FileUpload';
 
 export default function Step4_Estatutos({ onNext, onPrev }) {
-  const { formData, setFormDataField } = useWizardStore();
+  const { formData, setFormDataField, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const estatutos = formData.estatutos || { type: 'template', content: null };
-  const [editing, setEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
+  const [snapshot, setSnapshot] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const orgType = formData.organization?.type;
+
+  // Load template snapshot when template mode selected and org type exists
+  useEffect(() => {
+    if (estatutos.type === 'template' && orgType && !snapshot) {
+      loadSnapshot();
+    }
+  }, [estatutos.type, orgType]);
+
+  async function loadSnapshot() {
+    setLoading(true);
+    try {
+      const data = await apiService.getEstatutoTemplateSnapshot(orgType);
+      setSnapshot(data);
+      // Store snapshot in formData for later use
+      setFormDataField('estatutos', {
+        ...estatutos,
+        type: 'template',
+        snapshot: data,
+        content: data.documentoCompleto || null
+      });
+    } catch (err) {
+      console.error('Error loading template snapshot:', err);
+      addToast('No se pudo cargar la plantilla de estatutos', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function setType(type) {
-    setFormDataField('estatutos', { ...estatutos, type, content: null, customFile: null });
+    setFormDataField('estatutos', { ...estatutos, type, content: null, customFile: null, snapshot: null });
+    if (type === 'template') {
+      setSnapshot(null); // Will reload via useEffect
+    }
   }
 
-  function handleEditTemplate() {
-    setEditContent(estatutos.content || 'Los estatutos serán generados automáticamente basados en la Ley 19.418 y el tipo de organización seleccionada.');
-    setEditing(true);
-  }
-
-  function saveEdit() {
-    setFormDataField('estatutos', { ...estatutos, content: editContent });
-    setEditing(false);
-    addToast('Estatutos guardados', 'success');
+  function replacePlaceholders(text) {
+    if (!text) return text;
+    const values = {
+      '{NOMBRE_ORGANIZACION}': formData.organization?.name || '_______________',
+      '{TIPO_ORGANIZACION}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
+      '{MIEMBROS_MINIMOS}': String(templateConfig?.miembrosMinimos || 15),
+      '{COMUNA}': formData.organization?.commune || 'Renca',
+      '{REGION}': formData.organization?.region || 'Región Metropolitana',
+      '{DIRECCION}': formData.organization?.street || '_______________',
+      '{NUM_MIEMBROS}': String(formData.members?.length || 0),
+    };
+    let result = text;
+    for (const [key, val] of Object.entries(values)) {
+      result = result.replaceAll(key, val);
+    }
+    return result;
   }
 
   function handleCustomFile(file) {
@@ -41,9 +81,8 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     reader.readAsDataURL(file);
   }
 
-  function handleNext() {
-    onNext();
-  }
+  const articles = snapshot?.articulos || [];
+  const hasArticles = articles.length > 0;
 
   return (
     <div>
@@ -83,40 +122,57 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       </div>
 
       {estatutos.type === 'template' && (
-        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-          {editing ? (
-            <>
-              <textarea
-                value={editContent}
-                onChange={e => setEditContent(e.target.value)}
-                rows={12}
-                style={{
-                  width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8,
-                  fontSize: 14, fontFamily: 'inherit', resize: 'vertical'
-                }}
-              />
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={saveEdit} style={{
-                  padding: '8px 16px', border: 'none', borderRadius: 8,
-                  background: '#2563eb', color: 'white', fontSize: 13, cursor: 'pointer'
-                }}>Guardar</button>
-                <button onClick={() => setEditing(false)} style={{
-                  padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
-                  background: 'white', fontSize: 13, cursor: 'pointer'
-                }}>Cancelar</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>
-                {estatutos.content || 'Los estatutos serán generados automáticamente basados en la Ley 19.418 y el tipo de organización seleccionada.'}
-              </p>
-              <button onClick={handleEditTemplate} style={{
-                padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
-                background: 'white', fontSize: 13, cursor: 'pointer'
-              }}>Editar</button>
-            </>
+        <div>
+          {loading && (
+            <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+              Cargando plantilla de estatutos...
+            </div>
           )}
+
+          {!loading && hasArticles && (
+            <div style={{
+              background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12,
+              maxHeight: 400, overflowY: 'auto', padding: 20
+            }}>
+              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+                Estatutos - {templateConfig?.nombreTipo || formData.organization?.type}
+              </h3>
+              {articles.map((art, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#1e40af' }}>
+                    Artículo {art.numero}: {art.titulo}
+                  </h4>
+                  <p style={{
+                    margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {replacePlaceholders(art.contenido)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && !hasArticles && (
+            <div style={{
+              background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20
+            }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+                Los estatutos serán generados automáticamente basados en la Ley 19.418 y el tipo de organización seleccionada.
+              </p>
+            </div>
+          )}
+
+          {/* Info banner */}
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+            padding: 14, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <span style={{ fontSize: 16 }}>&#9432;</span>
+            <p style={{ margin: 0, fontSize: 13, color: '#1e40af' }}>
+              Este estatuto será validado en la asamblea constitutiva.
+            </p>
+          </div>
         </div>
       )}
 
@@ -134,7 +190,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={handleNext} style={nextBtnS}>Siguiente</button>
+        <button onClick={onNext} style={nextBtnS}>Siguiente</button>
       </div>
     </div>
   );

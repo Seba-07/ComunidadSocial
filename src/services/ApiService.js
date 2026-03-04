@@ -759,6 +759,14 @@ class ApiService {
     return this.get('/organization-types/grouped');
   }
 
+  async getEstatutoTemplateConfig(tipo) {
+    return this.get(`/estatuto-templates/${tipo}/config`);
+  }
+
+  async getEstatutoTemplateSnapshot(tipo) {
+    return this.get(`/estatuto-templates/${tipo}/snapshot`);
+  }
+
   /**
    * Obtener categorías disponibles
    */

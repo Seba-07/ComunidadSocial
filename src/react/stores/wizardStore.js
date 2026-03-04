@@ -21,7 +21,8 @@ const initialFormData = {
   directorioProvisorio: {},
   comisionElectoral: { members: [], electionDate: null },
   certificates: {},
-  documents: {}
+  documents: {},
+  assemblySchedule: { date: null, time: null }
 };
 
 export const useWizardStore = create((set, get) => ({
@@ -31,6 +32,7 @@ export const useWizardStore = create((set, get) => ({
   isSubmitting: false,
   existingOrgId: null,
   error: null,
+  templateConfig: null,
 
   setStep(step) {
     set({ currentStep: step });
@@ -83,11 +85,12 @@ export const useWizardStore = create((set, get) => ({
 
   saveProgress() {
     try {
-      const { currentStep, formData, existingOrgId } = get();
+      const { currentStep, formData, existingOrgId, templateConfig } = get();
       const saved = {
         currentStep,
         formData,
         existingOrgId,
+        templateConfig,
         savedAt: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
@@ -112,7 +115,8 @@ export const useWizardStore = create((set, get) => ({
       set({
         currentStep: saved.currentStep || 0,
         formData: { ...initialFormData, ...saved.formData },
-        existingOrgId: saved.existingOrgId || null
+        existingOrgId: saved.existingOrgId || null,
+        templateConfig: saved.templateConfig || null
       });
       return true;
     } catch {
@@ -122,7 +126,7 @@ export const useWizardStore = create((set, get) => ({
 
   clearProgress() {
     localStorage.removeItem(STORAGE_KEY);
-    set({ currentStep: 0, formData: { ...initialFormData }, existingOrgId: null });
+    set({ currentStep: 0, formData: { ...initialFormData }, existingOrgId: null, templateConfig: null });
   },
 
   async fetchOrganizationTypes() {
@@ -136,6 +140,17 @@ export const useWizardStore = create((set, get) => ({
     }
   },
 
+  async fetchTemplateConfig(tipo) {
+    try {
+      const config = await apiService.getEstatutoTemplateConfig(tipo);
+      set({ templateConfig: config });
+      return config;
+    } catch (error) {
+      console.error('Error fetching template config:', error);
+      return null;
+    }
+  },
+
   async submitOrganization() {
     set({ isSubmitting: true, error: null });
     try {
@@ -146,7 +161,8 @@ export const useWizardStore = create((set, get) => ({
         provisionalDirectorio: formData.directorioProvisorio,
         comisionElectoral: formData.comisionElectoral,
         estatutos: formData.estatutos,
-        config: formData.config
+        config: formData.config,
+        assemblySchedule: formData.assemblySchedule
       };
 
       const data = await apiService.createOrganization(orgData);
@@ -175,7 +191,8 @@ export const useWizardStore = create((set, get) => ({
       organizationTypes: [],
       isSubmitting: false,
       existingOrgId: null,
-      error: null
+      error: null,
+      templateConfig: null
     });
   }
 }));

@@ -1,14 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
-import StatusBadge from '../../../components/ui/StatusBadge';
+import { pdfService } from '@services/PDFService.js';
 
-export default function Step6_Review({ onPrev }) {
-  const navigate = useNavigate();
-  const { formData, submitOrganization, isSubmitting } = useWizardStore();
+export default function Step6_Review({ onNext, onPrev }) {
+  const { formData, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
-  const [submitted, setSubmitted] = useState(false);
 
   const org = formData.organization;
   const members = formData.members || [];
@@ -16,35 +12,39 @@ export default function Step6_Review({ onPrev }) {
   const comision = formData.comisionElectoral || {};
   const config = formData.config || {};
   const estatutos = formData.estatutos || {};
+  const certs = formData.certificates || {};
+  const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
 
-  async function handleSubmit() {
+  function previewDocument(type) {
     try {
-      await submitOrganization();
-      addToast('Organización creada exitosamente', 'success');
-      setSubmitted(true);
+      const orgData = {
+        organization: org,
+        organizationName: org.name,
+        organizationType: org.type,
+        members,
+        provisionalDirectorio: directorio,
+        comisionElectoral: comision,
+      };
+      let doc;
+      if (type === 'acta') {
+        doc = pdfService.generateActaAsamblea(orgData);
+      } else if (type === 'socios') {
+        doc = pdfService.generateListaSocios(orgData);
+      } else if (type === 'declaraciones') {
+        const docs = pdfService.generateAllDeclaracionesJuradas(orgData);
+        if (docs.length > 0) doc = docs[0].doc;
+        else {
+          addToast('No hay directores para generar declaraciones', 'error');
+          return;
+        }
+      }
+      if (doc) {
+        const url = pdfService.getPDFDataURL(doc);
+        window.open(url, '_blank');
+      }
     } catch (err) {
-      addToast(err.message, 'error');
+      addToast('Error al generar vista previa: ' + err.message, 'error');
     }
-  }
-
-  if (submitted) {
-    return (
-      <div style={{ textAlign: 'center', padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>&#127881;</div>
-        <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
-          Organización Creada
-        </h2>
-        <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 24 }}>
-          Tu organización ha sido enviada para revisión. Te notificaremos cuando sea procesada.
-        </p>
-        <button onClick={() => navigate('/login')} style={{
-          padding: '12px 28px', border: 'none', borderRadius: 10,
-          background: '#2563eb', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer'
-        }}>
-          Ir al Inicio
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -53,12 +53,12 @@ export default function Step6_Review({ onPrev }) {
         Revisión Final
       </h2>
       <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280' }}>
-        Verifica toda la información antes de enviar.
+        Verifica toda la información antes de continuar.
       </p>
 
       {/* Org Data */}
       <Section title="Datos de la Organización">
-        <Row label="Tipo" value={org.type} />
+        <Row label="Tipo" value={templateConfig?.nombreTipo || org.type} />
         <Row label="Nombre" value={org.name} />
         <Row label="Dirección" value={[org.street, org.streetNumber, org.commune].filter(Boolean).join(', ')} />
         <Row label="Email" value={org.email} />
@@ -85,16 +85,19 @@ export default function Step6_Review({ onPrev }) {
       {/* Directorio */}
       <Section title="Directorio Provisorio">
         {Object.entries(directorio).map(([cargo, data]) => (
-          <Row key={cargo} label={data.cargo || cargo} value={`${data.firstName} ${data.lastName} - ${data.rut}`} />
+          <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center' }}>
+            <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || cargo}:</span>
+            <span style={{ color: '#6b7280', flex: 1 }}>{data.firstName} {data.lastName} - {data.rut}</span>
+            {certs[cargo] && <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>}
+          </div>
         ))}
       </Section>
 
       {/* Comisión */}
-      <Section title={`Comisión Electoral (${(comision.members || []).length} miembros)`}>
+      <Section title={`Comisión Electoral (${(comision.members || []).length}/${comisionSize} miembros)`}>
         {(comision.members || []).map((m, i) => (
           <Row key={i} label={`Miembro ${i + 1}`} value={`${m.firstName} ${m.lastName} - ${m.rut}`} />
         ))}
-        {comision.electionDate && <Row label="Fecha elección" value={comision.electionDate} />}
       </Section>
 
       {/* Config */}
@@ -104,26 +107,46 @@ export default function Step6_Review({ onPrev }) {
         <Row label="Estatutos" value={estatutos.type === 'template' ? 'Plantilla automática' : 'Personalizado'} />
       </Section>
 
+      {/* Documents Preview */}
+      <Section title="Documentos Generados">
+        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+          Los siguientes documentos se generarán automáticamente:
+        </p>
+        {[
+          { key: 'acta', label: 'Acta de Asamblea Constitutiva' },
+          { key: 'socios', label: 'Lista de Socios Fundadores' },
+          { key: 'declaraciones', label: 'Declaraciones Juradas del Directorio' },
+        ].map(doc => (
+          <div key={doc.key} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '8px 0', borderBottom: '1px solid #f3f4f6'
+          }}>
+            <span style={{ fontSize: 14, color: '#374151' }}>{doc.label}</span>
+            <button onClick={() => previewDocument(doc.key)} style={{
+              padding: '4px 12px', border: '1px solid #2563eb', borderRadius: 6,
+              background: 'white', color: '#2563eb', fontSize: 12, cursor: 'pointer'
+            }}>Vista previa</button>
+          </div>
+        ))}
+      </Section>
+
       {/* Warning */}
       <div style={{
         background: '#fefce8', border: '1px solid #fde68a', borderRadius: 10,
         padding: 16, marginTop: 20, marginBottom: 24
       }}>
         <p style={{ margin: 0, fontSize: 13, color: '#92400e' }}>
-          Al enviar, tu organización será revisada por la municipalidad.
-          Asegúrate de que toda la información sea correcta.
+          Revisa que toda la información sea correcta antes de continuar al agendamiento de la asamblea.
         </p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={handleSubmit} disabled={isSubmitting} style={{
-          padding: '14px 32px', border: 'none', borderRadius: 10,
-          background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
-          color: 'white', fontSize: 16, fontWeight: 700, cursor: isSubmitting ? 'wait' : 'pointer'
-        }}>
-          {isSubmitting ? 'Enviando...' : 'Enviar Organización'}
-        </button>
+        <button onClick={onNext} style={{
+          padding: '12px 28px', border: 'none', borderRadius: 10,
+          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+          color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer'
+        }}>Siguiente</button>
       </div>
     </div>
   );

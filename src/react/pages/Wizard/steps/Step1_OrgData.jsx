@@ -12,7 +12,7 @@ const CONTACT_PREFS = [
 ];
 
 export default function Step1_OrgData({ onNext, isFirst }) {
-  const { formData, updateFormData, organizationTypes } = useWizardStore();
+  const { formData, updateFormData, organizationTypes, fetchTemplateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const org = formData.organization;
 
@@ -121,7 +121,11 @@ export default function Step1_OrgData({ onNext, isFirst }) {
       <div style={{ display: 'grid', gap: 16 }}>
         <div>
           <label style={labelStyle}>Tipo de Organización *</label>
-          <select value={org.type} onChange={e => update('type', e.target.value)} style={inputStyle}>
+          <select value={org.type} onChange={e => {
+            const tipo = e.target.value;
+            update('type', tipo);
+            if (tipo) fetchTemplateConfig(tipo);
+          }} style={inputStyle}>
             <option value="">Seleccionar tipo...</option>
             {Object.entries(grouped).map(([cat, types]) => (
               <optgroup key={cat} label={cat}>
