@@ -147,7 +147,11 @@ const organizationSchema = new mongoose.Schema({
       // Arte y cultura
       'GRUPO_TEATRO', 'CORO', 'TALLER_ARTESANIA',
       // Genéricos (mantener para compatibilidad)
-      'ORG_COMUNITARIA', 'ORG_FUNCIONAL', 'OTRA_FUNCIONAL'
+      'ORG_COMUNITARIA', 'ORG_FUNCIONAL', 'OTRA_FUNCIONAL',
+      // Educacionales
+      'CONSEJO_ESCOLAR', 'CENTRO_ESTUDIANTES',
+      // Seguridad y nuevas
+      'COMITE_SEGURIDAD', 'UNION_COMUNAL_JV', 'AGRUPACION_INCLUSION'
     ],
     required: true
   },

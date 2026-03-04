@@ -152,8 +152,10 @@ const TIPOS_ORGANIZACION = [
   'GRUPO_TEATRO', 'CORO', 'TALLER_ARTESANIA',
   // Genéricos
   'ORG_COMUNITARIA', 'ORG_FUNCIONAL', 'OTRA_FUNCIONAL',
-  // Consejos escolares y centros de estudiantes
-  'CONSEJO_ESCOLAR', 'CENTRO_ESTUDIANTES'
+  // Educacionales
+  'CONSEJO_ESCOLAR', 'CENTRO_ESTUDIANTES',
+  // Seguridad y nuevas
+  'COMITE_SEGURIDAD', 'UNION_COMUNAL_JV', 'AGRUPACION_INCLUSION'
 ];
 
 // Esquema principal de EstatutoTemplate
@@ -421,7 +423,11 @@ estatutoTemplateSchema.statics.getTiposConNombres = function() {
     'OTRA_FUNCIONAL': { nombre: 'Otra Organización Funcional', categoria: 'FUNCIONAL' },
     // Educacionales
     'CONSEJO_ESCOLAR': { nombre: 'Consejo Escolar', categoria: 'EDUCACIONAL' },
-    'CENTRO_ESTUDIANTES': { nombre: 'Centro de Estudiantes', categoria: 'EDUCACIONAL' }
+    'CENTRO_ESTUDIANTES': { nombre: 'Centro de Estudiantes', categoria: 'EDUCACIONAL' },
+    // Seguridad y nuevas
+    'COMITE_SEGURIDAD': { nombre: 'Comité de Seguridad Ciudadana', categoria: 'FUNCIONAL' },
+    'UNION_COMUNAL_JV': { nombre: 'Unión Comunal de Juntas de Vecinos', categoria: 'TERRITORIAL' },
+    'AGRUPACION_INCLUSION': { nombre: 'Agrupación de Inclusión / Discapacidad', categoria: 'SOCIAL' }
   };
 };
 

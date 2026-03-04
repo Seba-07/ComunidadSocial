@@ -44,16 +44,18 @@ const DIRECTORIO_CONFIG = {
     miembrosMinimos: 15
   },
 
-  // Centro de Padres - 4 miembros (sin vicepresidente)
+  // Centro de Padres y Apoderados - edad mínima 18, 5 directores
   'CENTRO_PADRES': {
     cargos: [
       { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
-      { id: 'secretario', nombre: 'Secretario General', color: '#10b981', required: true, orden: 2 },
-      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 3 },
-      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 4 }
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario General', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
     ],
-    totalRequerido: 4,
-    miembrosMinimos: 15
+    totalRequerido: 5,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: false, edadMinima: 18, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
   },
 
   // Comité de Vivienda - 5 miembros con 2 directores
@@ -83,6 +85,62 @@ const DIRECTORIO_CONFIG = {
     miembrosMinimos: 15
   },
 
+  // Club Juvenil - edad mínima 15, directorio permite menores (Art. 20 Ley 19.418)
+  'CLUB_JUVENIL': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 15, menoresEnDirectorio: true, menoresEnComisionElectoral: false }
+  },
+
+  // Agrupación Juvenil - edad mínima 15, directorio permite menores (Art. 20 Ley 19.418)
+  'AGRUPACION_JUVENIL': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 15, menoresEnDirectorio: true, menoresEnComisionElectoral: false }
+  },
+
+  // Organización Scout - edad mínima 15, directorio permite menores (Art. 20 Ley 19.418)
+  'ORG_SCOUT': {
+    cargos: [
+      { id: 'presidente', nombre: 'Jefe/a de Grupo', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Subjefe/a de Grupo', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 15, menoresEnDirectorio: true, menoresEnComisionElectoral: false }
+  },
+
+  // Organización Indígena - Ley 19.253 (CONADI), validación no municipal
+  'ORG_INDIGENA': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 25,
+    edadConfig: { permiteMenores: false, edadMinima: 18, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
+  },
+
   // Club Deportivo - 5 miembros estándar
   'CLUB_DEPORTIVO': {
     cargos: [
@@ -96,7 +154,7 @@ const DIRECTORIO_CONFIG = {
     miembrosMinimos: 15
   },
 
-  // Club Adulto Mayor - 5 miembros
+  // Club Adulto Mayor - edad mínima sugerida 60 años
   'CLUB_ADULTO_MAYOR': {
     cargos: [
       { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
@@ -106,10 +164,11 @@ const DIRECTORIO_CONFIG = {
       { id: 'director1', nombre: 'Director/a de Bienestar', color: '#6366f1', required: true, orden: 5 }
     ],
     totalRequerido: 5,
-    miembrosMinimos: 15
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: false, edadMinima: 60, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
   },
 
-  // Centro de Estudiantes - 5 miembros con cargos estudiantiles
+  // Centro de Estudiantes - sin edad mínima, directorio puede ser menor
   'CENTRO_ESTUDIANTES': {
     cargos: [
       { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
@@ -119,19 +178,62 @@ const DIRECTORIO_CONFIG = {
       { id: 'director1', nombre: 'Delegado/a de Cultura', color: '#6366f1', required: true, orden: 5 }
     ],
     totalRequerido: 5,
-    miembrosMinimos: 15
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 10, menoresEnDirectorio: true, menoresEnComisionElectoral: true }
   },
 
-  // Consejo Escolar - 4 miembros representativos
+  // Consejo Escolar - caso especial: comité institucional con representantes
   'CONSEJO_ESCOLAR': {
+    cargos: [
+      { id: 'director_establecimiento', nombre: 'Director/a del Establecimiento', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'rep_sostenedor', nombre: 'Representante del Sostenedor', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'rep_profesores', nombre: 'Representante Profesores', color: '#10b981', required: true, orden: 3 },
+      { id: 'rep_apoderados', nombre: 'Representante Apoderados', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'rep_alumnos', nombre: 'Representante Alumnos', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 5,
+    edadConfig: { permiteMenores: true, edadMinima: 14, menoresEnDirectorio: true, menoresEnComisionElectoral: false }
+  },
+
+  // Comité de Seguridad Ciudadana - funcional estándar Ley 19.418
+  'COMITE_SEGURIDAD': {
     cargos: [
       { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
       { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 2 },
-      { id: 'rep_profesores', nombre: 'Representante Profesores', color: '#f59e0b', required: true, orden: 3 },
-      { id: 'rep_apoderados', nombre: 'Representante Apoderados', color: '#6366f1', required: true, orden: 4 }
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 3 }
     ],
-    totalRequerido: 4,
-    miembrosMinimos: 15
+    totalRequerido: 3,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 15, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
+  },
+
+  // Unión Comunal de Juntas de Vecinos - socios son organizaciones (JV), no personas
+  'UNION_COMUNAL_JV': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 3,
+    edadConfig: { permiteMenores: false, edadMinima: 18, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
+  },
+
+  // Agrupación de Inclusión / Discapacidad - funcional estándar
+  'AGRUPACION_INCLUSION': {
+    cargos: [
+      { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+      { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+      { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+      { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+      { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 }
+    ],
+    totalRequerido: 5,
+    miembrosMinimos: 15,
+    edadConfig: { permiteMenores: true, edadMinima: 14, menoresEnDirectorio: false, menoresEnComisionElectoral: false }
   }
 };
 
@@ -261,7 +363,7 @@ async function seedEstatutos() {
       const tipoInfo = tiposConNombres[tipo];
       const configDirectorio = DIRECTORIO_CONFIG[tipo] || DEFAULT_CONFIG;
 
-      const template = new EstatutoTemplate({
+      const templateData = {
         tipoOrganizacion: tipo,
         nombreTipo: tipoInfo.nombre,
         descripcion: `Estatutos oficiales para ${tipoInfo.nombre} según Ley 19.418`,
@@ -280,9 +382,16 @@ async function seedEstatutos() {
           descripcion: 'Miembros que organizan las elecciones'
         },
         placeholders: PLACEHOLDERS_BASE,
-        publicado: false, // Se publican manualmente después de revisión
+        publicado: false,
         activo: true
-      });
+      };
+
+      // Apply edadConfig if specified for this type
+      if (configDirectorio.edadConfig) {
+        templateData.edadConfig = configDirectorio.edadConfig;
+      }
+
+      const template = new EstatutoTemplate(templateData);
 
       // Generar documento completo
       template.documentoCompleto = template.generarDocumentoCompleto();
