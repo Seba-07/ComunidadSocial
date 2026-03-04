@@ -481,7 +481,29 @@ export default function EstatutosManagerView() {
     );
   }
 
-  // List view
+  // List view — group templates by category
+  const CATEGORY_LABELS = {
+    TERRITORIAL: 'Organizaciones Territoriales',
+    FUNCIONAL: 'Organizaciones Funcionales',
+    SOCIAL: 'Social',
+    CULTURAL: 'Arte y Cultura',
+    EDUCACIONAL: 'Educacionales',
+    OTRO: 'Otros'
+  };
+
+  const CATEGORY_ORDER = ['TERRITORIAL', 'FUNCIONAL', 'SOCIAL', 'CULTURAL', 'EDUCACIONAL', 'OTRO'];
+
+  const grouped = {};
+  templates.forEach(t => {
+    const cat = t.categoria || 'OTRO';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(t);
+  });
+
+  const sortedCategories = CATEGORY_ORDER.filter(c => grouped[c]?.length);
+  // Add any unlisted categories
+  Object.keys(grouped).forEach(c => { if (!sortedCategories.includes(c)) sortedCategories.push(c); });
+
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ margin: '0 0 20px', fontSize: 24, fontWeight: 700, color: '#111827' }}>
@@ -493,44 +515,57 @@ export default function EstatutosManagerView() {
         <span>Publicadas: {templates.filter(t => t.publicado).length}</span>
       </div>
 
-      <div style={{ display: 'grid', gap: 12 }}>
-        {templates.map(t => (
-          <div key={t._id} style={{
-            background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-            padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      {sortedCategories.map(cat => (
+        <div key={cat} style={{ marginBottom: 24 }}>
+          <h2 style={{
+            fontSize: 15, fontWeight: 700, color: '#374151', margin: '0 0 10px',
+            padding: '8px 14px', background: '#f3f4f6', borderRadius: 8
           }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>
-                  {t.nombreTipo || t.orgType || 'Sin nombre'}
-                </span>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
-                  background: t.publicado ? '#d1fae5' : '#fee2e2',
-                  color: t.publicado ? '#065f46' : '#991b1b'
-                }}>
-                  {t.publicado ? 'Publicada' : 'Borrador'}
-                </span>
+            {CATEGORY_LABELS[cat] || cat}
+            <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: 8, fontSize: 13 }}>
+              ({grouped[cat].length})
+            </span>
+          </h2>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {grouped[cat].map(t => (
+              <div key={t._id} style={{
+                background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
+                padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                      {t.nombreTipo || t.orgType || 'Sin nombre'}
+                    </span>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                      background: t.publicado ? '#d1fae5' : '#fee2e2',
+                      color: t.publicado ? '#065f46' : '#991b1b'
+                    }}>
+                      {t.publicado ? 'Publicada' : 'Borrador'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', display: 'flex', gap: 12 }}>
+                    <span>{(t.articulos || []).length} artículos</span>
+                    <span>{(t.directorio?.cargos || []).filter(c => c.required).length}/{(t.directorio?.cargos || []).length} cargos</span>
+                    <span>{(t.objetivosSugeridos || []).length} objetivos</span>
+                    {t.version && <span>v{t.version}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => togglePublish(t)} style={smallBtn}>
+                    {t.publicado ? 'Despublicar' : 'Publicar'}
+                  </button>
+                  <button onClick={() => openEditor(t)} style={{
+                    padding: '6px 14px', border: 'none', borderRadius: 6,
+                    background: '#2563eb', color: 'white', fontSize: 12, cursor: 'pointer'
+                  }}>Editar</button>
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
-                <span>{(t.articulos || []).length} artículos</span>
-                <span>{(t.directorio?.cargos || []).filter(c => c.required).length}/{(t.directorio?.cargos || []).length} cargos</span>
-                <span>{(t.objetivosSugeridos || []).length} objetivos</span>
-                {t.version && <span>v{t.version}</span>}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => togglePublish(t)} style={smallBtn}>
-                {t.publicado ? 'Despublicar' : 'Publicar'}
-              </button>
-              <button onClick={() => openEditor(t)} style={{
-                padding: '6px 14px', border: 'none', borderRadius: 6,
-                background: '#2563eb', color: 'white', fontSize: 12, cursor: 'pointer'
-              }}>Editar</button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
