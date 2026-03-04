@@ -88,7 +88,11 @@ export default function Step7_Schedule({ onPrev }) {
       addToast('Organización creada exitosamente', 'success');
       setSubmitted(true);
     } catch (err) {
-      addToast(err.message, 'error');
+      let msg = err.message || 'Error al crear organización';
+      if (err.details?.length) {
+        msg += ': ' + err.details.map(d => d.message || d).join(', ');
+      }
+      addToast(msg, 'error');
     }
   }
 

@@ -165,12 +165,23 @@ export const useWizardStore = create((set, get) => ({
     set({ isSubmitting: true, error: null });
     try {
       const { formData } = get();
+      const org = formData.organization;
       const orgData = {
-        ...formData.organization,
+        organizationName: org.name,
+        organizationType: org.type,
+        description: org.description,
+        objectives: org.objectives,
+        address: org.address || [org.street, org.streetNumber].filter(Boolean).join(' '),
+        comuna: org.commune,
+        region: org.region,
+        unidadVecinal: org.neighborhood,
+        contactEmail: org.email,
+        contactPhone: org.phone,
+        contactPreference: org.contactPreference,
         members: formData.members,
         provisionalDirectorio: formData.directorioProvisorio,
-        comisionElectoral: formData.comisionElectoral,
-        estatutos: formData.estatutos,
+        electoralCommission: formData.comisionElectoral?.members || [],
+        estatutos: typeof formData.estatutos === 'string' ? formData.estatutos : formData.estatutos?.type || '',
         config: formData.config,
         assemblySchedule: formData.assemblySchedule
       };
