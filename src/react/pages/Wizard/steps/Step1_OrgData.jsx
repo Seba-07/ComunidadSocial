@@ -99,7 +99,10 @@ const OBJETIVOS_SUGERIDOS = {
   ]
 };
 
-function getObjetivos(tipo) {
+function getObjetivos(tipo, templateConfig) {
+  if (templateConfig?.objetivosSugeridos?.length > 0) {
+    return templateConfig.objetivosSugeridos;
+  }
   return OBJETIVOS_SUGERIDOS[tipo] || OBJETIVOS_SUGERIDOS._DEFAULT;
 }
 
@@ -110,7 +113,7 @@ const CONTACT_PREFS = [
 ];
 
 export default function Step1_OrgData({ onNext, isFirst }) {
-  const { formData, updateFormData, organizationTypes, fetchTemplateConfig } = useWizardStore();
+  const { formData, updateFormData, organizationTypes, fetchTemplateConfig, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const org = formData.organization;
 
@@ -259,7 +262,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
               Estos objetivos aparecerán en el Artículo 2 de los estatutos. Selecciona los que apliquen o agrega uno personalizado.
             </div>
             <div style={{ display: 'grid', gap: 8 }}>
-              {getObjetivos(org.type).map((obj, i) => {
+              {getObjetivos(org.type, templateConfig).map((obj, i) => {
                 const selected = (org.objectives || '').includes(obj);
                 return (
                   <label key={i} style={{

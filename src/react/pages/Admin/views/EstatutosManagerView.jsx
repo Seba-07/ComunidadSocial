@@ -15,6 +15,8 @@ export default function EstatutosManagerView() {
   const [articuloForm, setArticuloForm] = useState({ numero: '', titulo: '', contenido: '' });
   const [editArticuloIdx, setEditArticuloIdx] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [editingObjIdx, setEditingObjIdx] = useState(null);
+  const [objInput, setObjInput] = useState('');
   const editorRef = useRef(null);
 
   async function loadTemplates() {
@@ -109,6 +111,39 @@ export default function EstatutosManagerView() {
     });
   }
 
+  function addObjetivo() {
+    if (!objInput.trim()) return;
+    setSelectedTemplate(t => ({
+      ...t,
+      objetivosSugeridos: [...(t.objetivosSugeridos || []), objInput.trim()]
+    }));
+    setObjInput('');
+  }
+
+  function updateObjetivo(idx, value) {
+    setSelectedTemplate(t => ({
+      ...t,
+      objetivosSugeridos: (t.objetivosSugeridos || []).map((o, i) => i === idx ? value : o)
+    }));
+  }
+
+  function deleteObjetivo(idx) {
+    setSelectedTemplate(t => ({
+      ...t,
+      objetivosSugeridos: (t.objetivosSugeridos || []).filter((_, i) => i !== idx)
+    }));
+  }
+
+  function moveObjetivo(idx, direction) {
+    setSelectedTemplate(t => {
+      const objs = [...(t.objetivosSugeridos || [])];
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= objs.length) return t;
+      [objs[idx], objs[newIdx]] = [objs[newIdx], objs[idx]];
+      return { ...t, objetivosSugeridos: objs };
+    });
+  }
+
   function addDefaultCargos() {
     setSelectedTemplate(t => ({
       ...t,
@@ -180,6 +215,7 @@ export default function EstatutosManagerView() {
           tabs={[
             { key: 'articulos', label: 'Artículos' },
             { key: 'directorio', label: 'Directorio' },
+            { key: 'objetivos', label: 'Objetivos' },
             { key: 'config', label: 'Configuración' }
           ]}
           activeTab={editTab}
@@ -328,6 +364,75 @@ export default function EstatutosManagerView() {
             </div>
           )}
 
+          {editTab === 'objetivos' && (
+            <div>
+              <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+                Objetivos sugeridos que aparecen como opciones seleccionables en el wizard de creaci&oacute;n.
+                Los usuarios tambi&eacute;n pueden agregar objetivos personalizados.
+              </p>
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <input
+                  value={objInput}
+                  onChange={e => setObjInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addObjetivo(); } }}
+                  placeholder="Escribir nuevo objetivo sugerido..."
+                  style={{ flex: 1, padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+                />
+                <button onClick={addObjetivo} disabled={!objInput.trim()} style={{
+                  padding: '10px 18px', border: 'none', borderRadius: 8, background: '#2563eb',
+                  color: 'white', fontSize: 13, fontWeight: 600,
+                  cursor: objInput.trim() ? 'pointer' : 'not-allowed',
+                  opacity: objInput.trim() ? 1 : 0.5
+                }}>Agregar</button>
+              </div>
+
+              {(selectedTemplate.objetivosSugeridos || []).length === 0 && (
+                <div style={{
+                  padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 14,
+                  border: '2px dashed #e5e7eb', borderRadius: 12
+                }}>
+                  No hay objetivos configurados. Los usuarios ver&aacute;n los objetivos gen&eacute;ricos por defecto.
+                </div>
+              )}
+
+              {(selectedTemplate.objetivosSugeridos || []).map((obj, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8,
+                  padding: '10px 14px', background: '#f9fafb', borderRadius: 8,
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <span style={{ color: '#9ca3af', fontSize: 12, minWidth: 24 }}>{i + 1}.</span>
+                  {editingObjIdx === i ? (
+                    <input
+                      autoFocus
+                      value={obj}
+                      onChange={e => updateObjetivo(i, e.target.value)}
+                      onBlur={() => setEditingObjIdx(null)}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingObjIdx(null); }}
+                      style={{ flex: 1, padding: 8, border: '1px solid #93c5fd', borderRadius: 6, fontSize: 13 }}
+                    />
+                  ) : (
+                    <span
+                      onClick={() => setEditingObjIdx(i)}
+                      style={{ flex: 1, fontSize: 13, color: '#374151', cursor: 'text', lineHeight: 1.4 }}
+                    >{obj}</span>
+                  )}
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button onClick={() => moveObjetivo(i, -1)} disabled={i === 0}
+                      style={{ ...smallBtn, opacity: i === 0 ? 0.3 : 1, padding: '4px 8px' }}
+                      title="Mover arriba">&#9650;</button>
+                    <button onClick={() => moveObjetivo(i, 1)}
+                      disabled={i === (selectedTemplate.objetivosSugeridos || []).length - 1}
+                      style={{ ...smallBtn, opacity: i === (selectedTemplate.objetivosSugeridos || []).length - 1 ? 0.3 : 1, padding: '4px 8px' }}
+                      title="Mover abajo">&#9660;</button>
+                    <button onClick={() => deleteObjetivo(i)} style={{ ...smallBtn, color: '#ef4444' }}>X</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {editTab === 'config' && (
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
@@ -410,6 +515,7 @@ export default function EstatutosManagerView() {
               <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
                 <span>{(t.articulos || []).length} artículos</span>
                 <span>{(t.directorio?.cargos || []).filter(c => c.required).length}/{(t.directorio?.cargos || []).length} cargos</span>
+                <span>{(t.objetivosSugeridos || []).length} objetivos</span>
                 {t.version && <span>v{t.version}</span>}
               </div>
             </div>

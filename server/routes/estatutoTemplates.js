@@ -68,7 +68,7 @@ router.get('/:tipo/config', async (req, res) => {
       tipoOrganizacion: req.params.tipo,
       activo: true,
       publicado: true
-    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig');
+    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig objetivosSugeridos');
 
     if (!template) {
       // Devolver configuración DEFAULT si no existe plantilla
@@ -164,7 +164,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       directorio,
       miembrosMinimos,
       comisionElectoral,
-      placeholders
+      placeholders,
+      objetivosSugeridos
     } = req.body;
 
     // Verificar que no existe
@@ -187,6 +188,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       miembrosMinimos: miembrosMinimos || 15,
       comisionElectoral: comisionElectoral || { cantidad: 3 },
       placeholders: placeholders || [],
+      objetivosSugeridos: objetivosSugeridos || [],
       creadoPor: req.user._id,
       modificadoPor: req.user._id
     });
@@ -222,12 +224,13 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
       comisionElectoral,
       edadConfig,
       placeholders,
+      objetivosSugeridos,
       publicado,
       descripcionCambio
     } = req.body;
 
     // Crear versión antes de modificar (si hay cambios significativos)
-    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral || edadConfig;
+    const hasSignificantChanges = articulos || directorio || miembrosMinimos || comisionElectoral || edadConfig || objetivosSugeridos;
     if (hasSignificantChanges) {
       template.crearVersion(req.user._id, descripcionCambio || 'Actualización de plantilla');
     }
@@ -246,6 +249,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (comisionElectoral !== undefined) template.comisionElectoral = comisionElectoral;
     if (edadConfig !== undefined) template.edadConfig = edadConfig;
     if (placeholders !== undefined) template.placeholders = placeholders;
+    if (objetivosSugeridos !== undefined) template.objetivosSugeridos = objetivosSugeridos;
     if (publicado !== undefined) template.publicado = publicado;
 
     template.modificadoPor = req.user._id;
@@ -430,6 +434,7 @@ router.post('/:id/restaurar/:version', authenticate, requireRole('MUNICIPALIDAD'
     if (snapshot.placeholders) template.placeholders = snapshot.placeholders;
     if (snapshot.imagenesDocumento) template.imagenesDocumento = snapshot.imagenesDocumento;
     if (snapshot.documentoCompleto) template.documentoCompleto = snapshot.documentoCompleto;
+    if (snapshot.objetivosSugeridos) template.objetivosSugeridos = snapshot.objetivosSugeridos;
 
     template.modificadoPor = req.user._id;
     await template.save();
@@ -497,6 +502,7 @@ router.post('/:id/duplicar', authenticate, requireRole('MUNICIPALIDAD'), async (
       miembrosMinimos: template.miembrosMinimos,
       comisionElectoral: template.comisionElectoral,
       placeholders: template.placeholders,
+      objetivosSugeridos: template.objetivosSugeridos || [],
       // No copiar imágenes (deberán subirse nuevas)
       imagenesDocumento: [],
       publicado: false,

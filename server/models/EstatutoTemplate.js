@@ -253,6 +253,12 @@ const estatutoTemplateSchema = new mongoose.Schema({
   // Placeholders para campos dinámicos
   placeholders: [placeholderSchema],
 
+  // Objetivos sugeridos por tipo (editables desde admin)
+  objetivosSugeridos: {
+    type: [String],
+    default: []
+  },
+
   // Imágenes para el documento PDF
   imagenesDocumento: [imagenDocumentoSchema],
 
@@ -324,7 +330,8 @@ estatutoTemplateSchema.methods.crearVersion = function(userId, descripcion) {
       documentoCompleto: this.documentoCompleto,
       miembrosMinimos: this.miembrosMinimos,
       comisionElectoral: this.comisionElectoral.toObject ? this.comisionElectoral.toObject() : this.comisionElectoral,
-      edadConfig: this.edadConfig.toObject ? this.edadConfig.toObject() : this.edadConfig
+      edadConfig: this.edadConfig.toObject ? this.edadConfig.toObject() : this.edadConfig,
+      objetivosSugeridos: this.objetivosSugeridos || []
     }
   });
   this.version += 1;
@@ -346,6 +353,7 @@ estatutoTemplateSchema.methods.obtenerSnapshot = function() {
     imagenesDocumento: this.imagenesDocumento,
     documentoCompleto: this.documentoCompleto,
     edadConfig: this.edadConfig,
+    objetivosSugeridos: this.objetivosSugeridos,
     fechaSnapshot: new Date()
   };
 };
@@ -374,7 +382,8 @@ estatutoTemplateSchema.statics.getDefaultConfig = function(tipoOrganizacion) {
       menoresEnDirectorio: false,
       menoresEnComisionElectoral: false
     },
-    placeholders: []
+    placeholders: [],
+    objetivosSugeridos: []
   };
 };
 
