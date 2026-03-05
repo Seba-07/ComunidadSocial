@@ -104,74 +104,110 @@ class PDFService {
   /**
    * Dibuja el encabezado institucional
    */
-  drawHeader(doc, title, subtitle = null) {
-    // Barra superior de colores (cyan, verde, azul, naranja)
-    const barHeight = 8;
-    const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
-    const barWidth = PAGE_WIDTH / 4;
+  drawHeader(doc, title, subtitle = null, headerConfig = null) {
+    // Custom image header
+    if (headerConfig?.imageDataUrl) {
+      const imgH = headerConfig.height || 40;
+      try {
+        doc.addImage(headerConfig.imageDataUrl, 'JPEG', 0, 0, PAGE_WIDTH, imgH);
+      } catch (e) {
+        console.warn('Failed to add header image:', e);
+      }
+      this.currentY = imgH + 5;
+    } else if (headerConfig?.showColorBar === false) {
+      // No color bar, just spacing
+      this.currentY = MARGIN_TOP + 5;
+    } else {
+      // Default: colored bar
+      const barHeight = 8;
+      const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
+      const barWidth = PAGE_WIDTH / 4;
+      barColors.forEach((color, i) => {
+        doc.setFillColor(color);
+        doc.rect(i * barWidth, 0, barWidth + 1, barHeight, 'F');
+      });
+      this.currentY = barHeight + 10;
+    }
 
-    barColors.forEach((color, i) => {
-      doc.setFillColor(color);
-      doc.rect(i * barWidth, 0, barWidth + 1, barHeight, 'F');
-    });
+    // Institutional text (custom or default)
+    const headerText = headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA';
+    const headerSubtitle = headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL';
 
-    this.currentY = barHeight + 10;
+    if (!headerConfig?.imageDataUrl) {
+      doc.setFontSize(11);
+      doc.setTextColor(COLORS.primary);
+      doc.setFont('helvetica', 'bold');
+      doc.text(headerText, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
 
-    // Logo y texto institucional
-    doc.setFontSize(11);
-    doc.setTextColor(COLORS.primary);
-    doc.setFont('helvetica', 'bold');
-    doc.text('REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA', PAGE_WIDTH / 2, this.currentY, { align: 'center' });
-
-    this.currentY += 5;
-    doc.setFontSize(9);
-    doc.setTextColor(COLORS.dark);
-    doc.text('SECRETARÍA MUNICIPAL', PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+      this.currentY += 5;
+      doc.setFontSize(9);
+      doc.setTextColor(COLORS.dark);
+      doc.text(headerSubtitle, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+    }
 
     if (subtitle) {
       this.currentY += 4;
       doc.setFontSize(8);
+      doc.setTextColor(COLORS.dark);
       doc.text(subtitle, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
     }
 
     this.currentY += 10;
 
     // Título del documento
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(COLORS.dark);
-    doc.text(title, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
-
-    this.currentY += 12;
+    if (title) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(COLORS.dark);
+      doc.text(title, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+      this.currentY += 12;
+    }
   }
 
   /**
    * Dibuja el pie de página
    */
-  drawFooter(doc, pageNum = 1) {
+  drawFooter(doc, pageNum = 1, footerConfig = null) {
     const footerY = PAGE_HEIGHT - 15;
 
-    // Barra inferior de colores
-    const barHeight = 8;
-    const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
-    const barWidth = PAGE_WIDTH / 4;
+    // Custom image footer
+    if (footerConfig?.imageDataUrl) {
+      const imgH = footerConfig.height || 30;
+      try {
+        doc.addImage(footerConfig.imageDataUrl, 'JPEG', 0, PAGE_HEIGHT - imgH, PAGE_WIDTH, imgH);
+      } catch (e) {
+        console.warn('Failed to add footer image:', e);
+      }
+    } else if (footerConfig?.showColorBar === false) {
+      // No color bar
+    } else {
+      // Default: colored bar
+      const barHeight = 8;
+      const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
+      const barWidth = PAGE_WIDTH / 4;
+      barColors.forEach((color, i) => {
+        doc.setFillColor(color);
+        doc.rect(i * barWidth, PAGE_HEIGHT - barHeight, barWidth + 1, barHeight, 'F');
+      });
+    }
 
-    barColors.forEach((color, i) => {
-      doc.setFillColor(color);
-      doc.rect(i * barWidth, PAGE_HEIGHT - barHeight, barWidth + 1, barHeight, 'F');
-    });
+    // Contact info (custom or default)
+    if (!footerConfig?.imageDataUrl) {
+      doc.setFontSize(8);
+      doc.setTextColor(COLORS.text);
+      doc.setFont('helvetica', 'normal');
 
-    // Información de contacto
-    doc.setFontSize(8);
-    doc.setTextColor(COLORS.text);
-    doc.setFont('helvetica', 'normal');
+      const contactY = footerY - 5;
+      const footerText = footerConfig?.text || 'Blanco Encalada 1335, Renca';
+      const footerSubtitle = footerConfig?.subtitle || '+562 2685 6600';
+      doc.text(footerText, 40, contactY, { align: 'center' });
+      doc.text(footerSubtitle, PAGE_WIDTH / 2, contactY, { align: 'center' });
+      if (!footerConfig?.text) {
+        doc.text('www.renca.cl', PAGE_WIDTH - 40, contactY, { align: 'center' });
+      }
+    }
 
-    const contactY = footerY - 5;
-    doc.text('Blanco Encalada 1335, Renca', 40, contactY, { align: 'center' });
-    doc.text('+562 2685 6600', PAGE_WIDTH / 2, contactY, { align: 'center' });
-    doc.text('www.renca.cl', PAGE_WIDTH - 40, contactY, { align: 'center' });
-
-    // Número de página
+    // Page number
     doc.text(String(pageNum), PAGE_WIDTH - MARGIN_RIGHT, footerY - 12, { align: 'right' });
   }
 
@@ -187,19 +223,58 @@ class PDFService {
   }
 
   /**
+   * Pre-fetch S3 presigned URLs as base64 data URLs for jsPDF
+   * @param {Object} headerConfig - Header config with imageUrl
+   * @param {Object} footerConfig - Footer config with imageUrl
+   * @returns {Object} { headerConfig, footerConfig } with imageDataUrl resolved
+   */
+  async prefetchConfigImages(headerConfig, footerConfig) {
+    const result = {
+      headerConfig: { ...(headerConfig || {}) },
+      footerConfig: { ...(footerConfig || {}) }
+    };
+
+    const fetchAsDataUrl = async (url) => {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Failed to fetch image:', e);
+        return null;
+      }
+    };
+
+    if (headerConfig?.imageUrl) {
+      result.headerConfig.imageDataUrl = await fetchAsDataUrl(headerConfig.imageUrl);
+    }
+    if (footerConfig?.imageUrl) {
+      result.footerConfig.imageDataUrl = await fetchAsDataUrl(footerConfig.imageUrl);
+    }
+
+    return result;
+  }
+
+  /**
    * Genera un PDF a partir de una plantilla con placeholders
    * @param {string} templateContent - Texto con {{VARIABLE}} placeholders
    * @param {Object} data - Objeto con valores para reemplazo
    * @param {string} title - Título para el header
+   * @param {Object} config - { headerConfig, footerConfig } opcionales
    * @returns {jsPDF} Documento PDF generado
    */
-  generateFromTemplate(templateContent, data, title = 'DOCUMENTO') {
+  generateFromTemplate(templateContent, data, title = 'DOCUMENTO', config = {}) {
     const doc = new jsPDF();
     const resolvedText = templateContent.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || '___');
+    const { headerConfig, footerConfig } = config;
 
     // Split into lines and render
-    this.drawHeader(doc, title, 'Departamento de Registro y Certificación');
-    this.currentY = 55;
+    this.drawHeader(doc, title, 'Departamento de Registro y Certificación', headerConfig);
+    this.currentY = Math.max(this.currentY, 55);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -230,11 +305,11 @@ class PDFService {
       const lines = doc.splitTextToSize(trimmed, CONTENT_WIDTH);
       const neededHeight = lines.length * 5 + 4;
       if (this.currentY + neededHeight > PAGE_HEIGHT - 30) {
-        this.drawFooter(doc, pageNum);
+        this.drawFooter(doc, pageNum, footerConfig);
         doc.addPage();
         pageNum++;
-        this.drawHeader(doc, '');
-        this.currentY = 35;
+        this.drawHeader(doc, '', null, headerConfig);
+        this.currentY = Math.max(this.currentY, 35);
         doc.setFontSize(isHeading ? 11 : 10);
         doc.setFont('helvetica', isHeading ? 'bold' : 'normal');
         doc.setTextColor(COLORS.text);
@@ -244,7 +319,7 @@ class PDFService {
       this.currentY += isHeading ? 6 : 4;
     }
 
-    this.drawFooter(doc, pageNum);
+    this.drawFooter(doc, pageNum, footerConfig);
     return doc;
   }
 
@@ -254,13 +329,14 @@ class PDFService {
    * @param {string} [templateContent] - Contenido de plantilla opcional
    * @param {Object} [templateData] - Datos de reemplazo para la plantilla
    */
-  generateActaAsamblea(organization, templateContent, templateData) {
+  generateActaAsamblea(organization, templateContent, templateData, config = {}) {
     // If a template is provided, use the template engine
     if (templateContent && templateData) {
       return this.generateFromTemplate(
         templateContent,
         templateData,
-        'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA'
+        'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA',
+        config
       );
     }
 
@@ -500,13 +576,14 @@ class PDFService {
    * @param {string} [templateContent] - Contenido de plantilla opcional
    * @param {Object} [templateData] - Datos de reemplazo para la plantilla
    */
-  generateListaSocios(organization, templateContent, templateData) {
+  generateListaSocios(organization, templateContent, templateData, config = {}) {
     // If a template is provided, use the template engine
     if (templateContent && templateData) {
       return this.generateFromTemplate(
         templateContent,
         templateData,
-        'LISTA DE SOCIOS FUNDADORES'
+        'LISTA DE SOCIOS FUNDADORES',
+        config
       );
     }
 

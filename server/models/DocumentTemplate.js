@@ -50,6 +50,16 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'UBICACION_ASAMBLEA', label: 'Ubicación asamblea', description: 'Dirección donde se realiza la asamblea' },
 ];
 
+const headerFooterSchema = new mongoose.Schema({
+  imageS3Key: { type: String, default: null },
+  imageMimeType: { type: String, default: null },
+  text: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  height: { type: Number, default: 40 },
+  showColorBar: { type: Boolean, default: true },
+  backgroundColor: { type: String, default: null },
+}, { _id: false });
+
 const placeholderSchema = new mongoose.Schema({
   key: { type: String, required: true },
   label: { type: String, required: true },
@@ -92,7 +102,9 @@ const documentTemplateSchema = new mongoose.Schema({
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }
+  },
+  headerConfig: { type: headerFooterSchema, default: () => ({}) },
+  footerConfig: { type: headerFooterSchema, default: () => ({}) }
 }, {
   timestamps: true
 });

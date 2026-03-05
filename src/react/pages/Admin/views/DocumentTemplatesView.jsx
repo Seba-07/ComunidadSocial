@@ -1,7 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+
+async function compressImage(file, maxWidth = 800, quality = 0.85) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 const DOCUMENT_TYPES = [
   { key: 'all', label: 'Todas' },
@@ -68,7 +84,10 @@ export default function DocumentTemplatesView() {
   const [saving, setSaving] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [placeholders, setPlaceholders] = useState([]);
+  const [uploading, setUploading] = useState(null); // 'header' | 'footer' | null
   const contentRef = useRef(null);
+  const headerFileRef = useRef(null);
+  const footerFileRef = useRef(null);
 
   async function loadTemplates() {
     setIsLoading(true);
@@ -174,6 +193,44 @@ export default function DocumentTemplatesView() {
     }, 0);
   }
 
+  const uploadImage = useCallback(async (tipo, file) => {
+    if (!selected?._id || !file) {
+      addToast('Guarda la plantilla primero antes de subir imágenes', 'error');
+      return;
+    }
+    setUploading(tipo);
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append('image', compressed, file.name);
+      formData.append('tipo', tipo);
+      const resp = await fetch(`${apiService.baseUrl || '/api'}/document-templates/${selected._id}/upload-image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('currentUser') || '{}').token}` },
+        body: formData,
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Error al subir imagen');
+      setSelected(data.template);
+      addToast(`Imagen de ${tipo} subida`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setUploading(null);
+    }
+  }, [selected?._id, addToast]);
+
+  const deleteImage = useCallback(async (tipo) => {
+    if (!selected?._id) return;
+    try {
+      const data = await apiService.delete(`/document-templates/${selected._id}/image/${tipo}`);
+      setSelected(data.template);
+      addToast(`Imagen de ${tipo} eliminada`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  }, [selected?._id, addToast]);
+
   const filtered = templates.filter(t => filterType === 'all' || t.documentType === filterType);
 
   // ============================================
@@ -183,6 +240,7 @@ export default function DocumentTemplatesView() {
     const tabs = [
       { key: 'general', label: 'General' },
       { key: 'contenido', label: 'Contenido' },
+      { key: 'diseno', label: 'Diseño' },
       { key: 'preview', label: 'Vista Previa' },
     ];
 
@@ -306,6 +364,197 @@ export default function DocumentTemplatesView() {
                       </span>
                     </button>
                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Diseño */}
+        {editTab === 'diseno' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {!selected._id && (
+              <div style={{ padding: 16, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 10, fontSize: 13, color: '#92400e' }}>
+                Guarda la plantilla primero para poder subir imágenes.
+              </div>
+            )}
+
+            {/* Header Section */}
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Encabezado (Header)</h3>
+
+              {/* Image upload */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Imagen de encabezado</label>
+                {selected.headerConfig?.imageUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <img src={selected.headerConfig.imageUrl} alt="Header" style={{ maxWidth: 400, maxHeight: 100, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                    <button onClick={() => deleteImage('header')} style={{ ...btnSmallOutline, color: '#ef4444', borderColor: '#fecaca' }}>Eliminar</button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => selected._id && headerFileRef.current?.click()}
+                    style={{
+                      border: '2px dashed #d1d5db', borderRadius: 10, padding: 24, textAlign: 'center',
+                      cursor: selected._id ? 'pointer' : 'not-allowed', background: '#f9fafb',
+                      color: '#9ca3af', fontSize: 13, marginBottom: 10,
+                    }}
+                  >
+                    {uploading === 'header' ? 'Subiendo...' : 'Click para subir imagen de encabezado (JPG, PNG, WebP, max 2MB)'}
+                  </div>
+                )}
+                <input ref={headerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden
+                  onChange={e => { if (e.target.files[0]) uploadImage('header', e.target.files[0]); e.target.value = ''; }} />
+              </div>
+
+              {/* Text fields */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Texto principal</label>
+                <input type="text" style={inputStyle}
+                  value={selected.headerConfig?.text || ''}
+                  onChange={e => setSelected(s => ({ ...s, headerConfig: { ...s.headerConfig, text: e.target.value } }))}
+                  placeholder="REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA"
+                />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Subtítulo</label>
+                <input type="text" style={inputStyle}
+                  value={selected.headerConfig?.subtitle || ''}
+                  onChange={e => setSelected(s => ({ ...s, headerConfig: { ...s.headerConfig, subtitle: e.target.value } }))}
+                  placeholder="SECRETARÍA MUNICIPAL"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div>
+                  <label style={labelStyle}>Altura (mm)</label>
+                  <input type="number" min={20} max={80} style={{ ...inputStyle, width: 80 }}
+                    value={selected.headerConfig?.height || 40}
+                    onChange={e => setSelected(s => ({ ...s, headerConfig: { ...s.headerConfig, height: Number(e.target.value) } }))}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+                  <input type="checkbox" id="headerColorBar"
+                    checked={selected.headerConfig?.showColorBar !== false}
+                    onChange={e => setSelected(s => ({ ...s, headerConfig: { ...s.headerConfig, showColorBar: e.target.checked } }))}
+                  />
+                  <label htmlFor="headerColorBar" style={{ fontSize: 13, color: '#334155' }}>Mostrar barra de colores</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Section */}
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Pie de página (Footer)</h3>
+
+              {/* Image upload */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Imagen de pie de página</label>
+                {selected.footerConfig?.imageUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ maxWidth: 400, maxHeight: 100, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                    <button onClick={() => deleteImage('footer')} style={{ ...btnSmallOutline, color: '#ef4444', borderColor: '#fecaca' }}>Eliminar</button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => selected._id && footerFileRef.current?.click()}
+                    style={{
+                      border: '2px dashed #d1d5db', borderRadius: 10, padding: 24, textAlign: 'center',
+                      cursor: selected._id ? 'pointer' : 'not-allowed', background: '#f9fafb',
+                      color: '#9ca3af', fontSize: 13, marginBottom: 10,
+                    }}
+                  >
+                    {uploading === 'footer' ? 'Subiendo...' : 'Click para subir imagen de pie de página (JPG, PNG, WebP, max 2MB)'}
+                  </div>
+                )}
+                <input ref={footerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden
+                  onChange={e => { if (e.target.files[0]) uploadImage('footer', e.target.files[0]); e.target.value = ''; }} />
+              </div>
+
+              {/* Text fields */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Texto principal</label>
+                <input type="text" style={inputStyle}
+                  value={selected.footerConfig?.text || ''}
+                  onChange={e => setSelected(s => ({ ...s, footerConfig: { ...s.footerConfig, text: e.target.value } }))}
+                  placeholder="Blanco Encalada 1335, Renca"
+                />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Subtítulo</label>
+                <input type="text" style={inputStyle}
+                  value={selected.footerConfig?.subtitle || ''}
+                  onChange={e => setSelected(s => ({ ...s, footerConfig: { ...s.footerConfig, subtitle: e.target.value } }))}
+                  placeholder="+562 2685 6600"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div>
+                  <label style={labelStyle}>Altura (mm)</label>
+                  <input type="number" min={15} max={60} style={{ ...inputStyle, width: 80 }}
+                    value={selected.footerConfig?.height || 30}
+                    onChange={e => setSelected(s => ({ ...s, footerConfig: { ...s.footerConfig, height: Number(e.target.value) } }))}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
+                  <input type="checkbox" id="footerColorBar"
+                    checked={selected.footerConfig?.showColorBar !== false}
+                    onChange={e => setSelected(s => ({ ...s, footerConfig: { ...s.footerConfig, showColorBar: e.target.checked } }))}
+                  />
+                  <label htmlFor="footerColorBar" style={{ fontSize: 13, color: '#334155' }}>Mostrar barra de colores</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Mini Preview */}
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Vista previa del diseño</h3>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden', background: '#fff', maxWidth: 420 }}>
+                {/* Header preview */}
+                <div style={{ minHeight: 50, background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+                  {selected.headerConfig?.imageUrl ? (
+                    <img src={selected.headerConfig.imageUrl} alt="Header" style={{ maxWidth: '100%', maxHeight: 60 }} />
+                  ) : (
+                    <>
+                      {selected.headerConfig?.showColorBar !== false && (
+                        <div style={{ display: 'flex', width: '100%', height: 6 }}>
+                          {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                            <div key={c} style={{ flex: 1, background: c }} />
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', marginTop: 4 }}>
+                        {selected.headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA'}
+                      </div>
+                      <div style={{ fontSize: 8, color: '#64748b' }}>
+                        {selected.headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL'}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {/* Body placeholder */}
+                <div style={{ padding: '16px 12px', minHeight: 80 }}>
+                  <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, marginBottom: 6, width: '80%' }} />
+                  <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, marginBottom: 6, width: '60%' }} />
+                  <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, width: '90%' }} />
+                </div>
+                {/* Footer preview */}
+                <div style={{ minHeight: 30, background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 6 }}>
+                  {selected.footerConfig?.imageUrl ? (
+                    <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ maxWidth: '100%', maxHeight: 40 }} />
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 8, color: '#64748b' }}>
+                        {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'} | {selected.footerConfig?.subtitle || '+562 2685 6600'}
+                      </div>
+                      {selected.footerConfig?.showColorBar !== false && (
+                        <div style={{ display: 'flex', width: '100%', height: 6, marginTop: 4 }}>
+                          {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                            <div key={c} style={{ flex: 1, background: c }} />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

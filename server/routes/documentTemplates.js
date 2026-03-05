@@ -3,10 +3,30 @@
  */
 
 import express from 'express';
+import multer from 'multer';
 import DocumentTemplate, { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, AVAILABLE_PLACEHOLDERS } from '../models/DocumentTemplate.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import * as storageService from '../services/storageService.js';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
+  limits: { fileSize: 2 * 1024 * 1024 }
+});
 
 const router = express.Router();
+
+/** Resolve presigned S3 URLs for header/footer images */
+async function resolveImageUrls(templateObj) {
+  const obj = typeof templateObj.toObject === 'function' ? templateObj.toObject() : { ...templateObj };
+  if (obj.headerConfig?.imageS3Key) {
+    obj.headerConfig.imageUrl = await storageService.getDocumentUrl({ s3Key: obj.headerConfig.imageS3Key });
+  }
+  if (obj.footerConfig?.imageS3Key) {
+    obj.footerConfig.imageUrl = await storageService.getDocumentUrl({ s3Key: obj.footerConfig.imageS3Key });
+  }
+  return obj;
+}
 
 // ============================================
 // RUTAS PÚBLICAS (para wizard)
@@ -51,7 +71,8 @@ router.get('/public/:id', async (req, res) => {
     if (!template) {
       return res.status(404).json({ error: 'Plantilla no encontrada' });
     }
-    res.json({ template });
+    const resolved = await resolveImageUrls(template);
+    res.json({ template: resolved });
   } catch (error) {
     console.error('Error fetching template:', error);
     res.status(500).json({ error: 'Error al obtener plantilla' });
@@ -85,7 +106,8 @@ router.get('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (!template) {
       return res.status(404).json({ error: 'Plantilla no encontrada' });
     }
-    res.json({ template });
+    const resolved = await resolveImageUrls(template);
+    res.json({ template: resolved });
   } catch (error) {
     console.error('Error fetching template:', error);
     res.status(500).json({ error: 'Error al obtener plantilla' });
@@ -128,7 +150,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
  */
 router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { name, documentType, content, isDefault, activo } = req.body;
+    const { name, documentType, content, isDefault, activo, headerConfig, footerConfig } = req.body;
 
     const template = await DocumentTemplate.findById(req.params.id);
     if (!template) {
@@ -145,6 +167,15 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (content !== undefined) template.content = content;
     if (isDefault !== undefined) template.isDefault = isDefault;
     if (activo !== undefined) template.activo = activo;
+    // Update header/footer config (text fields only, images via upload endpoint)
+    if (headerConfig) {
+      const { imageS3Key, imageMimeType, imageUrl, ...textFields } = headerConfig;
+      Object.assign(template.headerConfig, textFields);
+    }
+    if (footerConfig) {
+      const { imageS3Key, imageMimeType, imageUrl, ...textFields } = footerConfig;
+      Object.assign(template.footerConfig, textFields);
+    }
     template.updatedBy = req.user._id;
 
     await template.save();
@@ -186,12 +217,19 @@ router.post('/:id/duplicate', authenticate, requireRole('MUNICIPALIDAD'), async 
       return res.status(404).json({ error: 'Plantilla no encontrada' });
     }
 
+    const dupHeader = original.headerConfig?.toObject?.() || {};
+    const dupFooter = original.footerConfig?.toObject?.() || {};
+    delete dupHeader.imageS3Key; delete dupHeader.imageMimeType;
+    delete dupFooter.imageS3Key; delete dupFooter.imageMimeType;
+
     const duplicate = new DocumentTemplate({
       name: `${original.name} (copia)`,
       documentType: original.documentType,
       content: original.content,
       placeholders: original.placeholders,
       isDefault: false,
+      headerConfig: dupHeader,
+      footerConfig: dupFooter,
       createdBy: req.user._id,
       updatedBy: req.user._id
     });
@@ -201,6 +239,84 @@ router.post('/:id/duplicate', authenticate, requireRole('MUNICIPALIDAD'), async 
   } catch (error) {
     console.error('Error duplicating template:', error);
     res.status(500).json({ error: 'Error al duplicar plantilla' });
+  }
+});
+
+/**
+ * POST /:id/upload-image - Subir imagen header o footer
+ */
+router.post('/:id/upload-image', authenticate, requireRole('MUNICIPALIDAD'), upload.single('image'), async (req, res) => {
+  try {
+    const { tipo } = req.body;
+    if (!['header', 'footer'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo debe ser "header" o "footer"' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se recibió imagen' });
+    }
+
+    const template = await DocumentTemplate.findById(req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: 'Plantilla no encontrada' });
+    }
+
+    const configKey = tipo === 'header' ? 'headerConfig' : 'footerConfig';
+
+    // Delete previous image if exists
+    if (template[configKey]?.imageS3Key) {
+      await storageService.deleteDocument({ s3Key: template[configKey].imageS3Key });
+    }
+
+    // Upload new image to S3
+    const result = await storageService.storeFile(req.file.buffer, req.file.mimetype, {
+      organizationId: 'templates',
+      type: `doc-template-${tipo}`,
+      fileName: req.file.originalname
+    });
+
+    template[configKey].imageS3Key = result.s3Key || null;
+    template[configKey].imageMimeType = req.file.mimetype;
+    template.updatedBy = req.user._id;
+    await template.save();
+
+    const resolved = await resolveImageUrls(template);
+    res.json({ template: resolved, message: `Imagen de ${tipo} subida exitosamente` });
+  } catch (error) {
+    console.error('Error uploading template image:', error);
+    res.status(500).json({ error: 'Error al subir imagen' });
+  }
+});
+
+/**
+ * DELETE /:id/image/:tipo - Eliminar imagen header o footer
+ */
+router.delete('/:id/image/:tipo', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const { tipo } = req.params;
+    if (!['header', 'footer'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo debe ser "header" o "footer"' });
+    }
+
+    const template = await DocumentTemplate.findById(req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: 'Plantilla no encontrada' });
+    }
+
+    const configKey = tipo === 'header' ? 'headerConfig' : 'footerConfig';
+
+    if (template[configKey]?.imageS3Key) {
+      await storageService.deleteDocument({ s3Key: template[configKey].imageS3Key });
+    }
+
+    template[configKey].imageS3Key = null;
+    template[configKey].imageMimeType = null;
+    template.updatedBy = req.user._id;
+    await template.save();
+
+    res.json({ template, message: `Imagen de ${tipo} eliminada` });
+  } catch (error) {
+    console.error('Error deleting template image:', error);
+    res.status(500).json({ error: 'Error al eliminar imagen' });
   }
 });
 

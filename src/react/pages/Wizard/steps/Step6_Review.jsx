@@ -18,7 +18,7 @@ export default function Step6_Review({ onNext, onPrev }) {
   const certs = formData.certificates || {};
   const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
 
-  // Load assigned document templates
+  // Load assigned document templates (content + header/footer config)
   useEffect(() => {
     async function loadDocTemplates() {
       const ids = {
@@ -32,7 +32,13 @@ export default function Step6_Review({ onNext, onPrev }) {
         if (id) {
           try {
             const data = await apiService.getDocumentTemplatePublic(id);
-            if (data.template?.content) loaded[key] = data.template.content;
+            if (data.template?.content) {
+              loaded[key] = {
+                content: data.template.content,
+                headerConfig: data.template.headerConfig || null,
+                footerConfig: data.template.footerConfig || null,
+              };
+            }
           } catch { /* ignore, will use hardcoded fallback */ }
         }
       }
@@ -81,7 +87,7 @@ export default function Step6_Review({ onNext, onPrev }) {
     };
   }
 
-  function previewDocument(type) {
+  async function previewDocument(type) {
     try {
       const orgData = {
         organization: org,
@@ -92,13 +98,20 @@ export default function Step6_Review({ onNext, onPrev }) {
         comisionElectoral: comision,
       };
       let doc;
-      const templateContent = docTemplates[type] || null;
+      const tmpl = docTemplates[type] || null;
+      const templateContent = tmpl?.content || null;
       const templateData = templateContent ? buildTemplateData() : null;
 
+      // Prefetch header/footer images if template has them
+      let config = {};
+      if (tmpl?.headerConfig || tmpl?.footerConfig) {
+        config = await pdfService.prefetchConfigImages(tmpl.headerConfig, tmpl.footerConfig);
+      }
+
       if (type === 'acta') {
-        doc = pdfService.generateActaAsamblea(orgData, templateContent, templateData);
+        doc = pdfService.generateActaAsamblea(orgData, templateContent, templateData, config);
       } else if (type === 'socios') {
-        doc = pdfService.generateListaSocios(orgData, templateContent, templateData);
+        doc = pdfService.generateListaSocios(orgData, templateContent, templateData, config);
       } else if (type === 'declaraciones') {
         const docs = pdfService.generateAllDeclaracionesJuradas(orgData);
         if (docs.length > 0) doc = docs[0].doc;
