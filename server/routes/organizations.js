@@ -17,6 +17,7 @@ import * as assemblyService from '../services/assemblyService.js';
 import Consent from '../models/Consent.js';
 import { maskOrganizationPii, maskPiiFields } from '../middleware/dataMasking.js';
 import AuditLog from '../models/AuditLog.js';
+import EstatutoTemplate from '../models/EstatutoTemplate.js';
 
 const router = express.Router();
 
@@ -465,6 +466,25 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
       return res.status(403).json({ error: 'No tienes permisos para ver esta organización' });
     }
 
+    // Backfill estatutosSnapshot if missing (orgs created before snapshot was saved)
+    if (!organization.estatutosSnapshot?.articulos?.length && organization.organizationType) {
+      try {
+        const template = await EstatutoTemplate.findOne({
+          tipoOrganizacion: organization.organizationType,
+          activo: true,
+          publicado: true
+        });
+        if (template) {
+          const snapshot = template.obtenerSnapshot();
+          organization.estatutosSnapshot = snapshot;
+          // Persist so we don't have to look it up every time
+          await Organization.updateOne({ _id: organization._id }, { $set: { estatutosSnapshot: snapshot } });
+        }
+      } catch (e) {
+        logger.warn('Backfill estatutosSnapshot failed:', e.message);
+      }
+    }
+
     // Mask PII for members (non-admin, non-owner)
     if (!isAdmin && !isOwner) {
       const masked = maskOrganizationPii(organization);
@@ -660,6 +680,25 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
         orgData.certificatesStep5 = certsMeta;
         logger.debug('CREATE ORG - certificatesStep5 metadata:', certsMeta.length, 'certificados');
       }
+    }
+
+    // Fetch and save estatutos snapshot from template
+    try {
+      const template = await EstatutoTemplate.findOne({
+        tipoOrganizacion: organizationType,
+        activo: true,
+        publicado: true
+      });
+      if (template) {
+        orgData.estatutosSnapshot = template.obtenerSnapshot();
+        logger.debug('CREATE ORG - estatutosSnapshot guardado:', orgData.estatutosSnapshot.articulos?.length, 'artículos');
+      } else {
+        const defaultConfig = EstatutoTemplate.getDefaultConfig(organizationType);
+        orgData.estatutosSnapshot = { ...defaultConfig, templateId: null, version: 0, fechaSnapshot: new Date() };
+        logger.debug('CREATE ORG - estatutosSnapshot default guardado');
+      }
+    } catch (snapshotErr) {
+      logger.warn('CREATE ORG - No se pudo obtener snapshot de estatutos:', snapshotErr.message);
     }
 
     const organization = new Organization(orgData);
