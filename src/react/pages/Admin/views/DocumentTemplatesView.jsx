@@ -561,25 +561,83 @@ export default function DocumentTemplatesView() {
           </div>
         )}
 
-        {/* Tab: Vista Previa */}
+        {/* Tab: Vista Previa — simula documento final con header + contenido + footer */}
         {editTab === 'preview' && (
           <div style={cardStyle}>
             <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12, padding: '8px 12px', background: '#eff6ff', borderRadius: 8 }}>
-              Vista previa con datos de ejemplo. Los placeholders sin datos se muestran en su forma original.
+              Vista previa del documento final con datos de ejemplo. Así se verá el PDF generado.
             </div>
             <div style={{
-              whiteSpace: 'pre-wrap',
-              fontFamily: 'serif',
-              fontSize: 14,
-              lineHeight: 1.8,
-              color: '#1e293b',
-              padding: 20,
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
+              border: '1px solid #cbd5e1',
+              borderRadius: 4,
               background: '#fff',
-              minHeight: 400,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              maxWidth: 620,
+              margin: '0 auto',
+              overflow: 'hidden',
             }}>
-              {replacePlaceholders(selected.content, SAMPLE_DATA) || '(Sin contenido)'}
+              {/* === HEADER === */}
+              <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                {selected.headerConfig?.imageUrl ? (
+                  <img src={selected.headerConfig.imageUrl} alt="Header" style={{ width: '100%', display: 'block' }} />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '12px 20px' }}>
+                    {selected.headerConfig?.showColorBar !== false && (
+                      <div style={{ display: 'flex', height: 8, marginBottom: 10 }}>
+                        {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                          <div key={c} style={{ flex: 1, background: c }} />
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0891b2', letterSpacing: 0.5 }}>
+                      {selected.headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA'}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
+                      {selected.headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL'}
+                    </div>
+                  </div>
+                )}
+                {/* Document title */}
+                <div style={{ textAlign: 'center', padding: '8px 20px 12px', fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: 0.3 }}>
+                  {TYPE_LABELS[selected.documentType] || 'DOCUMENTO'}
+                </div>
+              </div>
+
+              {/* === CONTENT === */}
+              <div style={{
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'serif',
+                fontSize: 13,
+                lineHeight: 1.8,
+                color: '#1e293b',
+                padding: '20px 28px',
+                minHeight: 300,
+              }}>
+                {replacePlaceholders(selected.content, SAMPLE_DATA) || '(Sin contenido)'}
+              </div>
+
+              {/* === FOOTER === */}
+              <div style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                {selected.footerConfig?.imageUrl ? (
+                  <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ width: '100%', display: 'block' }} />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '8px 20px' }}>
+                    <div style={{ fontSize: 9, color: '#64748b', marginBottom: 4 }}>
+                      {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'}
+                      {' | '}
+                      {selected.footerConfig?.subtitle || '+562 2685 6600'}
+                      {!selected.footerConfig?.text && ' | www.renca.cl'}
+                    </div>
+                    {selected.footerConfig?.showColorBar !== false && (
+                      <div style={{ display: 'flex', height: 8, marginTop: 4 }}>
+                        {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                          <div key={c} style={{ flex: 1, background: c }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
