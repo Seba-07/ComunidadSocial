@@ -70,6 +70,101 @@ const SAMPLE_DATA = {
   UBICACION_ASAMBLEA: 'Blanco Encalada 1335, Renca',
 };
 
+const DEFAULT_CONTENT = {
+  acta_constitutiva: `ACTA DE ASAMBLEA GENERAL CONSTITUTIVA DE ESTATUTO
+Y ELECCIÓN DE DIRECTIVA PROVISIONAL
+
+TIPO DE ORGANIZACIÓN: {{TIPO_ORG}}
+NOMBRE INSTITUCIÓN: {{NOMBRE_ORG}}
+
+ACTA DE ASAMBLEA
+
+En {{COMUNA}}, a {{FECHA_ASAMBLEA}}, siendo las {{HORA_ASAMBLEA}} horas, en el local ubicado en {{UBICACION_ASAMBLEA}}, ante la presencia del funcionario municipal Sr. (a) {{MINISTRO_FE}} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
+
+Antes de iniciar la sesión, se verificó que existen a lo menos {{TOTAL_SOCIOS}} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a) Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñarán los cargos de Secretario y Tesorero.
+
+También, se procedió a elegir a las tres (3) personas que integrarán la Comisión Electoral.
+
+Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes socios:
+
+DIRECTIVA PROVISIONAL
+PRESIDENTE (A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
+SECRETARIO (A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
+TESORERO (A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
+{{DIRECTORES}}
+
+COMISIÓN ELECTORAL
+{{COMISION_ELECTORAL}}
+
+La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) {{PRESIDENTE}} Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: {{DIRECCION}}
+
+Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.`,
+
+  lista_socios: `LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN
+
+NOMBRE ORGANIZACIÓN: {{NOMBRE_ORG}}
+TIPO DE ORGANIZACIÓN: {{TIPO_ORG}}
+COMUNA: {{COMUNA}}
+UNIDAD VECINAL: {{UNIDAD_VECINAL}}
+
+SOCIOS FUNDADORES ({{TOTAL_SOCIOS}} miembros):
+
+{{LISTA_SOCIOS}}
+
+FECHA CONSTITUCIÓN: {{FECHA_ASAMBLEA}}
+NOMBRE DE LA ORGANIZACIÓN: {{NOMBRE_ORG}}
+
+Los socios arriba individualizados declaran cumplir con los requisitos establecidos en la Ley Nº 19.418 para integrar una Organización Comunitaria, y suscriben el presente listado en la Asamblea General Constitutiva celebrada en {{UBICACION_ASAMBLEA}}, ante la presencia del Ministro de Fe Sr. (a) {{MINISTRO_FE}}.`,
+
+  nomina_directorio: `CERTIFICACIÓN
+
+En {{COMUNA}}, a {{FECHA_HOY}}, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización Denominada {{NOMBRE_ORG}} de la Unidad Vecinal Nº {{UNIDAD_VECINAL}} depositó en esta Secretaría Municipal, copia autorizada del Acta de Asamblea Constitutiva.
+
+La citada Asamblea Constitutiva se efectuó el día {{FECHA_ASAMBLEA}} ante el Ministro de Fe Don (ña) {{MINISTRO_FE}} Funcionario (a) municipal, en el local ubicado en {{UBICACION_ASAMBLEA}}.
+
+En dicha sesión, se aprobaron los Estatutos de la Organización y fueron elegidos como integrantes de la Directiva Provisoria y Comisión Electoral, los siguientes socios:
+
+DIRECTIVA PROVISORIA
+PRESIDENTE (A): {{PRESIDENTE}} — C.I. Nº {{RUT_PRESIDENTE}}
+SECRETARIO (A): {{SECRETARIO}} — C.I. Nº {{RUT_SECRETARIO}}
+TESORERO (A): {{TESORERO}} — C.I. Nº {{RUT_TESORERO}}
+{{DIRECTORES}}
+
+COMISIÓN ELECTORAL
+{{COMISION_ELECTORAL}}
+
+Dicha Organización gozará de Personalidad Jurídica conforme a la Ley Nº 19.418 de 1995, a contar de la fecha del depósito del Acta de Asamblea Constitutiva, la cual fue depositada en la Secretaría Municipal por Don (ña) {{PRESIDENTE}} presidenta (e) de la organización y Don (ña) {{MINISTRO_FE}} en su calidad de Ministro de Fe, con domicilio en Blanco Encalada Nº 1335.
+
+Se entrega este certificado al (a la) Presidente (a) de la Organización para todos los efectos legales derivados de la Ley Nº 19.418. En ausencia del Titular, en el acto de retiro, envíese la presente certificación, por cédula al domicilio fijado por el (la) Presidente (a), en la Asamblea Constitutiva.`,
+
+  carta_solicitud: `DEPÓSITO DE ANTECEDENTES
+
+TIPO DE ORGANIZACIÓN: {{TIPO_ORG}}
+NOMBRE DE LA ORGANIZACIÓN: {{NOMBRE_ORG}}
+UNIDAD VECINAL: {{UNIDAD_VECINAL}}
+
+En {{COMUNA}}, a {{FECHA_HOY}} de conformidad a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995, procedo a inscribir en el presente Libro de Registro a la Organización Comunitaria antes señalada.
+
+Los documentos relativos al Acta de Constitución, Aprobación de Estatutos, Listado de Socios, Asistentes y Elección de Directorio Provisional, se encuentran archivados en Carpeta Digital en el Departamento de Registro y Certificación.
+
+DATOS DE LA ORGANIZACIÓN:
+Dirección: {{DIRECCION}}
+Comuna: {{COMUNA}}, Región {{REGION}}
+Email: {{EMAIL}}
+Teléfono: {{TELEFONO}}
+
+DIRECTIVA PROVISIONAL:
+PRESIDENTE (A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
+SECRETARIO (A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
+TESORERO (A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
+{{DIRECTORES}}
+
+Duración del mandato: {{DURACION_MANDATO}} año(s)
+
+Objetivos:
+{{OBJETIVOS}}`,
+};
+
 function replacePlaceholders(content, data) {
   if (!content) return '';
   return content.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || `{{${key}}}`);
@@ -123,10 +218,21 @@ export default function DocumentTemplatesView() {
       _id: null,
       name: '',
       documentType: 'acta_constitutiva',
-      content: '',
+      content: DEFAULT_CONTENT['acta_constitutiva'] || '',
       isDefault: false
     });
     setEditTab('general');
+  }
+
+  function changeDocumentType(newType) {
+    setSelected(s => {
+      const hasCustomContent = s.content && s.content.trim() !== '' && !Object.values(DEFAULT_CONTENT).includes(s.content);
+      return {
+        ...s,
+        documentType: newType,
+        content: hasCustomContent ? s.content : (DEFAULT_CONTENT[newType] || '')
+      };
+    });
   }
 
   async function handleSave() {
@@ -294,7 +400,7 @@ export default function DocumentTemplatesView() {
               <label style={labelStyle}>Tipo de documento</label>
               <select
                 value={selected.documentType || 'acta_constitutiva'}
-                onChange={e => setSelected(s => ({ ...s, documentType: e.target.value }))}
+                onChange={e => changeDocumentType(e.target.value)}
                 style={inputStyle}
               >
                 {DOCUMENT_TYPES.filter(t => t.key !== 'all').map(t => (
