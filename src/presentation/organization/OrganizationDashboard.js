@@ -5690,7 +5690,7 @@ ${comm.message || 'Sin contenido'}
       const response = await fetch(`${baseUrl}/org-documents/${orgId}/${docId}/download`, {
         method: 'GET',
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
       });
 
       if (!response.ok) throw new Error('Error al obtener documento');

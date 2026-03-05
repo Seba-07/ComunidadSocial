@@ -19,7 +19,8 @@ describe('Auth API', () => {
       expect(res.status).toBe(201);
       expect(res.body.user.email).toBe('juan@test.com');
       expect(res.body.user.role).toBe('ORGANIZADOR');
-      // Token is now sent exclusively via HttpOnly cookie, not in response body
+      // Token sent in body (fallback) + HttpOnly cookie (primary)
+      expect(res.body.token).toBeDefined();
       expect(res.headers['set-cookie']).toBeDefined();
     });
 
@@ -68,7 +69,7 @@ describe('Auth API', () => {
         password: 'TestPass1'
       });
       expect(res.status).toBe(200);
-      // Token is now sent exclusively via HttpOnly cookie, not in response body
+      expect(res.body.token).toBeDefined();
       expect(res.headers['set-cookie']).toBeDefined();
       expect(res.body.user.email).toBe('login@test.com');
     });

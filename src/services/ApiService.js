@@ -29,6 +29,7 @@ console.log('🔗 API URL:', API_URL);
 class ApiService {
   constructor() {
     this.baseUrl = API_URL;
+    this._authToken = null; // In-memory token (fallback when cookies don't work)
     this._offlineListenersSetup = false;
     this._setupOfflineListeners();
   }
@@ -168,10 +169,15 @@ class ApiService {
    * X-Requested-With para protección CSRF.
    */
   getHeaders() {
-    return {
+    const headers = {
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     };
+    // Fallback: Authorization header when cookies don't work (cross-origin Vercel→Railway)
+    if (this._authToken) {
+      headers['Authorization'] = `Bearer ${this._authToken}`;
+    }
+    return headers;
   }
 
   /**
@@ -317,11 +323,12 @@ class ApiService {
       const url = `${this.baseUrl}/auth/refresh`;
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) return false;
-      if (!response.ok) return false;
+      const data = await response.json();
+      if (data.token) this._authToken = data.token;
       return true;
     } catch {
       return false;
@@ -337,8 +344,8 @@ class ApiService {
    */
   async login(email, password) {
     const data = await this.post('/auth/login', { email, password });
-    // Auth token se maneja exclusivamente via HttpOnly cookies
-    // Guardar datos de usuario para UI (sin información sensible)
+    // Store token in memory as fallback (for when cookies don't work cross-origin)
+    if (data.token) this._authToken = data.token;
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
@@ -365,6 +372,7 @@ class ApiService {
    */
   async register(userData) {
     const data = await this.post('/auth/register', userData);
+    if (data.token) this._authToken = data.token;
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
@@ -404,6 +412,8 @@ class ApiService {
     } catch (error) {
       console.warn('Logout endpoint error:', error);
     }
+    // Clear in-memory token
+    this._authToken = null;
     // Limpiar TODOS los datos de sesión de localStorage
     const keysToRemove = [
       'auth_token',           // Legacy - ya no debería existir
@@ -559,6 +569,7 @@ class ApiService {
    */
   async loginMinistro(email, password) {
     const data = await this.post('/ministros/login', { email, password });
+    if (data.token) this._authToken = data.token;
     if (data.ministro) {
       const safeMinistro = {
         _id: data.ministro._id,
@@ -693,6 +704,7 @@ class ApiService {
 
   async loginSocio(lastName, rut) {
     const data = await this.post('/auth/login-socio', { lastName, rut });
+    if (data.token) this._authToken = data.token;
     if (data.user) {
       const safeUser = {
         _id: data.user._id,

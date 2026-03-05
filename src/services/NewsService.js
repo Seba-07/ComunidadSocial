@@ -126,10 +126,13 @@ class NewsService {
 
       const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
 
+      const newsHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+      if (apiService._authToken) newsHeaders['Authorization'] = `Bearer ${apiService._authToken}`;
+
       const response = await fetch(`${baseUrl}/news/upload-image`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: newsHeaders,
         body: formData
       });
 

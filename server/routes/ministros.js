@@ -247,6 +247,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
+      token,
       ministro: {
         _id: ministro._id,
         firstName: ministro.firstName,

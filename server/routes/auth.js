@@ -84,6 +84,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -147,6 +148,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 
     res.json({
       message: 'Inicio de sesión exitoso',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -206,7 +208,7 @@ router.post('/refresh', async (req, res) => {
     res.cookie('auth_token', newToken, COOKIE_OPTIONS);
     res.cookie('refresh_token', newRefreshToken, REFRESH_COOKIE_OPTIONS);
 
-    res.json({ message: 'Token renovado' });
+    res.json({ message: 'Token renovado', token: newToken });
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Refresh token expirado. Inicie sesión nuevamente.' });
@@ -437,6 +439,7 @@ router.post('/login-socio', authLimiter, validate(loginSocioSchema), async (req,
 
     res.json({
       message: 'Inicio de sesión exitoso',
+      token,
       user: {
         _id: user._id,
         rut: user.rut,

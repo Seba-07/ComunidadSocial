@@ -45,10 +45,13 @@ class OrgDocumentService {
 
     const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
 
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (apiService._authToken) headers['Authorization'] = `Bearer ${apiService._authToken}`;
+
     const response = await fetch(`${baseUrl}/org-documents/${orgId}/upload`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      headers,
       body: formData
     });
 
@@ -71,10 +74,13 @@ class OrgDocumentService {
     const url = `${baseUrl}/org-documents/${orgId}/${docId}/download`;
 
     try {
+      const dlHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+      if (apiService._authToken) dlHeaders['Authorization'] = `Bearer ${apiService._authToken}`;
+
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: dlHeaders
       });
 
       if (!response.ok) {

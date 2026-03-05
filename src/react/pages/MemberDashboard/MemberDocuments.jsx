@@ -93,7 +93,7 @@ function DocRow({ name, category, size, date, docId, orgId, canDownload }) {
     try {
       const response = await fetch(`${apiService.baseUrl}/org-documents/${orgId}/${docId}/download`, {
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
       });
       if (!response.ok) throw new Error('Error al descargar');
       const blob = await response.blob();

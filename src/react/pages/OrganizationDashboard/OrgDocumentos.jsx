@@ -77,7 +77,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
     try {
       const response = await fetch(`${apiService.baseUrl}/org-documents/${org._id}/${docId}/download`, {
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
       });
       if (!response.ok) throw new Error('Error al descargar');
       const blob = await response.blob();
@@ -328,7 +328,7 @@ function UploadModal({ open, onClose, orgId, onUploaded, addToast }) {
         method: 'POST',
         body: formData,
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
       }).then((r) => { if (!r.ok) throw new Error('Error al subir'); return r.json(); });
 
       addToast('Documento subido exitosamente', 'success');

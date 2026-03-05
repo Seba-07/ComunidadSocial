@@ -66,10 +66,13 @@ class LibraryDocumentService {
       // Usar fetch directamente para FormData
       const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
 
+      const libHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+      if (apiService._authToken) libHeaders['Authorization'] = `Bearer ${apiService._authToken}`;
+
       const response = await fetch(`${baseUrl}/library-documents`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: libHeaders,
         body: formData
       });
 
