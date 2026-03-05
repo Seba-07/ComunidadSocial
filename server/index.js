@@ -32,6 +32,7 @@ import searchRoutes from './routes/search.js';
 import orgDocumentsRoutes from './routes/organizationDocuments.js';
 import ministroBlocksRoutes from './routes/ministroBlocks.js';
 import securityIncidentsRoutes from './routes/securityIncidents.js';
+import documentTemplatesRoutes from './routes/documentTemplates.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -138,6 +139,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/org-documents', orgDocumentsRoutes);
 app.use('/api/ministro-blocks', ministroBlocksRoutes);
 app.use('/api/security-incidents', securityIncidentsRoutes);
+app.use('/api/document-templates', documentTemplatesRoutes);
 
 // Health check
 app.get('/api/health', async (req, res) => {

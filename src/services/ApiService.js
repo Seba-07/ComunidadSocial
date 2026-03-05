@@ -786,6 +786,15 @@ class ApiService {
     return this.get(`/estatuto-templates/${tipo}/snapshot`);
   }
 
+  // Document Templates (Plantillas de documentos PDF)
+  async getDocumentTemplatePublic(id) {
+    return this.get(`/document-templates/public/${id}`);
+  }
+
+  async getDocumentTemplatesByType(type) {
+    return this.get(`/document-templates/by-type/${type}`);
+  }
+
   /**
    * Obtener categorías disponibles
    */

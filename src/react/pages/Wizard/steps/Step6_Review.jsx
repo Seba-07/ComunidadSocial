@@ -1,10 +1,13 @@
+import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { pdfService } from '@services/PDFService.js';
+import { apiService } from '@services/ApiService.js';
 
 export default function Step6_Review({ onNext, onPrev }) {
   const { formData, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
+  const [docTemplates, setDocTemplates] = useState({});
 
   const org = formData.organization;
   const members = formData.members || [];
@@ -14,6 +17,69 @@ export default function Step6_Review({ onNext, onPrev }) {
   const estatutos = formData.estatutos || {};
   const certs = formData.certificates || {};
   const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
+
+  // Load assigned document templates
+  useEffect(() => {
+    async function loadDocTemplates() {
+      const ids = {
+        acta: templateConfig?.actaTemplateId,
+        socios: templateConfig?.sociosTemplateId,
+        nomina: templateConfig?.nominaTemplateId,
+        carta: templateConfig?.cartaTemplateId,
+      };
+      const loaded = {};
+      for (const [key, id] of Object.entries(ids)) {
+        if (id) {
+          try {
+            const data = await apiService.getDocumentTemplatePublic(id);
+            if (data.template?.content) loaded[key] = data.template.content;
+          } catch { /* ignore, will use hardcoded fallback */ }
+        }
+      }
+      setDocTemplates(loaded);
+    }
+    loadDocTemplates();
+  }, [templateConfig]);
+
+  // Build template replacement data from wizard steps
+  function buildTemplateData() {
+    const president = directorio.president || directorio.presidente || {};
+    const secretary = directorio.secretary || directorio.secretario || {};
+    const treasurer = directorio.treasurer || directorio.tesorero || {};
+    const additionalMembers = directorio.additionalMembers || [];
+    const comisionMembers = comision.members || [];
+
+    const getName = (m) => m ? `${m.firstName || ''} ${m.lastName || ''}`.trim() || '___' : '___';
+
+    return {
+      NOMBRE_ORG: org.name || '',
+      TIPO_ORG: templateConfig?.nombreTipo || org.type || '',
+      DIRECCION: org.address || [org.street, org.streetNumber].filter(Boolean).join(' ') || '',
+      COMUNA: org.commune || 'Renca',
+      REGION: org.region || 'Metropolitana',
+      UNIDAD_VECINAL: org.neighborhood || '',
+      EMAIL: org.email || '',
+      TELEFONO: org.phone || '',
+      OBJETIVOS: org.objectives || '',
+      TOTAL_SOCIOS: String(members.length),
+      LISTA_SOCIOS: members.map(m => `${m.firstName} ${m.lastName} (${m.rut})`).join(', '),
+      PRESIDENTE: getName(president),
+      RUT_PRESIDENTE: president.rut || '___',
+      SECRETARIO: getName(secretary),
+      RUT_SECRETARIO: secretary.rut || '___',
+      TESORERO: getName(treasurer),
+      RUT_TESORERO: treasurer.rut || '___',
+      DIRECTORES: additionalMembers.map(m => `${getName(m)} (${m.rut || '___'})`).join(', ') || 'N/A',
+      COMISION_ELECTORAL: comisionMembers.map(m => `${getName(m)} (${m.rut || '___'})`).join(', ') || 'N/A',
+      FECHA_ASAMBLEA: '___',
+      HORA_ASAMBLEA: '___',
+      DURACION_MANDATO: String(config.duracionMandato || 3),
+      CUOTA_INCORPORACION: String(config.cuotaIncorporacion || 0.5),
+      FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
+      MINISTRO_FE: '___',
+      UBICACION_ASAMBLEA: org.address || [org.street, org.streetNumber].filter(Boolean).join(' ') || '___',
+    };
+  }
 
   function previewDocument(type) {
     try {
@@ -26,10 +92,13 @@ export default function Step6_Review({ onNext, onPrev }) {
         comisionElectoral: comision,
       };
       let doc;
+      const templateContent = docTemplates[type] || null;
+      const templateData = templateContent ? buildTemplateData() : null;
+
       if (type === 'acta') {
-        doc = pdfService.generateActaAsamblea(orgData);
+        doc = pdfService.generateActaAsamblea(orgData, templateContent, templateData);
       } else if (type === 'socios') {
-        doc = pdfService.generateListaSocios(orgData);
+        doc = pdfService.generateListaSocios(orgData, templateContent, templateData);
       } else if (type === 'declaraciones') {
         const docs = pdfService.generateAllDeclaracionesJuradas(orgData);
         if (docs.length > 0) doc = docs[0].doc;

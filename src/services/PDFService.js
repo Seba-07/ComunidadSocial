@@ -187,9 +187,84 @@ class PDFService {
   }
 
   /**
-   * Genera el Acta de Asamblea General Constitutiva
+   * Genera un PDF a partir de una plantilla con placeholders
+   * @param {string} templateContent - Texto con {{VARIABLE}} placeholders
+   * @param {Object} data - Objeto con valores para reemplazo
+   * @param {string} title - Título para el header
+   * @returns {jsPDF} Documento PDF generado
    */
-  generateActaAsamblea(organization) {
+  generateFromTemplate(templateContent, data, title = 'DOCUMENTO') {
+    const doc = new jsPDF();
+    const resolvedText = templateContent.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || '___');
+
+    // Split into lines and render
+    this.drawHeader(doc, title, 'Departamento de Registro y Certificación');
+    this.currentY = 55;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.text);
+
+    const paragraphs = resolvedText.split('\n');
+    let pageNum = 1;
+
+    for (const paragraph of paragraphs) {
+      const trimmed = paragraph.trim();
+      if (!trimmed) {
+        this.currentY += 4;
+        continue;
+      }
+
+      // Check if it looks like a heading (ALL CAPS or short bold line)
+      const isHeading = /^[A-ZÁÉÍÓÚÑÜ\s\-:]+$/.test(trimmed) && trimmed.length < 80;
+
+      if (isHeading) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+      }
+
+      // Check if we need a new page
+      const lines = doc.splitTextToSize(trimmed, CONTENT_WIDTH);
+      const neededHeight = lines.length * 5 + 4;
+      if (this.currentY + neededHeight > PAGE_HEIGHT - 30) {
+        this.drawFooter(doc, pageNum);
+        doc.addPage();
+        pageNum++;
+        this.drawHeader(doc, '');
+        this.currentY = 35;
+        doc.setFontSize(isHeading ? 11 : 10);
+        doc.setFont('helvetica', isHeading ? 'bold' : 'normal');
+        doc.setTextColor(COLORS.text);
+      }
+
+      this.currentY = this.addWrappedText(doc, trimmed, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
+      this.currentY += isHeading ? 6 : 4;
+    }
+
+    this.drawFooter(doc, pageNum);
+    return doc;
+  }
+
+  /**
+   * Genera el Acta de Asamblea General Constitutiva
+   * @param {Object} organization - Datos de la organización
+   * @param {string} [templateContent] - Contenido de plantilla opcional
+   * @param {Object} [templateData] - Datos de reemplazo para la plantilla
+   */
+  generateActaAsamblea(organization, templateContent, templateData) {
+    // If a template is provided, use the template engine
+    if (templateContent && templateData) {
+      return this.generateFromTemplate(
+        templateContent,
+        templateData,
+        'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA'
+      );
+    }
+
+    // Fallback: original hardcoded generation
     try {
       console.log('📄 [generateActaAsamblea] INICIO - organization recibida:', !!organization);
 
@@ -421,8 +496,21 @@ class PDFService {
 
   /**
    * Genera Lista de Socios Constitución
+   * @param {Object} organization - Datos de la organización
+   * @param {string} [templateContent] - Contenido de plantilla opcional
+   * @param {Object} [templateData] - Datos de reemplazo para la plantilla
    */
-  generateListaSocios(organization) {
+  generateListaSocios(organization, templateContent, templateData) {
+    // If a template is provided, use the template engine
+    if (templateContent && templateData) {
+      return this.generateFromTemplate(
+        templateContent,
+        templateData,
+        'LISTA DE SOCIOS FUNDADORES'
+      );
+    }
+
+    // Fallback: original hardcoded generation
     try {
       console.log('📄 [generateListaSocios] INICIO - organization recibida:', !!organization);
 

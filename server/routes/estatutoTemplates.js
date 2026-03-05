@@ -68,7 +68,7 @@ router.get('/:tipo/config', async (req, res) => {
       tipoOrganizacion: req.params.tipo,
       activo: true,
       publicado: true
-    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig objetivosSugeridos mandatoTipo mandatoOpciones requiereDirectorioProvisorio');
+    }).select('tipoOrganizacion nombreTipo directorio miembrosMinimos comisionElectoral placeholders edadConfig objetivosSugeridos mandatoTipo mandatoOpciones requiereDirectorioProvisorio actaTemplateId sociosTemplateId nominaTemplateId cartaTemplateId');
 
     if (!template) {
       // Devolver configuración DEFAULT si no existe plantilla
@@ -234,6 +234,10 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
       mandatoTipo,
       mandatoOpciones,
       requiereDirectorioProvisorio,
+      actaTemplateId,
+      sociosTemplateId,
+      nominaTemplateId,
+      cartaTemplateId,
       publicado,
       descripcionCambio
     } = req.body;
@@ -262,6 +266,10 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (mandatoTipo !== undefined) template.mandatoTipo = mandatoTipo;
     if (mandatoOpciones !== undefined) template.mandatoOpciones = mandatoOpciones;
     if (requiereDirectorioProvisorio !== undefined) template.requiereDirectorioProvisorio = requiereDirectorioProvisorio;
+    if (actaTemplateId !== undefined) template.actaTemplateId = actaTemplateId || null;
+    if (sociosTemplateId !== undefined) template.sociosTemplateId = sociosTemplateId || null;
+    if (nominaTemplateId !== undefined) template.nominaTemplateId = nominaTemplateId || null;
+    if (cartaTemplateId !== undefined) template.cartaTemplateId = cartaTemplateId || null;
     if (publicado !== undefined) template.publicado = publicado;
 
     template.modificadoPor = req.user._id;

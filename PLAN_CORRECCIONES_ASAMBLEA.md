@@ -443,3 +443,56 @@
 | `src/react/pages/Admin/views/EstatutosManagerView.jsx` | Secciones colapsables + controles mandato en Directorio tab |
 | `src/react/pages/Wizard/steps/Step3_Config.jsx` | Duración mandato dinámica (fijo/variable) |
 | `src/react/pages/Wizard/steps/Step5_Directorio.jsx` | Títulos dinámicos provisorio/definitivo |
+
+---
+
+## FASE 6: Motor de Plantillas de Documentos PDF
+
+### Estado: COMPLETADO
+### Fecha inicio: 2026-03-04
+
+> **Objetivo**: Centralizar el diseño de los PDFs (Acta Constitutiva, Lista de Socios, etc.) en un
+> gestor administrable con placeholders dinámicos (`{{NOMBRE_ORG}}`, `{{PRESIDENTE}}`, etc.).
+> Asignar plantillas por tipo de organización y usarlas en el Paso 6 del Wizard.
+
+### Tarea 1: Plan de Trabajo
+- [x] **F6-01**: Agregar sección FASE 6 a este archivo
+
+### Tarea 2: Backend — Modelo + Rutas + Seeder
+- [x] **F6-02**: Crear modelo `server/models/DocumentTemplate.js` (name, documentType, content, placeholders, isDefault)
+- [x] **F6-03**: Agregar 4 campos `*TemplateId` a `server/models/EstatutoTemplate.js` + actualizar snapshot/config
+- [x] **F6-04**: Crear rutas CRUD `server/routes/documentTemplates.js` (GET/POST/PUT/DELETE + duplicate)
+- [x] **F6-05**: Registrar rutas en `server/index.js`
+- [x] **F6-06**: Crear seeder `server/scripts/seed-document-templates.js` (4 plantillas acta_constitutiva)
+
+### Tarea 3: Frontend — Panel Admin (Gestor Central)
+- [x] **F6-07**: Crear `src/react/pages/Admin/views/DocumentTemplatesView.jsx` (lista + editor CRUD con tabs General/Contenido/Preview)
+- [x] **F6-08**: Registrar en `AdminLayout.jsx` (menu item) y `AdminDashboardPage.jsx` (VIEW_MAP)
+- [x] **F6-09**: Agregar métodos en `src/services/ApiService.js` (getDocumentTemplatePublic, getDocumentTemplatesByType)
+
+### Tarea 4: Frontend — Asignación en EstatutosManagerView
+- [x] **F6-10**: Tab "Documentos" con 4 selects en `EstatutosManagerView.jsx`
+- [x] **F6-11**: Actualizar ruta PUT de `estatutoTemplates.js` para aceptar `*TemplateId`
+
+### Tarea 5: Impacto en Wizard (Paso 6) y PDFService
+- [x] **F6-12**: Motor de reemplazo `generateFromTemplate()` en `src/services/PDFService.js`
+- [x] **F6-13**: Cargar plantillas en `Step6_Review.jsx` y construir datos de reemplazo (22 placeholders)
+- [x] **F6-14**: Mantener backward compat (sin template → texto hardcodeado actual)
+
+### Archivos nuevos/modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/models/DocumentTemplate.js` | **NUEVO** — modelo Mongoose |
+| `server/models/EstatutoTemplate.js` | 4 campos *TemplateId, snapshot, config |
+| `server/routes/documentTemplates.js` | **NUEVO** — CRUD admin |
+| `server/routes/estatutoTemplates.js` | Aceptar *TemplateId en PUT |
+| `server/index.js` | Import + app.use nueva ruta |
+| `server/scripts/seed-document-templates.js` | **NUEVO** — seeder 4 plantillas |
+| `src/services/ApiService.js` | 6 métodos CRUD |
+| `src/services/PDFService.js` | generateFromTemplate() + backward compat |
+| `src/react/pages/Admin/AdminLayout.jsx` | Menu item "Plantillas Docs" |
+| `src/react/pages/Admin/AdminDashboardPage.jsx` | Lazy import + VIEW_MAP |
+| `src/react/pages/Admin/views/DocumentTemplatesView.jsx` | **NUEVO** — CRUD view |
+| `src/react/pages/Admin/views/EstatutosManagerView.jsx` | Tab "Documentos" con selects |
+| `src/react/pages/Wizard/steps/Step6_Review.jsx` | Cargar templates + pasar a PDFService |

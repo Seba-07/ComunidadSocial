@@ -40,6 +40,7 @@ export default function EstatutosManagerView() {
   const [editingObjIdx, setEditingObjIdx] = useState(null);
   const [objInput, setObjInput] = useState('');
   const [collapsedCats, setCollapsedCats] = useState({});
+  const [docTemplateOptions, setDocTemplateOptions] = useState({ acta_constitutiva: [], lista_socios: [], nomina_directorio: [], carta_solicitud: [] });
   const contenidoRef = useRef(null);
 
   function insertPlaceholder(key) {
@@ -72,7 +73,19 @@ export default function EstatutosManagerView() {
     }
   }
 
-  useEffect(() => { loadTemplates(); }, []);
+  async function loadDocTemplateOptions() {
+    try {
+      const types = ['acta_constitutiva', 'lista_socios', 'nomina_directorio', 'carta_solicitud'];
+      const results = {};
+      for (const type of types) {
+        const data = await apiService.getDocumentTemplatesByType(type);
+        results[type] = data.templates || [];
+      }
+      setDocTemplateOptions(results);
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => { loadTemplates(); loadDocTemplateOptions(); }, []);
 
   function openEditor(template) {
     setSelectedTemplate(JSON.parse(JSON.stringify(template)));
@@ -257,7 +270,8 @@ export default function EstatutosManagerView() {
             { key: 'articulos', label: 'Artículos' },
             { key: 'directorio', label: 'Directorio' },
             { key: 'objetivos', label: 'Objetivos' },
-            { key: 'config', label: 'Configuración' }
+            { key: 'config', label: 'Configuración' },
+            { key: 'documentos', label: 'Documentos' }
           ]}
           activeTab={editTab}
           onChange={setEditTab}
@@ -522,6 +536,36 @@ export default function EstatutosManagerView() {
                 <textarea value={selectedTemplate.descripcion || ''} onChange={e => setSelectedTemplate(t => ({ ...t, descripcion: e.target.value }))}
                   rows={3} style={{ width: '100%', maxWidth: 600, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical' }} />
               </div>
+            </div>
+          )}
+
+          {editTab === 'documentos' && (
+            <div style={{ display: 'grid', gap: 16, maxWidth: 600 }}>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
+                Asigna qué plantilla de documento PDF se usará para cada tipo de documento al crear organizaciones de este tipo.
+              </p>
+              {[
+                { key: 'actaTemplateId', label: 'Acta Constitutiva', type: 'acta_constitutiva' },
+                { key: 'sociosTemplateId', label: 'Lista de Socios', type: 'lista_socios' },
+                { key: 'nominaTemplateId', label: 'Nómina del Directorio', type: 'nomina_directorio' },
+                { key: 'cartaTemplateId', label: 'Carta de Solicitud', type: 'carta_solicitud' },
+              ].map(field => (
+                <div key={field.key}>
+                  <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6 }}>{field.label}</label>
+                  <select
+                    value={selectedTemplate[field.key] || ''}
+                    onChange={e => setSelectedTemplate(t => ({ ...t, [field.key]: e.target.value || null }))}
+                    style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+                  >
+                    <option value="">— Sin asignar (usa texto por defecto) —</option>
+                    {(docTemplateOptions[field.type] || []).map(dt => (
+                      <option key={dt._id} value={dt._id}>
+                        {dt.name}{dt.isDefault ? ' (por defecto)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
           )}
         </div>

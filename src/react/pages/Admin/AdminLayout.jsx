@@ -9,6 +9,7 @@ const MENU_ITEMS = [
   { key: 'users', label: 'Usuarios', icon: '🤝' },
   { key: 'unidades', label: 'Unidades Vecinales', icon: '🗺️' },
   { key: 'estatutos', label: 'Estatutos', icon: '📜' },
+  { key: 'plantillas-docs', label: 'Plantillas Docs', icon: '📄' },
   { key: 'metrics', label: 'Métricas', icon: '📊' },
   { key: 'audit', label: 'Historial', icon: '📋' },
   { key: 'timbre', label: 'Timbre/Firma', icon: '✅' },

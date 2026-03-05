@@ -276,6 +276,28 @@ const estatutoTemplateSchema = new mongoose.Schema({
     default: true
   },
 
+  // Referencias a plantillas de documentos PDF
+  actaTemplateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DocumentTemplate',
+    default: null
+  },
+  sociosTemplateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DocumentTemplate',
+    default: null
+  },
+  nominaTemplateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DocumentTemplate',
+    default: null
+  },
+  cartaTemplateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DocumentTemplate',
+    default: null
+  },
+
   // Imágenes para el documento PDF
   imagenesDocumento: [imagenDocumentoSchema],
 
@@ -377,6 +399,10 @@ estatutoTemplateSchema.methods.obtenerSnapshot = function() {
     mandatoTipo: this.mandatoTipo,
     mandatoOpciones: this.mandatoOpciones,
     requiereDirectorioProvisorio: this.requiereDirectorioProvisorio,
+    actaTemplateId: this.actaTemplateId,
+    sociosTemplateId: this.sociosTemplateId,
+    nominaTemplateId: this.nominaTemplateId,
+    cartaTemplateId: this.cartaTemplateId,
     fechaSnapshot: new Date()
   };
 };
@@ -409,7 +435,11 @@ estatutoTemplateSchema.statics.getDefaultConfig = function(tipoOrganizacion) {
     objetivosSugeridos: [],
     mandatoTipo: 'fijo',
     mandatoOpciones: [3],
-    requiereDirectorioProvisorio: true
+    requiereDirectorioProvisorio: true,
+    actaTemplateId: null,
+    sociosTemplateId: null,
+    nominaTemplateId: null,
+    cartaTemplateId: null
   };
 };
 
