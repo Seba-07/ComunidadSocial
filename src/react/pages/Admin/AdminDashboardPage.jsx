@@ -20,6 +20,7 @@ const OrgPrivacy = lazy(() => import('../OrganizationDashboard/OrgPrivacy'));
 const SecurityIncidentsView = lazy(() => import('./views/SecurityIncidentsView'));
 const DataRegistryView = lazy(() => import('./views/DataRegistryView'));
 const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
+const DocumentTemplatesView = lazy(() => import('./views/DocumentTemplatesView'));
 
 const VIEW_MAP = {
   organizations: OrganizationsList,
@@ -29,6 +30,7 @@ const VIEW_MAP = {
   calendar: CalendarManagerView,
   unidades: UnidadesVecinalesView,
   estatutos: EstatutosManagerView,
+  'plantillas-docs': DocumentTemplatesView,
   metrics: MetricsDashboardView,
   audit: AuditLogView,
   timbre: TimbreFirmaView,
