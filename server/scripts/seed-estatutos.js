@@ -276,7 +276,7 @@ const ARTICULOS_BASE = [
   {
     numero: 4,
     titulo: 'Socios (Derechos y Obligaciones)',
-    contenido: 'Podrán ser socios todas las personas que cumplan los requisitos establecidos por la Ley N° 19.418 y que sean aceptados por el Directorio.\n\nSon derechos de los socios:\na) Participar con derecho a voz y voto en las Asambleas Generales;\nb) Elegir y ser elegidos para cargos directivos, de la Comisión Electoral y de la Comisión Revisora de Cuentas;\nc) Presentar cualquier proyecto o proposición al estudio del Directorio o de la Asamblea;\nd) Tener acceso a los libros de actas, de contabilidad y de registro de socios.\n\nSon obligaciones de los socios:\na) Respetar y cumplir las disposiciones de la ley, del presente estatuto y de los acuerdos de las Asambleas y del Directorio;\nb) Asistir a las Asambleas Generales;\nc) Pagar las cuotas sociales, con un monto mensual de {{CUOTA_MENSUAL}};\nd) Desempeñar las comisiones y tareas que les encomiende la Asamblea o el Directorio.',
+    contenido: 'Podrán ser socios todas las personas mayores de {{EDAD_MINIMA}} años que cumplan los requisitos establecidos por la Ley N° 19.418 y que sean aceptados por el Directorio.\n\nSon derechos de los socios:\na) Participar con derecho a voz y voto en las Asambleas Generales;\nb) Elegir y ser elegidos para cargos directivos, de la Comisión Electoral y de la Comisión Revisora de Cuentas;\nc) Presentar cualquier proyecto o proposición al estudio del Directorio o de la Asamblea;\nd) Tener acceso a los libros de actas, de contabilidad y de registro de socios.\n\nSon obligaciones de los socios:\na) Respetar y cumplir las disposiciones de la ley, del presente estatuto y de los acuerdos de las Asambleas y del Directorio;\nb) Asistir a las Asambleas Generales;\nc) Pagar las cuotas sociales, con un monto mensual de $ {{CUOTA_MENSUAL}};\nd) Desempeñar las comisiones y tareas que les encomiende la Asamblea o el Directorio.',
     esEditable: true,
     orden: 4
   },
@@ -290,7 +290,7 @@ const ARTICULOS_BASE = [
   {
     numero: 6,
     titulo: 'Directorio (Composición)',
-    contenido: 'La dirección y administración de la organización corresponde a un Directorio compuesto por los cargos establecidos según el tipo de organización, elegidos en votación directa y secreta por la Asamblea General.\n\nLos directores durarán {{DURACION_MANDATO}} años en sus cargos y podrán ser reelegidos hasta por dos períodos consecutivos, conforme a la Ley N° 19.418. En caso de vacancia, el cargo será provisto por el Directorio, eligiendo entre los socios, por el tiempo que falte para completar el período.',
+    contenido: 'La dirección y administración de la organización corresponde a un Directorio compuesto por {{N_MIEMBROS}} miembros titulares, elegidos en votación directa y secreta por la Asamblea General.\n\nLos directores durarán {{DURACION_MANDATO}} años en sus cargos y podrán ser reelegidos hasta por dos períodos consecutivos, conforme a la Ley N° 19.418. En caso de vacancia, el cargo será provisto por el Directorio, eligiendo entre los socios, por el tiempo que falte para completar el período.',
     esEditable: true,
     orden: 6
   },
@@ -325,14 +325,14 @@ const ARTICULOS_BASE = [
   {
     numero: 11,
     titulo: 'Comisión Electoral',
-    contenido: 'La Comisión Electoral estará integrada por miembros que no pertenezcan al Directorio, elegidos por la Asamblea General Ordinaria. Tendrá a su cargo la organización, supervigilancia y calificación de todos los procesos eleccionarios de la organización, conforme a la Ley N° 19.418.\n\nLe corresponderá especialmente:\na) Recibir las inscripciones de candidatos y verificar el cumplimiento de requisitos;\nb) Preparar las cédulas de votación;\nc) Constituir la mesa receptora de sufragios;\nd) Efectuar el escrutinio y proclamar a los elegidos;\ne) Resolver las reclamaciones que se formulen durante el proceso electoral.',
+    contenido: 'La Comisión Electoral estará integrada por {{MIEMBROS_COMISION_ELECTORAL}} miembros que no pertenezcan al Directorio, elegidos por la Asamblea General Ordinaria. Tendrá a su cargo la organización, supervigilancia y calificación de todos los procesos eleccionarios de la organización, conforme a la Ley N° 19.418.\n\nLe corresponderá especialmente:\na) Recibir las inscripciones de candidatos y verificar el cumplimiento de requisitos;\nb) Preparar las cédulas de votación;\nc) Constituir la mesa receptora de sufragios;\nd) Efectuar el escrutinio y proclamar a los elegidos;\ne) Resolver las reclamaciones que se formulen durante el proceso electoral.',
     esEditable: true,
     orden: 11
   },
   {
     numero: 12,
     titulo: 'Patrimonio',
-    contenido: 'El patrimonio de la organización estará formado por:\na) Las cuotas de incorporación, fijadas en {{CUOTA_INC}};\nb) Las cuotas ordinarias y extraordinarias que acuerde la Asamblea;\nc) Los bienes muebles e inmuebles que adquiera a cualquier título;\nd) Las donaciones, herencias y legados que reciba;\ne) La renta obtenida de su patrimonio;\nf) El producto de actividades y beneficios realizados.\n\nLos fondos de la organización solo podrán destinarse a los fines establecidos en estos estatutos. El Tesorero rendirá cuenta de la gestión financiera en cada Asamblea General Ordinaria.',
+    contenido: 'El patrimonio de la organización estará formado por:\na) Las cuotas de incorporación, fijadas en {{CUOTA_INCORPORACION}};\nb) Las cuotas ordinarias y extraordinarias que acuerde la Asamblea;\nc) Los bienes muebles e inmuebles que adquiera a cualquier título;\nd) Las donaciones, herencias y legados que reciba;\ne) La renta obtenida de su patrimonio;\nf) El producto de actividades y beneficios realizados.\n\nLos fondos de la organización solo podrán destinarse a los fines establecidos en estos estatutos. El Tesorero rendirá cuenta de la gestión financiera en cada Asamblea General Ordinaria.',
     esEditable: true,
     orden: 12
   },
@@ -360,12 +360,15 @@ const PLACEHOLDERS_BASE = [
   { key: '{{COMUNA}}', label: 'Comuna', tipo: 'text', required: true, defaultValue: 'Renca' },
   { key: '{{REGION}}', label: 'Región', tipo: 'text', required: true, defaultValue: 'Región Metropolitana' },
   { key: '{{DIRECCION}}', label: 'Dirección', tipo: 'text', required: true },
+  { key: '{{EDAD_MINIMA}}', label: 'Edad mínima para ser socio', tipo: 'number', required: true, defaultValue: '14' },
+  { key: '{{N_MIEMBROS}}', label: 'Cantidad de miembros del Directorio', tipo: 'number', required: true, defaultValue: '5' },
+  { key: '{{MIEMBROS_COMISION_ELECTORAL}}', label: 'Miembros de la Comisión Electoral', tipo: 'number', required: true, defaultValue: '3' },
   { key: '{{CUOTA_MENSUAL}}', label: 'Cuota mensual de socios', tipo: 'text', required: false },
+  { key: '{{CUOTA_INCORPORACION}}', label: 'Cuota de incorporación', tipo: 'text', required: false },
   { key: '{{DURACION_MANDATO}}', label: 'Duración del mandato (años)', tipo: 'number', required: true, defaultValue: '2' },
   { key: '{{MESES_ASAMBLEA}}', label: 'Meses de asambleas ordinarias', tipo: 'text', required: true },
   { key: '{{METODO_CITACION}}', label: 'Método de citación', tipo: 'select', required: true, defaultValue: 'carta certificada al domicilio registrado', opciones: [{ value: 'carta_certificada', label: 'Carta certificada al domicilio registrado' }, { value: 'correo_electronico', label: 'Correo electrónico al correo registrado' }, { value: 'aviso_sede', label: 'Aviso publicado en la sede de la organización' }, { value: 'comunicacion_directa', label: 'Comunicación directa a cada socio' }] },
   { key: '{{DIAS_ANTICIPACION}}', label: 'Días de anticipación para citación', tipo: 'number', required: true, defaultValue: '10' },
-  { key: '{{CUOTA_INC}}', label: 'Cuota de incorporación (UTM)', tipo: 'text', required: false },
   { key: '{{ENTIDAD_DISOLUCION}}', label: 'Entidad beneficiaria en disolución', tipo: 'text', required: false, defaultValue: 'Corporación Municipal de Renca' },
   { key: '{{RUT_DISOLUCION}}', label: 'RUT entidad beneficiaria', tipo: 'text', required: false },
   { key: '{{MIEMBROS_MINIMOS}}', label: 'Mínimo de socios', tipo: 'number', required: true, defaultValue: '15' },

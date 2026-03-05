@@ -66,14 +66,17 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{DIRECCION}}': formData.organization?.street || '_______________',
       '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
       '{{NUM_MIEMBROS}}': String(formData.members?.length || 0),
+      '{{EDAD_MINIMA}}': String(templateConfig?.edadConfig?.edadMinima || 14),
+      '{{N_MIEMBROS}}': String(templateConfig?.directorio?.totalRequerido || 5),
+      '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateConfig?.comisionElectoral?.cantidad || 3),
       '{{CUOTA_MENSUAL}}': config.cuotaMin && config.cuotaMax
         ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
         : '_______________',
+      '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '_______________',
       '{{DURACION_MANDATO}}': String(config.duracionMandato || 3),
       '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
       '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
       '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
-      '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '_______________',
       '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || 'Corporación Municipal de Renca',
       '{{RUT_DISOLUCION}}': config.rutDisolucion || '_______________',
       '{{FECHA_DIA}}': '_______________',
