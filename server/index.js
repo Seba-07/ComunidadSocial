@@ -9,7 +9,8 @@ import dotenv from 'dotenv';
 import {
   generalLimiter,
   securityHeaders,
-  sanitizeInput
+  sanitizeInput,
+  largeBodyParser
 } from './middleware/security.js';
 
 // Routes
@@ -41,6 +42,14 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Detectar entorno desplegado (Railway, etc.)
+const isDeployed = process.env.NODE_ENV === 'production' ||
+                   !!process.env.RAILWAY_ENVIRONMENT ||
+                   !!process.env.RAILWAY_PROJECT_ID;
+
+// SEGURIDAD: Trust proxy para que req.ip sea el IP real (no el del proxy Railway/Vercel)
+app.set('trust proxy', 1);
 
 // Middleware
 const allowedOrigins = [
@@ -90,11 +99,9 @@ app.use(securityHeaders);
 // Rate limiting global
 app.use('/api/', generalLimiter);
 
-// Body parsing
-// NOTA: 50MB para soportar certificados base64 + documentos HTML generados del wizard
-// El cliente valida máx 2MB por certificado, pero el total puede ser grande con muchos archivos
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Body parsing — 5MB default, rutas específicas usan largeBodyParser para 50MB
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Sanitización de inputs (DESPUÉS de body parsing para que req.body exista)
 app.use(sanitizeInput);
@@ -118,6 +125,10 @@ if (process.env.NODE_ENV !== 'test') {
       console.error('MongoDB connection error:', err);
     });
 }
+
+// Large body parser para rutas que reciben certificados/documentos base64
+// Estas rutas necesitan hasta 50MB (certificados base64 del wizard)
+app.use('/api/organizations', largeBodyParser);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -175,32 +186,33 @@ app.get('/api/health', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  // Log completo en servidor (nunca al cliente)
   console.error('=== GLOBAL ERROR HANDLER ===');
   console.error('Route:', req.method, req.originalUrl);
-  console.error('Error name:', err.name);
-  console.error('Error message:', err.message);
-  console.error('Error stack:', err.stack);
+  console.error('Error:', err.name, '-', err.message);
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Stack:', err.stack);
+  }
 
   // Payload too large (body exceeds express.json limit)
   if (err.type === 'entity.too.large') {
     return res.status(413).json({
-      error: 'El tamaño de los datos excede el límite permitido. Intente con archivos más pequeños.',
-      details: 'PayloadTooLarge'
+      error: 'El tamaño de los datos excede el límite permitido. Intente con archivos más pequeños.'
     });
   }
 
   // JSON syntax error
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({
-      error: 'Error en el formato de los datos enviados',
-      details: 'InvalidJSON'
+      error: 'Error en el formato de los datos enviados'
     });
   }
 
+  // SEGURIDAD: nunca filtrar detalles internos al cliente en producción
+  const isProduction = process.env.NODE_ENV === 'production' || isDeployed;
   res.status(500).json({
     error: 'Error interno del servidor',
-    message: err.message,
-    errorName: err.name
+    ...(isProduction ? {} : { message: err.message, errorName: err.name })
   });
 });
 

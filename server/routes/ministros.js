@@ -180,9 +180,26 @@ router.post('/:id/reset-password', authenticate, requireRole('MUNICIPALIDAD'), a
     ministro.mustChangePassword = true;
     await ministro.save();
 
+    // Enviar password por email si está disponible (nunca en response body en producción)
+    const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+    if (ministro.email) {
+      try {
+        const { emailService } = await import('../services/emailService.js');
+        await emailService.sendPasswordResetNotification({
+          email: ministro.email,
+          userName: ministro.firstName,
+          tempPassword
+        });
+      } catch (emailErr) {
+        console.error('Error al enviar email con password temporal:', emailErr.message);
+      }
+    }
+
     res.json({
       success: true,
-      temporaryPassword: tempPassword
+      message: 'Contraseña reiniciada exitosamente. Se envió al email del ministro.',
+      // Solo incluir password en desarrollo (para testing)
+      ...(isProduction ? {} : { temporaryPassword: tempPassword })
     });
   } catch (error) {
     console.error('Reset password error:', error);

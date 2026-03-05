@@ -5,6 +5,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import Organization from '../models/Organization.js';
 import { authenticate } from '../middleware/auth.js';
+import { isPathWithinDir } from '../utils/pathSecurity.js';
 
 const router = express.Router();
 
@@ -231,6 +232,12 @@ router.get('/:orgId/:docId/download', authenticate, async (req, res) => {
     }
 
     const filePath = path.resolve(document.filePath);
+
+    // SEGURIDAD: verificar que el path esté dentro del directorio de uploads
+    if (!isPathWithinDir(filePath, './uploads/org-documents/')) {
+      return res.status(403).json({ error: 'Acceso denegado al archivo' });
+    }
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
     }
@@ -266,9 +273,9 @@ router.delete('/:orgId/:docId', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
 
-    // Eliminar archivo físico
+    // Eliminar archivo físico (solo si está dentro del directorio permitido)
     try {
-      if (document.filePath && fs.existsSync(document.filePath)) {
+      if (document.filePath && isPathWithinDir(document.filePath, './uploads/org-documents/') && fs.existsSync(document.filePath)) {
         fs.unlinkSync(document.filePath);
       }
     } catch (e) {

@@ -3,6 +3,7 @@
  * Incluye: Rate Limiting, Headers de Seguridad, Validación de Input
  */
 
+import express from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import helmet from 'helmet';
 
@@ -278,6 +279,17 @@ export const ALLOWED_FIELDS = {
   ]
 };
 
+// ============================================
+// LARGE BODY PARSER (para rutas con certificados base64)
+// ============================================
+
+/**
+ * Middleware que permite body de hasta 50MB.
+ * Usar SOLO en rutas que reciben certificados/documentos base64.
+ * Las demás rutas usan el límite global de 5MB.
+ */
+export const largeBodyParser = express.json({ limit: '50mb' });
+
 export default {
   generalLimiter,
   authLimiter,
@@ -287,5 +299,6 @@ export default {
   sanitizeInput,
   validateObjectId,
   allowFields,
-  ALLOWED_FIELDS
+  ALLOWED_FIELDS,
+  largeBodyParser
 };

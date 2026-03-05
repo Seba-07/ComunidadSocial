@@ -231,7 +231,6 @@ async function createMemberAccounts(organization) {
         firstName: member.firstName,
         lastName: member.lastName,
         email: newUser.email,
-        tempPassword: tempPassword,
         status: 'created'
       });
 

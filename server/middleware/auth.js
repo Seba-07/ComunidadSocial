@@ -5,22 +5,20 @@ import User from '../models/User.js';
 // Asegurar que las variables de entorno estén cargadas (ESM hoists imports antes de dotenv.config())
 dotenv.config();
 
-// SEGURIDAD: JWT_SECRET es OBLIGATORIO - no hay fallback
+// SEGURIDAD: JWT_SECRET es OBLIGATORIO
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET no está configurado en variables de entorno');
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
-  } else {
-    console.warn('ADVERTENCIA: Usando secret temporal solo para desarrollo');
-  }
-}
-const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
-
-// Detectar entorno desplegado (Railway, etc.) independiente de NODE_ENV
 const isDeployed = process.env.NODE_ENV === 'production' ||
                    !!process.env.RAILWAY_ENVIRONMENT ||
                    !!process.env.RAILWAY_PROJECT_ID;
+
+if (!JWT_SECRET && isDeployed) {
+  console.error('FATAL: JWT_SECRET no está configurado en entorno desplegado. Abortando.');
+  process.exit(1);
+}
+if (!JWT_SECRET) {
+  console.warn('ADVERTENCIA: JWT_SECRET no configurado. Usando secret temporal solo para desarrollo local.');
+}
+export const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
 
 // Opciones para cookies HttpOnly - access token (4 horas)
 export const COOKIE_OPTIONS = {
