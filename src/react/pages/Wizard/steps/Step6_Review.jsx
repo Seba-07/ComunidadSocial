@@ -84,7 +84,12 @@ export default function Step6_Review({ onNext, onPrev }) {
       CUOTA_INCORPORACION: String(config.cuotaIncorporacion || 0.5),
       FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
       MINISTRO_FE: '___',
+      RUT_MINISTRO_FE: '___',
       UBICACION_ASAMBLEA: org.address || [org.street, org.streetNumber].filter(Boolean).join(' ') || '___',
+      FIRMA_PRESIDENTE: `________________________\n${getName(president)}\nPresidente(a) Provisorio(a)\nRUT: ${president.rut || '___'}`,
+      FIRMA_SECRETARIO: `________________________\n${getName(secretary)}\nSecretario(a) Provisorio(a)\nRUT: ${secretary.rut || '___'}`,
+      FIRMA_TESORERO: `________________________\n${getName(treasurer)}\nTesorero(a) Provisorio(a)\nRUT: ${treasurer.rut || '___'}`,
+      FIRMA_MINISTRO_FE: '________________________\n___\nMinistro de Fe\nRUT: ___',
     };
   }
 

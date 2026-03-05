@@ -52,7 +52,12 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'CUOTA_INCORPORACION', label: 'Cuota incorporación', description: 'Cuota de incorporación en UTM' },
   { key: 'FECHA_HOY', label: 'Fecha actual', description: 'Fecha del día de generación' },
   { key: 'MINISTRO_FE', label: 'Ministro de Fe', description: 'Nombre del ministro de fe' },
+  { key: 'RUT_MINISTRO_FE', label: 'RUT Ministro de Fe', description: 'RUT del ministro de fe' },
   { key: 'UBICACION_ASAMBLEA', label: 'Ubicación asamblea', description: 'Dirección donde se realiza la asamblea' },
+  { key: 'FIRMA_PRESIDENTE', label: 'Firma Presidente', description: 'Bloque de firma: línea + nombre + cargo + RUT del presidente' },
+  { key: 'FIRMA_SECRETARIO', label: 'Firma Secretario', description: 'Bloque de firma: línea + nombre + cargo + RUT del secretario' },
+  { key: 'FIRMA_TESORERO', label: 'Firma Tesorero', description: 'Bloque de firma: línea + nombre + cargo + RUT del tesorero' },
+  { key: 'FIRMA_MINISTRO_FE', label: 'Firma Ministro de Fe', description: 'Bloque de firma: línea + nombre + cargo + RUT del ministro de fe' },
 ];
 
 const headerFooterSchema = new mongoose.Schema({

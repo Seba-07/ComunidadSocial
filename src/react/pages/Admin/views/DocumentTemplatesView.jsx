@@ -72,7 +72,12 @@ const SAMPLE_DATA = {
   CUOTA_INCORPORACION: '0.5',
   FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
   MINISTRO_FE: 'Carlos Ramírez Torres',
+  RUT_MINISTRO_FE: '7.654.321-0',
   UBICACION_ASAMBLEA: 'Blanco Encalada 1335, Renca',
+  FIRMA_PRESIDENTE: '________________________\nJuan Pérez González\nPresidente(a) Provisorio(a)\nRUT: 12.345.678-9',
+  FIRMA_SECRETARIO: '________________________\nMaría López Soto\nSecretario(a) Provisorio(a)\nRUT: 11.234.567-K',
+  FIRMA_TESORERO: '________________________\nCarmen Muñoz Díaz\nTesorero(a) Provisorio(a)\nRUT: 13.678.901-5',
+  FIRMA_MINISTRO_FE: '________________________\nCarlos Ramírez Torres\nMinistro de Fe\nRUT: 7.654.321-0',
 };
 
 const DEFAULT_CONTENT = {
@@ -105,14 +110,13 @@ La Comisión Organizadora delega la facultad de tramitar la aprobación de los p
 
 Se levanta la sesión siendo las {{HORA_TERMINO_ASAMBLEA}} horas. Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
 
-{{PRESIDENTE}}
-Presidente(a) Provisorio(a)
+{{FIRMA_PRESIDENTE}}
 
-{{SECRETARIO}}
-Secretario(a) Provisorio(a)
+{{FIRMA_SECRETARIO}}
 
-{{MINISTRO_FE}}
-Ministro de Fe`,
+{{FIRMA_TESORERO}}
+
+{{FIRMA_MINISTRO_FE}}`,
 
   lista_socios: `LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN
 
