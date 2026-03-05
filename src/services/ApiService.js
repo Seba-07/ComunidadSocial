@@ -652,6 +652,23 @@ class ApiService {
     return this.post('/notifications', notificationData);
   }
 
+  // Ministro notifications
+  async getMinistroNotifications(ministroId) {
+    return this.get(`/notifications/ministro/${ministroId}`);
+  }
+
+  async getMinistroUnreadCount(ministroId) {
+    return this.get(`/notifications/ministro/${ministroId}/unread/count`);
+  }
+
+  async markMinistroNotificationRead(notificationId) {
+    return this.post(`/notifications/ministro/${notificationId}/read`);
+  }
+
+  async markAllMinistroNotificationsRead(ministroId) {
+    return this.post(`/notifications/ministro/${ministroId}/read-all`);
+  }
+
   // ==================== MEMBER ACCOUNTS ====================
 
   async createMemberAccounts(organizationId) {

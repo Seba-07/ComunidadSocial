@@ -1,8 +1,9 @@
 import { useAuthStore } from '../../stores/authStore';
+import NotificationBell from '../ui/NotificationBell';
 
 /**
  * SharedHeader - Minimal top bar beside the sidebar.
- * Clean design: just user info + logout on the right.
+ * Clean design: notifications bell + user info + logout on the right.
  */
 export default function SharedHeader() {
   const { user, logout } = useAuthStore();
@@ -36,8 +37,9 @@ export default function SharedHeader() {
           <span className="header-welcome">Comunidad Social Renca</span>
         </div>
 
-        {/* Right side - user info */}
+        {/* Right side - notifications + user info */}
         <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <NotificationBell />
           <div className="header-avatar">
             <span>{initials}</span>
           </div>
