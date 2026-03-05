@@ -6,26 +6,26 @@ import DataTable from '../../../components/ui/DataTable';
 import Modal from '../../../components/ui/Modal';
 import MemberImportModal, { downloadMemberTemplate } from './MemberImportModal';
 
-const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '' };
+const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '', address: '' };
 
 // TEST DATA - 15 members (13 adults + 2 minors 15-16 years old)
 const TEST_MEMBERS = [
-  { firstName: 'María', lastName: 'González', rut: '12.456.789-0', email: 'maria.gonzalez@test.cl', phone: '+56 9 1234 5001', birthDate: '1985-03-15', genero: 'femenino' },
-  { firstName: 'Juan', lastName: 'Pérez', rut: '11.234.567-1', email: 'juan.perez@test.cl', phone: '+56 9 1234 5002', birthDate: '1978-07-22', genero: 'masculino' },
-  { firstName: 'Carmen', lastName: 'Muñoz', rut: '13.678.901-5', email: 'carmen.munoz@test.cl', phone: '+56 9 1234 5003', birthDate: '1990-11-08', genero: 'femenino' },
-  { firstName: 'Roberto', lastName: 'Silva', rut: '10.987.654-2', email: 'roberto.silva@test.cl', phone: '+56 9 1234 5004', birthDate: '1972-01-30', genero: 'masculino' },
-  { firstName: 'Patricia', lastName: 'Rojas', rut: '14.321.098-7', email: 'patricia.rojas@test.cl', phone: '+56 9 1234 5005', birthDate: '1988-05-12', genero: 'femenino' },
-  { firstName: 'Francisco', lastName: 'Hernández', rut: '9.876.543-3', email: 'francisco.hernandez@test.cl', phone: '+56 9 1234 5006', birthDate: '1965-09-28', genero: 'masculino' },
-  { firstName: 'Andrea', lastName: 'López', rut: '15.432.109-8', email: 'andrea.lopez@test.cl', phone: '+56 9 1234 5007', birthDate: '1992-04-03', genero: 'femenino' },
-  { firstName: 'Miguel', lastName: 'Torres', rut: '8.765.432-K', email: 'miguel.torres@test.cl', phone: '+56 9 1234 5008', birthDate: '1960-12-17', genero: 'masculino' },
-  { firstName: 'Claudia', lastName: 'Vargas', rut: '16.543.210-K', email: 'claudia.vargas@test.cl', phone: '+56 9 1234 5009', birthDate: '1995-08-25', genero: 'femenino' },
-  { firstName: 'Jorge', lastName: 'Martínez', rut: '11.876.543-5', email: 'jorge.martinez@test.cl', phone: '+56 9 1234 5010', birthDate: '1980-02-14', genero: 'masculino' },
-  { firstName: 'Valentina', lastName: 'Soto', rut: '17.654.321-3', email: 'valentina.soto@test.cl', phone: '+56 9 1234 5011', birthDate: '1993-06-19', genero: 'femenino' },
-  { firstName: 'Luis', lastName: 'Ramírez', rut: '10.234.567-3', email: 'luis.ramirez@test.cl', phone: '+56 9 1234 5012', birthDate: '1975-10-05', genero: 'masculino' },
-  { firstName: 'Sofía', lastName: 'Díaz', rut: '18.765.432-7', email: 'sofia.diaz@test.cl', phone: '+56 9 1234 5013', birthDate: '1998-01-11', genero: 'femenino' },
+  { firstName: 'María', lastName: 'González', rut: '12.456.789-0', email: 'maria.gonzalez@test.cl', phone: '+56 9 1234 5001', birthDate: '1985-03-15', genero: 'femenino', address: 'Av. Dorsal 1250, Renca' },
+  { firstName: 'Juan', lastName: 'Pérez', rut: '11.234.567-1', email: 'juan.perez@test.cl', phone: '+56 9 1234 5002', birthDate: '1978-07-22', genero: 'masculino', address: 'Calle Uno 345, Renca' },
+  { firstName: 'Carmen', lastName: 'Muñoz', rut: '13.678.901-5', email: 'carmen.munoz@test.cl', phone: '+56 9 1234 5003', birthDate: '1990-11-08', genero: 'femenino', address: 'Psje. Las Flores 78, Renca' },
+  { firstName: 'Roberto', lastName: 'Silva', rut: '10.987.654-2', email: 'roberto.silva@test.cl', phone: '+56 9 1234 5004', birthDate: '1972-01-30', genero: 'masculino', address: 'Av. Domingo Santa María 2100, Renca' },
+  { firstName: 'Patricia', lastName: 'Rojas', rut: '14.321.098-7', email: 'patricia.rojas@test.cl', phone: '+56 9 1234 5005', birthDate: '1988-05-12', genero: 'femenino', address: 'Calle Los Aromos 456, Renca' },
+  { firstName: 'Francisco', lastName: 'Hernández', rut: '9.876.543-3', email: 'francisco.hernandez@test.cl', phone: '+56 9 1234 5006', birthDate: '1965-09-28', genero: 'masculino', address: 'Av. José Miguel Infante 890, Renca' },
+  { firstName: 'Andrea', lastName: 'López', rut: '15.432.109-8', email: 'andrea.lopez@test.cl', phone: '+56 9 1234 5007', birthDate: '1992-04-03', genero: 'femenino', address: 'Calle Marte 123, Renca' },
+  { firstName: 'Miguel', lastName: 'Torres', rut: '8.765.432-K', email: 'miguel.torres@test.cl', phone: '+56 9 1234 5008', birthDate: '1960-12-17', genero: 'masculino', address: 'Psje. El Sol 567, Renca' },
+  { firstName: 'Claudia', lastName: 'Vargas', rut: '16.543.210-K', email: 'claudia.vargas@test.cl', phone: '+56 9 1234 5009', birthDate: '1995-08-25', genero: 'femenino', address: 'Av. Condell 1890, Renca' },
+  { firstName: 'Jorge', lastName: 'Martínez', rut: '11.876.543-5', email: 'jorge.martinez@test.cl', phone: '+56 9 1234 5010', birthDate: '1980-02-14', genero: 'masculino', address: 'Calle Neptuno 234, Renca' },
+  { firstName: 'Valentina', lastName: 'Soto', rut: '17.654.321-3', email: 'valentina.soto@test.cl', phone: '+56 9 1234 5011', birthDate: '1993-06-19', genero: 'femenino', address: 'Av. Blanco Encalada 1560, Renca' },
+  { firstName: 'Luis', lastName: 'Ramírez', rut: '10.234.567-3', email: 'luis.ramirez@test.cl', phone: '+56 9 1234 5012', birthDate: '1975-10-05', genero: 'masculino', address: 'Calle Venus 789, Renca' },
+  { firstName: 'Sofía', lastName: 'Díaz', rut: '18.765.432-7', email: 'sofia.diaz@test.cl', phone: '+56 9 1234 5013', birthDate: '1998-01-11', genero: 'femenino', address: 'Psje. Los Jazmines 45, Renca' },
   // 2 menores de edad (15-16 años)
-  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-4', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5014', birthDate: '2010-03-20', genero: 'masculino' },
-  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-8', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5015', birthDate: '2009-08-14', genero: 'femenino' },
+  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-4', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5014', birthDate: '2010-03-20', genero: 'masculino', address: 'Av. Dorsal 980, Renca' },
+  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-8', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5015', birthDate: '2009-08-14', genero: 'femenino', address: 'Calle Saturno 321, Renca' },
 ];
 
 function calculateAge(birthDate) {
@@ -233,7 +233,8 @@ export default function Step2_Members({ onNext, onPrev }) {
             { key: 'rut', label: 'RUT *', placeholder: '12.345.678-9' },
             { key: 'email', label: 'Email', type: 'email' },
             { key: 'phone', label: 'Teléfono' },
-            { key: 'birthDate', label: 'Fecha de nacimiento *', type: 'date' }
+            { key: 'birthDate', label: 'Fecha de nacimiento *', type: 'date' },
+            { key: 'address', label: 'Domicilio', placeholder: 'Calle, número, comuna' }
           ].map(f => (
             <div key={f.key}>
               <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{f.label}</label>

@@ -15,7 +15,8 @@ const FIELD_MAPPINGS = {
   birthDate: ['fecha_nacimiento', 'fecha_de_nacimiento', 'nacimiento', 'birth_date', 'birthdate', 'fecha_nac', 'fec_nac'],
   email: ['email', 'correo', 'mail', 'e-mail', 'correo_electronico'],
   phone: ['telefono', 'phone', 'celular', 'fono', 'tel'],
-  genero: ['genero', 'sexo', 'gender']
+  genero: ['genero', 'sexo', 'gender'],
+  address: ['domicilio', 'direccion', 'address', 'dir', 'calle']
 };
 
 function normalizeHeader(h) {
@@ -99,9 +100,9 @@ function validateRow(row, existingRuts, seenRuts) {
 export function downloadMemberTemplate() {
   const BOM = '\uFEFF';
   const rows = [
-    ['Nombre', 'Apellido', 'RUT', 'Fecha de Nacimiento', 'Email', 'Teléfono', 'Género'],
-    ['Juan', 'Pérez', '12.345.678-5', '15/03/1990', 'juan@email.com', '912345678', 'masculino'],
-    ['María', 'González', '23.456.789-0', '20/07/1985', '', '', 'femenino'],
+    ['Nombre', 'Apellido', 'RUT', 'Fecha de Nacimiento', 'Email', 'Teléfono', 'Género', 'Domicilio'],
+    ['Juan', 'Pérez', '12.345.678-5', '15/03/1990', 'juan@email.com', '912345678', 'masculino', 'Av. Dorsal 1250, Renca'],
+    ['María', 'González', '23.456.789-0', '20/07/1985', '', '', 'femenino', 'Calle Uno 345, Renca'],
   ];
   const csv = BOM + rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -208,7 +209,8 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
         birthDate: parseDateValue(raw[map.birthDate]),
         email: map.email ? String(raw[map.email] || '').trim() : '',
         phone: map.phone ? String(raw[map.phone] || '').trim() : '',
-        genero: map.genero ? String(raw[map.genero] || '').trim().toLowerCase() : ''
+        genero: map.genero ? String(raw[map.genero] || '').trim().toLowerCase() : '',
+        address: map.address ? String(raw[map.address] || '').trim() : ''
       };
       const { errors, warnings } = validateRow(row, existingRuts, seenRuts);
       return { ...row, _errors: errors, _warnings: warnings };
@@ -306,7 +308,8 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
                 { field: 'birthDate', label: 'Fecha Nacimiento *', required: true },
                 { field: 'email', label: 'Email' },
                 { field: 'phone', label: 'Teléfono' },
-                { field: 'genero', label: 'Género' }
+                { field: 'genero', label: 'Género' },
+                { field: 'address', label: 'Domicilio' }
               ].map(({ field, label }) => (
                 <div key={field} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ width: 140, fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</span>
