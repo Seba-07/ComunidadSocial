@@ -347,7 +347,16 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
       Organization.countDocuments(statusFilter)
     ]);
 
-    res.json({ organizations, total, page, limit, pages: Math.ceil(total / limit) });
+    // Add memberCount from a lightweight aggregation
+    const orgIds = organizations.map(o => o._id);
+    const memberCounts = await Organization.aggregate([
+      { $match: { _id: { $in: orgIds } } },
+      { $project: { memberCount: { $size: { $ifNull: ['$members', []] } } } }
+    ]);
+    const countMap = Object.fromEntries(memberCounts.map(c => [c._id.toString(), c.memberCount]));
+    const orgsWithCount = organizations.map(o => ({ ...o, memberCount: countMap[o._id.toString()] || 0 }));
+
+    res.json({ organizations: orgsWithCount, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (error) {
     console.error('Get organizations error:', error);
     res.status(500).json({ error: 'Error al obtener organizaciones' });

@@ -119,9 +119,9 @@ export const useAdminStore = create((set, get) => ({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(o =>
-        (o.name || '').toLowerCase().includes(q) ||
-        (o.type || '').toLowerCase().includes(q) ||
-        (o.commune || '').toLowerCase().includes(q)
+        (o.organizationName || o.name || '').toLowerCase().includes(q) ||
+        (o.organizationType || o.type || '').toLowerCase().includes(q) ||
+        (o.comuna || o.commune || '').toLowerCase().includes(q)
       );
     }
 

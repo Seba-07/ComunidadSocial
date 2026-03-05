@@ -48,9 +48,9 @@ export default function OrganizationsList() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(o =>
-        (o.name || '').toLowerCase().includes(q) ||
-        (o.type || '').toLowerCase().includes(q) ||
-        (o.commune || '').toLowerCase().includes(q)
+        (o.organizationName || o.name || '').toLowerCase().includes(q) ||
+        (o.organizationType || o.type || '').toLowerCase().includes(q) ||
+        (o.comuna || o.commune || '').toLowerCase().includes(q)
       );
     }
     return result;
@@ -136,14 +136,14 @@ export default function OrganizationsList() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                   <span style={{ fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                    {org.name || 'Sin nombre'}
+                    {org.organizationName || org.name || 'Sin nombre'}
                   </span>
                   <StatusBadge status={org.status} />
                 </div>
                 <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16 }}>
-                  <span>{org.type || 'Sin tipo'}</span>
-                  {org.commune && <span>{org.commune}</span>}
-                  {org.members && <span>{org.members.length} miembros</span>}
+                  <span>{(org.organizationType || org.type || 'Sin tipo').replace(/_/g, ' ')}</span>
+                  {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
+                  {org.memberCount != null && <span>{org.memberCount} miembros</span>}
                   {org.createdAt && (
                     <span>{new Date(org.createdAt).toLocaleDateString('es-CL')}</span>
                   )}

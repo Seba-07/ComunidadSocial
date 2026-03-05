@@ -16,6 +16,62 @@ const REVIEW_TABS = [
   { key: 'historial', label: 'Historial' }
 ];
 
+// Cargo keys used in provisionalDirectorio (EN keys from DB + ES fallback)
+const CARGO_KEYS = [
+  { key: 'president', altKey: 'presidente', label: 'Presidente/a' },
+  { key: 'vicePresident', altKey: 'vicepresidente', label: 'Vicepresidente/a' },
+  { key: 'secretary', altKey: 'secretario', label: 'Secretario/a' },
+  { key: 'treasurer', altKey: 'tesorero', label: 'Tesorero/a' },
+];
+
+const SKIP_DIR_KEYS = new Set([
+  'president', 'vicePresident', 'secretary', 'treasurer',
+  'presidente', 'vicepresidente', 'secretario', 'tesorero',
+  'additionalMembers', 'designatedAt', 'type', '_id', '__v'
+]);
+
+function formatName(person) {
+  if (!person) return '—';
+  const parts = [person.firstName, person.segundoNombre, person.lastName, person.apellidoMaterno].filter(Boolean);
+  return parts.join(' ') || '—';
+}
+
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function buildCargoEntries(dir) {
+  const entries = [];
+  for (const { key, altKey, label } of CARGO_KEYS) {
+    const person = dir[key] || dir[altKey];
+    if (person && typeof person === 'object' && (person.rut || person.firstName)) {
+      entries.push({ key, label, person });
+    }
+  }
+  if (Array.isArray(dir.additionalMembers)) {
+    dir.additionalMembers.forEach((m, i) => {
+      if (m && typeof m === 'object' && (m.rut || m.firstName)) {
+        entries.push({ key: `additional_${i}`, label: m.cargoNombre || m.cargo || `Director/a ${i + 1}`, person: m });
+      }
+    });
+  }
+  // Non-standard keys (custom cargos from wizard)
+  for (const [k, v] of Object.entries(dir)) {
+    if (SKIP_DIR_KEYS.has(k)) continue;
+    if (v && typeof v === 'object' && !Array.isArray(v) && (v.rut || v.firstName)) {
+      entries.push({ key: k, label: v.cargoNombre || k, person: v });
+    }
+  }
+  return entries;
+}
+
 export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [tab, setTab] = useState('datos');
   const [org, setOrg] = useState(initialOrg);
@@ -32,13 +88,19 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
 
   useEffect(() => {
     fetchMinistros().catch(() => {});
-    // Refresh org to get full data
+    // Refresh org to get full data (list endpoint excludes members/docs)
     refreshOrganization(initialOrg._id).then(o => { if (o) setOrg(o); }).catch(() => {});
   }, [initialOrg._id]);
 
   const members = org.members || [];
   const directorio = org.provisionalDirectorio || org.directorio || {};
   const statusHistory = org.statusHistory || [];
+  const cargoEntries = buildCargoEntries(directorio);
+  const electoralCommission = org.electoralCommission || org.comisionElectoral || [];
+
+  // Org name/type with fallbacks for both old and new field names
+  const orgName = org.organizationName || org.name || 'Organización';
+  const orgType = (org.organizationType || org.type || '').replace(/_/g, ' ');
 
   async function handleStatusChange(newStatus) {
     setIsActioning(true);
@@ -111,11 +173,11 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
         }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
-              {org.name || 'Organización'}
+              {orgName}
             </h2>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4 }}>
               <StatusBadge status={org.status} />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>{org.type}</span>
+              <span style={{ fontSize: 13, color: '#6b7280' }}>{orgType}</span>
             </div>
           </div>
           <button onClick={onClose} style={{
@@ -134,18 +196,37 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
           {tab === 'datos' && (
             <div style={{ display: 'grid', gap: 12 }}>
               {[
-                ['Nombre', org.name],
-                ['Tipo', org.type],
-                ['Dirección', [org.street, org.streetNumber, org.commune].filter(Boolean).join(', ')],
-                ['Email', org.email],
-                ['Teléfono', org.phone],
-                ['Creada', formatDate(org.createdAt)]
-              ].map(([label, value]) => value && (
+                ['Nombre', orgName],
+                ['Tipo', orgType],
+                ['Dirección', [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address],
+                ['Comuna / Región', [org.comuna, org.region].filter(Boolean).join(', ')],
+                ['Email de Contacto', org.contactEmail || org.email],
+                ['Teléfono', org.contactPhone || org.phone],
+                ['Unidad Vecinal', org.unidadVecinal],
+                ['Territorio', org.territory],
+                ['Creada', formatDate(org.createdAt)],
+              ].filter(([, value]) => value).map(([label, value]) => (
                 <div key={label} style={{ display: 'flex', gap: 12 }}>
-                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 14 }}>{label}:</span>
+                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 140, fontSize: 14 }}>{label}:</span>
                   <span style={{ color: '#6b7280', fontSize: 14 }}>{value}</span>
                 </div>
               ))}
+              {org.objectives && (
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ fontWeight: 600, color: '#374151', fontSize: 14, display: 'block', marginBottom: 4 }}>Objetivos:</span>
+                  <p style={{ color: '#6b7280', fontSize: 13, whiteSpace: 'pre-line', margin: 0 }}>{org.objectives}</p>
+                </div>
+              )}
+              {(org.electionDate || org.assemblyAddress) && (
+                <div style={{ marginTop: 12, padding: 14, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
+                  <span style={{ fontWeight: 600, color: '#0369a1', fontSize: 13, display: 'block', marginBottom: 6 }}>Asamblea Constitutiva Programada</span>
+                  <div style={{ display: 'flex', gap: 20, fontSize: 13, color: '#374151' }}>
+                    {org.electionDate && <span>Fecha: {new Date(org.electionDate).toLocaleDateString('es-CL')}</span>}
+                    {org.electionTime && <span>Hora: {org.electionTime}</span>}
+                    {org.assemblyAddress && <span>Lugar: {org.assemblyAddress}</span>}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -153,69 +234,133 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
             <div>
               <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 12 }}>
                 {members.length} miembros registrados
+                {(() => {
+                  const minors = members.filter(m => {
+                    const age = calculateAge(m.birthDate);
+                    return age !== null && age < 18;
+                  });
+                  return minors.length > 0
+                    ? <span style={{ color: '#d97706', fontWeight: 600 }}> ({minors.length} menores de edad)</span>
+                    : null;
+                })()}
               </p>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    {['Nombre', 'RUT', 'Email'].map(h => (
-                      <th key={h} style={{
-                        padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e5e7eb',
-                        fontSize: 13, fontWeight: 600, color: '#374151'
-                      }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((m, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: '8px 12px', fontSize: 14 }}>
-                        {m.firstName || m.primerNombre || ''} {m.lastName || m.apellidoPaterno || ''}
-                      </td>
-                      <td style={{ padding: '8px 12px', fontSize: 14, color: '#6b7280' }}>{m.rut}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 14, color: '#6b7280' }}>{m.email || '-'}</td>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      {['N°', 'Nombre', 'RUT', 'Edad', 'Email', 'Teléfono'].map(h => (
+                        <th key={h} style={{
+                          padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #e5e7eb',
+                          fontSize: 12, fontWeight: 600, color: '#374151'
+                        }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {members.map((m, i) => {
+                      const age = calculateAge(m.birthDate);
+                      const isMinor = age !== null && age < 18;
+                      return (
+                        <tr key={i} style={{
+                          borderBottom: '1px solid #f3f4f6',
+                          background: isMinor ? '#fef3c7' : 'transparent',
+                        }}>
+                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{i + 1}</td>
+                          <td style={{ padding: '8px 10px', fontSize: 13 }}>
+                            {formatName(m)}
+                          </td>
+                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.rut || '—'}</td>
+                          <td style={{ padding: '8px 10px', fontSize: 13 }}>
+                            {age !== null ? (
+                              <span style={{
+                                color: isMinor ? '#d97706' : '#374151',
+                                fontWeight: isMinor ? 600 : 400,
+                              }}>
+                                {age} años{isMinor ? ' (menor)' : ''}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.email || '—'}</td>
+                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.phone || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {tab === 'directorio' && (
             <div style={{ display: 'grid', gap: 12 }}>
-              {directorio.members ? directorio.members.map((m, i) => (
-                <div key={i} style={{
-                  padding: 12, border: '1px solid #e5e7eb', borderRadius: 8,
-                  display: 'flex', justifyContent: 'space-between'
+              {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => (
+                <div key={key} style={{
+                  padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <div>
-                    <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
-                      {m.cargo || m.role || 'Miembro'}
-                    </span>
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                      {m.firstName || m.name || ''} {m.lastName || ''} - {m.rut || ''}
-                    </p>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
+                      {formatName(person)} — {person.rut || '—'}
+                    </div>
+                    {person.birthDate && (() => {
+                      const age = calculateAge(person.birthDate);
+                      return age !== null ? (
+                        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Edad: {age} años</div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
-              )) : Object.entries(directorio).filter(([k]) => k !== 'type').map(([cargo, data]) => (
-                <div key={cargo} style={{
-                  padding: 12, border: '1px solid #e5e7eb', borderRadius: 8
-                }}>
-                  <span style={{ fontWeight: 600, fontSize: 14, color: '#111827', textTransform: 'capitalize' }}>
-                    {cargo}
-                  </span>
-                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                    {typeof data === 'object' ? `${data.firstName || data.name || ''} ${data.lastName || ''} - ${data.rut || ''}` : String(data)}
-                  </p>
-                </div>
-              ))}
-              {(!directorio.members && Object.keys(directorio).filter(k => k !== 'type').length === 0) && (
+              )) : (
                 <p style={{ color: '#6b7280', textAlign: 'center' }}>Sin directorio provisorio</p>
+              )}
+
+              {electoralCommission.length > 0 && (
+                <>
+                  <h4 style={{ margin: '16px 0 4px', fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                    Comisión Electoral ({electoralCommission.length})
+                  </h4>
+                  {electoralCommission.map((m, i) => (
+                    <div key={m.rut || i} style={{
+                      padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f0f9ff',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <div>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
+                        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
+                        Miembro {i + 1}
+                      </span>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           )}
 
           {tab === 'documentos' && (
             <div>
+              {org.estatutosSnapshot?.nombreTipo && (
+                <div style={{
+                  padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12,
+                  background: '#fafafa',
+                }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Plantilla de Estatutos:</span>
+                  <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{org.estatutosSnapshot.nombreTipo}</span>
+                  {org.estatutosSnapshot.articulos?.length > 0 && (
+                    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>({org.estatutosSnapshot.articulos.length} artículos)</span>
+                  )}
+                </div>
+              )}
+              {org.estatutos && (
+                <div style={{
+                  padding: 12, border: '1px solid #d1fae5', borderRadius: 8, marginBottom: 12,
+                  background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span style={{ fontSize: 14, color: '#059669', fontWeight: 500 }}>Estatutos PDF disponible</span>
+                </div>
+              )}
               {org.documents && org.documents.length > 0 ? org.documents.map((doc, i) => (
                 <div key={i} style={{
                   padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
@@ -224,7 +369,7 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
                   <span style={{ fontSize: 14 }}>{doc.name || doc.type || `Documento ${i + 1}`}</span>
                   <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(doc.uploadedAt)}</span>
                 </div>
-              )) : (
+              )) : !org.estatutos && (
                 <p style={{ color: '#6b7280', textAlign: 'center' }}>Sin documentos</p>
               )}
             </div>
@@ -256,10 +401,12 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
           padding: '16px 24px', borderTop: '1px solid #e5e7eb',
           display: 'flex', gap: 8, flexWrap: 'wrap'
         }}>
-          {(org.status === 'pending_review' || org.status === 'in_review') && (
+          {(org.status === 'waiting_ministro' || org.status === 'pending_review' || org.status === 'in_review') && (
             <>
-              <button onClick={() => handleStatusChange('in_review')} disabled={isActioning || org.status === 'in_review'}
-                style={actionBtn('#8b5cf6')}>Tomar Revisión</button>
+              {org.status !== 'in_review' && (
+                <button onClick={() => handleStatusChange('in_review')} disabled={isActioning}
+                  style={actionBtn('#8b5cf6')}>Tomar Revisión</button>
+              )}
               <button onClick={() => setShowSchedule(true)} disabled={isActioning}
                 style={actionBtn('#2563eb')}>Agendar Ministro</button>
               <button onClick={() => setShowReject(true)} disabled={isActioning}
