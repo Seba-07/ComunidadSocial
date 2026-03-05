@@ -415,7 +415,9 @@ class PDFService {
   _renderTableBlock(doc, block, pageW, pageH, pageNum, headerConfig, footerConfig) {
     const colCount = block.headers.length;
     const cellPadding = 3;
-    const rowHeight = 7;
+    // Use taller rows if table has a "Firma" column (for handwritten signatures)
+    const hasFirmaCol = block.headers.some(h => /firma/i.test(h));
+    const rowHeight = hasFirmaCol ? 10 : 7;
     const colWidth = CONTENT_WIDTH / colCount;
 
     // Helper to draw header row
@@ -768,52 +770,103 @@ class PDFService {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
 
-    const attendeesPerPage = 12;
     let pageNum = 1;
 
-    attendees.forEach((attendee, index) => {
-      if (index > 0 && index % attendeesPerPage === 0) {
+    // Column definitions for the table
+    const cols = [
+      { header: 'N°', width: 12 },
+      { header: 'Nombre Completo', width: 45 },
+      { header: 'RUT', width: 30 },
+      { header: 'Edad', width: 14 },
+      { header: 'Domicilio', width: 38 },
+      { header: 'Firma', width: CONTENT_WIDTH - 12 - 45 - 30 - 14 - 38 }
+    ];
+    const cellPadding = 2;
+    const rowHeight = 10;
+
+    // Helper: draw table header row
+    const drawTableHeaders = () => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setFillColor('#e5e7eb');
+      doc.setDrawColor('#000000');
+      let xPos = MARGIN_LEFT;
+      for (const col of cols) {
+        doc.rect(xPos, this.currentY, col.width, rowHeight, 'FD');
+        doc.text(col.header, xPos + cellPadding, this.currentY + rowHeight / 2 + 1);
+        xPos += col.width;
+      }
+      this.currentY += rowHeight;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+    };
+
+    // Helper: calculate age from birthDate
+    const calculateAge = (birthDate) => {
+      if (!birthDate) return '';
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+      return String(age);
+    };
+
+    // Draw table header
+    drawTableHeaders();
+
+    // Data rows
+    const listData = attendees.length > 0 ? attendees : members;
+    listData.forEach((person, index) => {
+      // Page break check
+      if (this.currentY + rowHeight > PAGE_HEIGHT - 35) {
         this.drawFooter(doc, pageNum);
         doc.addPage();
         pageNum++;
         this.drawHeader(doc, 'LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN', 'DEPARTAMENTO DE REGISTRO Y CERTIFICACIÓN');
         this.currentY = 55;
+        drawTableHeaders();
       }
 
-      // Nombre - buscar en miembros y también en la lista de asistentes
-      doc.text(`Nombre: ${this.getMemberName(attendee, members, attendees)}`, MARGIN_LEFT, this.currentY);
-      // RUT
-      doc.text(`Rut: ${attendee.rut || '____________'}`, MARGIN_LEFT + 80, this.currentY);
-      // Firma
-      doc.text('Firma:', MARGIN_LEFT + 130, this.currentY);
+      const nombre = this.getMemberName(person, members, attendees);
+      const rut = person.rut || '';
+      const edad = calculateAge(person.birthDate);
+      const domicilio = person.address || '';
+      const cellValues = [String(index + 1), nombre, rut, edad, domicilio, ''];
 
-      // Si hay firma, insertarla
-      if (attendee.signature) {
-        try {
-          doc.addImage(attendee.signature, 'PNG', MARGIN_LEFT + 145, this.currentY - 5, 30, 12);
-        } catch (e) {
-          doc.text('______________', MARGIN_LEFT + 145, this.currentY);
+      doc.setDrawColor('#000000');
+      let xPos = MARGIN_LEFT;
+      cellValues.forEach((val, ci) => {
+        const col = cols[ci];
+        doc.rect(xPos, this.currentY, col.width, rowHeight, 'S');
+        if (val) {
+          const truncated = doc.splitTextToSize(val, col.width - cellPadding * 2)[0] || '';
+          doc.text(truncated, xPos + cellPadding, this.currentY + rowHeight / 2 + 1);
         }
-      } else {
-        doc.text('______________', MARGIN_LEFT + 145, this.currentY);
-      }
-
-      this.currentY += 12;
+        xPos += col.width;
+      });
+      this.currentY += rowHeight;
     });
 
-    // Si no hay asistentes, mostrar líneas vacías
-    if (attendees.length === 0) {
-      for (let i = 0; i < 12; i++) {
-        doc.text('Nombre: ________________________', MARGIN_LEFT, this.currentY);
-        doc.text('Rut: ____________', MARGIN_LEFT + 80, this.currentY);
-        doc.text('Firma: ______________', MARGIN_LEFT + 130, this.currentY);
-        this.currentY += 12;
+    // Empty rows if no data
+    if (listData.length === 0) {
+      for (let i = 0; i < 15; i++) {
+        let xPos = MARGIN_LEFT;
+        const cellValues = [String(i + 1), '', '', '', '', ''];
+        cellValues.forEach((val, ci) => {
+          const col = cols[ci];
+          doc.rect(xPos, this.currentY, col.width, rowHeight, 'S');
+          if (val) doc.text(val, xPos + cellPadding, this.currentY + rowHeight / 2 + 1);
+          xPos += col.width;
+        });
+        this.currentY += rowHeight;
       }
     }
 
-    // Información final
+    // Final info
     this.currentY += 10;
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
     doc.text(`FECHA CONSTITUCIÓN: ${this.formatDate(assemblyDate)}`, MARGIN_LEFT, this.currentY);
     this.currentY += 7;
     doc.text('NOMBRE DE LA ORGANIZACIÓN:', MARGIN_LEFT, this.currentY);

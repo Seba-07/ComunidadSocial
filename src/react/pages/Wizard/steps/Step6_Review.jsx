@@ -48,6 +48,26 @@ export default function Step6_Review({ onNext, onPrev }) {
     loadDocTemplates();
   }, [templateConfig]);
 
+  function buildListaSociosTable(membersList) {
+    const header = 'N°|Nombre Completo|RUT|Edad|Domicilio|Firma';
+    const rows = membersList.map((m, i) => {
+      const nombre = `${m.firstName || ''} ${m.lastName || ''}`.trim();
+      const rut = m.rut || '';
+      let edad = '';
+      if (m.birthDate) {
+        const birth = new Date(m.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+        edad = String(age);
+      }
+      const domicilio = m.address || '';
+      return `${i + 1}|${nombre}|${rut}|${edad}|${domicilio}|`;
+    });
+    return `[TABLE]\n${header}\n${rows.join('\n')}\n[/TABLE]`;
+  }
+
   // Build template replacement data from wizard steps
   function buildTemplateData() {
     const president = directorio.president || directorio.presidente || {};
@@ -69,7 +89,7 @@ export default function Step6_Review({ onNext, onPrev }) {
       TELEFONO: org.phone || '',
       OBJETIVOS: org.objectives || '',
       TOTAL_SOCIOS: String(members.length),
-      LISTA_SOCIOS: members.map(m => `${m.firstName} ${m.lastName} (${m.rut})`).join(', '),
+      LISTA_SOCIOS: buildListaSociosTable(members),
       PRESIDENTE: getName(president),
       RUT_PRESIDENTE: president.rut || '___',
       SECRETARIO: getName(secretary),
