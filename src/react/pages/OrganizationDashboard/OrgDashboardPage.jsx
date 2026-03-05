@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useOrganizationStore } from '../../stores/organizationStore';
 import { useAuthStore } from '../../stores/authStore';
 import SharedHeader from '../../components/layout/SharedHeader';
@@ -52,7 +52,9 @@ const APPROVED_STATUSES = new Set(['approved', 'APPROVED', 'ACTIVE']);
 export default function OrgDashboardPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('mis-org');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'mis-org';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const { organizations, activeOrg, isLoading, error, fetchMyOrganizations, setActiveOrg, refreshActiveOrg } = useOrganizationStore();
   const user = useAuthStore((s) => s.user);
 

@@ -29,6 +29,8 @@ const WIZARD_MENU_ITEMS = [
   { key: 'guia', label: 'Guía', icon: '📑' },
   { key: 'biblioteca', label: 'Biblioteca', icon: '📚' },
   { key: 'noticias', label: 'Noticias', icon: '📰' },
+  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'configuracion', label: 'Configuración', icon: '⚙️' },
 ];
 
 export default function WizardPage() {
@@ -96,6 +98,16 @@ export default function WizardPage() {
     }
     if (key === 'noticias') {
       window.location.href = '/?page=noticias';
+      return;
+    }
+    if (key === 'privacidad') {
+      saveProgress();
+      navigate('/org/auto?tab=privacidad');
+      return;
+    }
+    if (key === 'configuracion') {
+      saveProgress();
+      navigate('/org/auto?tab=configuracion');
       return;
     }
   }
