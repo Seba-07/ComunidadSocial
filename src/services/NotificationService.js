@@ -298,11 +298,14 @@ class NotificationService {
     toast.innerHTML = `
       <div class="notification-toast__icon">${this.getIcon(type)}</div>
       <div class="notification-toast__content">
-        <div class="notification-toast__title">${title}</div>
-        <div class="notification-toast__message">${message}</div>
+        <div class="notification-toast__title"></div>
+        <div class="notification-toast__message"></div>
       </div>
       <button class="notification-toast__close">&times;</button>
     `;
+    // XSS safe: use textContent instead of interpolating into innerHTML
+    toast.querySelector('.notification-toast__title').textContent = title;
+    toast.querySelector('.notification-toast__message').textContent = message;
 
     document.body.appendChild(toast);
 

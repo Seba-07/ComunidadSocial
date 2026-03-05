@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../../../services/ApiService';
+import { sanitizeRichText } from '@shared/utils/sanitize';
 
 const CATEGORIES = [
   { key: 'TODAS', label: 'Todas' },
@@ -134,7 +135,7 @@ export default function OrgNoticias() {
         )}
 
         <div
-          dangerouslySetInnerHTML={{ __html: selectedArticle.contentHTML || selectedArticle.content || '' }}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(selectedArticle.contentHTML || selectedArticle.content || '') }}
           style={{ fontSize: 15, lineHeight: 1.8, color: '#334155' }}
         />
 

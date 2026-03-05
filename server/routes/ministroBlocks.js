@@ -3,6 +3,7 @@ import MinistroBlock from '../models/MinistroBlock.js';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createMinistroBlockSchema, createMinistroBlockFromConfirmSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -61,7 +62,7 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
 });
 
 // POST /api/ministro-blocks - Crear bloque manual
-router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), validate(createMinistroBlockSchema), async (req, res) => {
   try {
     const { ministroId, ministroName, date, time, blockType, reason } = req.body;
 
@@ -291,7 +292,7 @@ router.get('/availability/month/:year/:month', async (req, res) => {
 // ==================== Crear bloque desde confirmación ====================
 
 // POST /api/ministro-blocks/create-from-confirmation
-router.post('/create-from-confirmation', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/create-from-confirmation', authenticate, requireRole('MUNICIPALIDAD'), validate(createMinistroBlockFromConfirmSchema), async (req, res) => {
   try {
     const { assignmentId, ministroId, ministroName, date, startTime, durationHours, fullDay, reason } = req.body;
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../../../services/ApiService';
+import { sanitizeRichText } from '@shared/utils/sanitize';
 
 const cardStyle = {
   background: '#fff',
@@ -167,7 +168,7 @@ export default function OrgGuia() {
       ) : content ? (
         <div style={cardStyle}>
           <div style={sectionHeaderStyle}><span>📚</span> Información Adicional</div>
-          <div dangerouslySetInnerHTML={{ __html: content }} style={{ fontSize: 14, lineHeight: 1.7, color: '#334155' }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeRichText(content) }} style={{ fontSize: 14, lineHeight: 1.7, color: '#334155' }} />
         </div>
       ) : null}
     </div>

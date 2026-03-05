@@ -167,6 +167,19 @@ app.use('/api/ministro-blocks', ministroBlocksRoutes);
 app.use('/api/security-incidents', securityIncidentsRoutes);
 app.use('/api/document-templates', documentTemplatesRoutes);
 
+// CSP violation report endpoint (no auth required)
+app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
+  const report = req.body?.['csp-report'] || req.body;
+  if (report) {
+    console.warn('CSP Violation:', JSON.stringify({
+      blockedURI: report['blocked-uri'],
+      violatedDirective: report['violated-directive'],
+      documentURI: report['document-uri']
+    }));
+  }
+  res.status(204).end();
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
   const mongoState = mongoose.connection.readyState;

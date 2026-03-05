@@ -5,6 +5,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import Organization from '../models/Organization.js';
 import { authenticate } from '../middleware/auth.js';
+import { uploadLimiter } from '../middleware/security.js';
 import { isPathWithinDir } from '../utils/pathSecurity.js';
 
 const router = express.Router();
@@ -84,10 +85,20 @@ const storage = multer.diskStorage({
   }
 });
 
+const ALLOWED_FILE_TYPES = /pdf|doc|docx|xls|xlsx|jpg|jpeg|png|gif/;
+
 const upload = multer({
   storage,
   limits: {
     fileSize: 20 * 1024 * 1024 // 20MB
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    if (ALLOWED_FILE_TYPES.test(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no permitido. Solo se aceptan: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF'));
+    }
   }
 });
 
@@ -158,7 +169,7 @@ router.get('/:orgId', authenticate, async (req, res) => {
  * POST /api/organization-documents/:orgId/upload
  * Subir un documento para una organización.
  */
-router.post('/:orgId/upload', authenticate, upload.single('file'), async (req, res) => {
+router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file'), async (req, res) => {
   try {
     const organization = await checkOrgPermission(req, res);
     if (!organization) {

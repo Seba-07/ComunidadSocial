@@ -5,6 +5,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import EstatutoTemplate from '../models/EstatutoTemplate.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createEstatutoTemplateSchema, updateEstatutoTemplateSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -153,7 +154,7 @@ router.get('/id/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, re
 });
 
 // POST /api/estatuto-templates - Crear nueva plantilla
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createEstatutoTemplateSchema), async (req, res) => {
   try {
     const {
       tipoOrganizacion,
@@ -213,7 +214,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 });
 
 // PUT /api/estatuto-templates/:id - Actualizar plantilla
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateEstatutoTemplateSchema), async (req, res) => {
   try {
     const template = await EstatutoTemplate.findById(req.params.id);
     if (!template) {

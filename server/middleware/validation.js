@@ -397,10 +397,152 @@ export const validateMongoId = (paramName = 'id') => {
   };
 };
 
+// ============================================
+// ESQUEMAS FASE 3 — Rutas sin validacion previa
+// ============================================
+
+const mongoIdString = z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID inválido');
+
+/**
+ * Esquema para login de socio
+ */
+export const loginSocioSchema = z.object({
+  lastName: z.string().min(1, 'Apellido requerido').max(100).trim(),
+  rut: rutSchema
+});
+
+/**
+ * Esquema para noticias
+ */
+export const createNewsSchema = z.object({
+  title: z.string().min(1, 'Título requerido').max(200).trim(),
+  summary: z.string().max(500).optional().or(z.literal('')),
+  contentHTML: z.string().max(51200, 'Contenido excede 50KB').optional().or(z.literal('')),
+  category: z.string().max(50).optional().or(z.literal('')),
+  tags: z.array(z.string().max(50)).max(20).optional(),
+  isPublished: z.boolean().optional(),
+  featuredImage: z.string().max(500).optional().or(z.literal(''))
+}).passthrough();
+
+export const updateNewsSchema = createNewsSchema.partial();
+
+/**
+ * Esquema para guia de constitucion
+ */
+export const updateGuiaSchema = z.object({
+  contentHTML: z.string().max(102400, 'Contenido excede 100KB').optional(),
+  isPublished: z.boolean().optional()
+});
+
+/**
+ * Esquema para bloques de ministro
+ */
+export const createMinistroBlockSchema = z.object({
+  ministroId: mongoIdString,
+  ministroName: z.string().min(1).max(100),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido'),
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido').optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  blockType: z.string().max(50).optional(),
+  durationHours: z.number().min(0.5).max(24).optional(),
+  fullDay: z.boolean().optional(),
+  reason: z.string().max(500).optional().or(z.literal(''))
+}).passthrough();
+
+export const createMinistroBlockFromConfirmSchema = z.object({
+  assignmentId: mongoIdString,
+  ministroId: mongoIdString,
+  ministroName: z.string().min(1).max(100),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  durationHours: z.number().min(0.5).max(24).optional(),
+  fullDay: z.boolean().optional(),
+  reason: z.string().max(500).optional().or(z.literal(''))
+}).passthrough();
+
+/**
+ * Esquema para incidentes de seguridad
+ */
+export const createSecurityIncidentSchema = z.object({
+  type: z.enum(['data_breach', 'unauthorized_access', 'malware', 'phishing', 'dos', 'other']),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  title: z.string().min(1, 'Título requerido').max(200).trim(),
+  description: z.string().max(5000).optional().or(z.literal('')),
+  dataAffected: z.string().max(2000).optional().or(z.literal('')),
+  usersAffectedCount: z.number().int().min(0).optional(),
+  measuresTaken: z.string().max(5000).optional().or(z.literal(''))
+});
+
+export const updateSecurityIncidentSchema = z.object({
+  status: z.enum(['open', 'investigating', 'contained', 'resolved', 'closed']).optional(),
+  measuresTaken: z.string().max(5000).optional().or(z.literal('')),
+  notifiedAgency: z.boolean().optional(),
+  notifiedAgencyAt: z.string().optional().nullable(),
+  notifiedUsers: z.boolean().optional(),
+  notifiedUsersAt: z.string().optional().nullable(),
+  resolvedAt: z.string().optional().nullable()
+}).passthrough();
+
+/**
+ * Esquema para estatuto templates
+ */
+export const createEstatutoTemplateSchema = z.object({
+  tipoOrganizacion: z.string().min(1).max(100),
+  nombreTipo: z.string().min(1).max(200).trim(),
+  descripcion: z.string().max(2000).optional().or(z.literal('')),
+  categoria: z.string().max(100).optional().or(z.literal(''))
+}).passthrough();
+
+export const updateEstatutoTemplateSchema = z.object({
+  nombreTipo: z.string().max(200).trim().optional(),
+  descripcion: z.string().max(2000).optional().or(z.literal('')),
+  publicado: z.boolean().optional(),
+  descripcionCambio: z.string().max(500).optional().or(z.literal(''))
+}).passthrough();
+
+/**
+ * Esquema para document templates
+ */
+export const createDocumentTemplateSchema = z.object({
+  name: z.string().min(1, 'Nombre requerido').max(200).trim(),
+  documentType: z.string().min(1).max(100),
+  content: z.string().max(204800, 'Contenido excede 200KB').optional().or(z.literal('')),
+  isDefault: z.boolean().optional(),
+  pageSize: z.string().max(20).optional()
+}).passthrough();
+
+export const updateDocumentTemplateSchema = z.object({
+  name: z.string().max(200).trim().optional(),
+  documentType: z.string().max(100).optional(),
+  content: z.string().max(204800).optional(),
+  isDefault: z.boolean().optional(),
+  activo: z.boolean().optional(),
+  pageSize: z.string().max(20).optional()
+}).passthrough();
+
+/**
+ * Esquema para busqueda
+ */
+export const searchQuerySchema = z.object({
+  q: z.string().min(1, 'Término de búsqueda requerido').max(100, 'Búsqueda muy larga').trim(),
+  type: z.string().max(50).optional()
+});
+
+/**
+ * Esquema para library documents (campos no-archivo del upload)
+ */
+export const libraryDocumentSchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  description: z.string().max(500).optional().or(z.literal('')),
+  category: z.string().max(50).optional().or(z.literal('')),
+  isPublished: z.union([z.boolean(), z.string()]).optional()
+});
+
 export default {
   // Esquemas
   registerSchema,
   loginSchema,
+  loginSocioSchema,
   changePasswordSchema,
   createMinistroSchema,
   createOrganizationSchema,
@@ -408,6 +550,19 @@ export default {
   statusChangeSchema,
   rejectWithCorrectionsSchema,
   createNotificationSchema,
+  createNewsSchema,
+  updateNewsSchema,
+  updateGuiaSchema,
+  createMinistroBlockSchema,
+  createMinistroBlockFromConfirmSchema,
+  createSecurityIncidentSchema,
+  updateSecurityIncidentSchema,
+  createEstatutoTemplateSchema,
+  updateEstatutoTemplateSchema,
+  createDocumentTemplateSchema,
+  updateDocumentTemplateSchema,
+  searchQuerySchema,
+  libraryDocumentSchema,
   // Middleware
   validate,
   validateMongoId

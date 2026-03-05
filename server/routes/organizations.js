@@ -1762,14 +1762,15 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
     let certsSynced = 0;
     let estatutosSynced = false;
 
-    // Sync certificados
+    // Sync certificados (max 3MB por certificado en base64)
+    const MAX_CERT_BASE64 = 4 * 1024 * 1024; // ~3MB file = ~4MB base64
     if (certificates && typeof certificates === 'object') {
       for (const [key, certData] of Object.entries(certificates)) {
         const existing = organization.certificatesStep5.find(c => c.memberId === key);
         if (existing && !existing.certificate && certData.certificate) {
-          // Limpiar prefijo data:...;base64, si existe
           let base64 = certData.certificate;
           if (base64.includes(',')) base64 = base64.split(',')[1];
+          if (base64.length > MAX_CERT_BASE64) continue; // Skip oversized certs
           existing.certificate = base64;
           certsSynced++;
         }
@@ -2857,7 +2858,13 @@ router.post('/:id/certificate-files', authenticate, validateObjectId(), async (r
     // Soportar envío individual (certificate) o bulk (certificates)
     const { certificate, certificates } = req.body;
 
+    const MAX_CERT_BASE64 = 4 * 1024 * 1024; // ~3MB file = ~4MB base64
+
     if (certificate && certificate.memberId) {
+      // Validar tamano del certificado base64
+      if (certificate.certificate && certificate.certificate.length > MAX_CERT_BASE64) {
+        return res.status(413).json({ error: 'Certificado excede el tamaño máximo permitido (3MB)' });
+      }
       // Modo individual: agregar/reemplazar un solo certificado usando $push/$pull
       const certData = {
         memberId: certificate.memberId || '',

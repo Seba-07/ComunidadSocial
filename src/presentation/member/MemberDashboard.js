@@ -76,7 +76,8 @@ class MemberDashboard {
 
     if (!this.org) {
       const errMsg = this.initError || 'Sin datos de organización';
-      container.innerHTML = `<div class="org-empty-state"><p>No se encontró tu organización.</p><small style="color:#9ca3af;">Debug: ${errMsg} | orgs: ${this.orgs.length}</small></div>`;
+      container.innerHTML = `<div class="org-empty-state"><p>No se encontró tu organización.</p><small style="color:#9ca3af;"></small></div>`;
+      container.querySelector('small').textContent = `Debug: ${errMsg} | orgs: ${this.orgs.length}`;
       return;
     }
 

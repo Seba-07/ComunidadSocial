@@ -19,10 +19,10 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { q, type } = req.query;
 
-    // Validar que el parámetro de búsqueda exista y tenga al menos 2 caracteres
-    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+    // Validar que el parámetro de búsqueda exista y tenga al menos 2 caracteres (max 100)
+    if (!q || typeof q !== 'string' || q.trim().length < 2 || q.trim().length > 100) {
       return res.status(400).json({
-        error: 'El parámetro de búsqueda "q" es requerido y debe tener al menos 2 caracteres'
+        error: 'El parámetro de búsqueda "q" es requerido (2-100 caracteres)'
       });
     }
 

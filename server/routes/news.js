@@ -5,6 +5,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import News from '../models/News.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createNewsSchema, updateNewsSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -137,7 +138,7 @@ router.get('/:idOrSlug', async (req, res) => {
  * POST /api/news
  * Crear una nueva noticia (solo MUNICIPALIDAD)
  */
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createNewsSchema), async (req, res) => {
   try {
     const { title, summary, contentHTML, category, tags, isPublished, featuredImage } = req.body;
 
@@ -193,7 +194,7 @@ router.post('/upload-image', authenticate, requireRole('MUNICIPALIDAD'), upload.
  * PUT /api/news/:id
  * Actualizar una noticia (solo MUNICIPALIDAD)
  */
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateNewsSchema), async (req, res) => {
   try {
     const { title, summary, contentHTML, category, tags, isPublished, featuredImage } = req.body;
 

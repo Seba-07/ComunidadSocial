@@ -1,6 +1,7 @@
 import express from 'express';
 import GuiaConstitucion from '../models/GuiaConstitucion.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, updateGuiaSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get('/', async (req, res) => {
  * PUT /api/guia-constitucion
  * Actualizar la guía de constitución (solo MUNICIPALIDAD)
  */
-router.put('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/', authenticate, requireRole('MUNICIPALIDAD'), validate(updateGuiaSchema), async (req, res) => {
   try {
     const { contentHTML, isPublished } = req.body;
 

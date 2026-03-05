@@ -5,6 +5,8 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import LibraryDocument from '../models/LibraryDocument.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, libraryDocumentSchema } from '../middleware/validation.js';
+import { uploadLimiter } from '../middleware/security.js';
 import { isPathWithinDir } from '../utils/pathSecurity.js';
 
 const router = express.Router();
@@ -75,8 +77,8 @@ router.get('/', async (req, res) => {
       .populate('uploadedBy', 'firstName lastName email')
       .sort({ createdAt: -1 });
 
-    if (search) {
-      filter.$text = { $search: search };
+    if (search && typeof search === 'string' && search.trim().length <= 100) {
+      filter.$text = { $search: search.trim() };
     }
 
     const documents = await query;
@@ -154,7 +156,7 @@ router.get('/:id/download', async (req, res) => {
  * POST /api/library-documents
  * Subir un nuevo documento (solo MUNICIPALIDAD)
  */
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), upload.single('file'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), uploadLimiter, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se proporcionó ningún archivo' });
@@ -202,7 +204,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), upload.single('file
  * PUT /api/library-documents/:id
  * Actualizar un documento (solo MUNICIPALIDAD)
  */
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(libraryDocumentSchema.partial()), async (req, res) => {
   try {
     const { name, description, category, isPublished } = req.body;
 

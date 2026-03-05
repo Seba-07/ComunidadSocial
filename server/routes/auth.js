@@ -5,7 +5,7 @@ import Consent from '../models/Consent.js';
 import Organization from '../models/Organization.js';
 import { generateToken, generateRefreshToken, authenticate, COOKIE_OPTIONS, REFRESH_COOKIE_OPTIONS, EFFECTIVE_JWT_SECRET } from '../middleware/auth.js';
 import { authLimiter, registerLimiter, sensitiveLimiter } from '../middleware/security.js';
-import { validate, registerSchema, loginSchema, changePasswordSchema } from '../middleware/validation.js';
+import { validate, registerSchema, loginSchema, changePasswordSchema, loginSocioSchema } from '../middleware/validation.js';
 import { emailService } from '../services/emailService.js';
 import jwt from 'jsonwebtoken';
 
@@ -374,7 +374,7 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
 });
 
 // Login de socio (miembro) - con apellido + RUT
-router.post('/login-socio', authLimiter, async (req, res) => {
+router.post('/login-socio', authLimiter, validate(loginSocioSchema), async (req, res) => {
   try {
     const { lastName, rut } = req.body;
 

@@ -6,6 +6,7 @@ import express from 'express';
 import multer from 'multer';
 import DocumentTemplate, { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, AVAILABLE_PLACEHOLDERS } from '../models/DocumentTemplate.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createDocumentTemplateSchema, updateDocumentTemplateSchema } from '../middleware/validation.js';
 import * as storageService from '../services/storageService.js';
 
 const upload = multer({
@@ -117,7 +118,7 @@ router.get('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
 /**
  * POST / - Crear nueva plantilla (admin)
  */
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createDocumentTemplateSchema), async (req, res) => {
   try {
     const { name, documentType, content, isDefault, pageSize } = req.body;
 
@@ -149,7 +150,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 /**
  * PUT /:id - Actualizar plantilla (admin)
  */
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateDocumentTemplateSchema), async (req, res) => {
   try {
     const { name, documentType, content, isDefault, activo, pageSize, headerConfig, footerConfig } = req.body;
 

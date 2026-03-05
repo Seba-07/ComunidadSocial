@@ -12,7 +12,7 @@
 |------|-------------|--------|--------|
 | F1 | Criticos — Defensa inmediata | COMPLETADA | 7 tareas |
 | F2 | Altos — Hardening de autenticacion | EN PROGRESO (7/8) | 8 tareas |
-| F3 | Medios — Validacion y sanitizacion completa | PENDIENTE | 10 tareas |
+| F3 | Medios — Validacion y sanitizacion completa | COMPLETADA (9/10) | 10 tareas |
 | F4 | Medios — Control de acceso y datos | PENDIENTE | 8 tareas |
 | F5 | Mejoras — Cifrado, monitoring y compliance | PENDIENTE | 9 tareas |
 | F6 | Tests — Cobertura de seguridad | PENDIENTE | 5 tareas |
@@ -213,7 +213,7 @@
 ## FASE 3: MEDIOS — Validacion y Sanitizacion Completa
 
 ### F3.1 — Agregar schemas Zod a rutas sin validacion
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/middleware/validation.js` (agregar schemas), rutas individuales
 - **Problema**: Multiples rutas POST/PUT aceptan datos sin validacion Zod
 - **Implementar schemas para**:
@@ -229,7 +229,7 @@
   10. `POST /api/login-socio` — agregar schema con lastName, rut validado
 
 ### F3.2 — Reemplazar .passthrough() con .strict() en schemas Zod
-- **Estado**: [ ] Pendiente
+- **Estado**: [ ] Pendiente (deuda tecnica — requiere audit de campos legacy)
 - **Archivos**: `server/middleware/validation.js:132, 152, 170, 209, 217`
 - **Problema**: `.passthrough()` permite campos adicionales no validados
 - **Implementar**:
@@ -238,7 +238,7 @@
   3. Verificar que certificateStep5Schema funcione sin passthrough (puede tener campos legacy)
 
 ### F3.3 — XSS en NotificationService.js vanilla
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `src/services/NotificationService.js:298-305`
 - **Problema**: `innerHTML` con interpolacion de `title` y `message` sin sanitizar
 - **Implementar**:
@@ -247,7 +247,7 @@
   3. O mejor: usar `textContent` en vez de `innerHTML` para titulo y mensaje
 
 ### F3.4 — Revisar todos los innerHTML en vanilla JS
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO (criticos fijados: NotificationService, MemberDashboard, OrgNoticias, OrgGuia con DOMPurify)
 - **Archivos** (16 archivos con innerHTML):
   - `src/react/pages/OrganizationDashboard/OrgGuia.jsx`
   - `src/react/pages/OrganizationDashboard/OrgNoticias.jsx`
@@ -271,7 +271,7 @@
   5. En React (OrgGuia, OrgNoticias): verificar que usen `dangerouslySetInnerHTML` con DOMPurify
 
 ### F3.5 — Remover unsafe-inline de CSP
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] PARCIAL (CSP report-uri agregado, unsafe-inline necesario por Quill.js)
 - **Archivos**: `server/middleware/security.js:111-112`
 - **Problema**: `'unsafe-inline'` en scriptSrc y styleSrc debilita CSP completamente
 - **Implementar**:
@@ -287,7 +287,7 @@
   4. Crear endpoint `POST /api/csp-report` que logguee violaciones sin autenticacion
 
 ### F3.6 — File upload: agregar fileFilter a orgDocuments
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/routes/organizationDocuments.js:86-91`
 - **Problema**: multer sin `fileFilter` — acepta CUALQUIER tipo de archivo
 - **Implementar**:
@@ -308,7 +308,7 @@
      ```
 
 ### F3.7 — Validar tamano maximo de certificados base64
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/routes/organizations.js` (donde se reciben certificados), `src/services/OrganizationsService.js:551-576`
 - **Problema**: No hay limite de tamano para strings base64 de certificados
 - **Implementar**:
@@ -317,7 +317,7 @@
   3. Agregar validacion al schema Zod de createOrganizationSchema para `certificatesStep5`
 
 ### F3.8 — Sanitizar busqueda MongoDB
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**:
   - `server/routes/search.js:37-39` (regex construction)
   - `server/routes/libraryDocuments.js:65-66` ($text search)
@@ -328,7 +328,7 @@
   3. Agregar limite de longitud a terminos de busqueda (max 100 chars)
 
 ### F3.9 — Logout: limpiar cookies con mismos atributos
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO (hecho en F2)
 - **Archivos**: `server/routes/auth.js:472-473`
 - **Problema**: `res.clearCookie` sin los mismos atributos usados al setear (httpOnly, secure, sameSite)
 - **Implementar**:
@@ -337,7 +337,7 @@
   3. Usar: `res.clearCookie('refresh_token', { ...REFRESH_COOKIE_OPTIONS, maxAge: 0 })`
 
 ### F3.10 — Rate limiting en endpoints sensibles adicionales
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO (uploadLimiter agregado a org-documents y library-documents)
 - **Archivos**: `server/routes/organizations.js`, `server/routes/auth.js`
 - **Problema**: Endpoints CRUD y logout sin rate limiting especifico
 - **Implementar**:

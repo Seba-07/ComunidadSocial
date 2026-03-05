@@ -97,6 +97,21 @@ export const qrCheckinLimiter = rateLimit({
   legacyHeaders: false
 });
 
+/**
+ * Rate limiter para uploads de archivos
+ * 20 uploads por hora por IP
+ */
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: {
+    error: 'Demasiados archivos subidos. Intente más tarde.',
+    retryAfter: 3600
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ============================================
 // HEADERS DE SEGURIDAD (Helmet)
 // ============================================
@@ -116,6 +131,7 @@ export const securityHeaders = helmet({
       connectSrc: ["'self'", "https://comunidadsocial-production.up.railway.app", "https://*.vercel.app"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
+      reportUri: ['/api/csp-report'],
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },

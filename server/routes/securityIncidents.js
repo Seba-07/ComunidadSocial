@@ -2,6 +2,7 @@ import express from 'express';
 import SecurityIncident from '../models/SecurityIncident.js';
 import AuditLog from '../models/AuditLog.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createSecurityIncidentSchema, updateSecurityIncidentSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 });
 
 // Report a new security incident (Admin only)
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createSecurityIncidentSchema), async (req, res) => {
   try {
     const {
       type, severity, title, description,
@@ -64,7 +65,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 });
 
 // Update incident status (Admin only)
-router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateSecurityIncidentSchema), async (req, res) => {
   try {
     const incident = await SecurityIncident.findById(req.params.id);
     if (!incident) {
