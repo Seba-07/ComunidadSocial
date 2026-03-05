@@ -18,8 +18,9 @@ function getApiUrl() {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:3001/api';
     }
-    // Production - use Railway backend
-    return 'https://comunidadsocial-production.up.railway.app/api';
+    // Production - use same-origin proxy (Vercel rewrites /api/* to Railway)
+    // This ensures cookies are first-party, avoiding third-party cookie blocking
+    return '/api';
   }
 
   return 'http://localhost:3001/api';
@@ -215,8 +216,8 @@ class ApiService {
           window.dispatchEvent(new CustomEvent('email-not-verified'));
         }
 
-        // Auto-refresh on token expiry
-        if (response.status === 401 && data.code === 'TOKEN_EXPIRED' && !options._retried) {
+        // Auto-refresh on 401 (token expired or missing cookie)
+        if (response.status === 401 && !options._retried) {
           const refreshed = await this._tryRefreshToken();
           if (refreshed) {
             // Retry original request with new token

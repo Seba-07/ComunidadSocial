@@ -21,10 +21,11 @@ if (!JWT_SECRET) {
 export const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-do-not-use-in-production';
 
 // Opciones para cookies HttpOnly - access token (4 horas)
+// sameSite: 'lax' works because frontend proxies /api/* through same origin (Vercel rewrites)
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isDeployed,
-  sameSite: isDeployed ? 'none' : 'lax',
+  sameSite: 'lax',
   maxAge: 4 * 60 * 60 * 1000, // 4 horas
   path: '/'
 };
@@ -33,12 +34,12 @@ export const COOKIE_OPTIONS = {
 export const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isDeployed,
-  sameSite: isDeployed ? 'none' : 'lax',
+  sameSite: 'lax',
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
   path: '/'
 };
 
-console.log(`Cookie config: secure=${isDeployed}, sameSite=${isDeployed ? 'none' : 'lax'} (NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${!!process.env.RAILWAY_ENVIRONMENT})`);
+console.log(`Cookie config: secure=${isDeployed}, sameSite=lax (NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${!!process.env.RAILWAY_ENVIRONMENT})`);
 
 export const authenticate = async (req, res, next) => {
   try {
