@@ -47,10 +47,12 @@ const SECONDARY_MENU_ITEMS = [
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' },
 ];
 
+const APPROVED_STATUSES = new Set(['approved', 'APPROVED', 'ACTIVE']);
+
 export default function OrgDashboardPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('mis-org');
   const { organizations, activeOrg, isLoading, error, fetchMyOrganizations, setActiveOrg, refreshActiveOrg } = useOrganizationStore();
   const user = useAuthStore((s) => s.user);
 
@@ -60,7 +62,8 @@ export default function OrgDashboardPage() {
       if (id && id !== 'auto') {
         setActiveOrg(id);
       } else {
-        setActiveOrg(orgs[0]._id);
+        const approved = orgs.find(o => APPROVED_STATUSES.has(o.status));
+        setActiveOrg(approved ? approved._id : orgs[0]._id);
       }
     });
   }, [id]);
@@ -80,9 +83,10 @@ export default function OrgDashboardPage() {
     );
   }
 
-  // If no active org, allow secondary tabs (mis-org, privacidad, configuracion) but force mis-org for org-specific tabs
+  // If no active org or org not approved, force mis-org for org-specific tabs
   const SECONDARY_KEYS = new Set(['mis-org', 'guia', 'biblioteca', 'noticias', 'privacidad', 'configuracion']);
-  const effectiveTab = !activeOrg && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
+  const isOrgApproved = activeOrg && APPROVED_STATUSES.has(activeOrg.status);
+  const effectiveTab = (!activeOrg || !isOrgApproved) && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
 
   const sidebarTitle = 'Mi Organización';
   const hasMultipleOrgs = organizations.length > 1;
@@ -109,8 +113,8 @@ export default function OrgDashboardPage() {
     </div>
   ) : null;
 
-  // Sidebar sections: only show org items when an org is active
-  const sidebarSections = activeOrg
+  // Sidebar sections: only show org items when an approved org is active
+  const sidebarSections = isOrgApproved
     ? [
         { label: activeOrg.organizationName, items: ORG_MENU_ITEMS },
         { items: SECONDARY_MENU_ITEMS },
