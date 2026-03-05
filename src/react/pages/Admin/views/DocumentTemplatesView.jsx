@@ -245,7 +245,7 @@ export default function DocumentTemplatesView() {
     ];
 
     return (
-      <div style={{ padding: 24, maxWidth: 1100 }}>
+      <div style={{ padding: 24, maxWidth: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button onClick={() => setSelected(null)} style={btnOutline}>
             ← Volver
@@ -572,12 +572,12 @@ export default function DocumentTemplatesView() {
               borderRadius: 4,
               background: '#fff',
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-              maxWidth: 620,
+              maxWidth: 750,
               margin: '0 auto',
               overflow: 'hidden',
             }}>
               {/* === HEADER === */}
-              <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ background: '#f8fafc' }}>
                 {selected.headerConfig?.imageUrl ? (
                   <img src={selected.headerConfig.imageUrl} alt="Header" style={{ width: '100%', display: 'block' }} />
                 ) : (
@@ -617,7 +617,7 @@ export default function DocumentTemplatesView() {
               </div>
 
               {/* === FOOTER === */}
-              <div style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ background: '#f8fafc' }}>
                 {selected.footerConfig?.imageUrl ? (
                   <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ width: '100%', display: 'block' }} />
                 ) : (
@@ -649,7 +649,7 @@ export default function DocumentTemplatesView() {
   // LIST VIEW
   // ============================================
   return (
-    <div style={{ padding: 24, maxWidth: 1100 }}>
+    <div style={{ padding: 24, maxWidth: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', margin: 0 }}>
           Plantillas de Documentos
