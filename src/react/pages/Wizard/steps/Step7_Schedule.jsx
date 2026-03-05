@@ -109,6 +109,7 @@ export default function Step7_Schedule({ onPrev }) {
         {schedule.date && schedule.time && (
           <p style={{ fontSize: 14, color: '#2563eb', fontWeight: 600, marginBottom: 24 }}>
             Asamblea agendada: {schedule.date} a las {schedule.time}
+            {schedule.address && <><br />Lugar: {schedule.address}</>}
           </p>
         )}
         <button onClick={() => navigate('/org/auto')} style={{
@@ -234,6 +235,28 @@ export default function Step7_Schedule({ onPrev }) {
         </div>
       )}
 
+      {/* Assembly location */}
+      {schedule.date && schedule.time && (
+        <div style={{
+          background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
+          padding: 20, marginBottom: 20
+        }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+            Lugar de la Asamblea
+          </h3>
+          <input
+            type="text"
+            placeholder="Ej: Sede Junta de Vecinos, Av. Uno Norte 1234, Renca"
+            value={schedule.address || ''}
+            onChange={e => setFormDataField('assemblySchedule', { ...schedule, address: e.target.value })}
+            style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
+          />
+          <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6, margin: '6px 0 0' }}>
+            Dirección donde se realizará la asamblea constitutiva
+          </p>
+        </div>
+      )}
+
       {/* Selected summary */}
       {schedule.date && schedule.time && (
         <div style={{
@@ -242,6 +265,7 @@ export default function Step7_Schedule({ onPrev }) {
         }}>
           <p style={{ margin: 0, fontSize: 14, color: '#166534', fontWeight: 600 }}>
             Asamblea programada: {schedule.date} a las {schedule.time}
+            {schedule.address && <><br />Lugar: {schedule.address}</>}
           </p>
         </div>
       )}

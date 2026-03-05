@@ -37,6 +37,8 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const [editingCargo, setEditingCargo] = useState(null);
   const [showRetractModal, setShowRetractModal] = useState(false);
   const [retracting, setRetracting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRefs = useRef({});
 
   const dir = org.provisionalDirectorio || {};
@@ -183,7 +185,23 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await apiService.deleteOrganization(org._id);
+      addToast('Organización eliminada exitosamente', 'success');
+      setShowDeleteModal(false);
+      onBack();
+      onRefresh();
+    } catch (err) {
+      addToast('Error al eliminar: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const canRetract = RETRACTABLE_STATUSES.has(org.status);
+  const canDelete = org.status === 'draft';
 
   const sectionStyle = {
     background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
@@ -229,6 +247,20 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               Retractar Solicitud
             </button>
           )}
+          {canDelete && (
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              style={{
+                padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
+                border: '1px solid #dc2626', background: '#fef2f2', color: '#dc2626',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.target.style.background = '#dc2626'; e.target.style.color = 'white'; }}
+              onMouseLeave={e => { e.target.style.background = '#fef2f2'; e.target.style.color = '#dc2626'; }}
+            >
+              Eliminar Organización
+            </button>
+          )}
         </div>
         <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
           Detalle de la solicitud de constitución
@@ -256,17 +288,45 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         )}
       </div>
 
-      {/* 2. Asamblea Programada */}
-      {(org.electionDate || org.assemblyAddress) && (
+      {/* 2. Appointment modification alert */}
+      {org.appointmentWasModified && (
+        <div style={{
+          padding: 14, background: '#fef3c7', borderRadius: 10, border: '1px solid #fbbf24', marginBottom: 16,
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#92400e', marginBottom: 4 }}>
+            La cita de tu asamblea fue modificada
+          </div>
+          <div style={{ fontSize: 13, color: '#78350f' }}>
+            El municipio cambió la fecha, hora o lugar de tu asamblea constitutiva.
+            Revisa los datos confirmados a continuación.
+          </div>
+        </div>
+      )}
+
+      {/* 2a. Confirmed assembly (ministro assigned) */}
+      {org.ministroData?.scheduledDate ? (
+        <div style={{ ...sectionStyle, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+          <h3 style={{ ...sectionTitle, color: '#166534' }}>Asamblea Confirmada</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+            <div><span style={labelStyle}>Fecha Confirmada</span><div style={valueStyle}>{new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL')}</div></div>
+            <div><span style={labelStyle}>Hora Confirmada</span><div style={valueStyle}>{org.ministroData.scheduledTime || '—'}</div></div>
+            <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.ministroData.location || org.assemblyAddress || '—'}</div></div>
+            <div><span style={labelStyle}>Ministro de Fe</span><div style={valueStyle}>{org.ministroData.name || '—'}</div></div>
+          </div>
+        </div>
+      ) : (org.electionDate || org.assemblyAddress) ? (
         <div style={sectionStyle}>
-          <h3 style={sectionTitle}>Asamblea Constitutiva Programada</h3>
+          <h3 style={sectionTitle}>Asamblea Solicitada</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 24px' }}>
             {org.electionDate && <div><span style={labelStyle}>Fecha</span><div style={valueStyle}>{new Date(org.electionDate).toLocaleDateString('es-CL')}</div></div>}
             {org.electionTime && <div><span style={labelStyle}>Hora</span><div style={valueStyle}>{org.electionTime}</div></div>}
             {org.assemblyAddress && <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.assemblyAddress}</div></div>}
           </div>
+          <p style={{ margin: '8px 0 0', fontSize: 12, color: '#6b7280' }}>
+            Pendiente de confirmación por el municipio.
+          </p>
         </div>
-      )}
+      ) : null}
 
       {/* 3. Miembros */}
       <div style={sectionStyle}>
@@ -493,6 +553,59 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminar (solo draft) */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20,
+        }} onClick={() => !deleting && setShowDeleteModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 28, maxWidth: 480, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, background: '#fef2f2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
+              }}>
+                🗑️
+              </div>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>
+                Eliminar Organización
+              </h3>
+            </div>
+            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 20px' }}>
+              ¿Estás seguro de que deseas eliminar <strong>{org.organizationName}</strong>? Esta acción es <strong>permanente</strong> y
+              no se puede deshacer. Se eliminarán todos los datos, miembros y documentos asociados.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                style={{
+                  padding: '10px 20px', fontSize: 14, fontWeight: 500, borderRadius: 8,
+                  border: '1px solid #d1d5db', background: 'white', color: '#374151',
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{
+                  padding: '10px 20px', fontSize: 14, fontWeight: 600, borderRadius: 8,
+                  border: 'none', background: '#dc2626', color: 'white',
+                  cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.7 : 1,
+                }}
+              >
+                {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

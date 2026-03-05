@@ -27,7 +27,7 @@ const initialFormData = {
   comisionElectoral: { members: [], electionDate: null },
   certificates: {},
   documents: {},
-  assemblySchedule: { date: null, time: null }
+  assemblySchedule: { date: null, time: null, address: '' }
 };
 
 export const useWizardStore = create((set, get) => ({
@@ -183,7 +183,9 @@ export const useWizardStore = create((set, get) => ({
         electoralCommission: formData.comisionElectoral?.members || [],
         estatutos: typeof formData.estatutos === 'string' ? formData.estatutos : formData.estatutos?.type || '',
         config: formData.config,
-        assemblySchedule: formData.assemblySchedule
+        electionDate: formData.assemblySchedule?.date || null,
+        electionTime: formData.assemblySchedule?.time || null,
+        assemblyAddress: formData.assemblySchedule?.address || ''
       };
 
       const data = await apiService.createOrganization(orgData);
