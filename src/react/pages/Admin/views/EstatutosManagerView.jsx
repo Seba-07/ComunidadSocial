@@ -27,6 +27,34 @@ const PLACEHOLDERS = [
   { key: '{{FECHA_ANIO}}', label: 'Año' },
 ];
 
+// Datos de ejemplo para la vista previa del estatuto
+const SAMPLE_ESTATUTO_DATA = {
+  '{{NOMBRE_ORGANIZACION}}': 'Club Deportivo Los Cóndores de Renca',
+  '{{TIPO_ORGANIZACION}}': 'Club Deportivo',
+  '{{OBJETIVOS}}': 'Fomentar la práctica deportiva entre los vecinos de la comuna, promover la vida sana y la integración comunitaria a través del deporte',
+  '{{COMUNA}}': 'Renca',
+  '{{REGION}}': 'Metropolitana',
+  '{{DIRECCION}}': 'Av. Domingo Santa María 1435, Renca',
+  '{{MIEMBROS_MINIMOS}}': '15',
+  '{{NUM_MIEMBROS}}': '25',
+  '{{CUOTA_MENSUAL}}': '2.000',
+  '{{DURACION_MANDATO}}': '3',
+  '{{MESES_ASAMBLEA}}': 'marzo y septiembre',
+  '{{METODO_CITACION}}': 'carta certificada y publicación en diario mural',
+  '{{DIAS_ANTICIPACION}}': '5',
+  '{{CUOTA_INC}}': '0,5 UTM',
+  '{{ENTIDAD_DISOLUCION}}': 'I. Municipalidad de Renca',
+  '{{RUT_DISOLUCION}}': '69.254.100-0',
+  '{{FECHA_DIA}}': new Date().getDate().toString(),
+  '{{FECHA_MES}}': ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][new Date().getMonth()],
+  '{{FECHA_ANIO}}': new Date().getFullYear().toString(),
+};
+
+function replaceEstatutoPlaceholders(text) {
+  if (!text) return '';
+  return text.replace(/\{\{[A-Z_]+\}\}/g, match => SAMPLE_ESTATUTO_DATA[match] || match);
+}
+
 export default function EstatutosManagerView() {
   const addToast = useUiStore(s => s.addToast);
   const [templates, setTemplates] = useState([]);
@@ -271,7 +299,8 @@ export default function EstatutosManagerView() {
             { key: 'directorio', label: 'Directorio' },
             { key: 'objetivos', label: 'Objetivos' },
             { key: 'config', label: 'Configuración' },
-            { key: 'documentos', label: 'Documentos' }
+            { key: 'documentos', label: 'Documentos' },
+            { key: 'preview', label: 'Vista Previa' }
           ]}
           activeTab={editTab}
           onChange={setEditTab}
@@ -535,6 +564,65 @@ export default function EstatutosManagerView() {
                 <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6 }}>Descripción</label>
                 <textarea value={selectedTemplate.descripcion || ''} onChange={e => setSelectedTemplate(t => ({ ...t, descripcion: e.target.value }))}
                   rows={3} style={{ width: '100%', maxWidth: 600, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical' }} />
+              </div>
+            </div>
+          )}
+
+          {editTab === 'preview' && (
+            <div>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16, padding: '8px 12px', background: '#eff6ff', borderRadius: 8 }}>
+                Vista previa del estatuto con datos de ejemplo. Así se vería el documento final con los campos dinámicos reemplazados.
+              </div>
+              <div style={{
+                maxWidth: 800, margin: '0 auto', background: '#fff',
+                border: '1px solid #cbd5e1', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                padding: '40px 48px',
+              }}>
+                {/* Title */}
+                <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                  <div style={{ fontSize: 11, color: '#64748b', letterSpacing: 1, marginBottom: 8 }}>
+                    ESTATUTO
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1e293b' }}>
+                    {replaceEstatutoPlaceholders('{{NOMBRE_ORGANIZACION}}')}
+                  </h2>
+                  <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                    {replaceEstatutoPlaceholders('{{TIPO_ORGANIZACION}}')} — {replaceEstatutoPlaceholders('{{COMUNA}}')}
+                  </div>
+                </div>
+
+                {/* Articles */}
+                {(selectedTemplate.articulos || []).length === 0 ? (
+                  <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 14, border: '2px dashed #e5e7eb', borderRadius: 12 }}>
+                    No hay artículos configurados. Agrega artículos en la pestaña "Artículos" para verlos aquí.
+                  </div>
+                ) : (
+                  (selectedTemplate.articulos || [])
+                    .sort((a, b) => (Number(a.numero) || a.orden || 0) - (Number(b.numero) || b.orden || 0))
+                    .map((art, i) => (
+                    <div key={i} style={{ marginBottom: 24 }}>
+                      <h3 style={{
+                        fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '0 0 8px',
+                        borderBottom: '1px solid #f1f5f9', paddingBottom: 6,
+                      }}>
+                        Artículo {art.numero}° — {art.titulo}
+                      </h3>
+                      <div style={{
+                        fontSize: 13, color: '#374151', lineHeight: 1.8,
+                        whiteSpace: 'pre-wrap', textAlign: 'justify',
+                      }}>
+                        {replaceEstatutoPlaceholders(art.contenido)}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* Footer */}
+                <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                    {replaceEstatutoPlaceholders('{{COMUNA}}')}, {replaceEstatutoPlaceholders('{{FECHA_DIA}}')} de {replaceEstatutoPlaceholders('{{FECHA_MES}}')} del {replaceEstatutoPlaceholders('{{FECHA_ANIO}}')}
+                  </div>
+                </div>
               </div>
             </div>
           )}
