@@ -193,8 +193,10 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'Usuario no válido' });
     }
 
-    // Check token version
-    if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+    // Check token version (normalize undefined to 0 for older users)
+    const tokenVer = decoded.tokenVersion ?? 0;
+    const userVer = user.tokenVersion ?? 0;
+    if (tokenVer !== userVer) {
       return res.status(401).json({ error: 'Sesión invalidada' });
     }
 

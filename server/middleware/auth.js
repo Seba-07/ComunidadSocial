@@ -66,7 +66,9 @@ export const authenticate = async (req, res, next) => {
     }
 
     // Verify token version (session invalidation on password change)
-    if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+    const tokenVer = decoded.tokenVersion ?? 0;
+    const userVer = user.tokenVersion ?? 0;
+    if (tokenVer !== userVer) {
       return res.status(401).json({ error: 'Sesión invalidada. Por favor inicie sesión nuevamente.' });
     }
 
