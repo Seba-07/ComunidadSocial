@@ -15,16 +15,13 @@ const STATUS_LABELS = {
   approved: 'Aprobada',
 };
 
-const CARGO_MAP = {
-  president: 'Presidente/a',
-  presidente: 'Presidente/a',
-  vicePresident: 'Vicepresidente/a',
-  vicepresidente: 'Vicepresidente/a',
-  secretary: 'Secretario/a',
-  secretario: 'Secretario/a',
-  treasurer: 'Tesorero/a',
-  tesorero: 'Tesorero/a',
-};
+// Explicit cargo keys in display order (English keys from DB + Spanish fallback)
+const CARGO_KEYS = [
+  { key: 'president', altKey: 'presidente', label: 'Presidente/a' },
+  { key: 'vicePresident', altKey: 'vicepresidente', label: 'Vicepresidente/a' },
+  { key: 'secretary', altKey: 'secretario', label: 'Secretario/a' },
+  { key: 'treasurer', altKey: 'tesorero', label: 'Tesorero/a' },
+];
 
 function formatName(person) {
   if (!person) return '—';
@@ -42,26 +39,43 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const members = org.members || [];
   const certs = org.certificatesStep5 || [];
 
-  // Get all cargo entries from provisionalDirectorio
+  // Build cargo entries explicitly from known keys (English from DB, Spanish fallback)
   const cargoEntries = [];
-  for (const [key, value] of Object.entries(dir)) {
-    if (key === 'additionalMembers') continue;
-    if (value && typeof value === 'object' && (value.rut || value.firstName)) {
-      cargoEntries.push({ key, label: CARGO_MAP[key] || key, person: value });
+  for (const { key, altKey, label } of CARGO_KEYS) {
+    const person = dir[key] || dir[altKey];
+    if (person && (person.rut || person.firstName)) {
+      cargoEntries.push({ key, label, person });
     }
   }
+  // Additional directors/custom cargos
   if (dir.additionalMembers?.length) {
     dir.additionalMembers.forEach((m, i) => {
-      cargoEntries.push({ key: `additional_${i}`, label: m.cargo || `Director/a ${i + 1}`, person: m });
+      if (m && (m.rut || m.firstName)) {
+        cargoEntries.push({ key: `additional_${i}`, label: m.cargoNombre || m.cargo || `Director/a ${i + 1}`, person: m });
+      }
     });
   }
+  // Also check for any non-standard cargo keys (e.g. director1, director2 from wizard)
+  const knownKeys = new Set(['president', 'vicePresident', 'secretary', 'treasurer',
+    'presidente', 'vicepresidente', 'secretario', 'tesorero',
+    'additionalMembers', 'designatedAt', 'type', '_id', '__v']);
+  for (const [key, value] of Object.entries(dir)) {
+    if (knownKeys.has(key)) continue;
+    if (value && typeof value === 'object' && !Array.isArray(value) && (value.rut || value.firstName)) {
+      cargoEntries.push({ key, label: value.cargoNombre || key, person: value });
+    }
+  }
 
-  function getCertForMember(rut) {
-    if (!rut) return null;
-    const norm = rut.replace(/\./g, '').replace(/-/g, '');
+  function getCertForMember(rut, name) {
+    if (!rut && !name) return null;
+    const norm = rut ? rut.replace(/\./g, '').replace(/-/g, '') : '';
     return certs.find(c => {
-      const cNorm = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
-      return cNorm === norm && c.certificate;
+      if (c.certificate) {
+        const cId = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
+        if (norm && cId === norm) return true;
+        if (name && c.memberName && c.memberName.toLowerCase().includes(name.toLowerCase())) return true;
+      }
+      return false;
     });
   }
 
@@ -70,20 +84,28 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
     if (!member) return;
     setSaving(true);
     try {
-      const newDir = { ...dir };
+      // Build clean directorio for PUT (only person fields + metadata)
+      const newDir = {
+        president: dir.president || dir.presidente || null,
+        vicePresident: dir.vicePresident || dir.vicepresidente || null,
+        secretary: dir.secretary || dir.secretario || null,
+        treasurer: dir.treasurer || dir.tesorero || null,
+        additionalMembers: dir.additionalMembers || [],
+      };
+      const newMember = {
+        rut: member.rut,
+        firstName: member.firstName,
+        segundoNombre: member.segundoNombre || '',
+        lastName: member.lastName,
+        apellidoMaterno: member.apellidoMaterno || '',
+      };
       if (cargoKey.startsWith('additional_')) {
         const idx = parseInt(cargoKey.split('_')[1]);
-        const updated = [...(newDir.additionalMembers || [])];
-        updated[idx] = { ...updated[idx], ...member };
+        const updated = [...newDir.additionalMembers];
+        updated[idx] = { ...updated[idx], ...newMember };
         newDir.additionalMembers = updated;
       } else {
-        newDir[cargoKey] = {
-          rut: member.rut,
-          firstName: member.firstName,
-          segundoNombre: member.segundoNombre || '',
-          lastName: member.lastName,
-          apellidoMaterno: member.apellidoMaterno || '',
-        };
+        newDir[cargoKey] = newMember;
       }
       await apiService.updateOrganization(org._id, { provisionalDirectorio: newDir });
       addToast('Directorio actualizado', 'success');
@@ -249,7 +271,7 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
         <div style={{ display: 'grid', gap: 10 }}>
           {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
             const isEditing = editingCargo === key;
-            const cert = getCertForMember(person.rut);
+            const cert = getCertForMember(person.rut, person.firstName);
             return (
               <div key={key} style={{
                 padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
@@ -325,7 +347,17 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
               </div>
             );
           }) : (
-            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay directorio asignado</p>
+            <div>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px' }}>No hay directorio asignado</p>
+              {Object.keys(dir).length > 0 && (
+                <details style={{ fontSize: 12, color: '#6b7280' }}>
+                  <summary style={{ cursor: 'pointer' }}>Debug: claves en provisionalDirectorio</summary>
+                  <pre style={{ fontSize: 11, background: '#f3f4f6', padding: 8, borderRadius: 6, marginTop: 4, overflow: 'auto' }}>
+                    {JSON.stringify(dir, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </div>
           )}
         </div>
       </div>
