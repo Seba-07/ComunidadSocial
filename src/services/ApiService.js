@@ -12,14 +12,11 @@ function getApiUrl() {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In browser, check hostname
+  // In browser, use same-origin /api path
+  // Development: Vite proxy forwards /api/* to localhost:3001
+  // Production: Vercel rewrites /api/* to Railway
+  // Both ensure cookies are first-party (same origin)
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3001/api';
-    }
-    // Production - use same-origin proxy (Vercel rewrites /api/* to Railway)
-    // This ensures cookies are first-party, avoiding third-party cookie blocking
     return '/api';
   }
 

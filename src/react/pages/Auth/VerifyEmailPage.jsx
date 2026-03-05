@@ -17,10 +17,7 @@ export default function VerifyEmailPage() {
 
     async function verify() {
       try {
-        const API_URL = import.meta.env.VITE_API_URL ||
-          (window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : 'https://comunidadsocial-production.up.railway.app/api');
-
-        const response = await fetch(`${API_URL}/auth/verify-email/${token}`, {
+        const response = await fetch(`/api/auth/verify-email/${token}`, {
           credentials: 'include'
         });
         const data = await response.json();
