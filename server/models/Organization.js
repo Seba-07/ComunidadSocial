@@ -454,6 +454,14 @@ const organizationSchema = new mongoose.Schema({
   appointmentWasModified: { type: Boolean, default: false },
   lastModificationDate: Date,
 
+  // Certificado de Personalidad Jurídica firmado con FEA (Ley 19.799)
+  certificadoPersonalidadJuridica: {
+    url: String,           // Base64 o S3 key del PDF firmado
+    uploadedAt: Date,
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    fileName: String
+  },
+
   // Dissolution
   dissolvedAt: Date,
   dissolutionReason: String,

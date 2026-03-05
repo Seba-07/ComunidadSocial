@@ -10,10 +10,12 @@ import { formatDate } from '../../../utils/formatters';
 
 const REVIEW_TABS = [
   { key: 'datos', label: 'Datos' },
+  { key: 'asamblea', label: 'Asamblea' },
   { key: 'miembros', label: 'Miembros' },
   { key: 'directorio', label: 'Directorio' },
   { key: 'documentos', label: 'Documentos' },
-  { key: 'historial', label: 'Historial' }
+  { key: 'historial', label: 'Historial' },
+  { key: 'aprobar', label: 'Aprobar' }
 ];
 
 // Cargo keys used in provisionalDirectorio (EN keys from DB + ES fallback)
@@ -79,10 +81,12 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [showSchedule, setShowSchedule] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [corrections, setCorrections] = useState({});
-  const [scheduleData, setScheduleData] = useState({ ministroId: '', date: '', time: '' });
+  const [scheduleData, setScheduleData] = useState({ ministroId: '', date: '', time: '', location: '' });
   const [isActioning, setIsActioning] = useState(false);
+  const [signedPdf, setSignedPdf] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization } = useAdminStore();
+  const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
   const addToast = useUiStore(s => s.addToast);
 
@@ -181,14 +185,32 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
     }
   }
 
+  function openScheduleModal() {
+    setScheduleData({
+      ministroId: org.ministroData?.ministroId || '',
+      date: org.electionDate ? new Date(org.electionDate).toISOString().split('T')[0] : '',
+      time: org.electionTime || '',
+      location: org.assemblyAddress || org.ministroData?.location || '',
+    });
+    setShowSchedule(true);
+  }
+
   async function handleScheduleMinistro() {
     if (!scheduleData.ministroId || !scheduleData.date || !scheduleData.time) {
-      addToast('Completa todos los campos', 'error');
+      addToast('Completa ministro, fecha y hora', 'error');
       return;
     }
+    const selectedMinistro = activeMinistros.find(m => m._id === scheduleData.ministroId);
     setIsActioning(true);
     try {
-      await scheduleMinistro(org._id, scheduleData);
+      await scheduleMinistro(org._id, {
+        ministroId: scheduleData.ministroId,
+        ministroName: selectedMinistro ? `${selectedMinistro.firstName} ${selectedMinistro.lastName}` : '',
+        ministroRut: selectedMinistro?.rut || '',
+        scheduledDate: scheduleData.date,
+        scheduledTime: scheduleData.time,
+        location: scheduleData.location || '',
+      });
       addToast('Ministro agendado', 'success');
       setShowSchedule(false);
       const updated = await refreshOrganization(org._id);
@@ -264,14 +286,133 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   <p style={{ color: '#6b7280', fontSize: 13, whiteSpace: 'pre-line', margin: 0 }}>{org.objectives}</p>
                 </div>
               )}
-              {(org.electionDate || org.assemblyAddress) && (
-                <div style={{ marginTop: 12, padding: 14, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                  <span style={{ fontWeight: 600, color: '#0369a1', fontSize: 13, display: 'block', marginBottom: 6 }}>Asamblea Constitutiva Programada</span>
-                  <div style={{ display: 'flex', gap: 20, fontSize: 13, color: '#374151' }}>
-                    {org.electionDate && <span>Fecha: {new Date(org.electionDate).toLocaleDateString('es-CL')}</span>}
-                    {org.electionTime && <span>Hora: {org.electionTime}</span>}
-                    {org.assemblyAddress && <span>Lugar: {org.assemblyAddress}</span>}
+            </div>
+          )}
+
+          {tab === 'asamblea' && (
+            <div style={{ display: 'grid', gap: 20 }}>
+              {/* Sección 1: Solicitud del organizador */}
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 10, border: '1px solid #bae6fd' }}>
+                <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#0369a1' }}>
+                  Solicitud del Organizador
+                </h4>
+                {(org.electionDate || org.electionTime || org.assemblyAddress) ? (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {org.electionDate && (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Fecha solicitada:</span>
+                        <span style={{ fontSize: 13, color: '#111827' }}>{new Date(org.electionDate).toLocaleDateString('es-CL')}</span>
+                      </div>
+                    )}
+                    {org.electionTime && (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Hora solicitada:</span>
+                        <span style={{ fontSize: 13, color: '#111827' }}>{org.electionTime}</span>
+                      </div>
+                    )}
+                    {org.assemblyAddress && (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Lugar solicitado:</span>
+                        <span style={{ fontSize: 13, color: '#111827' }}>{org.assemblyAddress}</span>
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
+                    El organizador no especificó fecha, hora o lugar para la asamblea.
+                  </p>
+                )}
+              </div>
+
+              {/* Sección 2: Agenda confirmada */}
+              {org.ministroData?.scheduledDate ? (
+                <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#166534' }}>
+                      Agenda Confirmada
+                    </h4>
+                    {org.appointmentWasModified && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fef3c7',
+                        padding: '3px 10px', borderRadius: 6,
+                      }}>
+                        Modificado
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Ministro:</span>
+                      <span style={{ fontSize: 13, color: '#111827' }}>{org.ministroData.name || '—'}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Fecha:</span>
+                      <span style={{ fontSize: 13, color: '#111827' }}>
+                        {new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL')}
+                        {(() => {
+                          const reqDate = org.electionDate ? new Date(org.electionDate).toISOString().split('T')[0] : null;
+                          const confDate = new Date(org.ministroData.scheduledDate).toISOString().split('T')[0];
+                          return reqDate && reqDate !== confDate
+                            ? <span style={{ color: '#d97706', fontSize: 11, marginLeft: 6 }}>(distinta a solicitud)</span>
+                            : null;
+                        })()}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Hora:</span>
+                      <span style={{ fontSize: 13, color: '#111827' }}>
+                        {org.ministroData.scheduledTime || '—'}
+                        {org.electionTime && org.ministroData.scheduledTime !== org.electionTime
+                          ? <span style={{ color: '#d97706', fontSize: 11, marginLeft: 6 }}>(distinta a solicitud)</span>
+                          : null}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Lugar:</span>
+                      <span style={{ fontSize: 13, color: '#111827' }}>
+                        {org.ministroData.location || org.assemblyAddress || '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: 16, background: '#fafafa', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+                  <h4 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: '#374151' }}>
+                    Agenda Confirmada
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>
+                    Aún no se ha agendado un Ministro de Fe.
+                  </p>
+                </div>
+              )}
+
+              {/* Sección 3: Historial de cambios */}
+              {org.appointmentChanges?.length > 0 && (
+                <div style={{ padding: 16, background: '#fefce8', borderRadius: 10, border: '1px solid #fde68a' }}>
+                  <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#92400e' }}>
+                    Historial de Cambios ({org.appointmentChanges.length})
+                  </h4>
+                  {org.appointmentChanges.map((change, i) => (
+                    <div key={i} style={{
+                      padding: 10, borderLeft: '3px solid #f59e0b', marginBottom: 8,
+                      background: 'white', borderRadius: '0 8px 8px 0',
+                    }}>
+                      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                        {formatDate(change.changedAt)}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#374151' }}>
+                        {change.previousData?.scheduledDate && (
+                          <div>Fecha anterior: {new Date(change.previousData.scheduledDate).toLocaleDateString('es-CL')} {change.previousData.scheduledTime || ''}</div>
+                        )}
+                        {change.newData?.scheduledDate && (
+                          <div>Nueva fecha: {new Date(change.newData.scheduledDate).toLocaleDateString('es-CL')} {change.newData.scheduledTime || ''}</div>
+                        )}
+                        {change.previousData?.location !== change.newData?.location && change.newData?.location && (
+                          <div>Nuevo lugar: {change.newData.location}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -516,6 +657,192 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             </div>
           )}
 
+          {tab === 'aprobar' && (
+            <div style={{ display: 'grid', gap: 20 }}>
+              {/* Info banner */}
+              <div style={{
+                padding: 16, background: '#eff6ff', borderRadius: 10,
+                border: '1px solid #bfdbfe', display: 'flex', gap: 12, alignItems: 'flex-start'
+              }}>
+                <span style={{ fontSize: 20 }}>&#x1f512;</span>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#1e40af' }}>
+                    Flujo de Firma Electrónica Avanzada (Ley 19.799)
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
+                    1. Descarga el borrador del certificado.<br />
+                    2. Firma el PDF con tu Firma Electrónica Avanzada (FEA) usando tu software de firma.<br />
+                    3. Sube el PDF firmado y aprueba la organizacion.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step A: Download draft */}
+              <div style={{
+                padding: 20, background: 'white', border: '1px solid #e5e7eb',
+                borderRadius: 12
+              }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                  Paso 1: Descargar Borrador de Certificado
+                </h4>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
+                  Genera el PDF con los datos de la organizacion, sin firma. Firmalo con tu FEA antes de subirlo.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch(
+                        `${apiService.baseUrl}/documents/${org._id}/generate-certificado-borrador`,
+                        { headers: apiService.getHeaders(), credentials: 'include' }
+                      );
+                      if (!resp.ok) throw new Error('Error al generar borrador');
+                      const blob = await resp.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `Borrador_Certificado_${orgName.replace(/\s+/g, '_')}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      addToast('Borrador descargado', 'success');
+                    } catch (err) {
+                      addToast(err.message, 'error');
+                    }
+                  }}
+                  style={{
+                    padding: '10px 20px', border: '1px solid #2563eb', borderRadius: 8,
+                    background: '#eff6ff', color: '#2563eb', fontSize: 14, fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Descargar Borrador PDF
+                </button>
+              </div>
+
+              {/* Step B: Upload signed PDF */}
+              <div
+                style={{
+                  padding: 20, background: isDragging ? '#f0fdf4' : 'white',
+                  border: `2px dashed ${isDragging ? '#22c55e' : signedPdf ? '#10b981' : '#d1d5db'}`,
+                  borderRadius: 12, textAlign: 'center', transition: 'all 0.2s'
+                }}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files[0];
+                  if (file?.type === 'application/pdf') {
+                    setSignedPdf(file);
+                    addToast('PDF cargado', 'success');
+                  } else {
+                    addToast('Solo se permiten archivos PDF', 'error');
+                  }
+                }}
+              >
+                <h4 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                  Paso 2: Subir Certificado Firmado con FEA
+                </h4>
+                {signedPdf ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 14, color: '#059669', fontWeight: 600 }}>
+                      {signedPdf.name} ({(signedPdf.size / 1024).toFixed(0)} KB)
+                    </span>
+                    <button
+                      onClick={() => setSignedPdf(null)}
+                      style={{
+                        padding: '4px 12px', border: '1px solid #ef4444', borderRadius: 6,
+                        background: 'white', color: '#ef4444', fontSize: 12, cursor: 'pointer'
+                      }}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
+                      Arrastra el PDF firmado aqui o haz clic para seleccionarlo
+                    </p>
+                    <label style={{
+                      display: 'inline-block', padding: '10px 24px', border: '1px solid #d1d5db',
+                      borderRadius: 8, background: '#f9fafb', color: '#374151', fontSize: 14,
+                      fontWeight: 500, cursor: 'pointer'
+                    }}>
+                      Seleccionar PDF
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setSignedPdf(file);
+                            addToast('PDF cargado', 'success');
+                          }
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+
+              {/* Step C: Approve */}
+              <div style={{
+                padding: 20, background: signedPdf ? '#f0fdf4' : '#f9fafb',
+                border: `1px solid ${signedPdf ? '#bbf7d0' : '#e5e7eb'}`,
+                borderRadius: 12
+              }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                  Paso 3: Aprobar Organizacion
+                </h4>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
+                  Al aprobar, se guardara el certificado firmado y se notificara al organizador.
+                  Se crearan automaticamente las cuentas de los socios.
+                </p>
+                <button
+                  disabled={!signedPdf || isActioning}
+                  onClick={async () => {
+                    if (!signedPdf) return;
+                    setIsActioning(true);
+                    try {
+                      await approveWithDocument(org._id, signedPdf);
+                      addToast('Organizacion aprobada con certificado FEA', 'success');
+                      onClose();
+                    } catch (err) {
+                      addToast(err.message, 'error');
+                    } finally {
+                      setIsActioning(false);
+                    }
+                  }}
+                  style={{
+                    padding: '12px 28px', border: 'none', borderRadius: 8,
+                    background: signedPdf ? '#10b981' : '#d1d5db',
+                    color: 'white', fontSize: 15, fontWeight: 700,
+                    cursor: signedPdf ? 'pointer' : 'not-allowed',
+                    opacity: isActioning ? 0.6 : 1
+                  }}
+                >
+                  {isActioning ? 'Aprobando...' : 'Aprobar Organizacion'}
+                </button>
+              </div>
+
+              {/* Already approved */}
+              {org.certificadoPersonalidadJuridica?.fileName && (
+                <div style={{
+                  padding: 16, background: '#f0fdf4', borderRadius: 10,
+                  border: '1px solid #bbf7d0'
+                }}>
+                  <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#166534' }}>
+                    Certificado ya cargado
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>
+                    {org.certificadoPersonalidadJuridica.fileName} — subido el{' '}
+                    {formatDate(org.certificadoPersonalidadJuridica.uploadedAt)}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {tab === 'historial' && (
             <div>
               {statusHistory.length > 0 ? statusHistory.map((h, i) => (
@@ -548,23 +875,20 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 <button onClick={() => handleStatusChange('in_review')} disabled={isActioning}
                   style={actionBtn('#8b5cf6')}>Tomar Revisión</button>
               )}
-              <button onClick={() => setShowSchedule(true)} disabled={isActioning}
+              <button onClick={openScheduleModal} disabled={isActioning}
                 style={actionBtn('#2563eb')}>Agendar Ministro</button>
               <button onClick={() => setShowReject(true)} disabled={isActioning}
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
           )}
           {org.status === 'ministro_approved' && (
-            <>
-              <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
-                style={actionBtn('#6366f1')}>Enviar al Registro</button>
-              <button onClick={() => handleStatusChange('approved')} disabled={isActioning}
-                style={actionBtn('#10b981')}>Aprobar</button>
-            </>
+            <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
+              style={actionBtn('#6366f1')}>Enviar al Registro</button>
           )}
-          {org.status === 'sent_registry' && (
-            <button onClick={() => handleStatusChange('approved')} disabled={isActioning}
-              style={actionBtn('#10b981')}>Aprobar</button>
+          {(org.status === 'ministro_approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
+            <button onClick={() => setTab('aprobar')} style={actionBtn('#10b981')}>
+              Aprobar con Certificado FEA
+            </button>
           )}
         </div>
       </div>
@@ -599,6 +923,21 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       {/* Schedule Ministro sub-modal */}
       {showSchedule && (
         <Modal open onClose={() => setShowSchedule(false)} title="Agendar Ministro de Fe">
+          {/* Reference: organizer's request */}
+          {(org.electionDate || org.electionTime || org.assemblyAddress) && (
+            <div style={{
+              padding: 12, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', marginBottom: 16,
+            }}>
+              <span style={{ fontWeight: 600, fontSize: 13, color: '#0369a1', display: 'block', marginBottom: 4 }}>
+                Solicitado por organizador:
+              </span>
+              <div style={{ fontSize: 13, color: '#374151' }}>
+                {org.electionDate && <div>Fecha: {new Date(org.electionDate).toLocaleDateString('es-CL')}</div>}
+                {org.electionTime && <div>Hora: {org.electionTime}</div>}
+                {org.assemblyAddress && <div>Lugar: {org.assemblyAddress}</div>}
+              </div>
+            </div>
+          )}
           <div style={{ display: 'grid', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Ministro</label>
@@ -626,6 +965,14 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Hora</label>
               <input type="time" value={scheduleData.time}
                 onChange={e => setScheduleData(d => ({ ...d, time: e.target.value }))}
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Lugar</label>
+              <input type="text" value={scheduleData.location}
+                onChange={e => setScheduleData(d => ({ ...d, location: e.target.value }))}
+                placeholder="Dirección de la asamblea"
                 style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
               />
             </div>

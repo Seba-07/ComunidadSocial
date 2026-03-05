@@ -497,6 +497,25 @@ class ApiService {
     return this.post(`/organizations/${orgId}/retract`);
   }
 
+  async approveOrgWithDocument(orgId, pdfFile) {
+    const formData = new FormData();
+    formData.append('signedDocument', pdfFile);
+    const url = `${this.baseUrl}/organizations/${orgId}/approve-with-document`;
+    const headers = { ...this.getHeaders() };
+    delete headers['Content-Type']; // Let browser set multipart boundary
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al aprobar organización');
+    }
+    return data;
+  }
+
   async getOrganizationsByStatus(status) {
     return this.get(`/organizations/status/${status}`);
   }

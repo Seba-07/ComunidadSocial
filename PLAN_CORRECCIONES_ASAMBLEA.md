@@ -548,3 +548,70 @@
 | `src/react/pages/OrganizationDashboard/OrgMisOrganizaciones.jsx` | Método retract en apiService |
 | `src/services/ApiService.js` | Nuevo método retractOrganization() |
 | `src/react/pages/Admin/views/OrganizationsList.jsx` | Verificar filtro excluye draft de pendientes |
+
+---
+
+## FASE 8: Refactorización de Firmas Legales y Flujo de Aprobación Municipal
+
+### Estado: COMPLETADO
+### Fecha inicio: 2026-03-05
+### Fecha cierre: 2026-03-05
+
+> **Objetivo**: Eliminar el almacenamiento de imágenes de firma/timbre del Secretario Municipal
+> (sin validez legal según Ley 19.799) y reemplazarlo por un flujo transaccional donde el
+> funcionario sube el PDF del Certificado de Personalidad Jurídica ya firmado criptográficamente
+> con Firma Electrónica Avanzada (FEA).
+>
+> **Justificación legal**: La Ley 19.799 sobre Documentos Electrónicos y Firma Electrónica
+> establece que solo la FEA tiene equivalencia funcional a la firma manuscrita ante notario.
+> Guardar imágenes de firma para estamparlas en PDFs generados no constituye firma electrónica
+> válida y representa un riesgo de seguridad (suplantación, uso no autorizado).
+
+### Tarea 1: Plan de Trabajo
+- [x] **F8-01**: Agregar sección FASE 8 a PLAN_CORRECCIONES_ASAMBLEA.md
+
+### Tarea 2: Limpieza Frontend y Backend (Eliminar vista global de Timbre/Firma)
+- [x] **F8-02**: Eliminar item "Timbre/Firma" del menú lateral admin (AdminLayout.jsx)
+- [x] **F8-03**: Eliminar TimbreFirmaView del VIEW_MAP y lazy import (AdminDashboardPage.jsx)
+- [x] **F8-04**: Eliminar campos `timbreVirtual` y `firmaDigital` del modelo User.js
+- [x] **F8-05**: Eliminar 6 endpoints CRUD de timbre/firma en server/routes/users.js + import storageService
+- [x] **F8-06**: Eliminar archivo TimbreFirmaView.jsx
+
+### Tarea 3: Backend — Nuevo Endpoint de Aprobación con Documento Firmado
+- [x] **F8-07**: Agregar campo `certificadoPersonalidadJuridica` al modelo Organization.js
+- [x] **F8-08**: Crear endpoint POST `/:id/approve-with-document` en organizations.js
+  - Multer config para PDFs (max 10MB, memory storage)
+  - Valida transición de estado
+  - Guarda PDF vía storeFile (S3/base64 fallback)
+  - Crea cuentas de miembros + notificación al organizador
+  - Envía email de aprobación
+- [x] **F8-08b**: Crear endpoint GET `/:orgId/generate-certificado-borrador` en documents.js
+  - HTML con datos de la org (nombre, tipo, directorio, miembros)
+  - Marca de agua "BORRADOR — requiere FEA"
+  - Genera PDF con Puppeteer
+
+### Tarea 4: Frontend — Vista de Revisión Municipal con Flujo FEA
+- [x] **F8-09**: Agregar método `approveWithDocument()` a adminStore.js
+- [x] **F8-10**: Agregar método API `approveOrgWithDocument()` a ApiService.js (FormData multipart)
+- [x] **F8-11**: Implementar flujo de aprobación con FEA en OrgReviewModal.jsx
+  - Tab "Aprobar" con 3 pasos + banner informativo Ley 19.799
+  - Paso A: Botón "Descargar Borrador PDF" (consume generate-certificado-borrador)
+  - Paso B: Drag & Drop + input file para subir PDF firmado con FEA
+  - Paso C: Botón "Aprobar Organización" (consume approve-with-document)
+  - Indicador de certificado ya cargado si org ya fue aprobada
+
+### Archivos a modificar
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 8 |
+| `src/react/pages/Admin/AdminLayout.jsx` | Eliminar item timbre del menú |
+| `src/react/pages/Admin/AdminDashboardPage.jsx` | Eliminar TimbreFirmaView del VIEW_MAP |
+| `src/react/pages/Admin/views/TimbreFirmaView.jsx` | **ELIMINADO** |
+| `server/models/User.js` | Eliminar campos timbreVirtual, firmaDigital |
+| `server/routes/users.js` | Eliminar 6 endpoints de timbre/firma |
+| `server/models/Organization.js` | Nuevo campo certificadoPersonalidadJuridica |
+| `server/routes/organizations.js` | Nuevo endpoint approve-with-document |
+| `src/react/stores/adminStore.js` | Nuevo método approveWithDocument() |
+| `src/services/ApiService.js` | Nuevo método approveOrgWithDocument() |
+| `src/react/pages/Admin/views/OrgReviewModal.jsx` | Flujo FEA: descargar borrador + subir firmado + aprobar |

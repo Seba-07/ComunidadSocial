@@ -1,6 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import multer from 'multer';
 import Organization from '../models/Organization.js';
 import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
@@ -18,8 +19,21 @@ import Consent from '../models/Consent.js';
 import { maskOrganizationPii, maskPiiFields } from '../middleware/dataMasking.js';
 import AuditLog from '../models/AuditLog.js';
 import EstatutoTemplate from '../models/EstatutoTemplate.js';
+import { storeFile } from '../services/storageService.js';
 
 const router = express.Router();
+
+// Multer config for PDF uploads (max 10MB, memory storage)
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Solo se permiten archivos PDF'));
+    }
+    cb(null, true);
+  }
+});
 
 // Fields to exclude from list queries (heavy base64 data, legacy embedded arrays)
 const LIST_EXCLUDE = '-members -electoralCommission -comisionElectoral -certificatesStep5 -assemblies -estatutos -estatutosSnapshot -validationData -ministroSignature -memberIds -documentIds';
@@ -1067,7 +1081,19 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
       return res.status(404).json({ error: 'Organización no encontrada' });
     }
 
-    const { ministroId, ministroName, ministroRut, scheduledDate, scheduledTime, location } = req.body;
+    let { ministroId, ministroName, ministroRut, scheduledDate, scheduledTime, location } = req.body;
+    // Fallback field names (frontend may send date/time instead of scheduledDate/scheduledTime)
+    if (!scheduledDate && req.body.date) scheduledDate = req.body.date;
+    if (!scheduledTime && req.body.time) scheduledTime = req.body.time;
+
+    // Auto-fill ministro name/rut from DB if not provided
+    if (!ministroName && ministroId) {
+      const ministro = await User.findById(ministroId).select('firstName lastName rut');
+      if (ministro) {
+        ministroName = `${ministro.firstName} ${ministro.lastName}`;
+        ministroRut = ministroRut || ministro.rut || '';
+      }
+    }
 
     // Check if had previous data for notification
     const hadPreviousSchedule = organization.ministroData && organization.ministroData.scheduledDate;
@@ -1080,7 +1106,7 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
       rut: ministroRut,
       scheduledDate: new Date(scheduledDate),
       scheduledTime,
-      location,
+      location: location || organization.assemblyAddress || '',
       assignedAt: organization.ministroData?.assignedAt || new Date()
     };
 
@@ -1137,17 +1163,37 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
       });
     }
 
+    // Detect changes vs organizer's original request
+    const requestedDate = organization.electionDate
+      ? new Date(organization.electionDate).toISOString().split('T')[0]
+      : null;
+    const requestedTime = organization.electionTime || null;
+    const requestedLocation = organization.assemblyAddress || null;
+
+    const scheduleChanges = [];
+    if (requestedDate && requestedDate !== scheduledDate) scheduleChanges.push(`Fecha: ${requestedDate} → ${scheduledDate}`);
+    if (requestedTime && requestedTime !== scheduledTime) scheduleChanges.push(`Hora: ${requestedTime} → ${scheduledTime}`);
+    if (requestedLocation && location && requestedLocation !== location) scheduleChanges.push(`Lugar: ${requestedLocation} → ${location}`);
+    const hasScheduleChanges = scheduleChanges.length > 0;
+
     // Create notification
-    const notificationType = hadPreviousSchedule ? 'schedule_change' : 'ministro_assigned';
+    const notificationType = hadPreviousSchedule ? 'schedule_change' : (hasScheduleChanges ? 'schedule_change' : 'ministro_assigned');
+    const notifTitle = hadPreviousSchedule
+      ? 'Cita reagendada'
+      : (hasScheduleChanges ? 'Asamblea confirmada con cambios' : 'Ministro de Fe asignado');
+    const notifMessage = hadPreviousSchedule
+      ? `Tu cita ha sido reagendada para el ${scheduledDate} a las ${scheduledTime}`
+      : hasScheduleChanges
+        ? `Tu asamblea fue confirmada con modificaciones:\n${scheduleChanges.join('\n')}\nMinistro: ${ministroName}`
+        : `Se ha asignado un Ministro de Fe: ${ministroName} para el ${scheduledDate} a las ${scheduledTime}`;
+
     await Notification.create({
       userId: organization.userId,
       type: notificationType,
-      title: hadPreviousSchedule ? 'Cita reagendada' : 'Ministro de Fe asignado',
-      message: hadPreviousSchedule
-        ? `Tu cita ha sido reagendada para el ${scheduledDate} a las ${scheduledTime}`
-        : `Se ha asignado un Ministro de Fe: ${ministroName} para el ${scheduledDate} a las ${scheduledTime}`,
+      title: notifTitle,
+      message: notifMessage,
       organizationId: organization._id,
-      data: { ministroData: organization.ministroData }
+      data: { ministroData: organization.ministroData, scheduleChanges: hasScheduleChanges ? scheduleChanges : undefined }
     });
 
     res.json(organization);
@@ -1451,6 +1497,127 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateO
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ error: 'Error al actualizar estado' });
+  }
+});
+
+// Approve with signed document (Admin only) — Ley 19.799 FEA workflow
+router.post('/:id/approve-with-document', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), pdfUpload.single('signedDocument'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Validate status transition to approved
+    if (!isValidStatusTransition(organization.status, 'approved')) {
+      return res.status(400).json({
+        error: `No se puede aprobar desde el estado actual: ${organization.status}`,
+        allowedTransitions: VALID_STATUS_TRANSITIONS[organization.status] || []
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Debe adjuntar el certificado de personalidad jurídica firmado con FEA (PDF)' });
+    }
+
+    // Store the signed PDF
+    const storageResult = await storeFile(req.file.buffer, 'application/pdf', {
+      organizationId: organization._id.toString(),
+      type: 'certificado_personalidad_juridica',
+      fileName: req.file.originalname
+    });
+
+    const documentUrl = storageResult.stored === 's3' ? `s3:${storageResult.s3Key}` : storageResult.data;
+
+    // Update organization
+    organization.status = 'approved';
+    organization.certificadoPersonalidadJuridica = {
+      url: documentUrl,
+      uploadedAt: new Date(),
+      uploadedBy: req.userId,
+      fileName: req.file.originalname
+    };
+    organization.statusHistory.push({
+      status: 'approved',
+      date: new Date(),
+      comment: 'Aprobada con certificado firmado con FEA (Ley 19.799)',
+      user: `${req.user.firstName} ${req.user.lastName}`
+    });
+
+    await organization.save();
+
+    // Create member accounts if not already done
+    let memberAccountsResult = null;
+    if (!organization.memberAccountsCreated) {
+      try {
+        memberAccountsResult = await createMemberAccounts(organization);
+        organization.memberAccountsCreated = true;
+        organization.memberAccountsCreatedAt = new Date();
+        await organization.save();
+
+        const createdCount = memberAccountsResult.createdAccounts.filter(a => a.status === 'created').length;
+        if (createdCount > 0) {
+          await Notification.create({
+            userId: organization.userId,
+            type: 'member_accounts_created',
+            title: 'Cuentas de miembros creadas',
+            message: `Se han creado ${createdCount} cuentas para los miembros de tu organización. Cada socio puede iniciar sesión con su apellido y RUT.`,
+            organizationId: organization._id,
+            data: { summary: memberAccountsResult }
+          });
+        }
+      } catch (memberErr) {
+        console.error('Error auto-creating member accounts:', memberErr);
+      }
+    }
+
+    // Notify organizer
+    await Notification.create({
+      userId: organization.userId,
+      type: 'organization_approved',
+      title: 'Organización aprobada',
+      message: `Tu organización "${organization.organizationName}" ha sido aprobada y cuenta con certificado de personalidad jurídica.`,
+      organizationId: organization._id
+    });
+
+    res.json({
+      message: 'Organización aprobada con certificado firmado',
+      data: {
+        status: organization.status,
+        certificadoPersonalidadJuridica: {
+          fileName: organization.certificadoPersonalidadJuridica.fileName,
+          uploadedAt: organization.certificadoPersonalidadJuridica.uploadedAt
+        },
+        memberAccountsResult
+      }
+    });
+
+    // Send email notification
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          await emailService.sendApprovalNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            certNumber: organization.certNumber || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending approval email:', emailErr);
+      }
+    }
+  } catch (error) {
+    // Handle multer errors
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'El archivo excede el tamaño máximo de 10MB' });
+    }
+    if (error.message === 'Solo se permiten archivos PDF') {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Approve with document error:', error);
+    res.status(500).json({ error: 'Error al aprobar organización' });
   }
 });
 

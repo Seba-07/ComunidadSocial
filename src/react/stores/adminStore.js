@@ -89,6 +89,18 @@ export const useAdminStore = create((set, get) => ({
     }
   },
 
+  async approveWithDocument(orgId, pdfFile) {
+    try {
+      const result = await apiService.approveOrgWithDocument(orgId, pdfFile);
+      const { organizations } = get();
+      set({ organizations: organizations.map(o => o._id === orgId ? { ...o, status: 'approved' } : o) });
+      return result;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
   async refreshOrganization(orgId) {
     try {
       const data = await apiService.getOrganization(orgId);

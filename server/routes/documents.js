@@ -855,4 +855,112 @@ router.get('/:orgId/preview-lista-asistencia/:assemblyId', authenticate, async (
   }
 });
 
+/**
+ * Genera HTML del Certificado de Personalidad Jurídica (borrador sin firma)
+ */
+function generateCertificadoBorradorHTML(org) {
+  const name = org.organizationName || org.name || '';
+  const type = (org.organizationType || org.type || '').replace(/_/g, ' ');
+  const address = [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '';
+  const comuna = org.comuna || org.commune || '';
+  const region = org.region || '';
+
+  const directorio = org.provisionalDirectorio || org.directorio || {};
+  const president = directorio.president || directorio.presidente;
+  const secretary = directorio.secretary || directorio.secretario;
+  const treasurer = directorio.treasurer || directorio.tesorero;
+
+  const presidentName = president ? [president.firstName, president.lastName].filter(Boolean).join(' ') : '---';
+  const presidentRut = president?.rut || '---';
+  const secretaryName = secretary ? [secretary.firstName, secretary.lastName].filter(Boolean).join(' ') : '---';
+  const treasurerName = treasurer ? [treasurer.firstName, treasurer.lastName].filter(Boolean).join(' ') : '---';
+
+  const today = new Date();
+  const dateStr = formatDate(today);
+  const membersCount = (org.members || []).length;
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Certificado de Personalidad Jurídica</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 700px; margin: 60px auto; padding: 0 30px; color: #1a1a1a; line-height: 1.8; font-size: 14px; }
+  h1 { text-align: center; font-size: 20px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+  .subtitle { text-align: center; font-size: 14px; color: #555; margin-bottom: 40px; }
+  p { text-align: justify; margin-bottom: 16px; }
+  .firma-block { margin-top: 60px; text-align: center; }
+  .firma-line { border-top: 1px solid #333; width: 300px; margin: 60px auto 5px; }
+  .firma-label { font-size: 12px; color: #555; }
+  .watermark { text-align: center; color: #d1d5db; font-size: 11px; margin-top: 40px; font-style: italic; }
+  .legal-ref { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 20px; }
+  @media print { body { margin: 20mm; } }
+</style></head><body>
+<h1>Certificado de Personalidad Juridica</h1>
+<div class="subtitle">Municipalidad de ${comuna || 'Renca'}</div>
+
+<p>Certifico que con fecha ${dateStr}, se ha constituido legalmente la organizacion comunitaria denominada
+<strong>"${name}"</strong>, de tipo <strong>${type}</strong>, con domicilio en
+${address}${comuna ? ', comuna de ' + comuna : ''}${region ? ', Region ' + region : ''},
+de conformidad con lo dispuesto en la Ley N° 19.418 sobre Juntas de Vecinos y demas Organizaciones Comunitarias.</p>
+
+<p>La organizacion cuenta con <strong>${membersCount} miembros fundadores</strong> y su directorio provisorio
+quedo conformado por:</p>
+
+<p style="padding-left: 40px;">
+  <strong>Presidente/a:</strong> ${presidentName} (RUT: ${presidentRut})<br>
+  <strong>Secretario/a:</strong> ${secretaryName}<br>
+  <strong>Tesorero/a:</strong> ${treasurerName}
+</p>
+
+<p>Se deja constancia que la organizacion ha cumplido con todos los requisitos legales establecidos
+en el Titulo I de la Ley N° 19.418 para su constitucion, incluyendo la celebracion de la asamblea constitutiva
+ante Ministro de Fe y la aprobacion de sus estatutos.</p>
+
+<p>Se extiende el presente certificado para los fines legales que correspondan.</p>
+
+<div class="firma-block">
+  <div class="firma-line"></div>
+  <div class="firma-label">Secretario/a Municipal</div>
+  <div class="firma-label">${comuna ? 'Municipalidad de ' + comuna : 'Municipalidad'}</div>
+</div>
+
+<div class="watermark">BORRADOR — Este documento requiere firma electronica avanzada (FEA) para tener validez legal (Ley 19.799)</div>
+<div class="legal-ref">Ley 19.418 · Ley 19.799 sobre Documentos Electronicos y Firma Electronica</div>
+</body></html>`;
+}
+
+/**
+ * GET /api/documents/:orgId/generate-certificado-borrador
+ * Genera PDF borrador del Certificado de Personalidad Jurídica (sin firma)
+ */
+router.get('/:orgId/generate-certificado-borrador', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  let browser = null;
+  try {
+    const org = await Organization.findById(req.params.orgId);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const html = generateCertificadoBorradorHTML(org);
+
+    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '2.5cm', right: '2cm', bottom: '2.5cm', left: '2cm' }
+    });
+
+    await browser.close();
+    browser = null;
+
+    const fileName = `Borrador_Certificado_${(org.organizationName || 'Org').replace(/\s+/g, '_')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdf);
+  } catch (error) {
+    console.error('Error generating certificado borrador:', error);
+    if (browser) await browser.close();
+    res.status(500).json({ error: 'Error al generar borrador de certificado' });
+  }
+});
+
 export default router;

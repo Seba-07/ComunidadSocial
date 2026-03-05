@@ -5,7 +5,6 @@ import Consent from '../models/Consent.js';
 import Organization from '../models/Organization.js';
 import AuditLog from '../models/AuditLog.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
-import { storeDocument, deleteDocument } from '../services/storageService.js';
 
 const router = express.Router();
 
@@ -35,170 +34,6 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 // ============================================
 // RUTAS /me/* - DEBEN IR ANTES DE /:id
 // ============================================
-
-// Obtener timbre y firma del usuario actual
-router.get('/me/timbre-firma', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.json({
-      timbreVirtual: user.timbreVirtual || { imagen: null, activo: false },
-      firmaDigital: user.firmaDigital || { imagen: null, activo: false }
-    });
-  } catch (error) {
-    console.error('Get timbre/firma error:', error);
-    res.status(500).json({ error: 'Error al obtener timbre/firma' });
-  }
-});
-
-// Subir timbre virtual
-router.post('/me/timbre-virtual', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const { imagen } = req.body;
-
-    if (!imagen) {
-      return res.status(400).json({ error: 'La imagen del timbre es requerida' });
-    }
-
-    // Validar que sea base64 de imagen
-    if (!imagen.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Formato de imagen inválido' });
-    }
-
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    const result = await storeDocument(imagen, { type: 'timbre', memberId: req.userId });
-    user.timbreVirtual = {
-      imagen: result.stored === 's3' ? `s3:${result.s3Key}` : imagen,
-      fechaSubida: new Date(),
-      activo: true
-    };
-
-    await user.save();
-
-    res.json({
-      message: 'Timbre virtual guardado correctamente',
-      timbreVirtual: user.timbreVirtual
-    });
-  } catch (error) {
-    console.error('Upload timbre error:', error);
-    res.status(500).json({ error: 'Error al guardar timbre virtual' });
-  }
-});
-
-// Subir firma digital
-router.post('/me/firma-digital', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const { imagen } = req.body;
-
-    if (!imagen) {
-      return res.status(400).json({ error: 'La imagen de la firma es requerida' });
-    }
-
-    if (!imagen.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Formato de imagen inválido' });
-    }
-
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    const result = await storeDocument(imagen, { type: 'firma', memberId: req.userId });
-    user.firmaDigital = {
-      imagen: result.stored === 's3' ? `s3:${result.s3Key}` : imagen,
-      fechaSubida: new Date(),
-      activo: true
-    };
-
-    await user.save();
-
-    res.json({
-      message: 'Firma digital guardada correctamente',
-      firmaDigital: user.firmaDigital
-    });
-  } catch (error) {
-    console.error('Upload firma error:', error);
-    res.status(500).json({ error: 'Error al guardar firma digital' });
-  }
-});
-
-// Eliminar timbre virtual
-router.delete('/me/timbre-virtual', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    user.timbreVirtual = {
-      imagen: null,
-      fechaSubida: null,
-      activo: false
-    };
-
-    await user.save();
-
-    res.json({ message: 'Timbre virtual eliminado' });
-  } catch (error) {
-    console.error('Delete timbre error:', error);
-    res.status(500).json({ error: 'Error al eliminar timbre' });
-  }
-});
-
-// Eliminar firma digital
-router.delete('/me/firma-digital', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    user.firmaDigital = {
-      imagen: null,
-      fechaSubida: null,
-      activo: false
-    };
-
-    await user.save();
-
-    res.json({ message: 'Firma digital eliminada' });
-  } catch (error) {
-    console.error('Delete firma error:', error);
-    res.status(500).json({ error: 'Error al eliminar firma' });
-  }
-});
-
-// Toggle activar/desactivar timbre
-router.post('/me/timbre-virtual/toggle', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    if (!user.timbreVirtual?.imagen) {
-      return res.status(400).json({ error: 'No hay timbre configurado' });
-    }
-
-    user.timbreVirtual.activo = !user.timbreVirtual.activo;
-    await user.save();
-
-    res.json({
-      message: user.timbreVirtual.activo ? 'Timbre activado' : 'Timbre desactivado',
-      activo: user.timbreVirtual.activo
-    });
-  } catch (error) {
-    console.error('Toggle timbre error:', error);
-    res.status(500).json({ error: 'Error al cambiar estado del timbre' });
-  }
-});
 
 // Generate or return QR token for member credential
 router.post('/me/generate-qr-token', authenticate, async (req, res) => {
@@ -317,7 +152,7 @@ router.put('/me/consents', authenticate, async (req, res) => {
 router.get('/me/export', authenticate, async (req, res) => {
   try {
     const format = req.query.format || 'json';
-    const user = await User.findById(req.userId).select('-password -timbreVirtual -firmaDigital').lean();
+    const user = await User.findById(req.userId).select('-password').lean();
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
