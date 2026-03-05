@@ -146,27 +146,26 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
     }
   }
 
-  function downloadEstatutos() {
-    if (!org.estatutos) {
+  function openEstatutosPreview() {
+    const snapshot = org.estatutosSnapshot;
+    if (!snapshot?.articulos?.length) {
       addToast('No hay estatutos disponibles', 'error');
       return;
     }
-    try {
-      let base64 = org.estatutos;
-      if (base64.includes(',')) base64 = base64.split(',')[1];
-      const byteChars = atob(base64);
-      const byteArray = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Estatutos_${org.organizationName || 'org'}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      addToast('Error al descargar estatutos', 'error');
-    }
+    const articulos = [...snapshot.articulos].sort((a, b) => (a.orden || a.numero || 0) - (b.orden || b.numero || 0));
+    const name = org.organizationName || 'Organización';
+    const type = (org.organizationType || '').replace(/_/g, ' ');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estatutos - ${name}</title>
+<style>body{font-family:Georgia,serif;max-width:750px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}
+h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-size:15px;color:#555;font-weight:400;margin-top:0}
+.art{margin-bottom:18px}.art-title{font-weight:700;font-size:14px;margin-bottom:4px}.art-content{font-size:13px;white-space:pre-line}
+@media print{body{margin:20px}}</style></head><body>
+<h1>ESTATUTOS</h1><h2>${name} — ${type}</h2><hr style="margin:20px 0">
+${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.numero}: ${a.titulo}</div><div class="art-content">${a.contenido}</div></div>`).join('')}
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   }
 
   async function handleRetract() {
@@ -429,29 +428,43 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
       {/* 5. Estatutos */}
       <div style={sectionStyle}>
         <h3 style={sectionTitle}>Estatutos</h3>
-        {org.estatutosSnapshot?.nombreTipo && (
-          <div style={{ marginBottom: 10 }}>
-            <span style={labelStyle}>Plantilla utilizada</span>
-            <div style={valueStyle}>{org.estatutosSnapshot.nombreTipo}</div>
-          </div>
-        )}
-        {org.estatutosSnapshot?.articulos?.length > 0 && (
-          <div style={{ marginBottom: 10 }}>
-            <span style={labelStyle}>Artículos</span>
-            <div style={valueStyle}>{org.estatutosSnapshot.articulos.length} artículos</div>
-          </div>
-        )}
-        {org.estatutos ? (
-          <button onClick={downloadEstatutos}
-            style={{
-              padding: '8px 16px', fontSize: 13, borderRadius: 8,
-              border: '1px solid #d1d5db', background: 'white', color: '#374151',
-              cursor: 'pointer', fontWeight: 500,
+        {org.estatutosSnapshot?.articulos?.length > 0 ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div>
+                <span style={labelStyle}>Plantilla: </span>
+                <span style={valueStyle}>{org.estatutosSnapshot.nombreTipo || '—'}</span>
+                <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>({org.estatutosSnapshot.articulos.length} artículos)</span>
+              </div>
+              <button onClick={openEstatutosPreview}
+                style={{
+                  padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                  border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb',
+                  cursor: 'pointer',
+                }}>
+                Ver / Imprimir
+              </button>
+            </div>
+            <div style={{
+              maxHeight: 250, overflowY: 'auto', border: '1px solid #e5e7eb',
+              borderRadius: 8, padding: 14, background: '#fafafa',
             }}>
-            Descargar Estatutos (PDF)
-          </button>
+              {[...org.estatutosSnapshot.articulos]
+                .sort((a, b) => (a.orden || a.numero || 0) - (b.orden || b.numero || 0))
+                .map((art, i) => (
+                  <div key={i} style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 2 }}>
+                      Artículo {art.numero}: {art.titulo}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                      {art.contenido}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </>
         ) : (
-          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Estatutos no disponibles para descarga</p>
+          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Estatutos no disponibles</p>
         )}
       </div>
 

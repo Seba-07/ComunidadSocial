@@ -115,6 +115,21 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
     });
   }
 
+  function openEstatutosPreview(snapshot, name, type) {
+    const articulos = [...(snapshot.articulos || [])].sort((a, b) => (a.orden || a.numero || 0) - (b.orden || b.numero || 0));
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estatutos - ${name}</title>
+<style>body{font-family:Georgia,serif;max-width:750px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}
+h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-size:15px;color:#555;font-weight:400;margin-top:0}
+.art{margin-bottom:18px}.art-title{font-weight:700;font-size:14px;margin-bottom:4px}.art-content{font-size:13px;white-space:pre-line}
+@media print{body{margin:20px}}</style></head><body>
+<h1>ESTATUTOS</h1><h2>${name} — ${type}</h2><hr style="margin:20px 0">
+${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.numero}: ${a.titulo}</div><div class="art-content">${a.contenido}</div></div>`).join('')}
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+
   function downloadBase64(base64Data, filename, mimeType = 'application/pdf') {
     try {
       let b64 = base64Data;
@@ -399,34 +414,45 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
             <div>
               {/* Estatutos */}
               <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
-              {org.estatutosSnapshot?.nombreTipo && (
-                <div style={{
-                  padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12,
-                  background: '#fafafa',
-                }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Plantilla:</span>
-                  <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{org.estatutosSnapshot.nombreTipo}</span>
-                  {org.estatutosSnapshot.articulos?.length > 0 && (
-                    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>({org.estatutosSnapshot.articulos.length} artículos)</span>
-                  )}
-                </div>
-              )}
-              {org.estatutos ? (
-                <div style={{
-                  padding: 12, border: '1px solid #d1fae5', borderRadius: 8, marginBottom: 16,
-                  background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <span style={{ fontSize: 14, color: '#059669', fontWeight: 500 }}>Estatutos PDF</span>
-                  <button
-                    onClick={() => downloadBase64(org.estatutos, `Estatutos_${orgName}.pdf`)}
-                    style={{
-                      padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
-                      border: '1px solid #059669', background: 'white', color: '#059669',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Descargar
-                  </button>
+              {org.estatutosSnapshot?.articulos?.length > 0 ? (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{
+                    padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 10,
+                    background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Plantilla: </span>
+                      <span style={{ fontSize: 13, color: '#6b7280' }}>{org.estatutosSnapshot.nombreTipo || 'Sin nombre'}</span>
+                      <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>({org.estatutosSnapshot.articulos.length} artículos)</span>
+                    </div>
+                    <button
+                      onClick={() => openEstatutosPreview(org.estatutosSnapshot, orgName, orgType)}
+                      style={{
+                        padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                        border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Ver / Imprimir
+                    </button>
+                  </div>
+                  <div style={{
+                    maxHeight: 300, overflowY: 'auto', border: '1px solid #e5e7eb',
+                    borderRadius: 8, padding: 16, background: 'white',
+                  }}>
+                    {[...org.estatutosSnapshot.articulos]
+                      .sort((a, b) => (a.orden || a.numero || 0) - (b.orden || b.numero || 0))
+                      .map((art, i) => (
+                        <div key={i} style={{ marginBottom: 14 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 3 }}>
+                            Artículo {art.numero}: {art.titulo}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                            {art.contenido}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               ) : (
                 <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16 }}>Estatutos no disponibles</p>
