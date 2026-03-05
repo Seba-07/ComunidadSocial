@@ -202,10 +202,11 @@ export const createOrganizationSchema = z.object({
   electoralCommission: z.array(memberSchema).optional(),
   provisionalDirectorio: z.object({
     president: memberSchema.optional().nullable(),
+    vicePresident: memberSchema.optional().nullable(),
     secretary: memberSchema.optional().nullable(),
     treasurer: memberSchema.optional().nullable(),
     additionalMembers: z.array(memberSchema).optional()
-  }).optional(),
+  }).passthrough().optional(),
   electionDate: z.string().optional().nullable(),
   electionTime: z.string().optional().nullable(),
   assemblyAddress: z.string().max(200).optional().nullable(),
