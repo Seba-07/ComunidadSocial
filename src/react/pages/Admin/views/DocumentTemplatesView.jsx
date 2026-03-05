@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { parseTemplateBlocks } from '@shared/utils/templateBlockParser.js';
 
 async function compressImage(file, maxWidth = 800, quality = 0.85) {
   return new Promise((resolve) => {
@@ -110,13 +111,17 @@ La Comisión Organizadora delega la facultad de tramitar la aprobación de los p
 
 Se levanta la sesión siendo las {{HORA_TERMINO_ASAMBLEA}} horas. Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
 
+[COLS:2]
 {{FIRMA_PRESIDENTE}}
-
+[COL]
 {{FIRMA_SECRETARIO}}
+[/COLS]
 
+[COLS:2]
 {{FIRMA_TESORERO}}
-
-{{FIRMA_MINISTRO_FE}}`,
+[COL]
+{{FIRMA_MINISTRO_FE}}
+[/COLS]`,
 
   lista_socios: `LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN
 
@@ -318,6 +323,34 @@ export default function DocumentTemplatesView() {
     }, 0);
   }
 
+  function insertAtCursor(text) {
+    const ta = contentRef.current;
+    if (!ta) {
+      setSelected(s => ({ ...s, content: (s.content || '') + text }));
+      return;
+    }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const current = selected.content || '';
+    const newText = current.substring(0, start) + text + current.substring(end);
+    setSelected(s => ({ ...s, content: newText }));
+    setTimeout(() => {
+      ta.selectionStart = ta.selectionEnd = start + text.length;
+      ta.focus();
+    }, 0);
+  }
+
+  function insertColumns(count) {
+    const parts = count === 2
+      ? 'Contenido columna 1\n[COL]\nContenido columna 2'
+      : 'Contenido columna 1\n[COL]\nContenido columna 2\n[COL]\nContenido columna 3';
+    insertAtCursor(`\n[COLS:${count}]\n${parts}\n[/COLS]\n`);
+  }
+
+  function insertTable() {
+    insertAtCursor('\n[TABLE]\nNombre | RUT | Cargo\nJuan Pérez | 12.345.678-9 | Presidente\n[/TABLE]\n');
+  }
+
   const uploadImage = useCallback(async (tipo, file) => {
     if (!selected?._id || !file) {
       addToast('Guarda la plantilla primero antes de subir imágenes', 'error');
@@ -458,6 +491,32 @@ export default function DocumentTemplatesView() {
             <div style={{ flex: 1 }}>
               <div style={cardStyle}>
                 <label style={labelStyle}>Contenido (texto con placeholders)</label>
+                <div style={{
+                  display: 'flex', gap: 6, marginBottom: 8,
+                  padding: '6px 8px', background: '#f8fafc',
+                  border: '1px solid #e2e8f0', borderRadius: 8,
+                  flexWrap: 'wrap', alignItems: 'center',
+                }}>
+                  <span style={{ fontSize: 11, color: '#64748b', marginRight: 4 }}>Insertar:</span>
+                  <button onClick={() => insertColumns(2)} title="Insertar 2 columnas lado a lado" style={{
+                    padding: '3px 10px', fontSize: 11, border: '1px solid #cbd5e1', borderRadius: 6,
+                    background: '#fff', cursor: 'pointer', color: '#334155',
+                  }}>
+                    Columnas (2)
+                  </button>
+                  <button onClick={() => insertColumns(3)} title="Insertar 3 columnas lado a lado" style={{
+                    padding: '3px 10px', fontSize: 11, border: '1px solid #cbd5e1', borderRadius: 6,
+                    background: '#fff', cursor: 'pointer', color: '#334155',
+                  }}>
+                    Columnas (3)
+                  </button>
+                  <button onClick={() => insertTable()} title="Insertar tabla con encabezado" style={{
+                    padding: '3px 10px', fontSize: 11, border: '1px solid #cbd5e1', borderRadius: 6,
+                    background: '#fff', cursor: 'pointer', color: '#334155',
+                  }}>
+                    Tabla
+                  </button>
+                </div>
                 <textarea
                   ref={contentRef}
                   value={selected.content || ''}
@@ -812,7 +871,6 @@ export default function DocumentTemplatesView() {
                   }}>
                     {renderHeader(i === 0)}
                     <div style={{
-                      whiteSpace: 'pre-wrap',
                       fontFamily: 'serif',
                       fontSize: 13,
                       lineHeight: 1.8,
@@ -820,7 +878,47 @@ export default function DocumentTemplatesView() {
                       padding: '20px 28px',
                       flex: 1,
                     }}>
-                      {pageContent}
+                      {parseTemplateBlocks(pageContent).map((block, bi) => {
+                        if (block.type === 'cols') {
+                          return (
+                            <div key={bi} style={{ display: 'flex', gap: 16, margin: '12px 0' }}>
+                              {block.columns.map((col, ci) => (
+                                <div key={ci} style={{ flex: 1, whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+                                  {col}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        if (block.type === 'table') {
+                          return (
+                            <table key={bi} style={{ width: '100%', borderCollapse: 'collapse', margin: '12px 0', fontSize: 12 }}>
+                              <thead>
+                                <tr>
+                                  {block.headers.map((h, hi) => (
+                                    <th key={hi} style={{
+                                      border: '1px solid #cbd5e1', padding: '4px 8px',
+                                      background: '#f1f5f9', fontWeight: 600, textAlign: 'left', fontSize: 11,
+                                    }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {block.rows.map((row, ri) => (
+                                  <tr key={ri}>
+                                    {row.map((cell, ci) => (
+                                      <td key={ci} style={{
+                                        border: '1px solid #e5e7eb', padding: '3px 8px', fontSize: 11,
+                                      }}>{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          );
+                        }
+                        return <div key={bi} style={{ whiteSpace: 'pre-wrap' }}>{block.content}</div>;
+                      })}
                     </div>
                     {renderFooter(i + 1, pages.length)}
                   </div>

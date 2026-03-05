@@ -52,13 +52,17 @@ La Comisión Organizadora delega la facultad de tramitar la aprobación de los p
 
 Se levanta la sesión siendo las {{HORA_TERMINO_ASAMBLEA}} horas. Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
 
+[COLS:2]
 {{FIRMA_PRESIDENTE}}
-
+[COL]
 {{FIRMA_SECRETARIO}}
+[/COLS]
 
+[COLS:2]
 {{FIRMA_TESORERO}}
-
-{{FIRMA_MINISTRO_FE}}`;
+[COL]
+{{FIRMA_MINISTRO_FE}}
+[/COLS]`;
 
 const ACTA_UNION_COMUNAL = `ACTA DE ASAMBLEA GENERAL CONSTITUTIVA
 UNIÓN COMUNAL DE ORGANIZACIONES COMUNITARIAS
@@ -85,13 +89,17 @@ COMISIÓN ELECTORAL
 
 Se delega en {{PRESIDENTE}}, Presidente(a) de la Unión Comunal, la facultad de tramitar ante la Secretaría Municipal la aprobación de los presentes Estatutos, fijando como domicilio: {{DIRECCION}}
 
+[COLS:2]
 {{FIRMA_PRESIDENTE}}
-
+[COL]
 {{FIRMA_SECRETARIO}}
+[/COLS]
 
+[COLS:2]
 {{FIRMA_TESORERO}}
-
-{{FIRMA_MINISTRO_FE}}`;
+[COL]
+{{FIRMA_MINISTRO_FE}}
+[/COLS]`;
 
 const ACTA_ESCOLAR = `ACTA DE ASAMBLEA CONSTITUTIVA
 ORGANIZACIÓN ESTUDIANTIL / CENTRO DE PADRES
@@ -116,13 +124,17 @@ COMISIÓN ELECTORAL
 
 Se faculta a {{PRESIDENTE}} para tramitar la aprobación de los Estatutos, con domicilio en: {{DIRECCION}}
 
+[COLS:2]
 {{FIRMA_PRESIDENTE}}
-
+[COL]
 {{FIRMA_SECRETARIO}}
+[/COLS]
 
+[COLS:2]
 {{FIRMA_TESORERO}}
-
-{{FIRMA_MINISTRO_FE}}`;
+[COL]
+{{FIRMA_MINISTRO_FE}}
+[/COLS]`;
 
 const ACTA_INDIGENA = `ACTA DE ASAMBLEA GENERAL CONSTITUTIVA
 ORGANIZACIÓN INDÍGENA
@@ -150,13 +162,17 @@ Se delega en {{PRESIDENTE}}, Presidente(a) de la organización, la facultad de t
 Objetivos de la organización:
 {{OBJETIVOS}}
 
+[COLS:2]
 {{FIRMA_PRESIDENTE}}
-
+[COL]
 {{FIRMA_SECRETARIO}}
+[/COLS]
 
+[COLS:2]
 {{FIRMA_TESORERO}}
-
-{{FIRMA_MINISTRO_FE}}`;
+[COL]
+{{FIRMA_MINISTRO_FE}}
+[/COLS]`;
 
 // ============================================
 // Lista de Socios

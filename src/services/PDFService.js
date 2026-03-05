@@ -5,6 +5,7 @@
 
 import { jsPDF } from 'jspdf';
 import { getOrgType as getOrgTypeFromUtils, formatDate as formatDateFromUtils } from '../shared/utils/index.js';
+import { parseTemplateBlocks } from '../shared/utils/templateBlockParser.js';
 
 // Alias para compatibilidad
 const getOrgTypeName = getOrgTypeFromUtils;
@@ -283,7 +284,6 @@ class PDFService {
     const resolvedText = templateContent.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || '___');
     const { headerConfig, footerConfig } = config;
 
-    // Split into lines and render
     this.drawHeader(doc, title, 'Departamento de Registro y Certificación', headerConfig, pageW);
     this.currentY = Math.max(this.currentY, 55);
 
@@ -291,8 +291,28 @@ class PDFService {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.text);
 
-    const paragraphs = resolvedText.split('\n');
+    const blocks = parseTemplateBlocks(resolvedText);
     let pageNum = 1;
+
+    for (const block of blocks) {
+      if (block.type === 'text') {
+        pageNum = this._renderTextBlock(doc, block.content, pageW, pageH, pageNum, headerConfig, footerConfig);
+      } else if (block.type === 'cols') {
+        pageNum = this._renderColsBlock(doc, block, pageW, pageH, pageNum, headerConfig, footerConfig);
+      } else if (block.type === 'table') {
+        pageNum = this._renderTableBlock(doc, block, pageW, pageH, pageNum, headerConfig, footerConfig);
+      }
+    }
+
+    this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
+    return doc;
+  }
+
+  /**
+   * Render a text block (paragraphs) — extracted from original generateFromTemplate logic
+   */
+  _renderTextBlock(doc, text, pageW, pageH, pageNum, headerConfig, footerConfig) {
+    const paragraphs = text.split('\n');
 
     for (const paragraph of paragraphs) {
       const trimmed = paragraph.trim();
@@ -301,7 +321,6 @@ class PDFService {
         continue;
       }
 
-      // Check if it looks like a heading (ALL CAPS or short bold line)
       const isHeading = /^[A-ZÁÉÍÓÚÑÜ\s\-:]+$/.test(trimmed) && trimmed.length < 80;
 
       if (isHeading) {
@@ -312,7 +331,6 @@ class PDFService {
         doc.setFontSize(10);
       }
 
-      // Check if we need a new page
       const lines = doc.splitTextToSize(trimmed, CONTENT_WIDTH);
       const neededHeight = lines.length * 5 + 4;
       if (this.currentY + neededHeight > pageH - 30) {
@@ -330,8 +348,134 @@ class PDFService {
       this.currentY += isHeading ? 6 : 4;
     }
 
-    this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
-    return doc;
+    return pageNum;
+  }
+
+  /**
+   * Render a columns block — N columns side by side
+   */
+  _renderColsBlock(doc, block, pageW, pageH, pageNum, headerConfig, footerConfig) {
+    const colCount = block.count;
+    const gap = 8;
+    const totalGap = gap * (colCount - 1);
+    const colWidth = (CONTENT_WIDTH - totalGap) / colCount;
+    const lineHeight = 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.text);
+
+    // Pre-calculate each column's wrapped lines
+    const columnLines = block.columns.map(colText => {
+      const result = [];
+      for (const para of colText.split('\n')) {
+        const trimmed = para.trim();
+        if (!trimmed) { result.push(''); continue; }
+        const wrapped = doc.splitTextToSize(trimmed, colWidth);
+        result.push(...wrapped);
+      }
+      return result;
+    });
+
+    const maxLines = Math.max(...columnLines.map(l => l.length));
+    const neededHeight = maxLines * lineHeight + 8;
+
+    // Page break if needed
+    if (this.currentY + neededHeight > pageH - 30) {
+      this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
+      doc.addPage([pageW, pageH]);
+      pageNum++;
+      this.drawHeader(doc, '', null, headerConfig, pageW);
+      this.currentY = Math.max(this.currentY, 35);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(COLORS.text);
+    }
+
+    // Render each column
+    const startY = this.currentY;
+    for (let c = 0; c < colCount; c++) {
+      const x = MARGIN_LEFT + c * (colWidth + gap);
+      const centerX = x + colWidth / 2;
+      let y = startY;
+      for (const line of columnLines[c]) {
+        if (line === '') { y += 3; continue; }
+        doc.text(line, centerX, y, { align: 'center' });
+        y += lineHeight;
+      }
+    }
+
+    this.currentY = startY + neededHeight;
+    return pageNum;
+  }
+
+  /**
+   * Render a table block — headers + data rows with borders
+   */
+  _renderTableBlock(doc, block, pageW, pageH, pageNum, headerConfig, footerConfig) {
+    const colCount = block.headers.length;
+    const cellPadding = 3;
+    const rowHeight = 7;
+    const colWidth = CONTENT_WIDTH / colCount;
+
+    // Helper to draw header row
+    const drawTableHeaders = () => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setFillColor('#f1f5f9');
+      doc.setDrawColor('#cbd5e1');
+      doc.rect(MARGIN_LEFT, this.currentY - 4, CONTENT_WIDTH, rowHeight, 'FD');
+      block.headers.forEach((header, i) => {
+        doc.text(header, MARGIN_LEFT + i * colWidth + cellPadding, this.currentY);
+        if (i > 0) {
+          doc.line(MARGIN_LEFT + i * colWidth, this.currentY - 4,
+                   MARGIN_LEFT + i * colWidth, this.currentY - 4 + rowHeight);
+        }
+      });
+      this.currentY += rowHeight;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+    };
+
+    // Page break check for at least header + 1 row
+    if (this.currentY + rowHeight * 2 > pageH - 30) {
+      this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
+      doc.addPage([pageW, pageH]);
+      pageNum++;
+      this.drawHeader(doc, '', null, headerConfig, pageW);
+      this.currentY = Math.max(this.currentY, 35);
+    }
+
+    doc.setTextColor(COLORS.text);
+    drawTableHeaders();
+
+    // Data rows
+    for (const row of block.rows) {
+      if (this.currentY + rowHeight > pageH - 30) {
+        this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
+        doc.addPage([pageW, pageH]);
+        pageNum++;
+        this.drawHeader(doc, '', null, headerConfig, pageW);
+        this.currentY = Math.max(this.currentY, 35);
+        doc.setTextColor(COLORS.text);
+        drawTableHeaders();
+      }
+
+      doc.setDrawColor('#e5e7eb');
+      doc.rect(MARGIN_LEFT, this.currentY - 4, CONTENT_WIDTH, rowHeight, 'S');
+      row.forEach((cell, i) => {
+        const truncated = doc.splitTextToSize(cell, colWidth - cellPadding * 2)[0] || '';
+        doc.text(truncated, MARGIN_LEFT + i * colWidth + cellPadding, this.currentY);
+        if (i > 0) {
+          doc.line(MARGIN_LEFT + i * colWidth, this.currentY - 4,
+                   MARGIN_LEFT + i * colWidth, this.currentY - 4 + rowHeight);
+        }
+      });
+      this.currentY += rowHeight;
+    }
+
+    this.currentY += 4;
+    return pageNum;
   }
 
   /**
