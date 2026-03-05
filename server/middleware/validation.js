@@ -62,11 +62,13 @@ const emailSchema = z.string()
   .max(100, 'Email no puede tener más de 100 caracteres')
   .toLowerCase();
 
-// Password - mínimo 6 caracteres + una mayúscula
+// Password - mínimo 8 caracteres + mayúscula + minúscula + número
 const passwordSchema = z.string()
-  .min(6, 'La contraseña debe tener al menos 6 caracteres')
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
   .max(100, 'La contraseña no puede tener más de 100 caracteres')
-  .refine((val) => /[A-Z]/.test(val), { message: 'Debe contener al menos una mayúscula' });
+  .refine((val) => /[A-Z]/.test(val), { message: 'Debe contener al menos una mayúscula' })
+  .refine((val) => /[a-z]/.test(val), { message: 'Debe contener al menos una minúscula' })
+  .refine((val) => /[0-9]/.test(val), { message: 'Debe contener al menos un número' });
 
 // Nombre
 const nameSchema = z.string()

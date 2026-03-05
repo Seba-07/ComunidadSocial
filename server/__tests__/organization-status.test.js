@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import supertest from 'supertest';
 import app from '../index.js';
-import { createUser, createOrganization } from './helpers.js';
+import { createUser, createOrganization, createRequest } from './helpers.js';
 
-const request = supertest(app);
+const request = createRequest(app);
 
 // Valid status transitions map (mirrors server/routes/organizations.js)
 const VALID_TRANSITIONS = {

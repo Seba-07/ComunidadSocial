@@ -364,7 +364,8 @@ export default function DocumentTemplatesView() {
       formData.append('tipo', tipo);
       const resp = await fetch(`${apiService.baseUrl || '/api'}/document-templates/${selected._id}/upload-image`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('currentUser') || '{}').token}` },
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: formData,
       });
       const data = await resp.json();

@@ -16,7 +16,6 @@ export default function SharedHeader() {
     try {
       await logout();
     } catch { /* ignore */ }
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('currentMinistro');

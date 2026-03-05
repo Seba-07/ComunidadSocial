@@ -129,6 +129,7 @@ class NewsService {
       const response = await fetch(`${baseUrl}/news/upload-image`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: formData
       });
 

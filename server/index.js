@@ -76,7 +76,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Cookie parser para JWT HttpOnly cookies
@@ -105,6 +105,21 @@ app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Sanitización de inputs (DESPUÉS de body parsing para que req.body exista)
 app.use(sanitizeInput);
+
+// CSRF protection: rutas mutadoras requieren header X-Requested-With
+app.use('/api/', (req, res, next) => {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    // Excluir rutas que no pueden enviar custom headers (CSP reports, webhooks)
+    const exempt = ['/api/health', '/api/csp-report'];
+    if (exempt.some(path => req.originalUrl.startsWith(path))) return next();
+
+    const xrw = req.headers['x-requested-with'];
+    if (!xrw || xrw !== 'XMLHttpRequest') {
+      return res.status(403).json({ error: 'Forbidden: missing CSRF header' });
+    }
+  }
+  next();
+});
 
 // Servir archivos estáticos de uploads con cache headers
 app.use('/uploads', express.static('uploads', {

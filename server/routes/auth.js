@@ -84,7 +84,6 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -117,9 +116,27 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
       return res.status(401).json({ error: 'Tu cuenta ha sido desactivada' });
     }
 
+    // Account lockout check
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / 60000);
+      return res.status(423).json({ error: `Cuenta bloqueada por demasiados intentos fallidos. Intente en ${minutesLeft} minutos.` });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      // Increment failed attempts
+      const attempts = (user.failedLoginAttempts || 0) + 1;
+      const update = { failedLoginAttempts: attempts };
+      if (attempts >= 5) {
+        update.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 min lockout
+      }
+      await User.findByIdAndUpdate(user._id, update);
       return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Reset failed attempts on successful login
+    if (user.failedLoginAttempts > 0) {
+      await User.findByIdAndUpdate(user._id, { failedLoginAttempts: 0, lockedUntil: null });
     }
 
     const token = generateToken(user);
@@ -130,7 +147,6 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
 
     res.json({
       message: 'Inicio de sesión exitoso',
-      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -182,11 +198,13 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'Sesión invalidada' });
     }
 
-    // Issue new access token
+    // Issue new access token + rotate refresh token (F2.3 security)
     const newToken = generateToken(user);
+    const newRefreshToken = generateRefreshToken(user);
     res.cookie('auth_token', newToken, COOKIE_OPTIONS);
+    res.cookie('refresh_token', newRefreshToken, REFRESH_COOKIE_OPTIONS);
 
-    res.json({ message: 'Token renovado', token: newToken });
+    res.json({ message: 'Token renovado' });
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Refresh token expirado. Inicie sesión nuevamente.' });
@@ -328,11 +346,12 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
       return res.status(400).json({ error: 'Contraseña actual incorrecta' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    // Validación reforzada (complementa Zod schema)
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
-    if (!/[A-Z]/.test(newPassword)) {
-      return res.status(400).json({ error: 'La contraseña debe contener al menos una mayúscula' });
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe contener mayúscula, minúscula y número' });
     }
 
     user.password = newPassword;
@@ -347,7 +366,7 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
     res.cookie('auth_token', token, COOKIE_OPTIONS);
     res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS);
 
-    res.json({ message: 'Contraseña actualizada exitosamente. Otras sesiones han sido cerradas.', token });
+    res.json({ message: 'Contraseña actualizada exitosamente. Otras sesiones han sido cerradas.' });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ error: 'Error al cambiar contraseña' });
@@ -378,10 +397,27 @@ router.post('/login-socio', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu apellido paterno.' });
     }
 
+    // Account lockout check
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / 60000);
+      return res.status(423).json({ error: `Cuenta bloqueada. Intente en ${minutesLeft} minutos.` });
+    }
+
     // Comparar password con RUT limpio
     const isMatch = await user.comparePassword(cleanRut);
     if (!isMatch) {
+      const attempts = (user.failedLoginAttempts || 0) + 1;
+      const update = { failedLoginAttempts: attempts };
+      if (attempts >= 5) {
+        update.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+      }
+      await User.findByIdAndUpdate(user._id, update);
       return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu RUT.' });
+    }
+
+    // Reset failed attempts on successful login
+    if (user.failedLoginAttempts > 0) {
+      await User.findByIdAndUpdate(user._id, { failedLoginAttempts: 0, lockedUntil: null });
     }
 
     // Obtener todas las organizaciones del miembro
@@ -399,7 +435,6 @@ router.post('/login-socio', authLimiter, async (req, res) => {
 
     res.json({
       message: 'Inicio de sesión exitoso',
-      token,
       user: {
         _id: user._id,
         rut: user.rut,
@@ -467,8 +502,9 @@ router.post('/logout', async (req, res) => {
     // Token may be expired/invalid, just clear cookies
   }
 
-  res.clearCookie('auth_token', { path: '/' });
-  res.clearCookie('refresh_token', { path: '/' });
+  // Limpiar cookies con los mismos atributos usados al setearlas
+  res.clearCookie('auth_token', { path: '/', httpOnly: true, secure: COOKIE_OPTIONS.secure, sameSite: COOKIE_OPTIONS.sameSite });
+  res.clearCookie('refresh_token', { path: '/', httpOnly: true, secure: REFRESH_COOKIE_OPTIONS.secure, sameSite: REFRESH_COOKIE_OPTIONS.sameSite });
   res.json({ message: 'Sesión cerrada exitosamente' });
 });
 

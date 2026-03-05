@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import supertest from 'supertest';
 import app from '../index.js';
 import User from '../models/User.js';
-import { createUser } from './helpers.js';
+import { createUser, createRequest } from './helpers.js';
 
-const request = supertest(app);
+const request = createRequest(app);
 
 describe('Auth API', () => {
   describe('POST /api/auth/register', () => {
@@ -14,12 +13,14 @@ describe('Auth API', () => {
         firstName: 'Juan',
         lastName: 'Perez',
         email: 'juan@test.com',
-        password: 'TestPass1'
+        password: 'TestPass1',
+        privacyAccepted: true
       });
       expect(res.status).toBe(201);
       expect(res.body.user.email).toBe('juan@test.com');
       expect(res.body.user.role).toBe('ORGANIZADOR');
-      expect(res.body.token).toBeDefined();
+      // Token is now sent exclusively via HttpOnly cookie, not in response body
+      expect(res.headers['set-cookie']).toBeDefined();
     });
 
     it('should reject duplicate email', async () => {
@@ -29,7 +30,8 @@ describe('Auth API', () => {
         firstName: 'Ana',
         lastName: 'Lopez',
         email: 'dup@test.com',
-        password: 'TestPass1'
+        password: 'TestPass1',
+        privacyAccepted: true
       });
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('email');
@@ -42,14 +44,16 @@ describe('Auth API', () => {
         firstName: 'First',
         lastName: 'User',
         email: 'unique1@test.com',
-        password: 'TestPass1'
+        password: 'TestPass1',
+        privacyAccepted: true
       });
       const res = await request.post('/api/auth/register').send({
         rut: '44444444-4',
         firstName: 'Carlos',
         lastName: 'Diaz',
         email: 'unique2@test.com',
-        password: 'TestPass1'
+        password: 'TestPass1',
+        privacyAccepted: true
       });
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('RUT');
@@ -64,7 +68,8 @@ describe('Auth API', () => {
         password: 'TestPass1'
       });
       expect(res.status).toBe(200);
-      expect(res.body.token).toBeDefined();
+      // Token is now sent exclusively via HttpOnly cookie, not in response body
+      expect(res.headers['set-cookie']).toBeDefined();
       expect(res.body.user.email).toBe('login@test.com');
     });
 

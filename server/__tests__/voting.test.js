@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import supertest from 'supertest';
 import app from '../index.js';
 import Organization from '../models/Organization.js';
-import { createUser, createOrganization, generateMembers } from './helpers.js';
+import { createUser, createOrganization, generateMembers, createRequest } from './helpers.js';
 
-const request = supertest(app);
+const request = createRequest(app);
 
 describe('Voting System', () => {
   let ownerToken, ownerUser;

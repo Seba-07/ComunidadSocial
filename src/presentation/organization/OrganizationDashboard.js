@@ -5687,14 +5687,10 @@ ${comm.message || 'Sin contenido'}
 
     try {
       const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
-      const token = localStorage.getItem('auth_token');
-      const headers = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const response = await fetch(`${baseUrl}/org-documents/${orgId}/${docId}/download`, {
         method: 'GET',
         credentials: 'include',
-        headers
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
 
       if (!response.ok) throw new Error('Error al obtener documento');

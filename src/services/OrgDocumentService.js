@@ -48,6 +48,7 @@ class OrgDocumentService {
     const response = await fetch(`${baseUrl}/org-documents/${orgId}/upload`, {
       method: 'POST',
       credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
       body: formData
     });
 
@@ -70,14 +71,10 @@ class OrgDocumentService {
     const url = `${baseUrl}/org-documents/${orgId}/${docId}/download`;
 
     try {
-      const headers = {};
-      const token = localStorage.getItem('auth_token');
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
-        headers
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
 
       if (!response.ok) {

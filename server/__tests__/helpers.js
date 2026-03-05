@@ -2,9 +2,24 @@
  * Test helpers: factory functions for creating test data.
  */
 
+import supertest from 'supertest';
 import User from '../models/User.js';
 import Organization from '../models/Organization.js';
 import { generateToken } from '../middleware/auth.js';
+
+/**
+ * Creates a supertest instance that auto-includes X-Requested-With header
+ * for CSRF protection compatibility.
+ */
+export function createRequest(app) {
+  const agent = supertest(app);
+  const methods = ['post', 'put', 'delete', 'patch'];
+  const wrapped = { get: agent.get.bind(agent) };
+  for (const method of methods) {
+    wrapped[method] = (...args) => agent[method](...args).set('X-Requested-With', 'XMLHttpRequest');
+  }
+  return wrapped;
+}
 
 /**
  * Creates a user and returns user + auth token.

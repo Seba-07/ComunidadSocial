@@ -91,10 +91,9 @@ function DocRow({ name, category, size, date, docId, orgId, canDownload }) {
     if (!docId || !orgId) return;
     setDownloading(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${apiService.baseUrl}/org-documents/${orgId}/${docId}/download`, {
         credentials: 'include',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
       if (!response.ok) throw new Error('Error al descargar');
       const blob = await response.blob();

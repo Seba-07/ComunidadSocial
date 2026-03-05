@@ -69,6 +69,7 @@ class LibraryDocumentService {
       const response = await fetch(`${baseUrl}/library-documents`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: formData
       });
 

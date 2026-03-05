@@ -11,7 +11,7 @@
 | Fase | Descripcion | Estado | Tareas |
 |------|-------------|--------|--------|
 | F1 | Criticos — Defensa inmediata | COMPLETADA | 7 tareas |
-| F2 | Altos — Hardening de autenticacion | PENDIENTE | 8 tareas |
+| F2 | Altos — Hardening de autenticacion | EN PROGRESO (7/8) | 8 tareas |
 | F3 | Medios — Validacion y sanitizacion completa | PENDIENTE | 10 tareas |
 | F4 | Medios — Control de acceso y datos | PENDIENTE | 8 tareas |
 | F5 | Mejoras — Cifrado, monitoring y compliance | PENDIENTE | 9 tareas |
@@ -112,7 +112,7 @@
 ## FASE 2: ALTOS — Hardening de Autenticacion
 
 ### F2.1 — Eliminar JWT de localStorage
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `src/services/ApiService.js:177-180` y todo el frontend que lea `auth_token` de localStorage
 - **Problema**: Token en localStorage es vulnerable a XSS. Si hay XSS, atacante roba el JWT
 - **Implementar**:
@@ -140,7 +140,7 @@
   7. Considerar a futuro: OTP por email/SMS o login por QR (ya existe qrToken en User model)
 
 ### F2.3 — Refresh token rotation
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/routes/auth.js:159-198` (refresh endpoint), `server/middleware/auth.js:124-134`
 - **Problema**: Refresh token no cambia en 30 dias — si se roba, acceso permanente
 - **Implementar**:
@@ -150,7 +150,7 @@
   4. Al detectar uso de refresh token viejo (ya rotado), invalidar TODAS las sesiones del usuario (posible token theft)
 
 ### F2.4 — Proteccion CSRF
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/index.js`, `server/middleware/auth.js`, frontend API calls
 - **Problema**: Con `SameSite: 'none'` en produccion (cross-origin), cookies se envian sin CSRF token
 - **Implementar** (metodo: custom header check):
@@ -161,7 +161,7 @@
   5. Alternativa mas robusta: double-submit cookie pattern con token crypto random
 
 ### F2.5 — Fortalecer password policy
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/middleware/validation.js:66-69`
 - **Problema**: Solo 6 chars + 1 mayuscula — muy debil para sistema con datos sensibles
 - **Implementar**:
@@ -173,7 +173,7 @@
   6. NO aplicar retroactivamente a passwords existentes (solo al cambiar)
 
 ### F2.6 — Aumentar bcrypt rounds
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/models/User.js:125`
 - **Problema**: 10 rounds es el minimo aceptable. Para 2026 deberia ser 12+
 - **Implementar**:
@@ -182,7 +182,7 @@
   3. Verificar que el tiempo de hash (~250ms con 12 rounds) no afecte rate limits
 
 ### F2.7 — No retornar token en response body
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**:
   - `server/routes/auth.js:87-89` (register)
   - `server/routes/auth.js:133` (login)
@@ -197,7 +197,7 @@
   4. Esto complementa F2.1 (eliminar localStorage token)
 
 ### F2.8 — Account lockout por intentos fallidos
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/models/User.js`, `server/routes/auth.js` (login, login-socio)
 - **Problema**: Rate limit es por IP, no por cuenta. Ataque distribuido no se bloquea
 - **Implementar**:
