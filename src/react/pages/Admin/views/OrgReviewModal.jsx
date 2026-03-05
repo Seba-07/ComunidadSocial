@@ -97,10 +97,42 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const statusHistory = org.statusHistory || [];
   const cargoEntries = buildCargoEntries(directorio);
   const electoralCommission = org.electoralCommission || org.comisionElectoral || [];
+  const certs = org.certificatesStep5 || [];
 
   // Org name/type with fallbacks for both old and new field names
   const orgName = org.organizationName || org.name || 'Organización';
   const orgType = (org.organizationType || org.type || '').replace(/_/g, ' ');
+
+  function getCertForMember(rut, name) {
+    if (!rut && !name) return null;
+    const norm = rut ? rut.replace(/\./g, '').replace(/-/g, '') : '';
+    return certs.find(c => {
+      if (!c.certificate) return false;
+      const cId = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
+      if (norm && cId === norm) return true;
+      if (name && c.memberName && c.memberName.toLowerCase().includes(name.toLowerCase())) return true;
+      return false;
+    });
+  }
+
+  function downloadBase64(base64Data, filename, mimeType = 'application/pdf') {
+    try {
+      let b64 = base64Data;
+      if (b64.includes(',')) b64 = b64.split(',')[1];
+      const byteChars = atob(b64);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([byteArray], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      addToast('Error al descargar archivo', 'error');
+    }
+  }
 
   async function handleStatusChange(newStatus) {
     setIsActioning(true);
@@ -293,25 +325,49 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
 
           {tab === 'directorio' && (
             <div style={{ display: 'grid', gap: 12 }}>
-              {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => (
-                <div key={key} style={{
-                  padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
-                    <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-                      {formatName(person)} — {person.rut || '—'}
+              {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
+                const cert = getCertForMember(person.rut, person.firstName);
+                return (
+                  <div key={key} style={{
+                    padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
+                        {formatName(person)} — {person.rut || '—'}
+                      </div>
+                      {person.birthDate && (() => {
+                        const age = calculateAge(person.birthDate);
+                        return age !== null ? (
+                          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Edad: {age} años</div>
+                        ) : null;
+                      })()}
                     </div>
-                    {person.birthDate && (() => {
-                      const age = calculateAge(person.birthDate);
-                      return age !== null ? (
-                        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Edad: {age} años</div>
-                      ) : null;
-                    })()}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {cert ? (
+                        <button
+                          onClick={() => downloadBase64(cert.certificate, `Certificado_${formatName(person)}.pdf`)}
+                          style={{
+                            fontSize: 11, fontWeight: 600, color: '#059669', background: '#d1fae5',
+                            padding: '4px 10px', borderRadius: 6, border: '1px solid #a7f3d0',
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Certificado cargado
+                        </button>
+                      ) : (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fef3c7',
+                          padding: '4px 10px', borderRadius: 6, whiteSpace: 'nowrap',
+                        }}>
+                          Sin certificado
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )) : (
+                );
+              }) : (
                 <p style={{ color: '#6b7280', textAlign: 'center' }}>Sin directorio provisorio</p>
               )}
 
@@ -341,36 +397,95 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
 
           {tab === 'documentos' && (
             <div>
+              {/* Estatutos */}
+              <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
               {org.estatutosSnapshot?.nombreTipo && (
                 <div style={{
                   padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12,
                   background: '#fafafa',
                 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Plantilla de Estatutos:</span>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Plantilla:</span>
                   <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{org.estatutosSnapshot.nombreTipo}</span>
                   {org.estatutosSnapshot.articulos?.length > 0 && (
                     <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>({org.estatutosSnapshot.articulos.length} artículos)</span>
                   )}
                 </div>
               )}
-              {org.estatutos && (
+              {org.estatutos ? (
                 <div style={{
-                  padding: 12, border: '1px solid #d1fae5', borderRadius: 8, marginBottom: 12,
-                  background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: 8,
+                  padding: 12, border: '1px solid #d1fae5', borderRadius: 8, marginBottom: 16,
+                  background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
-                  <span style={{ fontSize: 14, color: '#059669', fontWeight: 500 }}>Estatutos PDF disponible</span>
+                  <span style={{ fontSize: 14, color: '#059669', fontWeight: 500 }}>Estatutos PDF</span>
+                  <button
+                    onClick={() => downloadBase64(org.estatutos, `Estatutos_${orgName}.pdf`)}
+                    style={{
+                      padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                      border: '1px solid #059669', background: 'white', color: '#059669',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Descargar
+                  </button>
                 </div>
+              ) : (
+                <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 16 }}>Estatutos no disponibles</p>
               )}
-              {org.documents && org.documents.length > 0 ? org.documents.map((doc, i) => (
-                <div key={i} style={{
-                  padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                  <span style={{ fontSize: 14 }}>{doc.name || doc.type || `Documento ${i + 1}`}</span>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(doc.uploadedAt)}</span>
-                </div>
-              )) : !org.estatutos && (
-                <p style={{ color: '#6b7280', textAlign: 'center' }}>Sin documentos</p>
+
+              {/* Certificados de Antecedentes */}
+              <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                Certificados de Antecedentes ({certs.filter(c => c.certificate).length}/{cargoEntries.length})
+              </h4>
+              {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
+                const cert = getCertForMember(person.rut, person.firstName);
+                return (
+                  <div key={key} style={{
+                    padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{label}: </span>
+                      <span style={{ fontSize: 13, color: '#6b7280' }}>{formatName(person)}</span>
+                    </div>
+                    {cert ? (
+                      <button
+                        onClick={() => downloadBase64(cert.certificate, `Certificado_${formatName(person)}.pdf`)}
+                        style={{
+                          padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                          border: '1px solid #a7f3d0', background: '#d1fae5', color: '#059669',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Descargar
+                      </button>
+                    ) : (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fef3c7',
+                        padding: '4px 10px', borderRadius: 6,
+                      }}>
+                        No cargado
+                      </span>
+                    )}
+                  </div>
+                );
+              }) : (
+                <p style={{ color: '#9ca3af', fontSize: 13 }}>Sin directorio — no aplican certificados</p>
+              )}
+
+              {/* Otros documentos */}
+              {org.documents && org.documents.length > 0 && (
+                <>
+                  <h4 style={{ margin: '20px 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Otros Documentos</h4>
+                  {org.documents.map((doc, i) => (
+                    <div key={i} style={{
+                      padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: 14 }}>{doc.name || doc.type || `Documento ${i + 1}`}</span>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(doc.uploadedAt)}</span>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           )}
