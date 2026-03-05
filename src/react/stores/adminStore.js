@@ -109,7 +109,10 @@ export const useAdminStore = create((set, get) => ({
     const { organizations, currentFilter, searchQuery } = get();
     let filtered = organizations;
 
-    if (currentFilter !== 'all') {
+    if (currentFilter === 'all') {
+      // Exclude drafts from default view — drafts are private to the user
+      filtered = filtered.filter(o => o.status !== 'draft');
+    } else {
       filtered = filtered.filter(o => o.status === currentFilter);
     }
 

@@ -33,13 +33,16 @@ export default function OrganizationsList() {
     STATUS_FILTERS.map(f => ({
       ...f,
       count: f.key === 'all'
-        ? organizations.length
+        ? organizations.filter(o => o.status !== 'draft').length
         : organizations.filter(o => o.status === f.key).length
     })), [organizations]);
 
   const filtered = useMemo(() => {
     let result = organizations;
-    if (currentFilter !== 'all') {
+    if (currentFilter === 'all') {
+      // Exclude drafts from default view — drafts are private to the user
+      result = result.filter(o => o.status !== 'draft');
+    } else {
       result = result.filter(o => o.status === currentFilter);
     }
     if (searchQuery.trim()) {
@@ -54,7 +57,7 @@ export default function OrganizationsList() {
   }, [organizations, currentFilter, searchQuery]);
 
   const stats = useMemo(() => [
-    { icon: '\uD83C\uDFE2', label: 'Total', value: organizations.length, color: '#2563eb' },
+    { icon: '\uD83C\uDFE2', label: 'Total', value: organizations.filter(o => o.status !== 'draft').length, color: '#2563eb' },
     { icon: '\u23F3', label: 'Pendientes', value: organizations.filter(o => o.status === 'pending_review').length, color: '#f59e0b' },
     { icon: '\u2705', label: 'Aprobadas', value: organizations.filter(o => o.status === 'approved').length, color: '#10b981' },
     { icon: '\u274C', label: 'Rechazadas', value: organizations.filter(o => o.status === 'rejected').length, color: '#ef4444' }

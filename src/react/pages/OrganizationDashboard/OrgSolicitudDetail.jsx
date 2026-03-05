@@ -29,10 +29,14 @@ function formatName(person) {
   return parts.join(' ') || '—';
 }
 
+const RETRACTABLE_STATUSES = new Set(['waiting_ministro', 'ministro_scheduled', 'pending_review', 'in_review']);
+
 export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const addToast = useUiStore(s => s.addToast);
   const [saving, setSaving] = useState(false);
   const [editingCargo, setEditingCargo] = useState(null);
+  const [showRetractModal, setShowRetractModal] = useState(false);
+  const [retracting, setRetracting] = useState(false);
   const fileInputRefs = useRef({});
 
   const dir = org.provisionalDirectorio || {};
@@ -165,6 +169,23 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
     }
   }
 
+  async function handleRetract() {
+    setRetracting(true);
+    try {
+      await apiService.retractOrganization(org._id);
+      addToast('Solicitud retractada exitosamente. La organización volvió a estado Borrador.', 'success');
+      setShowRetractModal(false);
+      onBack();
+      onRefresh();
+    } catch (err) {
+      addToast('Error al retractar: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setRetracting(false);
+    }
+  }
+
+  const canRetract = RETRACTABLE_STATUSES.has(org.status);
+
   const sectionStyle = {
     background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
     padding: 20, marginBottom: 16,
@@ -183,16 +204,32 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
         }}>
           ← Volver a Mis Organizaciones
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
-            {org.organizationName || 'Sin nombre'}
-          </h2>
-          <span style={{
-            padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-            color: '#f59e0b', background: '#fef3c7',
-          }}>
-            {STATUS_LABELS[org.status] || org.status}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
+              {org.organizationName || 'Sin nombre'}
+            </h2>
+            <span style={{
+              padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+              color: '#f59e0b', background: '#fef3c7',
+            }}>
+              {STATUS_LABELS[org.status] || org.status}
+            </span>
+          </div>
+          {canRetract && (
+            <button
+              onClick={() => setShowRetractModal(true)}
+              style={{
+                padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
+                border: '1px solid #dc2626', background: '#fef2f2', color: '#dc2626',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.target.style.background = '#dc2626'; e.target.style.color = 'white'; }}
+              onMouseLeave={e => { e.target.style.background = '#fef2f2'; e.target.style.color = '#dc2626'; }}
+            >
+              Retractar Solicitud
+            </button>
+          )}
         </div>
         <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
           Detalle de la solicitud de constitución
@@ -264,6 +301,33 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
           <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay miembros registrados</p>
         )}
       </div>
+
+      {/* 3b. Comisión Electoral */}
+      {(() => {
+        const ce = org.electoralCommission || org.comisionElectoral || [];
+        if (!ce.length) return null;
+        return (
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>Comisión Electoral ({ce.length})</h3>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {ce.map((m, i) => (
+                <div key={m.rut || i} style={{
+                  padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fafafa',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <div>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
+                    <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
+                    Miembro {i + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 4. Directorio Provisorio */}
       <div style={sectionStyle}>
@@ -416,6 +480,62 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de retractar */}
+      {showRetractModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20,
+        }} onClick={() => !retracting && setShowRetractModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 28, maxWidth: 480, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, background: '#fef2f2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
+              }}>
+                ⚠️
+              </div>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>
+                Retractar Solicitud
+              </h3>
+            </div>
+            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 20px' }}>
+              ¿Estás seguro de que deseas retractar esta solicitud? La organización volverá a estado <strong>Borrador</strong>,
+              se cancelará la revisión del Administrador y se anulará cualquier fecha agendada con el Ministro de Fe.
+            </p>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px', fontStyle: 'italic' }}>
+              Podrás volver a enviar la solicitud posteriormente desde el wizard.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setShowRetractModal(false)}
+                disabled={retracting}
+                style={{
+                  padding: '10px 20px', fontSize: 14, fontWeight: 500, borderRadius: 8,
+                  border: '1px solid #d1d5db', background: 'white', color: '#374151',
+                  cursor: retracting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRetract}
+                disabled={retracting}
+                style={{
+                  padding: '10px 20px', fontSize: 14, fontWeight: 600, borderRadius: 8,
+                  border: 'none', background: '#dc2626', color: 'white',
+                  cursor: retracting ? 'not-allowed' : 'pointer', opacity: retracting ? 0.7 : 1,
+                }}
+              >
+                {retracting ? 'Retractando...' : 'Sí, Retractar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

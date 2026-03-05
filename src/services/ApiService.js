@@ -493,6 +493,10 @@ class ApiService {
     return this.post(`/organizations/${orgId}/resubmit`, { userComment, fieldResponses });
   }
 
+  async retractOrganization(orgId) {
+    return this.post(`/organizations/${orgId}/retract`);
+  }
+
   async getOrganizationsByStatus(status) {
     return this.get(`/organizations/status/${status}`);
   }

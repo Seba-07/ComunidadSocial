@@ -496,3 +496,55 @@
 | `src/react/pages/Admin/views/DocumentTemplatesView.jsx` | **NUEVO** — CRUD view |
 | `src/react/pages/Admin/views/EstatutosManagerView.jsx` | Tab "Documentos" con selects |
 | `src/react/pages/Wizard/steps/Step6_Review.jsx` | Cargar templates + pasar a PDFService |
+
+---
+
+## FASE 7: Funcionalidad de Retractar Solicitud y Trazabilidad
+
+### Estado: COMPLETADO
+### Fecha inicio: 2026-03-04
+### Fecha cierre: 2026-03-04
+
+> **Objetivo**: Permitir al organizador retractar/cancelar una solicitud de constitución
+> enviada a la municipalidad, siempre que la asamblea no se haya realizado. Mantener
+> trazabilidad completa y notificar a admin y ministro de fe.
+
+### Tareas
+
+#### Backend
+- [x] **F7-01**: Crear endpoint `POST /:id/retract` en `server/routes/organizations.js`
+  - Solo el owner puede ejecutar
+  - Valida que status sea retractable (waiting_ministro, ministro_scheduled, pending_review, in_review)
+  - Cambia status a `draft`, limpia electionDate/electionTime/ministroData
+  - Agrega evento a statusHistory
+- [x] **F7-02**: Crear notificación para admin (MUNICIPALIDAD) al retractar
+- [x] **F7-03**: Crear notificación para ministro de fe si estaba asignado
+
+#### Frontend — Organizador
+- [x] **F7-04**: Botón "Retractar Solicitud" en `OrgSolicitudDetail.jsx` (solo si status retractable)
+- [x] **F7-05**: Modal de confirmación con texto explicativo
+- [x] **F7-06**: Llamar endpoint, toast de éxito, actualizar UI
+
+#### Frontend — Admin
+- [x] **F7-07**: Verificar que lista admin excluya borradores de bandeja pendiente
+  - `OrganizationsList.jsx` 'all' filter now excludes draft status
+  - Stats 'Total' card excludes drafts
+  - `adminStore.js` getFilteredOrganizations() also excludes drafts from 'all'
+- [x] **F7-08**: Verificar que notificaciones de cancelación se muestren correctamente
+  - Retract endpoint creates `type: 'status_change'` notifications (already in Notification model enum)
+  - Notifications sent to all MUNICIPALIDAD admins + assigned ministro
+
+#### Correcciones adicionales
+- [x] **F7-00a**: Agregar comisión electoral a vista detalle de solicitud
+- [x] **F7-00b**: Fix Zod stripping provisionalDirectorio (schema faltaba .passthrough())
+
+### Archivos a modificar
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/routes/organizations.js` | Nuevo endpoint POST /:id/retract |
+| `server/middleware/validation.js` | (ya corregido) .passthrough() en provisionalDirectorio |
+| `src/react/pages/OrganizationDashboard/OrgSolicitudDetail.jsx` | Botón retractar + modal + comisión electoral |
+| `src/react/pages/OrganizationDashboard/OrgMisOrganizaciones.jsx` | Método retract en apiService |
+| `src/services/ApiService.js` | Nuevo método retractOrganization() |
+| `src/react/pages/Admin/views/OrganizationsList.jsx` | Verificar filtro excluye draft de pendientes |

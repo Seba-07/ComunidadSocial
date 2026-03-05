@@ -1129,6 +1129,80 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
   }
 });
 
+// Retract organization request (owner only)
+router.post('/:id/retract', authenticate, async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Only the owner can retract
+    if (organization.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ error: 'Solo el creador puede retractar la solicitud' });
+    }
+
+    // Validate retractable status
+    const RETRACTABLE = new Set(['waiting_ministro', 'ministro_scheduled', 'pending_review', 'in_review']);
+    if (!RETRACTABLE.has(organization.status)) {
+      return res.status(400).json({
+        error: `No se puede retractar una organización en estado "${organization.status}". Solo se permite en estados: ${[...RETRACTABLE].join(', ')}`
+      });
+    }
+
+    const previousStatus = organization.status;
+    const orgName = organization.organizationName;
+    const ministroId = organization.ministroData?.ministroId || null;
+
+    // Change to draft and clear scheduling data
+    organization.status = 'draft';
+    organization.electionDate = null;
+    organization.electionTime = null;
+    organization.assemblyAddress = null;
+    organization.ministroData = null;
+
+    // Add to status history
+    if (!organization.statusHistory) organization.statusHistory = [];
+    organization.statusHistory.push({
+      status: 'draft',
+      date: new Date(),
+      comment: `El organizador ha retractado la solicitud de constitución (estado anterior: ${previousStatus})`
+    });
+
+    await organization.save();
+
+    // Notify all admins (MUNICIPALIDAD)
+    const admins = await User.find({ role: 'MUNICIPALIDAD', active: true });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin._id,
+        type: 'status_change',
+        title: 'Solicitud retractada',
+        message: `El organizador ha cancelado la solicitud de constitución de "${orgName}"`,
+        data: { organizationId: organization._id, organizationName: orgName, previousStatus, action: 'retract' },
+        organizationId: organization._id
+      });
+    }
+
+    // Notify ministro de fe if one was assigned
+    if (ministroId) {
+      await Notification.create({
+        ministroId: ministroId,
+        type: 'status_change',
+        title: 'Asamblea cancelada',
+        message: `La asamblea constitutiva de "${orgName}" ha sido cancelada por el organizador`,
+        data: { organizationId: organization._id, organizationName: orgName, action: 'retract' },
+        organizationId: organization._id
+      });
+    }
+
+    res.json({ message: 'Solicitud retractada exitosamente', status: organization.status });
+  } catch (error) {
+    console.error('Retract organization error:', error);
+    res.status(500).json({ error: 'Error al retractar la solicitud' });
+  }
+});
+
 // Approve by ministro
 router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
   try {
