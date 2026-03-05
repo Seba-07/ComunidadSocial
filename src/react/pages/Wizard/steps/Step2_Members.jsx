@@ -168,9 +168,20 @@ export default function Step2_Members({ onNext, onPrev }) {
       <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
         Miembros Fundadores
       </h2>
-      <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280' }}>
+      <p style={{ margin: '0 0 16px', fontSize: 14, color: '#6b7280' }}>
         {members.length}/{minMembers} miembros (mínimo {minMembers} requeridos)
       </p>
+
+      {/* Alerta de quórum mínimo y asistencia presencial */}
+      <div style={{
+        background: '#fefce8', border: '1px solid #f59e0b', borderRadius: 10,
+        padding: 14, marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start'
+      }}>
+        <span style={{ fontSize: 20, lineHeight: 1 }}>&#9888;</span>
+        <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.6 }}>
+          <strong>Atención:</strong> Según la ley y el tipo de organización seleccionada, necesitas registrar un mínimo de <strong>{minMembers} socios fundadores</strong>. Es obligatorio que todas estas personas asistan presencialmente el día de la asamblea para firmar la nómina ante el Ministro de Fe, de lo contrario la asamblea será anulada.
+        </div>
+      </div>
 
       <div style={{
         height: 6, background: '#e5e7eb', borderRadius: 3, marginBottom: 20, overflow: 'hidden'
@@ -220,9 +231,23 @@ export default function Step2_Members({ onNext, onPrev }) {
         <DataTable columns={columns} data={members} emptyMessage="Sin miembros registrados" pageSize={10} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={handleNext} style={nextBtnStyle}>Siguiente</button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          {members.length < minMembers && members.length > 0 && (
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 500 }}>
+              Faltan {minMembers - members.length} socios para cumplir el mínimo legal
+            </span>
+          )}
+          <button
+            onClick={handleNext}
+            disabled={members.length < minMembers}
+            style={{
+              ...nextBtnStyle,
+              ...(members.length < minMembers ? { opacity: 0.5, cursor: 'not-allowed', background: '#9ca3af' } : {})
+            }}
+          >Siguiente</button>
+        </div>
       </div>
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editIdx !== null ? 'Editar Miembro' : 'Agregar Miembro'}>

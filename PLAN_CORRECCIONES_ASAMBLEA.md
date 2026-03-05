@@ -615,3 +615,48 @@
 | `src/react/stores/adminStore.js` | Nuevo método approveWithDocument() |
 | `src/services/ApiService.js` | Nuevo método approveOrgWithDocument() |
 | `src/react/pages/Admin/views/OrgReviewModal.jsx` | Flujo FEA: descargar borrador + subir firmado + aprobar |
+
+---
+
+## FASE 9: Validación de Quórum Mínimo Constitutivo
+
+### Estado: COMPLETADO
+### Fecha: 2026-03-05
+
+> **Objetivo**: Conectar la configuración de `miembrosMinimos` del panel Admin con la experiencia
+> del Organizador en el Wizard, validando que se registre el mínimo legal de socios fundadores
+> y advirtiendo sobre la asistencia presencial obligatoria.
+
+### Contexto
+- `EstatutoTemplate.miembrosMinimos` (Number, default 15) ya existe en el modelo
+- El campo viaja al frontend vía `GET /api/estatuto-templates/:tipo/config`
+- `wizardStore.templateConfig.miembrosMinimos` ya se usa en Step2 para validación
+- El Admin ya puede editar este campo en EstatutosManagerView (pestaña Directorio)
+
+### Tareas
+
+#### Backend / Schema
+- [x] **F9-01**: Verificar que `miembrosMinimos` se guarda correctamente en EstatutoTemplate
+  - Campo existe en schema (default: 15), se incluye en snapshot, config, y version history
+  - Ruta PUT acepta y persiste el valor
+  - No requiere cambios backend
+
+#### Frontend — Wizard Step 2 (Socios Fundadores)
+- [x] **F9-02**: Agregar alerta de advertencia prominente sobre asistencia presencial obligatoria
+  - Recuadro amarillo con texto dinámico usando `minMembers` de templateConfig
+  - Referencia a Ley 19.418 y firma ante Ministro de Fe
+- [x] **F9-03**: Deshabilitar botón "Siguiente" cuando miembros < mínimo legal
+  - Botón con estilo disabled (opacity, cursor not-allowed)
+  - Texto de error dinámico: "Faltan X socios para cumplir el mínimo legal"
+- [x] **F9-04**: Mejorar barra de progreso con indicador visual de cumplimiento
+
+#### Frontend — Panel Admin
+- [x] **F9-05**: Verificar input "Mínimo miembros para constituir" en EstatutosManagerView
+  - Ya funciona correctamente en pestaña Directorio, enlazado a estado y guardado en BD
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 9 |
+| `src/react/pages/Wizard/steps/Step2_Members.jsx` | Alerta presencial + botón disabled + mensaje faltantes |
