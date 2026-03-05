@@ -31,26 +31,35 @@ NOMBRE INSTITUCIÓN: {{NOMBRE_ORG}}
 
 ACTA DE ASAMBLEA
 
-En {{COMUNA}}, a {{FECHA_ASAMBLEA}}, siendo las {{HORA_ASAMBLEA}} horas, en el local ubicado en {{UBICACION_ASAMBLEA}}, ante la presencia del funcionario municipal Sr. (a) {{MINISTRO_FE}} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
+En {{COMUNA}}, a {{FECHA_ASAMBLEA}}, siendo las {{HORA_INICIO_ASAMBLEA}} horas, en el local ubicado en {{UBICACION_ASAMBLEA}}, ante la presencia del funcionario municipal Sr.(a) {{MINISTRO_FE}} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinada a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
 
-Antes de iniciar la sesión, se verificó que existen a lo menos {{TOTAL_SOCIOS}} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a) Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñarán los cargos de Secretario y Tesorero.
+Antes de iniciar la sesión, se verificó que existen a lo menos {{TOTAL_SOCIOS}} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado por {{VOTOS_FAVOR}} votos a favor, {{VOTOS_CONTRA}} en contra y {{ABSTENCIONES}} abstenciones, en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales.
 
-También, se procedió a elegir a las tres (3) personas que integrarán la Comisión Electoral.
+A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido(a) Presidente(a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñarán los cargos de Secretario y Tesorero. También, se procedió a elegir a las tres (3) personas que integrarán la Comisión Electoral.
 
-Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes socios:
+Producida la votación, resultaron elegidos como miembros del Directorio Provisional y Comisión Electoral, los siguientes socios:
 
 DIRECTIVA PROVISIONAL
-PRESIDENTE (A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
-SECRETARIO (A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
-TESORERO (A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
+PRESIDENTE(A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
+SECRETARIO(A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
+TESORERO(A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
 {{DIRECTORES}}
 
 COMISIÓN ELECTORAL
 {{COMISION_ELECTORAL}}
 
-La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) {{PRESIDENTE}} Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: {{DIRECCION}}
+La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don(ña) {{PRESIDENTE}}, Presidente(a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: {{DIRECCION}}.
 
-Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.`;
+Se levanta la sesión siendo las {{HORA_TERMINO_ASAMBLEA}} horas. Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
+
+{{PRESIDENTE}}
+Presidente(a) Provisorio(a)
+
+{{SECRETARIO}}
+Secretario(a) Provisorio(a)
+
+{{MINISTRO_FE}}
+Ministro de Fe`;
 
 const ACTA_UNION_COMUNAL = `ACTA DE ASAMBLEA GENERAL CONSTITUTIVA
 UNIÓN COMUNAL DE ORGANIZACIONES COMUNITARIAS

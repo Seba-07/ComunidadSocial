@@ -43,6 +43,11 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'COMISION_ELECTORAL', label: 'Comisión Electoral', description: 'Lista comisión electoral' },
   { key: 'FECHA_ASAMBLEA', label: 'Fecha asamblea', description: 'Fecha programada de asamblea' },
   { key: 'HORA_ASAMBLEA', label: 'Hora asamblea', description: 'Hora programada de asamblea' },
+  { key: 'HORA_INICIO_ASAMBLEA', label: 'Hora inicio', description: 'Hora de inicio de la asamblea' },
+  { key: 'HORA_TERMINO_ASAMBLEA', label: 'Hora término', description: 'Hora de término de la asamblea' },
+  { key: 'VOTOS_FAVOR', label: 'Votos a favor', description: 'Cantidad de votos a favor' },
+  { key: 'VOTOS_CONTRA', label: 'Votos en contra', description: 'Cantidad de votos en contra' },
+  { key: 'ABSTENCIONES', label: 'Abstenciones', description: 'Cantidad de abstenciones' },
   { key: 'DURACION_MANDATO', label: 'Duración mandato', description: 'Años de duración del mandato' },
   { key: 'CUOTA_INCORPORACION', label: 'Cuota incorporación', description: 'Cuota de incorporación en UTM' },
   { key: 'FECHA_HOY', label: 'Fecha actual', description: 'Fecha del día de generación' },
@@ -102,6 +107,11 @@ const documentTemplateSchema = new mongoose.Schema({
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  pageSize: {
+    type: String,
+    enum: ['letter', 'legal'],
+    default: 'letter'
   },
   headerConfig: { type: headerFooterSchema, default: () => ({}) },
   footerConfig: { type: headerFooterSchema, default: () => ({}) }

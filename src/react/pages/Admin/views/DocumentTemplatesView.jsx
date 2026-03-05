@@ -63,6 +63,11 @@ const SAMPLE_DATA = {
   COMISION_ELECTORAL: 'Francisco Hernández (9.876.543-3), Andrea López (15.432.109-8), Miguel Torres (8.765.432-K)',
   FECHA_ASAMBLEA: '15 de marzo del 2026',
   HORA_ASAMBLEA: '10:00',
+  HORA_INICIO_ASAMBLEA: '10:00',
+  HORA_TERMINO_ASAMBLEA: '12:30',
+  VOTOS_FAVOR: '23',
+  VOTOS_CONTRA: '1',
+  ABSTENCIONES: '1',
   DURACION_MANDATO: '3',
   CUOTA_INCORPORACION: '0.5',
   FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -79,26 +84,35 @@ NOMBRE INSTITUCIÓN: {{NOMBRE_ORG}}
 
 ACTA DE ASAMBLEA
 
-En {{COMUNA}}, a {{FECHA_ASAMBLEA}}, siendo las {{HORA_ASAMBLEA}} horas, en el local ubicado en {{UBICACION_ASAMBLEA}}, ante la presencia del funcionario municipal Sr. (a) {{MINISTRO_FE}} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
+En {{COMUNA}}, a {{FECHA_ASAMBLEA}}, siendo las {{HORA_INICIO_ASAMBLEA}} horas, en el local ubicado en {{UBICACION_ASAMBLEA}}, ante la presencia del funcionario municipal Sr.(a) {{MINISTRO_FE}} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinada a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.
 
-Antes de iniciar la sesión, se verificó que existen a lo menos {{TOTAL_SOCIOS}} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales. A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido (a) Presidente (a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñarán los cargos de Secretario y Tesorero.
+Antes de iniciar la sesión, se verificó que existen a lo menos {{TOTAL_SOCIOS}} socios, los cuales cumplen con los requisitos establecidos en la referida Ley y cuyo listado e individualización adjunto, forma parte integrante de la presente Acta de Constitución para todos los efectos legales. Además, se dio lectura al Proyecto de Estatuto propuesto por los Organizadores, el cual, sometido a la consideración de la Asamblea, fue aprobado por {{VOTOS_FAVOR}} votos a favor, {{VOTOS_CONTRA}} en contra y {{ABSTENCIONES}} abstenciones, en la forma de que da cuenta el texto que se inserta al final de la presente Acta y que forma parte integrante para todos los efectos legales.
 
-También, se procedió a elegir a las tres (3) personas que integrarán la Comisión Electoral.
+A continuación, se procedió a elegir a la Directiva Provisional mediante voto nominativo, resultando elegido(a) Presidente(a) quien obtuvo la más alta mayoría y como directores, aquellos que obtuvieron las dos (2) siguientes más altas mayorías de votos, quienes desempeñarán los cargos de Secretario y Tesorero. También, se procedió a elegir a las tres (3) personas que integrarán la Comisión Electoral.
 
-Producida la votación, resultaron elegidos como miembros del Directorio Provisional, los siguientes socios:
+Producida la votación, resultaron elegidos como miembros del Directorio Provisional y Comisión Electoral, los siguientes socios:
 
 DIRECTIVA PROVISIONAL
-PRESIDENTE (A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
-SECRETARIO (A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
-TESORERO (A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
+PRESIDENTE(A): {{PRESIDENTE}} — RUT: {{RUT_PRESIDENTE}}
+SECRETARIO(A): {{SECRETARIO}} — RUT: {{RUT_SECRETARIO}}
+TESORERO(A): {{TESORERO}} — RUT: {{RUT_TESORERO}}
 {{DIRECTORES}}
 
 COMISIÓN ELECTORAL
 {{COMISION_ELECTORAL}}
 
-La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don (ña) {{PRESIDENTE}} Presidente (a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: {{DIRECCION}}
+La Comisión Organizadora delega la facultad de tramitar la aprobación de los presentes Estatutos y acepta a nombre de los socios constituyentes, las modificaciones que el Secretario Municipal pueda hacer a tales Estatutos, de acuerdo con el Artículo 7º, inciso final, de la Ley Nº 19.418, a Don(ña) {{PRESIDENTE}}, Presidente(a) de la Organización, quien para estos efectos y para cualquier notificación a la Organización señala el siguiente domicilio: {{DIRECCION}}.
 
-Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.`,
+Se levanta la sesión siendo las {{HORA_TERMINO_ASAMBLEA}} horas. Suscriben la presente Acta en señal de ratificación de lo contenido en ella, la Directiva Provisional electa y el Ministro de fe que asistió a la asamblea.
+
+{{PRESIDENTE}}
+Presidente(a) Provisorio(a)
+
+{{SECRETARIO}}
+Secretario(a) Provisorio(a)
+
+{{MINISTRO_FE}}
+Ministro de Fe`,
 
   lista_socios: `LISTADO DE SOCIOS ASISTENTES A LA CONSTITUCIÓN DE LA ORGANIZACIÓN
 
@@ -219,6 +233,7 @@ export default function DocumentTemplatesView() {
       name: '',
       documentType: 'acta_constitutiva',
       content: DEFAULT_CONTENT['acta_constitutiva'] || '',
+      pageSize: 'letter',
       isDefault: false
     });
     setEditTab('general');
@@ -406,6 +421,17 @@ export default function DocumentTemplatesView() {
                 {DOCUMENT_TYPES.filter(t => t.key !== 'all').map(t => (
                   <option key={t.key} value={t.key}>{t.label}</option>
                 ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Tamaño de página</label>
+              <select
+                value={selected.pageSize || 'letter'}
+                onChange={e => setSelected(s => ({ ...s, pageSize: e.target.value }))}
+                style={inputStyle}
+              >
+                <option value="letter">Carta (Letter) — 216 x 279 mm</option>
+                <option value="legal">Oficio (Legal) — 216 x 356 mm</option>
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -667,86 +693,138 @@ export default function DocumentTemplatesView() {
           </div>
         )}
 
-        {/* Tab: Vista Previa — simula documento final con header + contenido + footer */}
-        {editTab === 'preview' && (
-          <div style={cardStyle}>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12, padding: '8px 12px', background: '#eff6ff', borderRadius: 8 }}>
-              Vista previa del documento final con datos de ejemplo. Así se verá el PDF generado.
-            </div>
-            <div style={{
-              border: '1px solid #cbd5e1',
-              borderRadius: 4,
-              background: '#fff',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-              maxWidth: 750,
-              margin: '0 auto',
-              overflow: 'hidden',
-            }}>
-              {/* === HEADER === */}
-              <div style={{ background: '#f8fafc' }}>
-                {selected.headerConfig?.imageUrl ? (
-                  <img src={selected.headerConfig.imageUrl} alt="Header" style={{ width: '100%', display: 'block' }} />
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '12px 20px' }}>
-                    {selected.headerConfig?.showColorBar !== false && (
-                      <div style={{ display: 'flex', height: 8, marginBottom: 10 }}>
-                        {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
-                          <div key={c} style={{ flex: 1, background: c }} />
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0891b2', letterSpacing: 0.5 }}>
-                      {selected.headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA'}
+        {/* Tab: Vista Previa — simula documento final multi-página con header + contenido + footer */}
+        {editTab === 'preview' && (() => {
+          // Split content into pages based on estimated line capacity
+          const resolvedContent = replacePlaceholders(selected.content, SAMPLE_DATA) || '(Sin contenido)';
+          const isLegal = selected.pageSize === 'legal';
+          const pageAspect = isLegal ? (356 / 216) : (279 / 216);
+          const pageWidthPx = 750;
+          const pageHeightPx = Math.round(pageWidthPx * pageAspect);
+          const headerH = 80; // estimated header height px
+          const footerH = 50; // estimated footer height px
+          const paddingV = 40; // top+bottom padding
+          const contentAreaH = pageHeightPx - headerH - footerH - paddingV;
+          // ~24px per line at font 13 with lineHeight 1.8
+          const lineH = 24;
+          const linesPerPage = Math.floor(contentAreaH / lineH);
+          const allLines = resolvedContent.split('\n');
+
+          // Split lines into pages
+          const pages = [];
+          let currentPage = [];
+          let lineCount = 0;
+          for (const line of allLines) {
+            // Estimate wrapped lines (roughly 90 chars per visual line at this width)
+            const wrappedLines = Math.max(1, Math.ceil(line.length / 90));
+            if (lineCount + wrappedLines > linesPerPage && currentPage.length > 0) {
+              pages.push(currentPage.join('\n'));
+              currentPage = [];
+              lineCount = 0;
+            }
+            currentPage.push(line);
+            lineCount += wrappedLines;
+          }
+          if (currentPage.length > 0) pages.push(currentPage.join('\n'));
+          if (pages.length === 0) pages.push('(Sin contenido)');
+
+          const renderHeader = (showTitle) => (
+            <div style={{ background: '#f8fafc' }}>
+              {selected.headerConfig?.imageUrl ? (
+                <img src={selected.headerConfig.imageUrl} alt="Header" style={{ width: '100%', display: 'block' }} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '12px 20px' }}>
+                  {selected.headerConfig?.showColorBar !== false && (
+                    <div style={{ display: 'flex', height: 8, marginBottom: 10 }}>
+                      {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                        <div key={c} style={{ flex: 1, background: c }} />
+                      ))}
                     </div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
-                      {selected.headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL'}
-                    </div>
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0891b2', letterSpacing: 0.5 }}>
+                    {selected.headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA'}
                   </div>
-                )}
-                {/* Document title */}
+                  <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
+                    {selected.headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL'}
+                  </div>
+                </div>
+              )}
+              {showTitle && (
                 <div style={{ textAlign: 'center', padding: '8px 20px 12px', fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: 0.3 }}>
                   {TYPE_LABELS[selected.documentType] || 'DOCUMENTO'}
                 </div>
-              </div>
+              )}
+            </div>
+          );
 
-              {/* === CONTENT === */}
-              <div style={{
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'serif',
-                fontSize: 13,
-                lineHeight: 1.8,
-                color: '#1e293b',
-                padding: '20px 28px',
-                minHeight: 300,
-              }}>
-                {replacePlaceholders(selected.content, SAMPLE_DATA) || '(Sin contenido)'}
-              </div>
-
-              {/* === FOOTER === */}
-              <div style={{ background: '#f8fafc' }}>
-                {selected.footerConfig?.imageUrl ? (
-                  <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ width: '100%', display: 'block' }} />
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '8px 20px' }}>
-                    <div style={{ fontSize: 9, color: '#64748b', marginBottom: 4 }}>
-                      {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'}
-                      {' | '}
-                      {selected.footerConfig?.subtitle || '+562 2685 6600'}
-                      {!selected.footerConfig?.text && ' | www.renca.cl'}
-                    </div>
-                    {selected.footerConfig?.showColorBar !== false && (
-                      <div style={{ display: 'flex', height: 8, marginTop: 4 }}>
-                        {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
-                          <div key={c} style={{ flex: 1, background: c }} />
-                        ))}
-                      </div>
-                    )}
+          const renderFooter = (pageNum, totalPages) => (
+            <div style={{ background: '#f8fafc', marginTop: 'auto' }}>
+              {selected.footerConfig?.imageUrl ? (
+                <img src={selected.footerConfig.imageUrl} alt="Footer" style={{ width: '100%', display: 'block' }} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '8px 20px' }}>
+                  <div style={{ fontSize: 9, color: '#64748b', marginBottom: 4 }}>
+                    {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'}
+                    {' | '}
+                    {selected.footerConfig?.subtitle || '+562 2685 6600'}
+                    {!selected.footerConfig?.text && ' | www.renca.cl'}
                   </div>
-                )}
+                  {selected.footerConfig?.showColorBar !== false && (
+                    <div style={{ display: 'flex', height: 8, marginTop: 4 }}>
+                      {['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'].map(c => (
+                        <div key={c} style={{ flex: 1, background: c }} />
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 4 }}>
+                    Página {pageNum} de {totalPages}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
+          return (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12, padding: '8px 12px', background: '#eff6ff', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>Vista previa del documento final con datos de ejemplo.</span>
+                <span style={{ marginLeft: 'auto', fontWeight: 600, color: '#3b82f6' }}>
+                  {isLegal ? 'Oficio (216×356mm)' : 'Carta (216×279mm)'} — {pages.length} {pages.length === 1 ? 'página' : 'páginas'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                {pages.map((pageContent, i) => (
+                  <div key={i} style={{
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 4,
+                    background: '#fff',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    width: pageWidthPx,
+                    maxWidth: '100%',
+                    minHeight: pageHeightPx,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  }}>
+                    {renderHeader(i === 0)}
+                    <div style={{
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'serif',
+                      fontSize: 13,
+                      lineHeight: 1.8,
+                      color: '#1e293b',
+                      padding: '20px 28px',
+                      flex: 1,
+                    }}>
+                      {pageContent}
+                    </div>
+                    {renderFooter(i + 1, pages.length)}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     );
   }

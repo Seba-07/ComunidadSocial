@@ -119,7 +119,7 @@ router.get('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
  */
 router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { name, documentType, content, isDefault } = req.body;
+    const { name, documentType, content, isDefault, pageSize } = req.body;
 
     if (!name || !documentType) {
       return res.status(400).json({ error: 'Nombre y tipo de documento son requeridos' });
@@ -130,6 +130,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 
     const template = new DocumentTemplate({
       name,
+      pageSize: pageSize || 'letter',
       documentType,
       content: content || '',
       isDefault: isDefault || false,
@@ -150,7 +151,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
  */
 router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
-    const { name, documentType, content, isDefault, activo, headerConfig, footerConfig } = req.body;
+    const { name, documentType, content, isDefault, activo, pageSize, headerConfig, footerConfig } = req.body;
 
     const template = await DocumentTemplate.findById(req.params.id);
     if (!template) {
@@ -167,6 +168,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) 
     if (content !== undefined) template.content = content;
     if (isDefault !== undefined) template.isDefault = isDefault;
     if (activo !== undefined) template.activo = activo;
+    if (pageSize !== undefined && ['letter', 'legal'].includes(pageSize)) template.pageSize = pageSize;
     // Update header/footer config (text fields only, images via upload endpoint)
     if (headerConfig) {
       const { imageS3Key, imageMimeType, imageUrl, ...textFields } = headerConfig;
@@ -228,6 +230,7 @@ router.post('/:id/duplicate', authenticate, requireRole('MUNICIPALIDAD'), async 
       content: original.content,
       placeholders: original.placeholders,
       isDefault: false,
+      pageSize: original.pageSize || 'letter',
       headerConfig: dupHeader,
       footerConfig: dupFooter,
       createdBy: req.user._id,

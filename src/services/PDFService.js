@@ -20,13 +20,19 @@ const COLORS = {
   white: '#ffffff'
 };
 
-// Constantes del documento
-const PAGE_WIDTH = 210;
-const PAGE_HEIGHT = 297;
+// Constantes del documento (default: letter 215.9x279.4mm)
+const PAGE_WIDTH = 216;
+const PAGE_HEIGHT = 279;
 const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
 const MARGIN_TOP = 15;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+
+// Page size dimensions (mm)
+const PAGE_SIZES = {
+  letter: { width: 216, height: 279 },
+  legal: { width: 216, height: 356 },
+};
 
 class PDFService {
   constructor() {
@@ -104,12 +110,12 @@ class PDFService {
   /**
    * Dibuja el encabezado institucional
    */
-  drawHeader(doc, title, subtitle = null, headerConfig = null) {
+  drawHeader(doc, title, subtitle = null, headerConfig = null, pageW = PAGE_WIDTH) {
     // Custom image header
     if (headerConfig?.imageDataUrl) {
       const imgH = headerConfig.height || 40;
       try {
-        doc.addImage(headerConfig.imageDataUrl, 'JPEG', 0, 0, PAGE_WIDTH, imgH);
+        doc.addImage(headerConfig.imageDataUrl, 'JPEG', 0, 0, pageW, imgH);
       } catch (e) {
         console.warn('Failed to add header image:', e);
       }
@@ -121,7 +127,7 @@ class PDFService {
       // Default: colored bar
       const barHeight = 8;
       const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
-      const barWidth = PAGE_WIDTH / 4;
+      const barWidth = pageW / 4;
       barColors.forEach((color, i) => {
         doc.setFillColor(color);
         doc.rect(i * barWidth, 0, barWidth + 1, barHeight, 'F');
@@ -137,12 +143,12 @@ class PDFService {
       doc.setFontSize(11);
       doc.setTextColor(COLORS.primary);
       doc.setFont('helvetica', 'bold');
-      doc.text(headerText, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+      doc.text(headerText, pageW / 2, this.currentY, { align: 'center' });
 
       this.currentY += 5;
       doc.setFontSize(9);
       doc.setTextColor(COLORS.dark);
-      doc.text(headerSubtitle, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+      doc.text(headerSubtitle, pageW / 2, this.currentY, { align: 'center' });
     }
 
     if (subtitle) {
@@ -167,14 +173,14 @@ class PDFService {
   /**
    * Dibuja el pie de página
    */
-  drawFooter(doc, pageNum = 1, footerConfig = null) {
-    const footerY = PAGE_HEIGHT - 15;
+  drawFooter(doc, pageNum = 1, footerConfig = null, pageW = PAGE_WIDTH, pageH = PAGE_HEIGHT) {
+    const footerY = pageH - 15;
 
     // Custom image footer
     if (footerConfig?.imageDataUrl) {
       const imgH = footerConfig.height || 30;
       try {
-        doc.addImage(footerConfig.imageDataUrl, 'JPEG', 0, PAGE_HEIGHT - imgH, PAGE_WIDTH, imgH);
+        doc.addImage(footerConfig.imageDataUrl, 'JPEG', 0, pageH - imgH, pageW, imgH);
       } catch (e) {
         console.warn('Failed to add footer image:', e);
       }
@@ -184,10 +190,10 @@ class PDFService {
       // Default: colored bar
       const barHeight = 8;
       const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b'];
-      const barWidth = PAGE_WIDTH / 4;
+      const barWidth = pageW / 4;
       barColors.forEach((color, i) => {
         doc.setFillColor(color);
-        doc.rect(i * barWidth, PAGE_HEIGHT - barHeight, barWidth + 1, barHeight, 'F');
+        doc.rect(i * barWidth, pageH - barHeight, barWidth + 1, barHeight, 'F');
       });
     }
 
@@ -201,14 +207,14 @@ class PDFService {
       const footerText = footerConfig?.text || 'Blanco Encalada 1335, Renca';
       const footerSubtitle = footerConfig?.subtitle || '+562 2685 6600';
       doc.text(footerText, 40, contactY, { align: 'center' });
-      doc.text(footerSubtitle, PAGE_WIDTH / 2, contactY, { align: 'center' });
+      doc.text(footerSubtitle, pageW / 2, contactY, { align: 'center' });
       if (!footerConfig?.text) {
-        doc.text('www.renca.cl', PAGE_WIDTH - 40, contactY, { align: 'center' });
+        doc.text('www.renca.cl', pageW - 40, contactY, { align: 'center' });
       }
     }
 
     // Page number
-    doc.text(String(pageNum), PAGE_WIDTH - MARGIN_RIGHT, footerY - 12, { align: 'right' });
+    doc.text(String(pageNum), pageW - MARGIN_RIGHT, footerY - 12, { align: 'right' });
   }
 
   /**
@@ -268,12 +274,17 @@ class PDFService {
    * @returns {jsPDF} Documento PDF generado
    */
   generateFromTemplate(templateContent, data, title = 'DOCUMENTO', config = {}) {
-    const doc = new jsPDF();
+    const pageSize = config.pageSize || 'letter';
+    const dims = PAGE_SIZES[pageSize] || PAGE_SIZES.letter;
+    const pageW = dims.width;
+    const pageH = dims.height;
+
+    const doc = new jsPDF({ format: [pageW, pageH] });
     const resolvedText = templateContent.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || '___');
     const { headerConfig, footerConfig } = config;
 
     // Split into lines and render
-    this.drawHeader(doc, title, 'Departamento de Registro y Certificación', headerConfig);
+    this.drawHeader(doc, title, 'Departamento de Registro y Certificación', headerConfig, pageW);
     this.currentY = Math.max(this.currentY, 55);
 
     doc.setFontSize(10);
@@ -304,11 +315,11 @@ class PDFService {
       // Check if we need a new page
       const lines = doc.splitTextToSize(trimmed, CONTENT_WIDTH);
       const neededHeight = lines.length * 5 + 4;
-      if (this.currentY + neededHeight > PAGE_HEIGHT - 30) {
-        this.drawFooter(doc, pageNum, footerConfig);
-        doc.addPage();
+      if (this.currentY + neededHeight > pageH - 30) {
+        this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
+        doc.addPage([pageW, pageH]);
         pageNum++;
-        this.drawHeader(doc, '', null, headerConfig);
+        this.drawHeader(doc, '', null, headerConfig, pageW);
         this.currentY = Math.max(this.currentY, 35);
         doc.setFontSize(isHeading ? 11 : 10);
         doc.setFont('helvetica', isHeading ? 'bold' : 'normal');
@@ -319,7 +330,7 @@ class PDFService {
       this.currentY += isHeading ? 6 : 4;
     }
 
-    this.drawFooter(doc, pageNum, footerConfig);
+    this.drawFooter(doc, pageNum, footerConfig, pageW, pageH);
     return doc;
   }
 

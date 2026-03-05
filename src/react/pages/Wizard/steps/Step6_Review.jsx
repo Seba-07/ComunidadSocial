@@ -37,6 +37,7 @@ export default function Step6_Review({ onNext, onPrev }) {
                 content: data.template.content,
                 headerConfig: data.template.headerConfig || null,
                 footerConfig: data.template.footerConfig || null,
+                pageSize: data.template.pageSize || 'letter',
               };
             }
           } catch { /* ignore, will use hardcoded fallback */ }
@@ -106,6 +107,10 @@ export default function Step6_Review({ onNext, onPrev }) {
       let config = {};
       if (tmpl?.headerConfig || tmpl?.footerConfig) {
         config = await pdfService.prefetchConfigImages(tmpl.headerConfig, tmpl.footerConfig);
+      }
+      // Pass page size from template
+      if (tmpl?.pageSize) {
+        config.pageSize = tmpl.pageSize;
       }
 
       if (type === 'acta') {
