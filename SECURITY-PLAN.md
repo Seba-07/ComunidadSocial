@@ -10,7 +10,7 @@
 
 | Fase | Descripcion | Estado | Tareas |
 |------|-------------|--------|--------|
-| F1 | Criticos — Defensa inmediata | PENDIENTE | 7 tareas |
+| F1 | Criticos — Defensa inmediata | COMPLETADA | 7 tareas |
 | F2 | Altos — Hardening de autenticacion | PENDIENTE | 8 tareas |
 | F3 | Medios — Validacion y sanitizacion completa | PENDIENTE | 10 tareas |
 | F4 | Medios — Control de acceso y datos | PENDIENTE | 8 tareas |
@@ -22,7 +22,7 @@
 ## FASE 1: CRITICOS — Defensa Inmediata
 
 ### F1.1 — Reducir body limit global + limit por ruta
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/index.js:96-97`
 - **Problema**: `express.json({ limit: '50mb' })` global permite DoS (5GB/min por IP con rate limit de 100/min)
 - **Implementar**:
@@ -37,7 +37,7 @@
   4. Agregar middleware de validacion de tamano de base64 (max 2MB por certificado)
 
 ### F1.2 — Error handler: no filtrar informacion interna
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/index.js:177-205`
 - **Problema**: `err.message` y `err.name` expuestos al cliente en respuestas 500
 - **Implementar**:
@@ -54,7 +54,7 @@
      - `server/routes/auth.js`
 
 ### F1.3 — Unificar JWT_SECRET en un solo modulo
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/middleware/auth.js:9-18`, `server/routes/auth.js:12`
 - **Problema**: Secret duplicado en 2 archivos + fallback hardcodeado `'dev-only-secret-do-not-use-in-production'`
 - **Implementar**:
@@ -65,7 +65,7 @@
   5. En desarrollo, mantener fallback pero con `console.warn` visible
 
 ### F1.4 — Eliminar passwords temporales de respuestas HTTP
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**:
   - `server/routes/organizations.js:229-235` (create-member-accounts)
   - `server/routes/ministros.js:~175` (reset-password)
@@ -77,7 +77,7 @@
   4. Si emailService no esta configurado: retornar el password SOLO en desarrollo (`NODE_ENV !== 'production'`)
 
 ### F1.5 — Configurar trust proxy
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**: `server/index.js` (agregar antes de middlewares)
 - **Problema**: Sin `trust proxy`, `req.ip` es siempre la IP del proxy (Railway/Vercel) — rate limiting es inutil
 - **Implementar**:
@@ -86,7 +86,7 @@
   3. Testear que `req.ip` retorna IP real del cliente, no del proxy
 
 ### F1.6 — allowFields en PUT organizaciones
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO (ya existia proteccion manual en organizations.js:778-784)
 - **Archivos**: `server/routes/organizations.js:761`
 - **Problema**: PUT /:id no usa `allowFields()` — usuario puede enviar `status`, `certNumber`, `ministroData` directamente
 - **Implementar**:
@@ -96,7 +96,7 @@
   4. Verificar que los campos admin-only (`status`, `certNumber`, `depositNumber`, `ministroData`, `ministroSignature`, `validationData`) NO esten en la lista
 
 ### F1.7 — Path traversal en file downloads
-- **Estado**: [ ] Pendiente
+- **Estado**: [x] COMPLETADO
 - **Archivos**:
   - `server/routes/organizationDocuments.js:233-238`
   - `server/routes/libraryDocuments.js:236-237`
@@ -639,7 +639,7 @@
 | Fecha | Fase.Tarea | Estado | Notas |
 |-------|------------|--------|-------|
 | 2026-03-05 | Plan creado | - | Auditoria completa realizada |
-| | | | |
+| 2026-03-05 | F1 completa | DONE | 7/7 tareas: body limit 5MB, error handler seguro, JWT unificado, tempPasswords removidos, trust proxy, allowFields verificado, path traversal fix |
 
 ---
 

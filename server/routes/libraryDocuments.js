@@ -5,6 +5,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import LibraryDocument from '../models/LibraryDocument.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { isPathWithinDir } from '../utils/pathSecurity.js';
 
 const router = express.Router();
 
@@ -132,6 +133,12 @@ router.get('/:id/download', async (req, res) => {
 
     // Enviar archivo
     const filePath = path.resolve(document.filePath);
+
+    // SEGURIDAD: verificar que el path esté dentro del directorio de uploads
+    if (!isPathWithinDir(filePath, './uploads/library/')) {
+      return res.status(403).json({ error: 'Acceso denegado al archivo' });
+    }
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
     }
@@ -231,9 +238,9 @@ router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, re
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
 
-    // Eliminar archivo físico
+    // Eliminar archivo físico (solo si está dentro del directorio permitido)
     try {
-      if (fs.existsSync(document.filePath)) {
+      if (document.filePath && isPathWithinDir(document.filePath, './uploads/library/') && fs.existsSync(document.filePath)) {
         fs.unlinkSync(document.filePath);
       }
     } catch (e) {
