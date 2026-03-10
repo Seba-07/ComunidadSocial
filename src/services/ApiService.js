@@ -223,10 +223,11 @@ class ApiService {
         if (response.status === 401 && !options._retried) {
           const refreshed = await this._tryRefreshToken();
           if (refreshed) {
-            // Retry original request with new token
             config.headers = this.getHeaders();
             return this.request(endpoint, { ...options, _retried: true });
           }
+          // Refresh falló: sesión irrecuperable → forzar logout global
+          window.dispatchEvent(new CustomEvent('session-force-logout'));
         }
 
         const err = new Error(data.error || 'Error en la solicitud');

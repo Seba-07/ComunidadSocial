@@ -19,6 +19,7 @@ import { notificationService } from './src/services/NotificationService.js';
 import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
 import { indexedDBService } from './src/infrastructure/database/IndexedDBService.js';
+import { sessionManager } from './src/shared/SessionManager.js';
 
 // Componente de estado de conexión (se auto-inicializa)
 import './src/shared/components/ConnectionStatus.js';
@@ -204,6 +205,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Pre-cargar datos del perfil por si el usuario navega allí
       loadProfileData();
+
+      // Iniciar monitoreo de inactividad
+      sessionManager.start();
 
       // Setup para usuarios MIEMBRO (bifurca entre directivo y socio regular)
       if (user.role === 'MIEMBRO') {
@@ -511,32 +515,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ Comenzar ahora event listener attached');
   }
 
+  // Función reutilizable de logout (manual o por expiración)
+  async function performLogout() {
+    sessionManager.stop();
+    removeSessionWarningOverlay();
+
+    const app = document.getElementById('app');
+    if (app) app.classList.remove('loaded');
+
+    notificationService.stopPolling();
+
+    await apiService.logout();
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user_organizations');
+    localStorage.removeItem('ministros_fe');
+    localStorage.removeItem('ministro_assignments');
+    localStorage.removeItem('user_notifications');
+    sessionStorage.removeItem('isDirectivoMiembro');
+
+    await handleLogout();
+    window.location.href = '/app/login';
+  }
+
   // Botón de logout
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      // Mostrar loading screen inmediatamente para evitar flash de contenido
-      const app = document.getElementById('app');
-      if (app) app.classList.remove('loaded');
-
-      // Detener polling de notificaciones
-      notificationService.stopPolling();
-
-      // Limpiar cookies del servidor y localStorage
-      await apiService.logout();
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('user_organizations');
-      localStorage.removeItem('ministros_fe');
-      localStorage.removeItem('ministro_assignments');
-      localStorage.removeItem('user_notifications');
-      sessionStorage.removeItem('isDirectivoMiembro');
-
-      await handleLogout();
-
-      // Redirigir inmediatamente a auth
-      window.location.href = '/app/login';
-    });
+    logoutBtn.addEventListener('click', () => performLogout());
   }
+
+  // Modal de advertencia de inactividad (vanilla JS)
+  function showSessionWarningOverlay(secondsLeft) {
+    let overlay = document.getElementById('session-warning-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'session-warning-overlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+          <div style="font-size:48px;margin-bottom:16px">&#9200;</div>
+          <div style="font-size:20px;font-weight:700;color:#1e293b;margin-bottom:8px">Sesion por expirar</div>
+          <div style="font-size:15px;color:#64748b;margin-bottom:24px;line-height:1.5">
+            Tu sesion se cerrara por inactividad.<br>¿Deseas continuar?
+          </div>
+          <div id="session-countdown" style="font-size:36px;font-weight:700;color:#f59e0b;margin-bottom:24px;font-variant-numeric:tabular-nums"></div>
+          <button id="session-keep-alive-btn" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:10px;padding:12px 32px;font-size:16px;font-weight:600;cursor:pointer;width:100%">
+            Mantener sesion activa
+          </button>
+        </div>`;
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          sessionManager.keepAlive();
+          removeSessionWarningOverlay();
+        }
+      });
+      overlay.querySelector('#session-keep-alive-btn').addEventListener('click', () => {
+        sessionManager.keepAlive();
+        removeSessionWarningOverlay();
+      });
+      document.body.appendChild(overlay);
+    }
+    const countdown = overlay.querySelector('#session-countdown');
+    if (countdown) {
+      countdown.textContent = secondsLeft + 's';
+      countdown.style.color = secondsLeft <= 10 ? '#dc2626' : '#f59e0b';
+    }
+  }
+
+  function removeSessionWarningOverlay() {
+    const overlay = document.getElementById('session-warning-overlay');
+    if (overlay) overlay.remove();
+  }
+
+  // Listeners de eventos de sesión
+  window.addEventListener('session-warning', (e) => {
+    showSessionWarningOverlay(e.detail.secondsLeft);
+  });
+
+  window.addEventListener('session-expired-inactivity', () => {
+    performLogout();
+  });
+
+  window.addEventListener('session-force-logout', () => {
+    performLogout();
+  });
 
   // Menú lateral (unified sidebar)
   const menuBtn = document.getElementById('menu-btn');
@@ -1455,19 +1516,7 @@ function initProfile() {
   // Logout from profile page
   const btnLogoutProfile = document.getElementById('btn-logout-profile');
   if (btnLogoutProfile) {
-    btnLogoutProfile.addEventListener('click', async () => {
-      // Limpiar cookies del servidor y localStorage
-      await apiService.logout();
-      localStorage.removeItem('isAuthenticated');
-      sessionStorage.removeItem('isDirectivoMiembro');
-
-      await handleLogout();
-      showToast('Sesión cerrada correctamente', 'success');
-
-      setTimeout(() => {
-        window.location.href = '/app/login';
-      }, 500);
-    });
+    btnLogoutProfile.addEventListener('click', () => performLogout());
   }
 }
 

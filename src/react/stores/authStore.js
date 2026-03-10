@@ -36,6 +36,27 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Verifica la sesión contra el servidor después de hydrate.
+   * Intenta refresh del token; si falla, limpia la sesión.
+   * @returns {boolean} true si la sesión es válida
+   */
+  async verifySession() {
+    const { isAuthenticated } = get();
+    if (!isAuthenticated) return false;
+
+    try {
+      // Intentar obtener datos del usuario (valida token/cookie)
+      await apiService.getCurrentUser();
+      return true;
+    } catch {
+      // Token inválido y refresh falló → limpiar sesión
+      try { await apiService.logout(); } catch { /* ignore */ }
+      set({ user: null, isAuthenticated: false, error: null });
+      return false;
+    }
+  },
+
   async login(email, password) {
     set({ isLoading: true, error: null });
     try {
