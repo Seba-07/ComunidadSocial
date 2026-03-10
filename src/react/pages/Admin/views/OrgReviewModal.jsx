@@ -231,8 +231,8 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       display: 'flex', alignItems: 'center', justifyContent: 'center'
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: 'white', borderRadius: 16, width: '90%', maxWidth: 800,
-        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        background: 'white', borderRadius: 16, width: '90%', maxWidth: 900,
+        height: '85vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
       }}>
         {/* Header */}
