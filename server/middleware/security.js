@@ -128,7 +128,7 @@ export const securityHeaders = helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.quilljs.com", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "https://comunidadsocial-production.up.railway.app", "https://*.vercel.app"],
+      connectSrc: ["'self'", ...(process.env.BACKEND_URL ? [process.env.BACKEND_URL] : []), "https://*.vercel.app"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       reportUri: ['/api/csp-report'],

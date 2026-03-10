@@ -64,7 +64,7 @@ class LibraryDocumentService {
       formData.append('isPublished', data.isPublished !== false ? 'true' : 'false');
 
       // Usar fetch directamente para FormData
-      const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+      const baseUrl = apiService.baseUrl;
 
       const libHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
       if (apiService._authToken) libHeaders['Authorization'] = `Bearer ${apiService._authToken}`;
@@ -116,7 +116,7 @@ class LibraryDocumentService {
    * Obtener URL de descarga
    */
   getDownloadUrl(id) {
-    const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+    const baseUrl = apiService.baseUrl;
     return `${baseUrl}/library-documents/${id}/download`;
   }
 

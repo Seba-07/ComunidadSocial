@@ -5686,7 +5686,7 @@ ${comm.message || 'Sin contenido'}
     const docName = doc?.name || 'Documento';
 
     try {
-      const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+      const baseUrl = apiService.baseUrl;
       const response = await fetch(`${baseUrl}/org-documents/${orgId}/${docId}/download`, {
         method: 'GET',
         credentials: 'include',

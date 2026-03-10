@@ -124,7 +124,7 @@ class NewsService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+      const baseUrl = apiService.baseUrl;
 
       const newsHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
       if (apiService._authToken) newsHeaders['Authorization'] = `Bearer ${apiService._authToken}`;

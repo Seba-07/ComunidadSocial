@@ -19,7 +19,6 @@ function generateVerificationToken() {
 // Helper: get frontend base URL
 function getFrontendUrl() {
   if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
-  if (process.env.RAILWAY_ENVIRONMENT) return 'https://comunidadsocial.vercel.app';
   return 'http://localhost:5173';
 }
 

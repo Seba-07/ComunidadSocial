@@ -43,7 +43,7 @@ class OrgDocumentService {
     if (description) formData.append('description', description);
     if (category) formData.append('category', category);
 
-    const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+    const baseUrl = apiService.baseUrl;
 
     const headers = { 'X-Requested-With': 'XMLHttpRequest' };
     if (apiService._authToken) headers['Authorization'] = `Bearer ${apiService._authToken}`;
@@ -70,7 +70,7 @@ class OrgDocumentService {
    * @param {string} docId - ID del documento
    */
   async downloadDocument(orgId, docId) {
-    const baseUrl = apiService.baseUrl || 'https://comunidadsocial-production.up.railway.app/api';
+    const baseUrl = apiService.baseUrl;
     const url = `${baseUrl}/org-documents/${orgId}/${docId}/download`;
 
     try {

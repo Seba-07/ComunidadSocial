@@ -825,3 +825,48 @@
 | `src/react/stores/wizardStore.js` | `inhabilityCertificates: {}` en initialFormData |
 | `src/react/pages/Wizard/steps/Step5_Directorio.jsx` | FileUpload condicional + validación + embed Base64 |
 | `src/react/pages/Admin/views/OrgReviewModal.jsx` | Botón "Ver Inhabilidades" con escudo morado |
+
+---
+
+## FASE 14: Limpieza de Infraestructura y URLs Dinámicas
+**Fecha**: 2026-03-10
+**Objetivo**: Eliminar URLs hardcodeadas y archivos legacy para permitir separación Dev/Prod
+
+### Tarea 1: Actualizar plan
+- [x] **F14-01**: Documentar FASE 14 en PLAN_CORRECCIONES_ASAMBLEA.md
+
+### Tarea 2: Eliminar archivos legacy
+- [x] **F14-02**: Eliminar `netlify.toml` (hosting migrado a Vercel)
+
+### Tarea 3: Dinamizar CORS y URLs del backend
+- [x] **F14-03**: CORS dinámico en `server/index.js` con `buildAllowedOrigins()`
+  - Producción: usa `FRONTEND_URL` + `FRONTEND_URL_ALT` (fallback a Vercel hardcoded)
+  - Desarrollo: localhost:3000/5173 + regex `*.vercel.app` para previews
+- [x] **F14-04**: Limpiar `server/routes/auth.js` `getFrontendUrl()` — solo usa `FRONTEND_URL` o localhost
+- [x] **F14-05**: Dinamizar CSP `connectSrc` en `server/middleware/security.js` — usa `BACKEND_URL` env var
+- [x] **F14-06**: Actualizar `server/.env.example` con `FRONTEND_URL_ALT` y `BACKEND_URL`
+
+### Tarea 4: Eliminar fallbacks hardcodeados en frontend
+- [x] **F14-07**: `src/services/NewsService.js` — eliminar fallback Railway en `uploadImage()`
+- [x] **F14-08**: `src/services/OrgDocumentService.js` — eliminar 2 fallbacks Railway
+- [x] **F14-09**: `src/services/LibraryDocumentService.js` — eliminar 2 fallbacks Railway
+- [x] **F14-10**: `src/presentation/organization/OrganizationDashboard.js` — eliminar fallback Railway
+
+### Archivos eliminados
+
+| Archivo | Razón |
+|---------|-------|
+| `netlify.toml` | Legacy — hosting migrado a Vercel |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/index.js` | CORS dinámico con `buildAllowedOrigins()` + regex Vercel previews |
+| `server/routes/auth.js` | `getFrontendUrl()` sin hardcode Railway |
+| `server/middleware/security.js` | CSP `connectSrc` usa `BACKEND_URL` env var |
+| `server/.env.example` | Agregados `FRONTEND_URL_ALT` y `BACKEND_URL` |
+| `src/services/NewsService.js` | Eliminado fallback Railway hardcodeado |
+| `src/services/OrgDocumentService.js` | Eliminados 2 fallbacks Railway hardcodeados |
+| `src/services/LibraryDocumentService.js` | Eliminados 2 fallbacks Railway hardcodeados |
+| `src/presentation/organization/OrganizationDashboard.js` | Eliminado fallback Railway hardcodeado |

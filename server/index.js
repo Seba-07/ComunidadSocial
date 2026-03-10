@@ -52,15 +52,28 @@ const isDeployed = process.env.NODE_ENV === 'production' ||
 // SEGURIDAD: Trust proxy para que req.ip sea el IP real (no el del proxy Railway/Vercel)
 app.set('trust proxy', 1);
 
-// Middleware
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173',
-  'https://comunidad-social.vercel.app',
-  'https://comunidadsocial.vercel.app'
-];
+// Middleware — CORS dinámico según entorno
+const isProduction = process.env.NODE_ENV === 'production' || isDeployed;
+
+function buildAllowedOrigins() {
+  if (isProduction) {
+    // Producción: solo FRONTEND_URL (obligatorio) + variantes conocidas
+    const origins = [];
+    if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
+    // Aceptar ambas variantes del dominio Vercel si están configuradas
+    if (process.env.FRONTEND_URL_ALT) origins.push(process.env.FRONTEND_URL_ALT);
+    return origins.length > 0 ? origins : ['https://comunidadsocial.vercel.app'];
+  }
+  // Desarrollo: localhost + Vercel preview deployments
+  return [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173'
+  ];
+}
+
+const allowedOrigins = buildAllowedOrigins();
 
 app.use(cors({
   origin: function(origin, callback) {
@@ -68,12 +81,17 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // SEGURIDAD: Rechazar orígenes no permitidos
-      console.warn('CORS blocked origin:', origin);
-      callback(new Error('No permitido por CORS'));
+      return callback(null, true);
     }
+
+    // En desarrollo: aceptar Vercel preview deployments (*.vercel.app)
+    if (!isProduction && /^https:\/\/.*\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // SEGURIDAD: Rechazar orígenes no permitidos
+    console.warn('CORS blocked origin:', origin);
+    callback(new Error('No permitido por CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
