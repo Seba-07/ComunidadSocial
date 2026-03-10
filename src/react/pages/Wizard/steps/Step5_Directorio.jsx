@@ -283,10 +283,17 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                       Obligatorio — la organizacion admite menores de edad
                     </span>
                   )}
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '4px 0 0', lineHeight: 1.4 }}>
-                    Requerido legalmente porque la organizacion admite menores de edad.
-                    Obténgalo gratis en <a href="https://www.registrocivil.cl" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>registrocivil.cl</a>
-                  </p>
+                  <div style={{ marginTop: 6, padding: '8px 10px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6 }}>
+                    <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+                      Obtén este certificado gratis <a
+                        href="https://inhabilidades.srcei.cl/ConsInhab/consultaInhabilidad.do"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
+                      >haciendo clic aqui</a>.
+                      Necesitarás tu ClaveUnica y el RUT del candidato.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
