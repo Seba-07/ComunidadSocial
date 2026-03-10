@@ -5,6 +5,52 @@ import Modal from '../../../components/ui/Modal';
 import Tabs from '../../../components/ui/Tabs';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
+// Tipos de organización disponibles con sus nombres y categorías
+const TIPOS_ORGANIZACION = {
+  // Territoriales
+  'JUNTA_VECINOS': { nombre: 'Junta de Vecinos', categoria: 'TERRITORIAL' },
+  'COMITE_VECINOS': { nombre: 'Comite de Vecinos', categoria: 'TERRITORIAL' },
+  'COMITE_ADELANTO': { nombre: 'Comite de Adelanto', categoria: 'TERRITORIAL' },
+  'COMITE_MEJORAMIENTO': { nombre: 'Comite de Mejoramiento', categoria: 'TERRITORIAL' },
+  'COMITE_CONVIVENCIA': { nombre: 'Comite de Convivencia Vecinal', categoria: 'TERRITORIAL' },
+  'UNION_COMUNAL_JV': { nombre: 'Union Comunal de Juntas de Vecinos', categoria: 'TERRITORIAL' },
+  // Funcional
+  'CLUB_DEPORTIVO': { nombre: 'Club Deportivo', categoria: 'FUNCIONAL' },
+  'AGRUPACION_AMBIENTAL': { nombre: 'Agrupacion Ambiental', categoria: 'FUNCIONAL' },
+  'AGRUPACION_EMPRENDEDORES': { nombre: 'Agrupacion de Emprendedores', categoria: 'FUNCIONAL' },
+  'COMITE_VIVIENDA': { nombre: 'Comite de Vivienda', categoria: 'FUNCIONAL' },
+  'COMITE_ALLEGADOS': { nombre: 'Comite de Allegados', categoria: 'FUNCIONAL' },
+  'COMITE_APR': { nombre: 'Comite de Agua Potable Rural', categoria: 'FUNCIONAL' },
+  'COMITE_SEGURIDAD': { nombre: 'Comite de Seguridad Ciudadana', categoria: 'FUNCIONAL' },
+  'ORG_COMUNITARIA': { nombre: 'Organizacion Comunitaria', categoria: 'FUNCIONAL' },
+  'ORG_FUNCIONAL': { nombre: 'Organizacion Funcional', categoria: 'FUNCIONAL' },
+  'OTRA_FUNCIONAL': { nombre: 'Otra Organizacion Funcional', categoria: 'FUNCIONAL' },
+  // Social
+  'CLUB_ADULTO_MAYOR': { nombre: 'Club de Adulto Mayor', categoria: 'SOCIAL' },
+  'CLUB_JUVENIL': { nombre: 'Club Juvenil', categoria: 'SOCIAL' },
+  'CENTRO_MADRES': { nombre: 'Centro de Madres', categoria: 'SOCIAL' },
+  'AGRUPACION_JUVENIL': { nombre: 'Agrupacion Juvenil', categoria: 'SOCIAL' },
+  'ORG_SCOUT': { nombre: 'Organizacion Scout', categoria: 'SOCIAL' },
+  'ORG_MUJERES': { nombre: 'Organizacion de Mujeres', categoria: 'SOCIAL' },
+  'ORG_SALUD': { nombre: 'Organizacion de Salud', categoria: 'SOCIAL' },
+  'ORG_SOCIAL': { nombre: 'Organizacion Social', categoria: 'SOCIAL' },
+  'AGRUPACION_INCLUSION': { nombre: 'Agrupacion de Inclusion / Discapacidad', categoria: 'SOCIAL' },
+  // Cultural
+  'CLUB_CULTURAL': { nombre: 'Club Cultural', categoria: 'CULTURAL' },
+  'CENTRO_CULTURAL': { nombre: 'Centro Cultural', categoria: 'CULTURAL' },
+  'AGRUPACION_FOLCLORICA': { nombre: 'Agrupacion Folclorica', categoria: 'CULTURAL' },
+  'AGRUPACION_CULTURAL': { nombre: 'Agrupacion Cultural', categoria: 'CULTURAL' },
+  'ORG_INDIGENA': { nombre: 'Organizacion Indigena', categoria: 'CULTURAL' },
+  'ORG_CULTURAL': { nombre: 'Organizacion Cultural', categoria: 'CULTURAL' },
+  'GRUPO_TEATRO': { nombre: 'Grupo de Teatro', categoria: 'CULTURAL' },
+  'CORO': { nombre: 'Coro', categoria: 'CULTURAL' },
+  'TALLER_ARTESANIA': { nombre: 'Taller de Artesania', categoria: 'CULTURAL' },
+  // Educacional
+  'CENTRO_PADRES': { nombre: 'Centro de Padres y Apoderados', categoria: 'EDUCACIONAL' },
+  'CONSEJO_ESCOLAR': { nombre: 'Consejo Escolar', categoria: 'EDUCACIONAL' },
+  'CENTRO_ESTUDIANTES': { nombre: 'Centro de Estudiantes', categoria: 'EDUCACIONAL' },
+};
+
 const PLACEHOLDERS = [
   { key: '{{NOMBRE_ORGANIZACION}}', label: 'Nombre Org.' },
   { key: '{{TIPO_ORGANIZACION}}', label: 'Tipo Org.' },
@@ -75,6 +121,8 @@ export default function EstatutosManagerView() {
   const [objInput, setObjInput] = useState('');
   const [collapsedCats, setCollapsedCats] = useState({});
   const [searchFilter, setSearchFilter] = useState('');
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newTypeFilter, setNewTypeFilter] = useState('');
   const [docTemplateOptions, setDocTemplateOptions] = useState({ acta_constitutiva: [], lista_socios: [], nomina_directorio: [], carta_solicitud: [] });
   const contenidoRef = useRef(null);
 
@@ -129,6 +177,40 @@ export default function EstatutosManagerView() {
 
   function backToList() {
     setSelectedTemplate(null);
+  }
+
+  function createNewTemplate(tipoKey) {
+    const tipoInfo = TIPOS_ORGANIZACION[tipoKey] || { nombre: tipoKey, categoria: 'FUNCIONAL' };
+    const newTemplate = {
+      tipoOrganizacion: tipoKey,
+      nombreTipo: tipoInfo.nombre,
+      descripcion: '',
+      categoria: tipoInfo.categoria,
+      articulos: [],
+      directorio: {
+        cargos: [
+          { id: 'presidente', nombre: 'Presidente/a', color: '#3b82f6', required: true, orden: 1 },
+          { id: 'vicepresidente', nombre: 'Vicepresidente/a', color: '#8b5cf6', required: true, orden: 2 },
+          { id: 'secretario', nombre: 'Secretario/a', color: '#10b981', required: true, orden: 3 },
+          { id: 'tesorero', nombre: 'Tesorero/a', color: '#f59e0b', required: true, orden: 4 },
+          { id: 'director1', nombre: 'Director/a', color: '#6366f1', required: true, orden: 5 },
+        ],
+        totalRequerido: 5,
+        duracionMandato: 3
+      },
+      miembrosMinimos: 15,
+      comisionElectoral: { cantidad: 3 },
+      edadConfig: { permiteMenores: true, edadMinima: 14, menoresEnDirectorio: false, menoresEnComisionElectoral: false },
+      objetivosSugeridos: [],
+      mandatoTipo: 'fijo',
+      mandatoOpciones: [3],
+      requiereDirectorioProvisorio: true,
+      publicado: false
+    };
+    setShowNewModal(false);
+    setNewTypeFilter('');
+    setSelectedTemplate(newTemplate);
+    setEditTab('config');
   }
 
   function openArticuloAdd() {
@@ -749,9 +831,21 @@ export default function EstatutosManagerView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: 24, fontWeight: 700, color: '#111827' }}>
-        Plantillas de Estatutos
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
+          Plantillas de Estatutos
+        </h1>
+        <button onClick={() => setShowNewModal(true)} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 20px', border: 'none', borderRadius: 10,
+          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+          color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(37,99,235,0.3)'
+        }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>+</span>
+          Nueva Plantilla
+        </button>
+      </div>
 
       {/* Buscador */}
       <div style={{
@@ -872,6 +966,149 @@ export default function EstatutosManagerView() {
         </div>
         );
       })}
+
+      {/* Modal para crear nueva plantilla */}
+      {showNewModal && (() => {
+        const existingTypes = new Set(templates.map(t => t.tipoOrganizacion || t.orgType));
+        const availableTypes = Object.entries(TIPOS_ORGANIZACION)
+          .filter(([key]) => !existingTypes.has(key));
+
+        const normalizeStr = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const filterStr = normalizeStr(newTypeFilter);
+        const filteredTypes = filterStr
+          ? availableTypes.filter(([key, info]) =>
+              normalizeStr(info.nombre).includes(filterStr) ||
+              normalizeStr(info.categoria).includes(filterStr) ||
+              normalizeStr(key).includes(filterStr)
+            )
+          : availableTypes;
+
+        // Agrupar por categoría
+        const catOrder = ['TERRITORIAL', 'FUNCIONAL', 'SOCIAL', 'CULTURAL', 'EDUCACIONAL', 'OTRO'];
+        const catLabels = { TERRITORIAL: 'Territoriales', FUNCIONAL: 'Funcionales', SOCIAL: 'Social', CULTURAL: 'Arte y Cultura', EDUCACIONAL: 'Educacionales', OTRO: 'Otros' };
+        const groupedAvail = {};
+        filteredTypes.forEach(([key, info]) => {
+          const c = info.categoria || 'OTRO';
+          if (!groupedAvail[c]) groupedAvail[c] = [];
+          groupedAvail[c].push({ key, ...info });
+        });
+        const sortedCats = catOrder.filter(c => groupedAvail[c]?.length);
+
+        return (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }} onClick={e => { if (e.target === e.currentTarget) { setShowNewModal(false); setNewTypeFilter(''); } }}>
+            <div style={{
+              background: 'white', borderRadius: 16, width: '90%', maxWidth: 600,
+              height: '80vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+            }}>
+              {/* Header */}
+              <div style={{
+                padding: '20px 24px', borderBottom: '1px solid #e5e7eb',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
+              }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+                    Nueva Plantilla de Estatuto
+                  </h2>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+                    Selecciona el tipo de organizacion ({availableTypes.length} disponibles)
+                  </p>
+                </div>
+                <button onClick={() => { setShowNewModal(false); setNewTypeFilter(''); }} style={{
+                  background: 'none', border: 'none', fontSize: 28, color: '#6b7280',
+                  cursor: 'pointer', lineHeight: 1
+                }}>&times;</button>
+              </div>
+
+              {/* Buscador */}
+              <div style={{ padding: '16px 24px 0', flexShrink: 0 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                  borderRadius: 10, padding: '0 14px',
+                  ...(newTypeFilter ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59,130,246,0.1)' } : {})
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={newTypeFilter}
+                    onChange={e => setNewTypeFilter(e.target.value)}
+                    placeholder="Buscar tipo..."
+                    autoFocus
+                    style={{
+                      flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                      padding: '10px 10px', fontSize: 14, color: '#1e293b'
+                    }}
+                  />
+                  {newTypeFilter && (
+                    <button onClick={() => setNewTypeFilter('')} style={{
+                      width: 24, height: 24, borderRadius: '50%', border: 'none',
+                      background: '#e2e8f0', cursor: 'pointer', color: '#64748b',
+                      fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>&times;</button>
+                  )}
+                </div>
+              </div>
+
+              {/* Lista de tipos */}
+              <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px 24px' }}>
+                {sortedCats.length === 0 && (
+                  <div style={{
+                    padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 14,
+                    border: '2px dashed #e5e7eb', borderRadius: 12
+                  }}>
+                    {availableTypes.length === 0
+                      ? 'Todos los tipos de organizacion ya tienen plantilla'
+                      : <>No se encontraron tipos para "<strong style={{ color: '#64748b' }}>{newTypeFilter}</strong>"</>
+                    }
+                  </div>
+                )}
+
+                {sortedCats.map(cat => (
+                  <div key={cat} style={{ marginBottom: 16 }}>
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, color: '#6b7280',
+                      textTransform: 'uppercase', letterSpacing: 0.5,
+                      padding: '0 0 6px', borderBottom: '1px solid #f1f5f9', marginBottom: 8
+                    }}>
+                      {catLabels[cat] || cat}
+                    </div>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {groupedAvail[cat].map(tipo => (
+                        <button
+                          key={tipo.key}
+                          onClick={() => createNewTemplate(tipo.key)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            width: '100%', textAlign: 'left',
+                            padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: 10,
+                            background: 'white', cursor: 'pointer', fontSize: 14, color: '#1e293b',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = 'white'; }}
+                        >
+                          <span style={{ fontWeight: 500 }}>{tipo.nombre}</span>
+                          <span style={{
+                            fontSize: 11, color: '#3b82f6', fontWeight: 600,
+                            padding: '2px 8px', background: '#eff6ff', borderRadius: 6
+                          }}>Crear</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
