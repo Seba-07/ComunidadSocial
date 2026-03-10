@@ -160,12 +160,11 @@ const TIPOS_ORGANIZACION = [
 
 // Esquema principal de EstatutoTemplate
 const estatutoTemplateSchema = new mongoose.Schema({
-  // Identificador del tipo de organización
+  // Identificador del tipo de organización (sin enum para permitir tipos custom)
   tipoOrganizacion: {
     type: String,
     required: true,
-    unique: true,
-    enum: TIPOS_ORGANIZACION
+    unique: true
   },
 
   // Nombre legible del tipo

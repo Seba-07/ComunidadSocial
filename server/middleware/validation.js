@@ -176,20 +176,9 @@ export const createOrganizationSchema = z.object({
     .min(3, 'Nombre de organización debe tener al menos 3 caracteres')
     .max(150, 'Nombre de organización no puede tener más de 150 caracteres')
     .trim(),
-  organizationType: z.enum([
-    'JUNTA_VECINOS', 'COMITE_VECINOS',
-    'CLUB_DEPORTIVO', 'CLUB_ADULTO_MAYOR', 'CLUB_JUVENIL', 'CLUB_CULTURAL',
-    'CENTRO_MADRES', 'CENTRO_PADRES', 'CENTRO_CULTURAL',
-    'AGRUPACION_FOLCLORICA', 'AGRUPACION_CULTURAL', 'AGRUPACION_JUVENIL',
-    'AGRUPACION_AMBIENTAL', 'AGRUPACION_EMPRENDEDORES',
-    'COMITE_VIVIENDA', 'COMITE_ALLEGADOS', 'COMITE_APR',
-    'COMITE_ADELANTO', 'COMITE_MEJORAMIENTO', 'COMITE_CONVIVENCIA',
-    'ORG_SCOUT', 'ORG_MUJERES', 'ORG_INDIGENA', 'ORG_SALUD', 'ORG_SOCIAL', 'ORG_CULTURAL',
-    'GRUPO_TEATRO', 'CORO', 'TALLER_ARTESANIA',
-    'ORG_COMUNITARIA', 'ORG_FUNCIONAL', 'OTRA_FUNCIONAL',
-    'CONSEJO_ESCOLAR', 'CENTRO_ESTUDIANTES',
-    'COMITE_SEGURIDAD', 'UNION_COMUNAL_JV', 'AGRUPACION_INCLUSION'
-  ]),
+  organizationType: z.string()
+    .min(2, 'Tipo de organización requerido')
+    .max(100, 'Tipo de organización demasiado largo'),
   address: z.string().min(5).max(200),
   comuna: z.string().max(50).optional(),
   region: z.string().max(50).optional(),

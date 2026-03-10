@@ -4,14 +4,37 @@ import EstatutoTemplate, { TIPOS_ORGANIZACION_LIST } from '../models/EstatutoTem
 const router = express.Router();
 
 /**
+ * Obtiene todos los tipos: hardcoded + custom de templates publicados en BD
+ */
+async function getAllTypes() {
+  const hardcoded = EstatutoTemplate.getTiposConNombres();
+
+  // Obtener templates custom (tipos que no están en la lista hardcoded)
+  const customTemplates = await EstatutoTemplate.find(
+    { publicado: true, tipoOrganizacion: { $nin: Object.keys(hardcoded) } },
+    'tipoOrganizacion nombreTipo categoria'
+  ).lean();
+
+  // Merge: hardcoded + custom
+  const all = { ...hardcoded };
+  for (const t of customTemplates) {
+    all[t.tipoOrganizacion] = {
+      nombre: t.nombreTipo,
+      categoria: t.categoria || 'OTRO'
+    };
+  }
+
+  return all;
+}
+
+/**
  * GET /api/organization-types
  * Obtener todos los tipos de organización (público)
  */
 router.get('/', async (req, res) => {
   try {
-    const tipos = EstatutoTemplate.getTiposConNombres();
+    const tipos = await getAllTypes();
 
-    // Formatear para consumo del frontend
     const formattedTypes = Object.entries(tipos).map(([key, value]) => ({
       value: key,
       label: value.nombre,
@@ -31,7 +54,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/grouped', async (req, res) => {
   try {
-    const tipos = EstatutoTemplate.getTiposConNombres();
+    const tipos = await getAllTypes();
     const grouped = {};
 
     Object.entries(tipos).forEach(([key, value]) => {
@@ -53,18 +76,15 @@ router.get('/grouped', async (req, res) => {
  */
 router.get('/categories', async (req, res) => {
   try {
-    const tipos = EstatutoTemplate.getTiposConNombres();
+    const tipos = await getAllTypes();
     const categories = [...new Set(Object.values(tipos).map(t => t.categoria))];
 
     const categoryLabels = {
       'TERRITORIAL': 'Organizaciones Territoriales',
       'FUNCIONAL': 'Organizaciones Funcionales',
-      'CLUB': 'Clubes',
-      'CENTRO': 'Centros',
-      'AGRUPACION': 'Agrupaciones',
-      'COMITE': 'Comités',
-      'ORG_ESPECIFICA': 'Organizaciones Específicas',
-      'ARTE_CULTURA': 'Arte y Cultura',
+      'SOCIAL': 'Social',
+      'CULTURAL': 'Arte y Cultura',
+      'EDUCACIONAL': 'Educacionales',
       'OTRO': 'Otros'
     };
 
@@ -85,7 +105,7 @@ router.get('/categories', async (req, res) => {
 router.get('/:tipo', async (req, res) => {
   try {
     const { tipo } = req.params;
-    const tipos = EstatutoTemplate.getTiposConNombres();
+    const tipos = await getAllTypes();
 
     if (!tipos[tipo]) {
       return res.status(404).json({ error: 'Tipo de organización no encontrado' });

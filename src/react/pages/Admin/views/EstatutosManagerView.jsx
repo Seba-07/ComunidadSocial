@@ -123,6 +123,8 @@ export default function EstatutosManagerView() {
   const [searchFilter, setSearchFilter] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newTypeFilter, setNewTypeFilter] = useState('');
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customForm, setCustomForm] = useState({ nombre: '', key: '', categoria: 'FUNCIONAL' });
   const [docTemplateOptions, setDocTemplateOptions] = useState({ acta_constitutiva: [], lista_socios: [], nomina_directorio: [], carta_solicitud: [] });
   const contenidoRef = useRef(null);
 
@@ -179,13 +181,12 @@ export default function EstatutosManagerView() {
     setSelectedTemplate(null);
   }
 
-  function createNewTemplate(tipoKey) {
-    const tipoInfo = TIPOS_ORGANIZACION[tipoKey] || { nombre: tipoKey, categoria: 'FUNCIONAL' };
-    const newTemplate = {
+  function buildDefaultTemplate(tipoKey, nombre, categoria) {
+    return {
       tipoOrganizacion: tipoKey,
-      nombreTipo: tipoInfo.nombre,
+      nombreTipo: nombre,
       descripcion: '',
-      categoria: tipoInfo.categoria,
+      categoria: categoria,
       articulos: [],
       directorio: {
         cargos: [
@@ -207,10 +208,40 @@ export default function EstatutosManagerView() {
       requiereDirectorioProvisorio: true,
       publicado: false
     };
+  }
+
+  function createNewTemplate(tipoKey) {
+    const tipoInfo = TIPOS_ORGANIZACION[tipoKey] || { nombre: tipoKey, categoria: 'FUNCIONAL' };
+    closeNewModal();
+    setSelectedTemplate(buildDefaultTemplate(tipoKey, tipoInfo.nombre, tipoInfo.categoria));
+    setEditTab('config');
+  }
+
+  function createCustomTemplate() {
+    const nombre = customForm.nombre.trim();
+    if (!nombre) { addToast('Ingresa un nombre para el tipo', 'error'); return; }
+
+    // Generar key: CLUB_COSTURA, ORG_VOLUNTARIOS, etc.
+    const key = customForm.key.trim() ||
+      nombre.toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+
+    // Verificar que no exista
+    const existing = templates.find(t => t.tipoOrganizacion === key);
+    if (existing) { addToast(`Ya existe una plantilla con la clave "${key}"`, 'error'); return; }
+
+    closeNewModal();
+    setSelectedTemplate(buildDefaultTemplate(key, nombre, customForm.categoria));
+    setEditTab('config');
+  }
+
+  function closeNewModal() {
     setShowNewModal(false);
     setNewTypeFilter('');
-    setSelectedTemplate(newTemplate);
-    setEditTab('config');
+    setShowCustomForm(false);
+    setCustomForm({ nombre: '', key: '', categoria: 'FUNCIONAL' });
   }
 
   function openArticuloAdd() {
@@ -843,7 +874,7 @@ export default function EstatutosManagerView() {
           boxShadow: '0 2px 8px rgba(37,99,235,0.3)'
         }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>+</span>
-          Nueva Plantilla
+          Nuevo Tipo de Organizacion
         </button>
       </div>
 
@@ -967,7 +998,7 @@ export default function EstatutosManagerView() {
         );
       })}
 
-      {/* Modal para crear nueva plantilla */}
+      {/* Modal para crear nuevo tipo de organización */}
       {showNewModal && (() => {
         const existingTypes = new Set(templates.map(t => t.tipoOrganizacion || t.orgType));
         const availableTypes = Object.entries(TIPOS_ORGANIZACION)
@@ -983,7 +1014,6 @@ export default function EstatutosManagerView() {
             )
           : availableTypes;
 
-        // Agrupar por categoría
         const catOrder = ['TERRITORIAL', 'FUNCIONAL', 'SOCIAL', 'CULTURAL', 'EDUCACIONAL', 'OTRO'];
         const catLabels = { TERRITORIAL: 'Territoriales', FUNCIONAL: 'Funcionales', SOCIAL: 'Social', CULTURAL: 'Arte y Cultura', EDUCACIONAL: 'Educacionales', OTRO: 'Otros' };
         const groupedAvail = {};
@@ -994,15 +1024,22 @@ export default function EstatutosManagerView() {
         });
         const sortedCats = catOrder.filter(c => groupedAvail[c]?.length);
 
+        // Preview de la key generada
+        const previewKey = customForm.nombre.trim()
+          ? (customForm.key.trim() || customForm.nombre.trim().toUpperCase()
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, ''))
+          : '';
+
         return (
           <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
             background: 'rgba(0,0,0,0.5)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }} onClick={e => { if (e.target === e.currentTarget) { setShowNewModal(false); setNewTypeFilter(''); } }}>
+          }} onClick={e => { if (e.target === e.currentTarget) closeNewModal(); }}>
             <div style={{
-              background: 'white', borderRadius: 16, width: '90%', maxWidth: 600,
-              height: '80vh', display: 'flex', flexDirection: 'column',
+              background: 'white', borderRadius: 16, width: '90%', maxWidth: 620,
+              height: '85vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
             }}>
               {/* Header */}
@@ -1012,98 +1049,217 @@ export default function EstatutosManagerView() {
               }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
-                    Nueva Plantilla de Estatuto
+                    Nuevo Tipo de Organizacion
                   </h2>
                   <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                    Selecciona el tipo de organizacion ({availableTypes.length} disponibles)
+                    Selecciona un tipo existente o crea uno personalizado
                   </p>
                 </div>
-                <button onClick={() => { setShowNewModal(false); setNewTypeFilter(''); }} style={{
+                <button onClick={closeNewModal} style={{
                   background: 'none', border: 'none', fontSize: 28, color: '#6b7280',
                   cursor: 'pointer', lineHeight: 1
                 }}>&times;</button>
               </div>
 
-              {/* Buscador */}
-              <div style={{ padding: '16px 24px 0', flexShrink: 0 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center',
-                  background: '#f8fafc', border: '1.5px solid #e2e8f0',
-                  borderRadius: 10, padding: '0 14px',
-                  ...(newTypeFilter ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59,130,246,0.1)' } : {})
+              {/* Tabs: Existente / Personalizado */}
+              <div style={{
+                display: 'flex', borderBottom: '1px solid #e5e7eb', flexShrink: 0
+              }}>
+                <button onClick={() => setShowCustomForm(false)} style={{
+                  flex: 1, padding: '12px 16px', border: 'none', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer',
+                  background: !showCustomForm ? 'white' : '#f8fafc',
+                  color: !showCustomForm ? '#2563eb' : '#6b7280',
+                  borderBottom: !showCustomForm ? '2px solid #2563eb' : '2px solid transparent'
                 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={newTypeFilter}
-                    onChange={e => setNewTypeFilter(e.target.value)}
-                    placeholder="Buscar tipo..."
-                    autoFocus
-                    style={{
-                      flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                      padding: '10px 10px', fontSize: 14, color: '#1e293b'
-                    }}
-                  />
-                  {newTypeFilter && (
-                    <button onClick={() => setNewTypeFilter('')} style={{
-                      width: 24, height: 24, borderRadius: '50%', border: 'none',
-                      background: '#e2e8f0', cursor: 'pointer', color: '#64748b',
-                      fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>&times;</button>
-                  )}
-                </div>
+                  Tipo Existente ({availableTypes.length})
+                </button>
+                <button onClick={() => setShowCustomForm(true)} style={{
+                  flex: 1, padding: '12px 16px', border: 'none', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer',
+                  background: showCustomForm ? 'white' : '#f8fafc',
+                  color: showCustomForm ? '#2563eb' : '#6b7280',
+                  borderBottom: showCustomForm ? '2px solid #2563eb' : '2px solid transparent'
+                }}>
+                  Crear Personalizado
+                </button>
               </div>
 
-              {/* Lista de tipos */}
-              <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px 24px' }}>
-                {sortedCats.length === 0 && (
-                  <div style={{
-                    padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 14,
-                    border: '2px dashed #e5e7eb', borderRadius: 12
-                  }}>
-                    {availableTypes.length === 0
-                      ? 'Todos los tipos de organizacion ya tienen plantilla'
-                      : <>No se encontraron tipos para "<strong style={{ color: '#64748b' }}>{newTypeFilter}</strong>"</>
-                    }
-                  </div>
-                )}
-
-                {sortedCats.map(cat => (
-                  <div key={cat} style={{ marginBottom: 16 }}>
-                    <div style={{
-                      fontSize: 11, fontWeight: 700, color: '#6b7280',
-                      textTransform: 'uppercase', letterSpacing: 0.5,
-                      padding: '0 0 6px', borderBottom: '1px solid #f1f5f9', marginBottom: 8
-                    }}>
-                      {catLabels[cat] || cat}
-                    </div>
-                    <div style={{ display: 'grid', gap: 6 }}>
-                      {groupedAvail[cat].map(tipo => (
-                        <button
-                          key={tipo.key}
-                          onClick={() => createNewTemplate(tipo.key)}
+              {/* Contenido */}
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                {!showCustomForm ? (
+                  /* Lista de tipos existentes */
+                  <div>
+                    <div style={{ padding: '16px 24px 0' }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center',
+                        background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                        borderRadius: 10, padding: '0 14px',
+                        ...(newTypeFilter ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59,130,246,0.1)' } : {})
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input
+                          type="text" value={newTypeFilter}
+                          onChange={e => setNewTypeFilter(e.target.value)}
+                          placeholder="Buscar tipo..."
+                          autoFocus={!showCustomForm}
                           style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            width: '100%', textAlign: 'left',
-                            padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: 10,
-                            background: 'white', cursor: 'pointer', fontSize: 14, color: '#1e293b',
-                            transition: 'all 0.15s'
+                            flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                            padding: '10px 10px', fontSize: 14, color: '#1e293b'
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = 'white'; }}
-                        >
-                          <span style={{ fontWeight: 500 }}>{tipo.nombre}</span>
-                          <span style={{
-                            fontSize: 11, color: '#3b82f6', fontWeight: 600,
-                            padding: '2px 8px', background: '#eff6ff', borderRadius: 6
-                          }}>Crear</span>
-                        </button>
+                        />
+                        {newTypeFilter && (
+                          <button onClick={() => setNewTypeFilter('')} style={{
+                            width: 24, height: 24, borderRadius: '50%', border: 'none',
+                            background: '#e2e8f0', cursor: 'pointer', color: '#64748b',
+                            fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>&times;</button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ padding: '16px 24px 24px' }}>
+                      {sortedCats.length === 0 && (
+                        <div style={{
+                          padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 14,
+                          border: '2px dashed #e5e7eb', borderRadius: 12
+                        }}>
+                          {availableTypes.length === 0
+                            ? <>Todos los tipos predefinidos ya tienen plantilla. Usa la pestana <strong>"Crear Personalizado"</strong> para agregar uno nuevo.</>
+                            : <>No se encontraron tipos para "<strong style={{ color: '#64748b' }}>{newTypeFilter}</strong>"</>
+                          }
+                        </div>
+                      )}
+                      {sortedCats.map(cat => (
+                        <div key={cat} style={{ marginBottom: 16 }}>
+                          <div style={{
+                            fontSize: 11, fontWeight: 700, color: '#6b7280',
+                            textTransform: 'uppercase', letterSpacing: 0.5,
+                            padding: '0 0 6px', borderBottom: '1px solid #f1f5f9', marginBottom: 8
+                          }}>
+                            {catLabels[cat] || cat}
+                          </div>
+                          <div style={{ display: 'grid', gap: 6 }}>
+                            {groupedAvail[cat].map(tipo => (
+                              <button
+                                key={tipo.key}
+                                onClick={() => createNewTemplate(tipo.key)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  width: '100%', textAlign: 'left',
+                                  padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: 10,
+                                  background: 'white', cursor: 'pointer', fontSize: 14, color: '#1e293b',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = 'white'; }}
+                              >
+                                <span style={{ fontWeight: 500 }}>{tipo.nombre}</span>
+                                <span style={{
+                                  fontSize: 11, color: '#3b82f6', fontWeight: 600,
+                                  padding: '2px 8px', background: '#eff6ff', borderRadius: 6
+                                }}>Crear</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  /* Formulario para tipo personalizado */
+                  <div style={{ padding: 24 }}>
+                    <div style={{
+                      padding: 16, background: '#eff6ff', borderRadius: 12, marginBottom: 24,
+                      fontSize: 13, color: '#1e40af', lineHeight: 1.5
+                    }}>
+                      Crea un tipo de organizacion que no existe en el sistema. Una vez publicada,
+                      los organizadores podran seleccionarlo al crear una nueva organizacion.
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 20 }}>
+                      {/* Nombre */}
+                      <div>
+                        <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6, color: '#374151' }}>
+                          Nombre del tipo de organizacion *
+                        </label>
+                        <input
+                          type="text"
+                          value={customForm.nombre}
+                          onChange={e => setCustomForm(f => ({ ...f, nombre: e.target.value }))}
+                          placeholder="Ej: Club de Costura, Taller de Robotica..."
+                          autoFocus={showCustomForm}
+                          style={{
+                            width: '100%', padding: '12px 14px', border: '1.5px solid #d1d5db',
+                            borderRadius: 10, fontSize: 14, color: '#1e293b',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+
+                      {/* Categoría */}
+                      <div>
+                        <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6, color: '#374151' }}>
+                          Categoria
+                        </label>
+                        <select
+                          value={customForm.categoria}
+                          onChange={e => setCustomForm(f => ({ ...f, categoria: e.target.value }))}
+                          style={{
+                            width: '100%', padding: '12px 14px', border: '1.5px solid #d1d5db',
+                            borderRadius: 10, fontSize: 14, color: '#1e293b', background: 'white',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          {catOrder.map(cat => (
+                            <option key={cat} value={cat}>{catLabels[cat] || cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Key (opcional) */}
+                      <div>
+                        <label style={{ fontWeight: 600, fontSize: 14, display: 'block', marginBottom: 6, color: '#374151' }}>
+                          Clave interna <span style={{ fontWeight: 400, color: '#9ca3af' }}>(opcional, se genera automaticamente)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customForm.key}
+                          onChange={e => setCustomForm(f => ({ ...f, key: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '') }))}
+                          placeholder={previewKey || 'CLUB_COSTURA'}
+                          style={{
+                            width: '100%', padding: '12px 14px', border: '1.5px solid #d1d5db',
+                            borderRadius: 10, fontSize: 14, color: '#1e293b', fontFamily: 'monospace',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                        {previewKey && (
+                          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                            Se usara: <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>{previewKey}</code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Botón crear */}
+                    <button
+                      onClick={createCustomTemplate}
+                      disabled={!customForm.nombre.trim()}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        width: '100%', marginTop: 28, padding: '14px 24px', border: 'none', borderRadius: 12,
+                        background: customForm.nombre.trim() ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#e5e7eb',
+                        color: customForm.nombre.trim() ? 'white' : '#9ca3af',
+                        fontSize: 15, fontWeight: 600,
+                        cursor: customForm.nombre.trim() ? 'pointer' : 'not-allowed',
+                        boxShadow: customForm.nombre.trim() ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
+                      }}
+                    >
+                      Crear Tipo de Organizacion
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
