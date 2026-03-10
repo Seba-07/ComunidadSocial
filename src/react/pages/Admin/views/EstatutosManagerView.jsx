@@ -74,6 +74,7 @@ export default function EstatutosManagerView() {
   const [editingObjIdx, setEditingObjIdx] = useState(null);
   const [objInput, setObjInput] = useState('');
   const [collapsedCats, setCollapsedCats] = useState({});
+  const [searchFilter, setSearchFilter] = useState('');
   const [docTemplateOptions, setDocTemplateOptions] = useState({ acta_constitutiva: [], lista_socios: [], nomina_directorio: [], carta_solicitud: [] });
   const contenidoRef = useRef(null);
 
@@ -724,15 +725,26 @@ export default function EstatutosManagerView() {
 
   const CATEGORY_ORDER = ['TERRITORIAL', 'FUNCIONAL', 'SOCIAL', 'CULTURAL', 'EDUCACIONAL', 'OTRO'];
 
+  // Filtrar templates por búsqueda
+  const normalizeSearch = (str) => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const filterTerm = normalizeSearch(searchFilter);
+  const filteredTemplates = filterTerm
+    ? templates.filter(t => {
+        const name = normalizeSearch(t.nombreTipo || t.orgType || '');
+        const desc = normalizeSearch(t.descripcion || '');
+        const cat = normalizeSearch(CATEGORY_LABELS[t.categoria] || t.categoria || '');
+        return name.includes(filterTerm) || desc.includes(filterTerm) || cat.includes(filterTerm);
+      })
+    : templates;
+
   const grouped = {};
-  templates.forEach(t => {
+  filteredTemplates.forEach(t => {
     const cat = t.categoria || 'OTRO';
     if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(t);
   });
 
   const sortedCategories = CATEGORY_ORDER.filter(c => grouped[c]?.length);
-  // Add any unlisted categories
   Object.keys(grouped).forEach(c => { if (!sortedCategories.includes(c)) sortedCategories.push(c); });
 
   return (
@@ -741,10 +753,68 @@ export default function EstatutosManagerView() {
         Plantillas de Estatutos
       </h1>
 
+      {/* Buscador */}
+      <div style={{
+        position: 'relative', marginBottom: 20, maxWidth: 480
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: '#f8fafc', border: '1.5px solid #e2e8f0',
+          borderRadius: 12, padding: '0 16px',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          ...(searchFilter ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59,130,246,0.1)' } : {})
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={e => setSearchFilter(e.target.value)}
+            placeholder="Buscar tipo de organizacion..."
+            style={{
+              flex: 1, border: 'none', outline: 'none', background: 'transparent',
+              padding: '12px 12px', fontSize: 14, color: '#1e293b'
+            }}
+          />
+          {searchFilter && (
+            <button
+              onClick={() => setSearchFilter('')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: '50%',
+                border: 'none', background: '#e2e8f0', cursor: 'pointer',
+                color: '#64748b', fontSize: 16, fontWeight: 700, flexShrink: 0,
+                transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#cbd5e1'}
+              onMouseLeave={e => e.currentTarget.style.background = '#e2e8f0'}
+              title="Limpiar busqueda"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+        {filterTerm && (
+          <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, paddingLeft: 4 }}>
+            {filteredTemplates.length} de {templates.length} plantillas
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, fontSize: 13, color: '#6b7280' }}>
         <span>Total: {templates.length}</span>
         <span>Publicadas: {templates.filter(t => t.publicado).length}</span>
       </div>
+
+      {filterTerm && sortedCategories.length === 0 && (
+        <div style={{
+          padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 15,
+          border: '2px dashed #e5e7eb', borderRadius: 12
+        }}>
+          No se encontraron plantillas para "<strong style={{ color: '#64748b' }}>{searchFilter}</strong>"
+        </div>
+      )}
 
       {sortedCategories.map(cat => {
         const collapsed = collapsedCats[cat];
