@@ -8,22 +8,38 @@ const toastStyles = {
     zIndex: 10000,
     display: 'flex',
     flexDirection: 'column',
-    gap: 8
+    gap: 8,
+    maxWidth: 420
   },
   toast: (type) => ({
-    padding: '16px 24px',
+    padding: '14px 40px 14px 18px',
     borderRadius: 12,
     fontSize: 14,
     fontWeight: 600,
     color: 'white',
     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
     animation: 'slideInRight 0.3s ease',
-    cursor: 'pointer',
+    position: 'relative',
+    userSelect: 'text',
+    cursor: 'default',
+    wordBreak: 'break-word',
     background:
       type === 'error' ? '#ef4444' :
       type === 'success' ? '#10b981' :
       '#3b82f6'
-  })
+  }),
+  closeBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 18,
+    cursor: 'pointer',
+    padding: '2px 6px',
+    lineHeight: 1
+  }
 };
 
 export default function ToastContainer() {
@@ -35,12 +51,15 @@ export default function ToastContainer() {
   return (
     <div style={toastStyles.container}>
       {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          style={toastStyles.toast(toast.type)}
-          onClick={() => removeToast(toast.id)}
-        >
+        <div key={toast.id} style={toastStyles.toast(toast.type)}>
           {toast.message}
+          <button
+            style={toastStyles.closeBtn}
+            onClick={() => removeToast(toast.id)}
+            aria-label="Cerrar"
+          >
+            &times;
+          </button>
         </div>
       ))}
     </div>

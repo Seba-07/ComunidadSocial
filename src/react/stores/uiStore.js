@@ -6,17 +6,19 @@ export const useUiStore = create((set) => ({
   toasts: [],
   sidebarOpen: false,
 
-  addToast(message, type = 'info', duration = 3000) {
+  addToast(message, type = 'info', duration) {
     const id = ++toastId;
+    // Errores duran 8s por defecto para poder leerlos/copiarlos
+    const ms = duration ?? (type === 'error' ? 8000 : 3000);
     set((state) => ({
-      toasts: [...state.toasts, { id, message, type, duration }]
+      toasts: [...state.toasts, { id, message, type }]
     }));
-    if (duration > 0) {
+    if (ms > 0) {
       setTimeout(() => {
         set((state) => ({
           toasts: state.toasts.filter((t) => t.id !== id)
         }));
-      }, duration);
+      }, ms);
     }
     return id;
   },
