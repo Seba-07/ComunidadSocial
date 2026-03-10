@@ -29,9 +29,11 @@ export default function Step5_Directorio({ onNext, onPrev }) {
   const directorio = formData.directorioProvisorio || {};
   const comision = formData.comisionElectoral || { members: [], electionDate: null };
   const certs = formData.certificates || {};
+  const inhCerts = formData.inhabilityCertificates || {};
   const [cargos, setCargos] = useState(DEFAULT_CARGOS);
 
   const edadConfig = templateConfig?.edadConfig || {};
+  const permiteMenores = edadConfig.permiteMenores === true;
   const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
   const esDefinitivo = templateConfig?.requiereDirectorioProvisorio === false;
   const tipoDirectorio = esDefinitivo ? 'Definitivo' : 'Provisorio';
@@ -88,11 +90,15 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     const updated = { ...directorio };
     delete updated[cargoId];
     setFormDataField('directorioProvisorio', updated);
-    // Also remove certificate
     if (certs[cargoId]) {
       const updatedCerts = { ...certs };
       delete updatedCerts[cargoId];
       setFormDataField('certificates', updatedCerts);
+    }
+    if (inhCerts[cargoId]) {
+      const updatedInh = { ...inhCerts };
+      delete updatedInh[cargoId];
+      setFormDataField('inhabilityCertificates', updatedInh);
     }
   }
 
@@ -133,12 +139,37 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     reader.readAsDataURL(file);
   }
 
+  function handleInhabilityCert(cargoId, file) {
+    if (!file) {
+      const updated = { ...inhCerts };
+      delete updated[cargoId];
+      setFormDataField('inhabilityCertificates', updated);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormDataField('inhabilityCertificates', {
+        ...inhCerts,
+        [cargoId]: { name: file.name, data: reader.result }
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
   function validate() {
     const requiredCargos = cargos.filter(c => c.required);
     for (const cargo of requiredCargos) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
+    // Validar certificados de inhabilidades si permite menores
+    if (permiteMenores) {
+      for (const cargo of requiredCargos) {
+        if (directorio[cargo.id] && !inhCerts[cargo.id]) {
+          return `Falta el Certificado de Inhabilidades para: ${cargo.nombre}`;
+        }
+      }
+    }
     return null;
   }
 
@@ -147,6 +178,18 @@ export default function Step5_Directorio({ onNext, onPrev }) {
   function handleNext() {
     const err = validate();
     if (err) { addToast(err, 'error'); return; }
+
+    // Embeber certificados de inhabilidades en el directorio antes de avanzar
+    if (permiteMenores && Object.keys(inhCerts).length > 0) {
+      const updated = { ...directorio };
+      for (const [cargoId, cert] of Object.entries(inhCerts)) {
+        if (updated[cargoId] && cert?.data) {
+          updated[cargoId] = { ...updated[cargoId], inhabilityCertificate: cert.data };
+        }
+      }
+      setFormDataField('directorioProvisorio', updated);
+    }
+
     onNext();
   }
 
@@ -220,6 +263,30 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                   ) : (
                     <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>Pendiente — podrás subirlo después desde el panel</span>
                   )}
+                </div>
+              )}
+
+              {/* Certificado de Inhabilidades — solo si permite menores */}
+              {assigned && permiteMenores && (
+                <div style={{ marginTop: 10, padding: 12, background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 8 }}>
+                  <FileUpload
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    label="Certificado de Inhabilidades (Registro Civil) *"
+                    maxSizeMB={5}
+                    onFile={file => handleInhabilityCert(cargo.id, file)}
+                    value={inhCerts[cargo.id]}
+                  />
+                  {inhCerts[cargo.id] ? (
+                    <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>Certificado de Inhabilidades subido</span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: '#be123c', fontWeight: 600 }}>
+                      Obligatorio — la organizacion admite menores de edad
+                    </span>
+                  )}
+                  <p style={{ fontSize: 11, color: '#6b7280', margin: '4px 0 0', lineHeight: 1.4 }}>
+                    Requerido legalmente porque la organizacion admite menores de edad.
+                    Obténgalo gratis en <a href="https://www.registrocivil.cl" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>registrocivil.cl</a>
+                  </p>
                 </div>
               )}
             </div>

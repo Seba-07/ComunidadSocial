@@ -500,7 +500,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                         ) : null;
                       })()}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {cert ? (
                         <button
                           onClick={() => downloadBase64(cert.certificate, `Certificado_${formatName(person)}.pdf`)}
@@ -520,6 +520,19 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                           Sin certificado
                         </span>
                       )}
+                      {person.inhabilityCertificate ? (
+                        <button
+                          onClick={() => downloadBase64(person.inhabilityCertificate, `Inhabilidades_${formatName(person)}.pdf`)}
+                          style={{
+                            fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#ede9fe',
+                            padding: '4px 10px', borderRadius: 6, border: '1px solid #c4b5fd',
+                            cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4,
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                          Ver Inhabilidades
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 );

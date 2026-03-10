@@ -775,3 +775,53 @@
 | `server/.env.example` | Variable `ENABLE_STRICT_LOCAL_NETWORK_BLOCK` |
 | `src/services/ApiService.js` | Función `assertNotLocalNetwork()` + invocación en `request()` |
 | `SECURITY_WHITEPAPER.md` | **NUEVO** — Whitepaper formal para Municipalidad |
+
+---
+
+## FASE 12: Certificado de Inhabilidades (Registro Civil)
+
+### Estado: COMPLETADO
+### Fecha: 2026-03-10
+
+> **Objetivo**: Exigir el Certificado de Inhabilidades para trabajar con menores de edad
+> (emitido por el Registro Civil) a todos los miembros del directorio, condicionado a que
+> la organización permita menores en sus estatutos (`edadConfig.permiteMenores === true`).
+>
+> **Contexto legal**: La Ley 20.594 (Registro de Inhabilidades) establece que toda persona
+> que trabaje o se relacione habitualmente con menores de edad debe acreditar que no figura
+> en el Registro de Condenas por delitos sexuales contra menores.
+
+### Tarea 1: Plan de Trabajo
+- [x] **F12-01**: Agregar sección FASE 12 a este archivo
+
+### Tarea 2: Backend — Schema
+- [x] **F12-02**: Agregar campo `inhabilityCertificate` (String, Base64) a cada miembro del provisionalDirectorio en `Organization.js`
+  - Aplicado en: president, secretary, vicePresident, treasurer, additionalMembers
+- [x] **F12-03**: Agregar `inhabilityCertificate` al Zod memberSchema en `validation.js`
+
+### Tarea 3: Frontend — Wizard Step 5 (Directorio)
+- [x] **F12-04**: Agregar estado `inhabilityCertificates` a `wizardStore.js`
+- [x] **F12-05**: Lógica condicional en `Step5_Directorio.jsx`:
+  - Si `permiteMenores === true`: muestra campo FileUpload obligatorio por cada cargo
+  - Label: "Certificado de Inhabilidades (Registro Civil) *"
+  - Texto de ayuda con enlace a registrocivil.cl
+  - Fondo rosa (#fdf2f8) para diferenciar del certificado de antecedentes
+  - Validación: bloquea avance si falta algún certificado
+- [x] **F12-06**: Embeber Base64 en `inhabilityCertificate` del miembro al avanzar al paso siguiente
+- [x] **F12-07**: Limpiar certificados de inhabilidades al remover un cargo
+
+### Tarea 4: Frontend — Panel Admin (OrgReviewModal)
+- [x] **F12-08**: Botón "Ver Inhabilidades" con ícono de escudo morado en la tarjeta de cada directivo
+  - Solo visible si `person.inhabilityCertificate` existe
+  - Descarga el Base64 como PDF al hacer click
+
+### Archivos nuevos/modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 12 |
+| `server/models/Organization.js` | Campo `inhabilityCertificate` en 5 sub-schemas del directorio |
+| `server/middleware/validation.js` | Campo `inhabilityCertificate` en memberSchema Zod |
+| `src/react/stores/wizardStore.js` | `inhabilityCertificates: {}` en initialFormData |
+| `src/react/pages/Wizard/steps/Step5_Directorio.jsx` | FileUpload condicional + validación + embed Base64 |
+| `src/react/pages/Admin/views/OrgReviewModal.jsx` | Botón "Ver Inhabilidades" con escudo morado |

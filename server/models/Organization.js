@@ -221,7 +221,8 @@ const organizationSchema = new mongoose.Schema({
         segundoNombre: String,
         lastName: String,
         apellidoMaterno: String,
-        signature: String
+        signature: String,
+        inhabilityCertificate: String // Base64 — Certificado de Inhabilidades (Registro Civil)
       }, { _id: false, strict: false }),
       default: null
     },
@@ -232,7 +233,8 @@ const organizationSchema = new mongoose.Schema({
         segundoNombre: String,
         lastName: String,
         apellidoMaterno: String,
-        signature: String
+        signature: String,
+        inhabilityCertificate: String
       }, { _id: false, strict: false }),
       default: null
     },
@@ -243,7 +245,8 @@ const organizationSchema = new mongoose.Schema({
         segundoNombre: String,
         lastName: String,
         apellidoMaterno: String,
-        signature: String
+        signature: String,
+        inhabilityCertificate: String
       }, { _id: false, strict: false }),
       default: null
     },
@@ -254,7 +257,8 @@ const organizationSchema = new mongoose.Schema({
         segundoNombre: String,
         lastName: String,
         apellidoMaterno: String,
-        signature: String
+        signature: String,
+        inhabilityCertificate: String
       }, { _id: false, strict: false }),
       default: null
     },
@@ -265,7 +269,8 @@ const organizationSchema = new mongoose.Schema({
         segundoNombre: String,
         lastName: String,
         apellidoMaterno: String,
-        signature: String
+        signature: String,
+        inhabilityCertificate: String
       }, { _id: false, strict: false })
     }],
     designatedAt: Date,

@@ -150,7 +150,8 @@ const memberSchema = z.object({
   genero: z.enum(['masculino', 'femenino', 'otro', 'no_especifica', '']).optional(),
   role: z.enum(['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission']).optional(),
   signature: z.string().optional(),
-  certificate: z.string().optional()
+  certificate: z.string().optional(),
+  inhabilityCertificate: z.string().optional()
 }).passthrough();
 
 /**

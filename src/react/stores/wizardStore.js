@@ -26,6 +26,7 @@ const initialFormData = {
   directorioProvisorio: {},
   comisionElectoral: { members: [], electionDate: null },
   certificates: {},
+  inhabilityCertificates: {},
   documents: {},
   assemblySchedule: { date: null, time: null, address: '' }
 };
