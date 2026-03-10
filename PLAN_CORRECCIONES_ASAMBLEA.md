@@ -660,3 +660,69 @@
 |---------|---------|
 | `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 9 |
 | `src/react/pages/Wizard/steps/Step2_Members.jsx` | Alerta presencial + botón disabled + mensaje faltantes |
+
+---
+
+## FASE 10: Sistema de Validación de Documentos y QR
+
+### Estado: COMPLETADO
+### Fecha: 2026-03-10
+
+> **Objetivo**: Implementar un sistema de verificación pública de documentos mediante códigos QR
+> y folios únicos. Cada PDF generado por el sistema (Actas, Certificados, Listas) se registra
+> con un folio único en la base de datos. El PDF incluye un código QR y texto de verificación
+> en el pie de página. Cualquier persona puede escanear el QR o ingresar el folio en una
+> página pública para verificar la autenticidad del documento.
+>
+> **Justificación legal**: Permite a terceros (municipalidad, notarios, otros organismos) verificar
+> que un documento fue efectivamente emitido por el sistema y no ha sido adulterado.
+
+### Tarea 1: Plan de Trabajo
+- [x] **F10-01**: Agregar sección FASE 10 a este archivo
+
+### Tarea 2: Backend — Base de Datos (DocumentRegistry)
+- [x] **F10-02**: Crear modelo `server/models/DocumentRegistry.js`
+  - Campos: folio (nanoid 12 chars, único), organizationId, documentType (enum 7 tipos), documentTitle, issueDate, issuedBy, assemblyId, fileHash (SHA-256), status (VALID/REVOKED)
+  - Índices: folio (unique), organizationId+documentType, status
+- [x] **F10-03**: Crear ruta pública `server/routes/documentRegistry.js`
+  - GET `/api/document-registry/verify/:folio` — endpoint público sin autenticación
+  - Retorna metadatos del documento: org name, tipo, fecha, hash
+  - Maneja estados VALID, REVOKED y not found
+- [x] **F10-04**: Registrar ruta en `server/index.js`
+
+### Tarea 3: Backend — Generador de PDFs con QR
+- [x] **F10-05**: Instalar dependencias `qrcode` y `nanoid@3` en server
+- [x] **F10-06**: Crear helpers en `server/routes/documents.js`:
+  - `registerDocumentAndGetQR()` — registra doc en DB, genera QR base64
+  - `buildVerificationFooter()` — genera HTML del bloque QR + folio
+  - `injectQRFooter()` — inyecta footer antes de `</body>`
+- [x] **F10-07**: Inyectar QR en 5 endpoints de generación PDF:
+  - `generate-acta` (Acta Constitutiva)
+  - `generate-members` (Lista de Socios)
+  - `generate-acta-escrutinio` (Acta de Escrutinio)
+  - `generate-lista-asistencia` (Lista de Asistencia)
+  - `generate-certificado-borrador` (Certificado PJ Borrador)
+- [x] **F10-08**: Actualizar hash SHA-256 del PDF final en el registro
+
+### Tarea 4: Frontend — Vista Pública de Validación (React)
+- [x] **F10-09**: Crear `src/react/pages/Public/ValidarDocumentoPage.jsx`
+  - Ruta pública `/validar` (con input manual) y `/validar/:folio` (directo desde QR)
+  - Sin autenticación requerida
+  - UI: formulario de búsqueda + 3 estados (válido/revocado/no encontrado)
+  - Documento válido: badge verde, datos de org, tipo doc, fecha, hash
+  - Documento revocado: alerta naranja con fecha y motivo
+  - No encontrado: alerta roja con sugerencia
+- [x] **F10-10**: Registrar rutas públicas en `src/react/App.jsx`
+
+### Archivos nuevos/modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 10 |
+| `server/models/DocumentRegistry.js` | **NUEVO** — modelo Mongoose con folio nanoid |
+| `server/routes/documentRegistry.js` | **NUEVO** — endpoint público de verificación |
+| `server/routes/documents.js` | Imports QRCode/crypto/DocumentRegistry, 3 helpers, QR en 5 endpoints PDF |
+| `server/index.js` | Import + app.use documentRegistryRoutes |
+| `server/package.json` | Dependencias qrcode, nanoid@3 |
+| `src/react/pages/Public/ValidarDocumentoPage.jsx` | **NUEVO** — vista pública de validación |
+| `src/react/App.jsx` | 2 rutas públicas /validar y /validar/:folio |

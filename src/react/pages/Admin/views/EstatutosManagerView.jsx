@@ -126,6 +126,7 @@ export default function EstatutosManagerView() {
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customForm, setCustomForm] = useState({ nombre: '', key: '', categoria: 'FUNCIONAL' });
   const [docTemplateOptions, setDocTemplateOptions] = useState({ acta_constitutiva: [], lista_socios: [], nomina_directorio: [], carta_solicitud: [] });
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, nombre }
   const contenidoRef = useRef(null);
 
   function insertPlaceholder(key) {
@@ -242,6 +243,17 @@ export default function EstatutosManagerView() {
     setNewTypeFilter('');
     setShowCustomForm(false);
     setCustomForm({ nombre: '', key: '', categoria: 'FUNCIONAL' });
+  }
+
+  async function deleteTemplate(id) {
+    try {
+      await apiService.delete(`/estatuto-templates/${id}`);
+      addToast('Tipo de organización eliminado', 'success');
+      setDeleteConfirm(null);
+      loadTemplates();
+    } catch (err) {
+      addToast(err.message || 'Error al eliminar', 'error');
+    }
   }
 
   function openArticuloAdd() {
@@ -967,6 +979,12 @@ export default function EstatutosManagerView() {
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
                       {t.nombreTipo || t.orgType || 'Sin nombre'}
                     </span>
+                    {!TIPOS_ORGANIZACION[t.tipoOrganizacion] && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                        background: '#ede9fe', color: '#6d28d9'
+                      }}>Personalizado</span>
+                    )}
                     <span style={{
                       padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
                       background: t.publicado ? '#d1fae5' : '#fee2e2',
@@ -990,6 +1008,12 @@ export default function EstatutosManagerView() {
                     padding: '6px 14px', border: 'none', borderRadius: 6,
                     background: '#2563eb', color: 'white', fontSize: 12, cursor: 'pointer'
                   }}>Editar</button>
+                  {!TIPOS_ORGANIZACION[t.tipoOrganizacion] && (
+                    <button onClick={() => setDeleteConfirm({ id: t._id, nombre: t.nombreTipo || t.tipoOrganizacion })} style={{
+                      padding: '6px 14px', border: 'none', borderRadius: 6,
+                      background: '#fee2e2', color: '#dc2626', fontSize: 12, cursor: 'pointer', fontWeight: 600
+                    }}>Eliminar</button>
+                  )}
                 </div>
               </div>
             ))}
@@ -997,6 +1021,37 @@ export default function EstatutosManagerView() {
         </div>
         );
       })}
+
+      {/* Modal confirmación eliminar tipo custom */}
+      {deleteConfirm && (
+        <div onClick={e => { if (e.target === e.currentTarget) setDeleteConfirm(null); }} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
+        }}>
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 32, maxWidth: 440, width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>&#9888;</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#111827', textAlign: 'center' }}>
+              Eliminar tipo de organizacion
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 1.5 }}>
+              Se eliminara permanentemente <strong style={{ color: '#111827' }}>{deleteConfirm.nombre}</strong> y su plantilla asociada. Esta accion no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{
+                padding: '10px 24px', border: '1px solid #d1d5db', borderRadius: 8,
+                background: 'white', color: '#374151', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+              }}>Cancelar</button>
+              <button onClick={() => deleteTemplate(deleteConfirm.id)} style={{
+                padding: '10px 24px', border: 'none', borderRadius: 8,
+                background: '#dc2626', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+              }}>Eliminar permanentemente</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal para crear nuevo tipo de organización */}
       {showNewModal && (() => {

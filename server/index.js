@@ -34,6 +34,7 @@ import orgDocumentsRoutes from './routes/organizationDocuments.js';
 import ministroBlocksRoutes from './routes/ministroBlocks.js';
 import securityIncidentsRoutes from './routes/securityIncidents.js';
 import documentTemplatesRoutes from './routes/documentTemplates.js';
+import documentRegistryRoutes from './routes/documentRegistry.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -166,6 +167,7 @@ app.use('/api/org-documents', orgDocumentsRoutes);
 app.use('/api/ministro-blocks', ministroBlocksRoutes);
 app.use('/api/security-incidents', securityIncidentsRoutes);
 app.use('/api/document-templates', documentTemplatesRoutes);
+app.use('/api/document-registry', documentRegistryRoutes);
 
 // CSP violation report endpoint (no auth required)
 app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {

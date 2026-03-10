@@ -15,6 +15,7 @@ const MinistroDashboardPage = lazy(() => import('./pages/Ministro/MinistroDashbo
 const PrivacyPage = lazy(() => import('./pages/Legal/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/Legal/TermsPage'));
 const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
+const ValidarDocumentoPage = lazy(() => import('./pages/Public/ValidarDocumentoPage'));
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated } = useAuthStore();
@@ -218,6 +219,8 @@ export default function App() {
         <Route path="/privacy" element={<SuspenseWrapper><PrivacyPage /></SuspenseWrapper>} />
         <Route path="/terms" element={<SuspenseWrapper><TermsPage /></SuspenseWrapper>} />
         <Route path="/verify-email" element={<SuspenseWrapper><VerifyEmailPage /></SuspenseWrapper>} />
+        <Route path="/validar" element={<SuspenseWrapper><ValidarDocumentoPage /></SuspenseWrapper>} />
+        <Route path="/validar/:folio" element={<SuspenseWrapper><ValidarDocumentoPage /></SuspenseWrapper>} />
         <Route
           path="/member"
           element={

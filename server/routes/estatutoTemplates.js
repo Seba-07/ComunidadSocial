@@ -3,7 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import EstatutoTemplate from '../models/EstatutoTemplate.js';
+import EstatutoTemplate, { TIPOS_ORGANIZACION_LIST } from '../models/EstatutoTemplate.js';
+import Organization from '../models/Organization.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createEstatutoTemplateSchema, updateEstatutoTemplateSchema } from '../middleware/validation.js';
 
@@ -293,7 +294,7 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateEs
   }
 });
 
-// DELETE /api/estatuto-templates/:id - Eliminar plantilla (soft delete)
+// DELETE /api/estatuto-templates/:id - Eliminar plantilla
 router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const template = await EstatutoTemplate.findById(req.params.id);
@@ -301,13 +302,27 @@ router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, re
       return res.status(404).json({ error: 'Plantilla no encontrada' });
     }
 
-    // Soft delete
-    template.activo = false;
-    template.publicado = false;
-    template.modificadoPor = req.user._id;
-    await template.save();
+    const isCustomType = !TIPOS_ORGANIZACION_LIST.includes(template.tipoOrganizacion);
 
-    res.json({ message: 'Plantilla eliminada correctamente' });
+    if (isCustomType) {
+      // Verificar que no haya organizaciones usando este tipo
+      const orgCount = await Organization.countDocuments({ organizationType: template.tipoOrganizacion });
+      if (orgCount > 0) {
+        return res.status(400).json({
+          error: `No se puede eliminar: ${orgCount} organizacion(es) usan este tipo`
+        });
+      }
+      // Hard delete para tipos custom
+      await EstatutoTemplate.findByIdAndDelete(req.params.id);
+      res.json({ message: 'Tipo de organización y plantilla eliminados permanentemente' });
+    } else {
+      // Soft delete para tipos predefinidos
+      template.activo = false;
+      template.publicado = false;
+      template.modificadoPor = req.user._id;
+      await template.save();
+      res.json({ message: 'Plantilla eliminada correctamente' });
+    }
   } catch (error) {
     console.error('Error al eliminar plantilla:', error);
     res.status(500).json({ error: 'Error al eliminar plantilla' });

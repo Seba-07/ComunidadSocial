@@ -1,11 +1,71 @@
 import express from 'express';
+import crypto from 'crypto';
 import puppeteer from 'puppeteer';
+import QRCode from 'qrcode';
 import Organization from '../models/Organization.js';
 import Assembly from '../models/Assembly.js';
+import DocumentRegistry, { DOCUMENT_TYPE_LABELS } from '../models/DocumentRegistry.js';
 import * as assemblyService from '../services/assemblyService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// URL base para validación pública de documentos
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://comunidad-social.vercel.app';
+const VALIDATION_URL = `${FRONTEND_URL}/app/validar`;
+
+/**
+ * Registra un documento en DocumentRegistry y genera el bloque HTML del QR + folio
+ * para inyectar en el pie de página del PDF.
+ */
+async function registerDocumentAndGetQR({ organizationId, documentType, documentTitle, issuedBy, assemblyId, pdfBuffer }) {
+  // Crear registro
+  const record = new DocumentRegistry({
+    organizationId,
+    documentType,
+    documentTitle: documentTitle || DOCUMENT_TYPE_LABELS[documentType] || documentType,
+    issuedBy: issuedBy || null,
+    assemblyId: assemblyId || null,
+    fileHash: pdfBuffer ? crypto.createHash('sha256').update(pdfBuffer).digest('hex') : null
+  });
+  await record.save();
+
+  const folio = record.folio;
+  const verifyUrl = `${VALIDATION_URL}/${folio}`;
+
+  // Generar QR en base64
+  const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+    width: 100,
+    margin: 1,
+    color: { dark: '#1e293b', light: '#ffffff' }
+  });
+
+  return { folio, qrDataUrl, verifyUrl, record };
+}
+
+/**
+ * Genera el bloque HTML del footer de verificación con QR
+ */
+function buildVerificationFooter(folio, qrDataUrl, verifyUrl) {
+  return `
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px; page-break-inside: avoid;">
+      <img src="${qrDataUrl}" alt="QR Verificación" style="width: 80px; height: 80px; flex-shrink: 0;" />
+      <div style="font-size: 9px; color: #64748b; line-height: 1.5;">
+        <div style="font-weight: 700; color: #334155; font-size: 10px; margin-bottom: 2px;">Verificación de Autenticidad</div>
+        Valide este documento escaneando el código QR o ingresando el folio
+        <strong style="color: #1e40af; font-family: monospace; font-size: 10px;">${folio}</strong>
+        en <span style="color: #1e40af;">${verifyUrl}</span><br>
+        <span style="color: #94a3b8;">Emitido: ${new Date().toLocaleDateString('es-CL')} · Sistema ComunidadSocial</span>
+      </div>
+    </div>`;
+}
+
+/**
+ * Inyecta el footer de verificación QR antes del cierre </body> de un HTML
+ */
+function injectQRFooter(html, footerHtml) {
+  return html.replace('</body>', `${footerHtml}</body>`);
+}
 
 // Puppeteer launch options for Railway/production
 const PUPPETEER_OPTIONS = {
@@ -387,33 +447,36 @@ router.get('/:orgId/generate-acta', authenticate, async (req, res) => {
       .lean();
 
     // Generar HTML (con datos de asamblea si existe)
-    const html = generateActaHTML(org, assembly);
+    let html = generateActaHTML(org, assembly);
+
+    // Registrar documento y generar QR
+    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+      organizationId: org._id,
+      documentType: 'acta_constitutiva',
+      documentTitle: `Acta Constitutiva - ${org.organizationName || ''}`,
+      issuedBy: req.user?._id,
+      assemblyId: assembly?._id || null
+    });
+    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
 
     // Lanzar Puppeteer
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
     const page = await browser.newPage();
-
-    // Configurar contenido
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generar PDF
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '2.5cm',
-        right: '2cm',
-        bottom: '2.5cm',
-        left: '2cm'
-      }
+      margin: { top: '2.5cm', right: '2cm', bottom: '2.5cm', left: '2cm' }
     });
 
     await browser.close();
     browser = null;
 
-    // Enviar PDF
-    const fileName = `Acta_Constitutiva_${org.organizationName || org.name || 'Organizacion'}.pdf`.replace(/\s+/g, '_');
+    // Actualizar hash del PDF generado
+    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
 
+    const fileName = `Acta_Constitutiva_${org.organizationName || org.name || 'Organizacion'}.pdf`.replace(/\s+/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(pdf);
@@ -441,33 +504,33 @@ router.get('/:orgId/generate-members', authenticate, async (req, res) => {
     }
 
     // Generar HTML
-    const html = generateMembersListHTML(org);
+    let html = generateMembersListHTML(org);
 
-    // Lanzar Puppeteer
+    // Registrar documento y generar QR
+    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+      organizationId: org._id,
+      documentType: 'lista_socios',
+      documentTitle: `Lista de Socios - ${org.organizationName || ''}`,
+      issuedBy: req.user?._id
+    });
+    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
+
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
     const page = await browser.newPage();
-
-    // Configurar contenido
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generar PDF
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '2cm',
-        right: '1.5cm',
-        bottom: '2cm',
-        left: '1.5cm'
-      }
+      margin: { top: '2cm', right: '1.5cm', bottom: '2cm', left: '1.5cm' }
     });
 
     await browser.close();
     browser = null;
 
-    // Enviar PDF
-    const fileName = `Lista_Socios_${org.organizationName || org.name || 'Organizacion'}.pdf`.replace(/\s+/g, '_');
+    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
 
+    const fileName = `Lista_Socios_${org.organizationName || org.name || 'Organizacion'}.pdf`.replace(/\s+/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(pdf);
@@ -748,7 +811,17 @@ router.get('/:orgId/generate-acta-escrutinio/:assemblyId', authenticate, async (
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
     if (assembly.status !== 'finalizada') return res.status(400).json({ error: 'La asamblea debe estar finalizada para generar el acta de escrutinio' });
 
-    const html = generateActaEscrutinioHTML(org, assembly);
+    let html = generateActaEscrutinioHTML(org, assembly);
+
+    // Registrar documento y generar QR
+    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+      organizationId: org._id,
+      documentType: 'acta_escrutinio',
+      documentTitle: `Acta de Escrutinio - ${org.organizationName || ''}`,
+      issuedBy: req.user?._id,
+      assemblyId: assembly._id
+    });
+    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
 
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
     const page = await browser.newPage();
@@ -756,6 +829,8 @@ router.get('/:orgId/generate-acta-escrutinio/:assemblyId', authenticate, async (
     const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2cm', right: '1.5cm', bottom: '2cm', left: '1.5cm' } });
     await browser.close();
     browser = null;
+
+    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
 
     const fileName = `Acta_Escrutinio_${(org.organizationName || 'Org').replace(/\s+/g, '_')}_${assemblyId}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
@@ -810,7 +885,17 @@ router.get('/:orgId/generate-lista-asistencia/:assemblyId', authenticate, async 
     }).lean();
     if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
 
-    const html = generateListaAsistenciaHTML(org, assembly);
+    let html = generateListaAsistenciaHTML(org, assembly);
+
+    // Registrar documento y generar QR
+    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+      organizationId: org._id,
+      documentType: 'lista_asistencia',
+      documentTitle: `Lista de Asistencia - ${org.organizationName || ''}`,
+      issuedBy: req.user?._id,
+      assemblyId: assembly._id
+    });
+    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
 
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
     const page = await browser.newPage();
@@ -818,6 +903,8 @@ router.get('/:orgId/generate-lista-asistencia/:assemblyId', authenticate, async 
     const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2cm', right: '1.5cm', bottom: '2cm', left: '1.5cm' } });
     await browser.close();
     browser = null;
+
+    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
 
     const fileName = `Lista_Asistencia_${(org.organizationName || 'Org').replace(/\s+/g, '_')}_${assemblyId}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
@@ -937,7 +1024,16 @@ router.get('/:orgId/generate-certificado-borrador', authenticate, requireRole('M
     const org = await Organization.findById(req.params.orgId);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    const html = generateCertificadoBorradorHTML(org);
+    let html = generateCertificadoBorradorHTML(org);
+
+    // Registrar documento y generar QR
+    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+      organizationId: org._id,
+      documentType: 'certificado_borrador',
+      documentTitle: `Certificado Personalidad Jurídica (Borrador) - ${org.organizationName || ''}`,
+      issuedBy: req.user?._id
+    });
+    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
 
     browser = await puppeteer.launch(PUPPETEER_OPTIONS);
     const page = await browser.newPage();
@@ -951,6 +1047,8 @@ router.get('/:orgId/generate-certificado-borrador', authenticate, requireRole('M
 
     await browser.close();
     browser = null;
+
+    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
 
     const fileName = `Borrador_Certificado_${(org.organizationName || 'Org').replace(/\s+/g, '_')}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
