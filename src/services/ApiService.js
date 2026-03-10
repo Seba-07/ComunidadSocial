@@ -25,11 +25,14 @@ const API_URL = getApiUrl();
 console.log('🔗 API URL:', API_URL);
 
 // Anti-SSRF: Controlable via variable de entorno
-const STRICT_LOCAL_NETWORK_BLOCK = import.meta.env.VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK === 'true';
+// Fail-safe: en producción se activa por defecto aunque no se configure la variable
+const STRICT_LOCAL_NETWORK_BLOCK =
+  import.meta.env.VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK === 'true' ||
+  (import.meta.env.MODE === 'production' && import.meta.env.VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK !== 'false');
 
 /**
  * Valida que una URL no apunte a IPs privadas o localhost.
- * Solo se ejecuta si VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK=true.
+ * Activo si VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK=true, o automáticamente en producción.
  * Previene SSRF (Server-Side Request Forgery) en redes municipales.
  */
 function assertNotLocalNetwork(url) {
