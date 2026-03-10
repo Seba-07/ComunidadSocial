@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { apiService } from '@services/ApiService.js';
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,7 @@ export default function VerifyEmailPage() {
 
     async function verify() {
       try {
-        const response = await fetch(`/api/auth/verify-email/${token}`, {
+        const response = await fetch(`${apiService.baseUrl}/auth/verify-email/${token}`, {
           credentials: 'include'
         });
         const data = await response.json();

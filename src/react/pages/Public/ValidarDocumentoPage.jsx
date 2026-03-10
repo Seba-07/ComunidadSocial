@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { apiService } from '@services/ApiService.js';
+const API_URL = apiService.baseUrl;
 
 export default function ValidarDocumentoPage() {
   const { folio: folioParam } = useParams();

@@ -7,19 +7,17 @@ import { indexedDBService } from '../infrastructure/database/IndexedDBService.js
 
 // Determine API URL based on environment
 function getApiUrl() {
-  // Check for environment variable first
+  // VITE_API_URL is required — set in .env (dev) and Vercel env vars (prod)
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In browser, use same-origin /api path
-  // Development: Vite proxy forwards /api/* to localhost:3001
-  // Production: Vercel rewrites /api/* to Railway
-  // Both ensure cookies are first-party (same origin)
-  if (typeof window !== 'undefined') {
+  // Fallback: dev local con Vite proxy (localhost:3000 → localhost:3001)
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return '/api';
   }
 
+  // SSR or unknown — default to local backend
   return 'http://localhost:3001/api';
 }
 
