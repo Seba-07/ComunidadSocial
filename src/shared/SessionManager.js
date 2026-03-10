@@ -7,7 +7,7 @@
  * - 'session-expired-inactivity': sesión cerrada por inactividad
  */
 
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutos
+const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutos
 const WARNING_COUNTDOWN = 60 * 1000;       // 60 segundos de aviso
 
 class SessionManager {

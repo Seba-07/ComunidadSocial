@@ -29,9 +29,20 @@ console.log('🔗 API URL:', API_URL);
 class ApiService {
   constructor() {
     this.baseUrl = API_URL;
-    this._authToken = null; // In-memory token (fallback when cookies don't work)
+    // Restaurar token de sessionStorage (sobrevive refresh, no nuevas pestañas)
+    this._authToken = sessionStorage.getItem('_auth_token') || null;
     this._offlineListenersSetup = false;
     this._setupOfflineListeners();
+  }
+
+  /** Persiste token en memoria + sessionStorage */
+  _setAuthToken(token) {
+    this._authToken = token;
+    if (token) {
+      sessionStorage.setItem('_auth_token', token);
+    } else {
+      sessionStorage.removeItem('_auth_token');
+    }
   }
 
   /**
@@ -329,7 +340,7 @@ class ApiService {
       });
       if (!response.ok) return false;
       const data = await response.json();
-      if (data.token) this._authToken = data.token;
+      if (data.token) this._setAuthToken(data.token);
       return true;
     } catch {
       return false;
@@ -346,7 +357,7 @@ class ApiService {
   async login(email, password) {
     const data = await this.post('/auth/login', { email, password });
     // Store token in memory as fallback (for when cookies don't work cross-origin)
-    if (data.token) this._authToken = data.token;
+    if (data.token) this._setAuthToken(data.token);
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
@@ -373,7 +384,7 @@ class ApiService {
    */
   async register(userData) {
     const data = await this.post('/auth/register', userData);
-    if (data.token) this._authToken = data.token;
+    if (data.token) this._setAuthToken(data.token);
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
@@ -413,8 +424,8 @@ class ApiService {
     } catch (error) {
       console.warn('Logout endpoint error:', error);
     }
-    // Clear in-memory token
-    this._authToken = null;
+    // Clear token (memory + sessionStorage)
+    this._setAuthToken(null);
     // Limpiar TODOS los datos de sesión de localStorage
     const keysToRemove = [
       'auth_token',           // Legacy - ya no debería existir
@@ -570,7 +581,7 @@ class ApiService {
    */
   async loginMinistro(email, password) {
     const data = await this.post('/ministros/login', { email, password });
-    if (data.token) this._authToken = data.token;
+    if (data.token) this._setAuthToken(data.token);
     if (data.ministro) {
       const safeMinistro = {
         _id: data.ministro._id,
@@ -705,7 +716,7 @@ class ApiService {
 
   async loginSocio(lastName, rut) {
     const data = await this.post('/auth/login-socio', { lastName, rut });
-    if (data.token) this._authToken = data.token;
+    if (data.token) this._setAuthToken(data.token);
     if (data.user) {
       const safeUser = {
         _id: data.user._id,
