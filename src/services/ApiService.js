@@ -26,6 +26,47 @@ function getApiUrl() {
 const API_URL = getApiUrl();
 console.log('🔗 API URL:', API_URL);
 
+// Anti-SSRF: Controlable via variable de entorno
+const STRICT_LOCAL_NETWORK_BLOCK = import.meta.env.VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK === 'true';
+
+/**
+ * Valida que una URL no apunte a IPs privadas o localhost.
+ * Solo se ejecuta si VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK=true.
+ * Previene SSRF (Server-Side Request Forgery) en redes municipales.
+ */
+function assertNotLocalNetwork(url) {
+  if (!STRICT_LOCAL_NETWORK_BLOCK) return;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const hostname = parsed.hostname;
+
+    // Bloquear localhost y variantes
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+      throw new Error('Network violation: Local IP request blocked by security policy');
+    }
+
+    // Bloquear rangos de IP privada (RFC 1918) y link-local
+    const privateRanges = [
+      /^10\./,                          // 10.0.0.0/8
+      /^172\.(1[6-9]|2\d|3[01])\./,    // 172.16.0.0/12
+      /^192\.168\./,                    // 192.168.0.0/16
+      /^169\.254\./,                    // Link-local
+      /^fc00:/i,                        // IPv6 ULA
+      /^fe80:/i,                        // IPv6 link-local
+    ];
+
+    for (const range of privateRanges) {
+      if (range.test(hostname)) {
+        throw new Error('Network violation: Local IP request blocked by security policy');
+      }
+    }
+  } catch (e) {
+    if (e.message.startsWith('Network violation')) throw e;
+    // Si la URL no se puede parsear, dejarla pasar (será un path relativo como /api/...)
+  }
+}
+
 class ApiService {
   constructor() {
     this.baseUrl = API_URL;
@@ -198,6 +239,10 @@ class ApiService {
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+
+    // Anti-SSRF: Bloquear si apunta a IP privada y la política está activa
+    assertNotLocalNetwork(url);
+
     const method = options.method || 'GET';
 
     const config = {

@@ -726,3 +726,52 @@
 | `server/package.json` | Dependencias qrcode, nanoid@3 |
 | `src/react/pages/Public/ValidarDocumentoPage.jsx` | **NUEVO** — vista pública de validación |
 | `src/react/App.jsx` | 2 rutas públicas /validar y /validar/:folio |
+
+---
+
+## FASE 11: Endurecimiento de Red (Anti-SSRF controlable) y Whitepaper
+
+### Estado: COMPLETADO
+### Fecha: 2026-03-10
+
+> **Objetivo**: Implementar un módulo Anti-SSRF controlable por variable de entorno que bloquee
+> peticiones HTTP a IPs privadas/localhost cuando está activo en producción. Proporcionar
+> documentación formal (whitepaper) al Departamento de TI de la Municipalidad garantizando
+> que la aplicación no realiza escaneos de red en la intranet municipal.
+>
+> **Contexto**: Requerimiento del Departamento de TI de la Municipalidad de Renca previo a
+> permitir el uso de la plataforma en la red Wi-Fi interna.
+
+### Tarea 1: Plan de Trabajo
+- [x] **F11-01**: Agregar sección FASE 11 a este archivo
+
+### Tarea 2: Variables de Entorno
+- [x] **F11-02**: Agregar `VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK=false` a `.env.example` (frontend)
+- [x] **F11-03**: Agregar `ENABLE_STRICT_LOCAL_NETWORK_BLOCK=false` a `server/.env.example` (backend)
+
+### Tarea 3: Interceptor Anti-SSRF en ApiService.js
+- [x] **F11-04**: Crear función `assertNotLocalNetwork(url)` en `src/services/ApiService.js`
+  - Solo activa si `VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK=true`
+  - Bloquea: localhost, 127.0.0.1, ::1, 0.0.0.0, 10.*, 172.16-31.*, 192.168.*, 169.254.*, fc00:/fe80: IPv6
+  - Error: `Network violation: Local IP request blocked by security policy`
+  - Default `false`: no rompe desarrollo local
+- [x] **F11-05**: Inyectar validación en `request()` antes de ejecutar fetch
+
+### Tarea 4: Documentación — SECURITY_WHITEPAPER.md
+- [x] **F11-06**: Crear `SECURITY_WHITEPAPER.md` con:
+  - Resumen ejecutivo del módulo Anti-SSRF
+  - Tabla de rangos IP bloqueados (RFC 1918, link-local, IPv6 ULA)
+  - Diagrama de arquitectura de red (LAN → Internet → Vercel/Railway/Atlas)
+  - Recomendación de red Wi-Fi Guest con client isolation
+  - Políticas CORS, CSP, autenticación HttpOnly
+  - Referencias: OWASP Top 10, Ley 19.628, Ley 21.719, NCh-ISO 27001
+
+### Archivos nuevos/modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 11 |
+| `.env.example` | Variable `VITE_ENABLE_STRICT_LOCAL_NETWORK_BLOCK` |
+| `server/.env.example` | Variable `ENABLE_STRICT_LOCAL_NETWORK_BLOCK` |
+| `src/services/ApiService.js` | Función `assertNotLocalNetwork()` + invocación en `request()` |
+| `SECURITY_WHITEPAPER.md` | **NUEVO** — Whitepaper formal para Municipalidad |
