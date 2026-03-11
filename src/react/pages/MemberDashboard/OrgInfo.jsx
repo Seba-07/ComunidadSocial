@@ -62,7 +62,7 @@ export default function OrgInfo({ org }) {
       </h2>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
+      <div className="r-grid-auto" style={{ gap: 16, marginBottom: 32 }}>
         <StatCard label="Socios" value={memberCount} color="#3b82f6" />
         <StatCard label="Asambleas" value={assemblyCount} color="#8b5cf6" />
         <StatCard label="Directorio" value={dirType} color="#10b981" />
@@ -73,7 +73,7 @@ export default function OrgInfo({ org }) {
       </div>
 
       {/* Org Info */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="r-grid-auto" style={{ gap: 16 }}>
         <InfoRow label="Tipo" value={prettifyType(org.organizationType)} />
         <InfoRow label="Dirección" value={org.address} />
         <InfoRow label="Comuna" value={org.comuna} />

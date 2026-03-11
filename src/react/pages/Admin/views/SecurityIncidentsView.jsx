@@ -127,7 +127,7 @@ export default function SecurityIncidentsView() {
       {showForm && (
         <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 12, border: '1px solid #fecaca', padding: 24, marginBottom: 20 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: '#dc2626' }}>Nuevo Incidente</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div className="r-grid-2" style={{ gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Tipo *</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -155,7 +155,7 @@ export default function SecurityIncidentsView() {
               rows={4} placeholder="Detalle completo del incidente, cómo fue detectado, alcance..."
               style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div className="r-grid-2" style={{ gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Datos afectados (separados por coma)</label>
               <input value={form.dataAffected} onChange={e => setForm(f => ({ ...f, dataAffected: e.target.value }))}

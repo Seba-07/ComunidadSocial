@@ -56,7 +56,7 @@ export default function MetricsDashboardView() {
       <StatsGrid stats={kpis} />
 
       {/* Status Distribution */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
+      <div className="r-grid-2" style={{ gap: 20, marginTop: 24 }}>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Distribución por Estado</h3>
           <div style={{ display: 'grid', gap: 10 }}>
@@ -115,7 +115,7 @@ export default function MetricsDashboardView() {
       </div>
 
       {/* Ministro Load + User Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+      <div className="r-grid-2" style={{ gap: 20, marginTop: 20 }}>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Carga de Ministros</h3>
           {(ministroStats.loadByMinistro || []).length > 0 ? (

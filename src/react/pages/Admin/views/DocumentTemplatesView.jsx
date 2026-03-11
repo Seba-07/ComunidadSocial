@@ -972,7 +972,7 @@ export default function DocumentTemplatesView() {
           No hay plantillas{filterType !== 'all' ? ' de este tipo' : ''}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        <div className="r-grid-auto" style={{ gap: 16 }}>
           {filtered.map(tmpl => (
             <div key={tmpl._id} style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>

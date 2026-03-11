@@ -149,7 +149,7 @@ export default function SettingsPage() {
       <form onSubmit={handleSaveProfile}>
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 16 }}>Datos Personales</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="r-grid-2" style={{ gap: 12 }}>
             <div>
               <label style={labelStyle}>Nombre</label>
               <input value={profile.firstName} onChange={e => setProfile(p => ({ ...p, firstName: e.target.value }))} style={inputStyle} />
@@ -218,7 +218,7 @@ export default function SettingsPage() {
       {/* Account info */}
       <div style={cardStyle}>
         <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 12 }}>Información de Cuenta</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
+        <div className="r-grid-2" style={{ gap: 12, fontSize: 14 }}>
           <div><span style={{ color: '#6b7280' }}>RUT:</span> <strong>{user?.rut || '-'}</strong></div>
           <div><span style={{ color: '#6b7280' }}>Email:</span> <strong>{user?.email || '-'}</strong></div>
           <div><span style={{ color: '#6b7280' }}>Rol:</span> <strong>{user?.role || '-'}</strong></div>

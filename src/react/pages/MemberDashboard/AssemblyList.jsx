@@ -151,7 +151,7 @@ function AssemblyDetail({ assembly, orgId, org, currentUser, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+      <div className="r-grid-2" style={{ gap: 12, marginBottom: 24 }}>
         <InfoPill label="Estado" value={STATUS_LABELS[a.status] || a.status} />
         <InfoPill label="Tipo" value={a.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'} />
         <InfoPill label="Fecha" value={formatDate(a.date)} />
