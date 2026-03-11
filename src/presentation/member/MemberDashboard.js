@@ -8,6 +8,7 @@ import { orgDocumentService } from '../../services/OrgDocumentService.js';
 import { pdfService } from '../../services/PDFService.js';
 import { jsPDF } from 'jspdf';
 import { showToast } from '../../app.js';
+import tenant from '../../config/tenant.js';
 
 class MemberDashboard {
   constructor() {
@@ -231,7 +232,7 @@ class MemberDashboard {
           </div>
           <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Comuna</span>
-            <div style="margin-top:6px;color:#1e293b;">${org.comuna || 'Renca'}</div>
+            <div style="margin-top:6px;color:#1e293b;">${org.comuna || tenant.communeName}</div>
           </div>
           <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Unidad Vecinal</span>

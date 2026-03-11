@@ -3,6 +3,7 @@ import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { parseTemplateBlocks } from '@shared/utils/templateBlockParser.js';
+import tenant from '../../../../config/tenant.js';
 
 async function compressImage(file, maxWidth = 800, quality = 0.85) {
   return new Promise((resolve) => {
@@ -46,7 +47,7 @@ const SAMPLE_DATA = {
   NOMBRE_ORG: 'Club Deportivo Los Cóndores',
   TIPO_ORG: 'Club Deportivo',
   DIRECCION: 'Av. Principal 1234',
-  COMUNA: 'Renca',
+  COMUNA: tenant.communeName,
   REGION: 'Metropolitana',
   UNIDAD_VECINAL: 'UV 12 - Los Álamos',
   EMAIL: 'contacto@condores.cl',
@@ -74,7 +75,7 @@ const SAMPLE_DATA = {
   FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
   MINISTRO_FE: 'Carlos Ramírez Torres',
   RUT_MINISTRO_FE: '7.654.321-0',
-  UBICACION_ASAMBLEA: 'Blanco Encalada 1335, Renca',
+  UBICACION_ASAMBLEA: tenant.address,
   FIRMA_PRESIDENTE: '________________________\nJuan Pérez González\nPresidente(a) Provisorio(a)\nRUT: 12.345.678-9',
   FIRMA_SECRETARIO: '________________________\nMaría López Soto\nSecretario(a) Provisorio(a)\nRUT: 11.234.567-K',
   FIRMA_TESORERO: '________________________\nCarmen Muñoz Díaz\nTesorero(a) Provisorio(a)\nRUT: 13.678.901-5',
@@ -672,7 +673,7 @@ export default function DocumentTemplatesView() {
                 <input type="text" style={inputStyle}
                   value={selected.footerConfig?.text || ''}
                   onChange={e => setSelected(s => ({ ...s, footerConfig: { ...s.footerConfig, text: e.target.value } }))}
-                  placeholder="Blanco Encalada 1335, Renca"
+                  placeholder={tenant.address || 'Dirección municipal'}
                 />
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -740,7 +741,7 @@ export default function DocumentTemplatesView() {
                   ) : (
                     <>
                       <div style={{ fontSize: 8, color: '#64748b' }}>
-                        {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'} | {selected.footerConfig?.subtitle || '+562 2685 6600'}
+                        {selected.footerConfig?.text || tenant.address} | {selected.footerConfig?.subtitle || '+562 2685 6600'}
                       </div>
                       {selected.footerConfig?.showColorBar !== false && (
                         <div style={{ display: 'flex', width: '100%', height: 6, marginTop: 4 }}>
@@ -828,10 +829,10 @@ export default function DocumentTemplatesView() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '8px 20px' }}>
                   <div style={{ fontSize: 9, color: '#64748b', marginBottom: 4 }}>
-                    {selected.footerConfig?.text || 'Blanco Encalada 1335, Renca'}
+                    {selected.footerConfig?.text || tenant.address}
                     {' | '}
                     {selected.footerConfig?.subtitle || '+562 2685 6600'}
-                    {!selected.footerConfig?.text && ' | www.renca.cl'}
+                    {!selected.footerConfig?.text && tenant.website ? ` | ${tenant.website}` : ''}
                   </div>
                   {selected.footerConfig?.showColorBar !== false && (
                     <div style={{ display: 'flex', height: 8, marginTop: 4 }}>

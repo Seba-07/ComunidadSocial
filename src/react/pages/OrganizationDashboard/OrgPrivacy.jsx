@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '../../../services/ApiService';
+import tenant from '../../../config/tenant.js';
 
 const cardStyle = {
   background: '#fff',
@@ -14,7 +15,7 @@ const cardStyle = {
 const PURPOSE_LABELS = {
   essential: { label: 'Funcionamiento esencial', desc: 'Necesario para el uso de la plataforma. No se puede desactivar.', locked: true },
   notifications_email: { label: 'Notificaciones por email', desc: 'Recibir notificaciones sobre el estado de sus trámites y organizaciones.' },
-  data_sharing_municipality: { label: 'Compartir datos con Municipalidad', desc: 'Permitir que sus datos sean compartidos con la Ilustre Municipalidad de Renca para fines de registro y fiscalización.' }
+  data_sharing_municipality: { label: 'Compartir datos con Municipalidad', desc: `Permitir que sus datos sean compartidos con la ${tenant.municipalityFullName} para fines de registro y fiscalización.` }
 };
 
 const ACTION_LABELS = {

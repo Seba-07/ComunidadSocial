@@ -4,6 +4,7 @@ import { useUiStore } from '../../../stores/uiStore';
 import Modal from '../../../components/ui/Modal';
 import Tabs from '../../../components/ui/Tabs';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import tenant from '../../../../config/tenant.js';
 
 // Tipos de organización disponibles con sus nombres y categorías
 const TIPOS_ORGANIZACION = {
@@ -78,12 +79,12 @@ const PLACEHOLDERS = [
 
 // Datos de ejemplo para la vista previa del estatuto
 const SAMPLE_ESTATUTO_DATA = {
-  '{{NOMBRE_ORGANIZACION}}': 'Club Deportivo Los Cóndores de Renca',
+  '{{NOMBRE_ORGANIZACION}}': 'Club Deportivo Los Cóndores de ' + tenant.communeName,
   '{{TIPO_ORGANIZACION}}': 'Club Deportivo',
   '{{OBJETIVOS}}': 'Fomentar la práctica deportiva entre los vecinos de la comuna, promover la vida sana y la integración comunitaria a través del deporte',
-  '{{COMUNA}}': 'Renca',
+  '{{COMUNA}}': tenant.communeName,
   '{{REGION}}': 'Metropolitana',
-  '{{DIRECCION}}': 'Av. Domingo Santa María 1435, Renca',
+  '{{DIRECCION}}': tenant.address || 'Av. Ejemplo 1435, ' + tenant.communeName,
   '{{MIEMBROS_MINIMOS}}': '15',
   '{{NUM_MIEMBROS}}': '25',
   '{{EDAD_MINIMA}}': '14',
@@ -95,7 +96,7 @@ const SAMPLE_ESTATUTO_DATA = {
   '{{MESES_ASAMBLEA}}': 'marzo y septiembre',
   '{{METODO_CITACION}}': 'carta certificada y publicación en diario mural',
   '{{DIAS_ANTICIPACION}}': '5',
-  '{{ENTIDAD_DISOLUCION}}': 'I. Municipalidad de Renca',
+  '{{ENTIDAD_DISOLUCION}}': tenant.municipalityFullName,
   '{{RUT_DISOLUCION}}': '69.254.100-0',
   '{{FECHA_DIA}}': new Date().getDate().toString(),
   '{{FECHA_MES}}': ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][new Date().getMonth()],

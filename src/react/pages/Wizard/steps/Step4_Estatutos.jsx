@@ -3,6 +3,7 @@ import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import FileUpload from '../../../components/ui/FileUpload';
+import tenant from '../../../../config/tenant.js';
 
 export default function Step4_Estatutos({ onNext, onPrev }) {
   const { formData, setFormDataField, templateConfig } = useWizardStore();
@@ -61,7 +62,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{NOMBRE_ORGANIZACION}}': formData.organization?.name || '_______________',
       '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
       '{{OBJETIVOS}}': formData.organization?.objectives || 'promover la integración, participación y desarrollo de la comunidad',
-      '{{COMUNA}}': formData.organization?.commune || 'Renca',
+      '{{COMUNA}}': formData.organization?.commune || tenant.communeName,
       '{{REGION}}': formData.organization?.region || 'Región Metropolitana',
       '{{DIRECCION}}': formData.organization?.street || '_______________',
       '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
@@ -77,7 +78,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
       '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
       '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
-      '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || 'Corporación Municipal de Renca',
+      '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || tenant.dissolutionEntity,
       '{{RUT_DISOLUCION}}': config.rutDisolucion || '_______________',
       '{{FECHA_DIA}}': '_______________',
       '{{FECHA_MES}}': '_______________',

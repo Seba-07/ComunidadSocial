@@ -1,11 +1,13 @@
+import tenant from '../../../config/tenant.js';
+
 export default function AuthLayout({ children }) {
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-left">
           <div className="auth-logo">
-            <img src="/icons/logo_renca.png" alt="Logo Renca" />
-            <h1>Comunidad Renca</h1>
+            <img src="/icons/logo.png" alt="Logo" />
+            <h1>{tenant.platformShortName}</h1>
           </div>
           <div className="auth-hero">
             <h2>Digitaliza tu organizaci&oacute;n comunitaria</h2>

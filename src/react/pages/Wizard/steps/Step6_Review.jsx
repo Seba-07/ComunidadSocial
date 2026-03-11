@@ -3,6 +3,7 @@ import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { pdfService } from '@services/PDFService.js';
 import { apiService } from '@services/ApiService.js';
+import tenant from '../../../../config/tenant.js';
 
 export default function Step6_Review({ onNext, onPrev }) {
   const { formData, templateConfig } = useWizardStore();
@@ -82,7 +83,7 @@ export default function Step6_Review({ onNext, onPrev }) {
       NOMBRE_ORG: org.name || '',
       TIPO_ORG: templateConfig?.nombreTipo || org.type || '',
       DIRECCION: org.address || [org.street, org.streetNumber].filter(Boolean).join(' ') || '',
-      COMUNA: org.commune || 'Renca',
+      COMUNA: org.commune || tenant.communeName,
       REGION: org.region || 'Metropolitana',
       UNIDAD_VECINAL: org.neighborhood || '',
       EMAIL: org.email || '',
