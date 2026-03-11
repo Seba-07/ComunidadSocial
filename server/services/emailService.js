@@ -5,6 +5,7 @@
  */
 
 import nodemailer from 'nodemailer';
+import tenant from '../config/tenant.js';
 
 // ---------------------------------------------------------------------------
 // Configuración SMTP desde variables de entorno
@@ -15,7 +16,7 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT, 10) || 587;
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || 'noreply@comunidadrenca.cl';
+const SMTP_FROM = process.env.SMTP_FROM || (tenant.adminEmail || 'noreply@comunidadsocial.cl');
 
 if (DRY_RUN) {
   console.warn(
@@ -105,9 +106,9 @@ function buildEmailTemplate(title, bodyHtml) {
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo-area">Comunidad Renca</div>
+      <div class="logo-area">${tenant.platformShortName}</div>
       <h1>${title}</h1>
-      <p class="subtitle">Municipalidad de Renca</p>
+      <p class="subtitle">${tenant.municipalityName}</p>
     </div>
 
     <!-- Body -->
@@ -117,9 +118,9 @@ function buildEmailTemplate(title, bodyHtml) {
 
     <!-- Footer -->
     <div class="footer">
-      <p><strong>Comunidad Renca</strong> &mdash; Municipalidad de Renca</p>
+      <p><strong>${tenant.platformShortName}</strong> &mdash; ${tenant.municipalityName}</p>
       <p>Este correo fue generado automáticamente. Por favor no responda a este mensaje.</p>
-      <p>&copy; ${new Date().getFullYear()} Municipalidad de Renca. Todos los derechos reservados.</p>
+      <p>&copy; ${new Date().getFullYear()} ${tenant.municipalityName}. Todos los derechos reservados.</p>
     </div>
   </div>
 </body>
@@ -465,9 +466,9 @@ const emailService = {
    */
   async sendWelcomeMemberEmail({ email, userName, orgName, tempPassword }) {
     const bodyHtml = `
-      <h2>¡Bienvenido/a a Comunidad Renca!</h2>
+      <h2>¡Bienvenido/a a ${tenant.platformShortName}!</h2>
       <p>Hola <strong>${userName}</strong>,</p>
-      <p>Se ha creado una cuenta para usted como miembro de la organización <strong>${orgName}</strong> en la plataforma Comunidad Renca.</p>
+      <p>Se ha creado una cuenta para usted como miembro de la organización <strong>${orgName}</strong> en la plataforma ${tenant.platformShortName}.</p>
 
       <table class="info-table">
         <tr>
@@ -491,7 +492,7 @@ const emailService = {
       <p>Si tiene alguna consulta, no dude en contactarse con el administrador de su organización.</p>
     `;
 
-    const subject = `Bienvenido/a a ${orgName} — Comunidad Renca`;
+    const subject = `Bienvenido/a a ${orgName} — ${tenant.platformShortName}`;
     const html = buildEmailTemplate('Bienvenida', bodyHtml);
 
     await this.sendEmail({ to: email, subject, html });
@@ -502,7 +503,7 @@ const emailService = {
 
   async sendVerificationEmail({ email, userName, verifyUrl }) {
     const bodyHtml = `
-      <h2>Bienvenido a Comunidad Social Renca</h2>
+      <h2>Bienvenido a ${tenant.platformName}</h2>
       <p>Hola <strong>${userName}</strong>,</p>
       <p>Tu cuenta ha sido creada exitosamente. Para completar tu registro, verifica tu correo electrónico haciendo clic en el siguiente botón:</p>
 
@@ -517,7 +518,7 @@ const emailService = {
       <p style="color: #6b7280; font-size: 13px;">Este enlace expira en 24 horas. Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
     `;
 
-    const subject = 'Verifica tu correo - Comunidad Social Renca';
+    const subject = `Verifica tu correo - ${tenant.platformName}`;
     const html = buildEmailTemplate('Verificación de Email', bodyHtml);
 
     await this.sendEmail({ to: email, subject, html });
@@ -536,7 +537,7 @@ const emailService = {
       <p style="color: #6b7280; font-size: 13px;">Si no verificas tu email dentro de 7 días desde tu registro, algunas funcionalidades serán restringidas.</p>
     `;
 
-    const subject = 'Recordatorio: Verifica tu correo - Comunidad Social Renca';
+    const subject = `Recordatorio: Verifica tu correo - ${tenant.platformName}`;
     const html = buildEmailTemplate('Verificación de Email', bodyHtml);
 
     await this.sendEmail({ to: email, subject, html });

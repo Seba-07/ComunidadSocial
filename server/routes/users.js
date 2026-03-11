@@ -5,6 +5,7 @@ import Consent from '../models/Consent.js';
 import Organization from '../models/Organization.js';
 import AuditLog from '../models/AuditLog.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import tenant from '../config/tenant.js';
 
 const router = express.Router();
 
@@ -512,7 +513,16 @@ router.get('/stats/data-processing-registry', authenticate, requireRole('MUNICIP
     const { createRequire } = await import('module');
     const require = createRequire(import.meta.url);
     const registry = require('../data/data-processing-registry.json');
-    res.json(registry);
+    // Overlay tenant-specific values onto the static registry
+    const result = {
+      ...registry,
+      registroTratamientoDatos: {
+        ...registry.registroTratamientoDatos,
+        responsable: tenant.municipalityFullName,
+        plataforma: tenant.platformName,
+      },
+    };
+    res.json(result);
   } catch (error) {
     console.error('Get registry error:', error);
     res.status(500).json({ error: 'Error al obtener registro de tratamiento' });
