@@ -9,7 +9,7 @@ const toastStyles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
-    maxWidth: 420
+    maxWidth: 'min(420px, calc(100vw - 48px))'
   },
   toast: (type) => ({
     padding: '14px 40px 14px 18px',

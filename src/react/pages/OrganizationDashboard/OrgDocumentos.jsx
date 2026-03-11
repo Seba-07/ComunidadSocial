@@ -135,7 +135,8 @@ export default function OrgDocumentos({ org, onRefresh }) {
             {assemblyActas.map((a) => (
               <div key={a.id || a._id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                flexWrap: 'wrap', gap: 8
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 20 }}>📝</span>
@@ -201,7 +202,8 @@ function LegalDoc({ name, icon = '📋', onDownload }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+      padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+      flexWrap: 'wrap', gap: 8
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ fontSize: 20 }}>{icon}</span>
