@@ -35,8 +35,15 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
     function handleKey(e) {
       if (e.key === 'Escape' && mobileOpen) setMobileOpen(false);
     }
+    function handleOpenSidebar() {
+      setMobileOpen(true);
+    }
     document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    document.addEventListener('open-mobile-sidebar', handleOpenSidebar);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('open-mobile-sidebar', handleOpenSidebar);
+    };
   }, [mobileOpen]);
 
   const toggleCollapsed = useCallback(() => {

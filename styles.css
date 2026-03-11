@@ -147,7 +147,7 @@ body {
 .menu-btn, .notifications-btn {
     background: transparent;
     border: none;
-    color: white;
+    color: #374151;
     cursor: pointer;
     padding: 12px;
     display: flex;
@@ -159,12 +159,12 @@ body {
 }
 
 .menu-btn:hover, .notifications-btn:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: white;
+    background-color: rgba(0, 0, 0, 0.08);
+    color: #111827;
 }
 
 .menu-btn:active, .notifications-btn:active {
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(0, 0, 0, 0.12);
 }
 
 .notification-badge {

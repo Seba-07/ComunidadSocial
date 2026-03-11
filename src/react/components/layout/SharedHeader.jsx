@@ -41,7 +41,6 @@ export default function SharedHeader() {
           className="menu-btn"
           onClick={openMobileSidebar}
           aria-label="Abrir menú"
-          style={{ color: '#374151' }}
         >
           <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12" />
@@ -61,8 +60,8 @@ export default function SharedHeader() {
           <div className="header-avatar">
             <span>{initials}</span>
           </div>
-          <span className="user-name">{user?.firstName} {user?.lastName}</span>
-          <button className="btn-secondary-sm" onClick={handleLogout}>
+          <span className="user-name r-hide-mobile">{user?.firstName} {user?.lastName}</span>
+          <button className="btn-secondary-sm r-hide-mobile" onClick={handleLogout}>
             Salir
           </button>
         </div>
