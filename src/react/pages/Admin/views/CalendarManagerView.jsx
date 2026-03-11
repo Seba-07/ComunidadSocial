@@ -84,7 +84,7 @@ export default function CalendarManagerView() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedDate ? '1fr 340px' : '1fr', gap: 24 }}>
+      <div className="r-grid-2" style={{ display: 'grid', gridTemplateColumns: selectedDate ? '1fr 340px' : '1fr', gap: 24 }}>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
           <Calendar
             events={events}

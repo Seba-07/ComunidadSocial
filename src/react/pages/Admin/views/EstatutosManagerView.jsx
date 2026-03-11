@@ -409,13 +409,13 @@ export default function EstatutosManagerView() {
   if (selectedTemplate) {
     return (
       <div style={{ padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button onClick={backToList} style={{
               padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 8,
               background: 'white', fontSize: 13, cursor: 'pointer'
             }}>Volver</button>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+            <h1 className="r-page-title" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
               {selectedTemplate.nombreTipo || selectedTemplate.orgType || 'Plantilla'}
             </h1>
           </div>
@@ -451,11 +451,11 @@ export default function EstatutosManagerView() {
                   background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                   padding: 16, marginBottom: 8
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                       Art. {art.numero}: {art.titulo}
                     </h4>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div className="r-btn-row" style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => openArticuloEdit(i)} style={smallBtn}>Editar</button>
                       <button onClick={() => deleteArticulo(i)} style={{ ...smallBtn, color: '#ef4444' }}>Eliminar</button>
                     </div>
@@ -474,13 +474,13 @@ export default function EstatutosManagerView() {
           {editTab === 'directorio' && (
             <div>
               <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Mínimo miembros para constituir</label>
                   <input type="number" value={selectedTemplate.miembrosMinimos ?? ''}
                     onChange={e => setSelectedTemplate(t => ({ ...t, miembrosMinimos: parseInt(e.target.value) || 15 }))}
                     style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Miembros comisión electoral</label>
                   <input type="number" value={selectedTemplate.comisionElectoral?.cantidad ?? ''}
                     onChange={e => setSelectedTemplate(t => ({ ...t, comisionElectoral: { ...(t.comisionElectoral || {}), cantidad: parseInt(e.target.value) || 3 } }))}
@@ -491,7 +491,7 @@ export default function EstatutosManagerView() {
               {/* Configuración de Mandato */}
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 12px' }}>Configuración de Mandato</h3>
               <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Tipo de mandato</label>
                   <select value={selectedTemplate.mandatoTipo || 'fijo'}
                     onChange={e => setSelectedTemplate(t => ({ ...t, mandatoTipo: e.target.value }))}
@@ -500,7 +500,7 @@ export default function EstatutosManagerView() {
                     <option value="variable">Variable (organizador elige)</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>
                     {selectedTemplate.mandatoTipo === 'variable' ? 'Opciones de años permitidas' : 'Duración fija (años)'}
                   </label>
@@ -545,7 +545,7 @@ export default function EstatutosManagerView() {
 
                 {selectedTemplate.edadConfig?.permiteMenores !== false && (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 24 }}>
+                    <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 24 }}>
                       <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Edad mínima para ser miembro</label>
                       <input type="number" min={10} max={18}
                         value={selectedTemplate.edadConfig?.edadMinima ?? 14}
@@ -579,7 +579,7 @@ export default function EstatutosManagerView() {
               </div>
 
               <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Cargos del Directorio</h3>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div className="r-btn-row" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 {!(selectedTemplate.directorio?.cargos?.length) && (
                   <button onClick={addDefaultCargos} style={{
                     padding: '6px 14px', border: 'none', borderRadius: 8, background: '#10b981',
@@ -593,9 +593,9 @@ export default function EstatutosManagerView() {
               </div>
 
               {(selectedTemplate.directorio?.cargos || []).map((cargo, i) => (
-                <div key={i} style={{
+                <div key={i} className="r-form-row" style={{
                   display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8,
-                  padding: 10, background: '#f9fafb', borderRadius: 8
+                  padding: 10, background: '#f9fafb', borderRadius: 8, flexWrap: 'wrap',
                 }}>
                   <input type="color" value={cargo.color || '#2563eb'}
                     onChange={e => updateCargo(i, 'color', e.target.value)}
@@ -623,7 +623,7 @@ export default function EstatutosManagerView() {
                 Los usuarios tambi&eacute;n pueden agregar objetivos personalizados.
               </p>
 
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <div className="r-form-row" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <input
                   value={objInput}
                   onChange={e => setObjInput(e.target.value)}
@@ -826,7 +826,7 @@ export default function EstatutosManagerView() {
                 rows={8} style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical' }} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+          <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
             <button onClick={() => setShowArticuloModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', borderRadius: 10, background: 'white', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
             <button onClick={saveArticulo} style={{
               padding: '10px 20px', border: 'none', borderRadius: 10, background: '#2563eb',
@@ -874,8 +874,8 @@ export default function EstatutosManagerView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h1 className="r-page-title" style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
           Plantillas de Estatutos
         </h1>
         <button onClick={() => setShowNewModal(true)} style={{
@@ -939,7 +939,7 @@ export default function EstatutosManagerView() {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, fontSize: 13, color: '#6b7280' }}>
+      <div className="r-stats" style={{ display: 'flex', gap: 12, marginBottom: 20, fontSize: 13, color: '#6b7280' }}>
         <span>Total: {templates.length}</span>
         <span>Publicadas: {templates.filter(t => t.publicado).length}</span>
       </div>
@@ -970,9 +970,10 @@ export default function EstatutosManagerView() {
           </button>
           {!collapsed && <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
             {grouped[cat].map(t => (
-              <div key={t._id} style={{
+              <div key={t._id} className="r-card" style={{
                 background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-                padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                flexWrap: 'wrap', gap: 8,
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -993,14 +994,14 @@ export default function EstatutosManagerView() {
                       {t.publicado ? 'Publicada' : 'Borrador'}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#6b7280', display: 'flex', gap: 12 }}>
+                  <div style={{ fontSize: 12, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <span>{(t.articulos || []).length} artículos</span>
                     <span>{(t.directorio?.cargos || []).filter(c => c.required).length}/{(t.directorio?.cargos || []).length} cargos</span>
                     <span>{(t.objetivosSugeridos || []).length} objetivos</span>
                     {t.version && <span>v{t.version}</span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="r-btn-row" style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => togglePublish(t)} style={smallBtn}>
                     {t.publicado ? 'Despublicar' : 'Publicar'}
                   </button>
@@ -1039,7 +1040,7 @@ export default function EstatutosManagerView() {
             <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 1.5 }}>
               Se eliminara permanentemente <strong style={{ color: '#111827' }}>{deleteConfirm.nombre}</strong> y su plantilla asociada. Esta accion no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
               <button onClick={() => setDeleteConfirm(null)} style={{
                 padding: '10px 24px', border: '1px solid #d1d5db', borderRadius: 8,
                 background: 'white', color: '#374151', fontSize: 14, fontWeight: 600, cursor: 'pointer'
@@ -1098,12 +1099,12 @@ export default function EstatutosManagerView() {
               boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
             }}>
               {/* Header */}
-              <div style={{
+              <div className="r-toolbar" style={{
                 padding: '20px 24px', borderBottom: '1px solid #e5e7eb',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
               }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+                  <h2 className="r-page-title" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
                     Nuevo Tipo de Organizacion
                   </h2>
                   <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>

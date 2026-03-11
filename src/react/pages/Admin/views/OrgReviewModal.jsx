@@ -230,18 +230,18 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       background: 'rgba(0,0,0,0.5)', zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center'
     }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{
-        background: 'white', borderRadius: 16, width: '90%', maxWidth: 900,
-        height: '85vh', display: 'flex', flexDirection: 'column',
+      <div className="r-section" style={{
+        background: 'white', borderRadius: 16, width: '95%', maxWidth: 900,
+        maxHeight: '95vh', height: '85vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
       }}>
         {/* Header */}
-        <div style={{
+        <div className="r-toolbar" style={{
           padding: '20px 24px', borderBottom: '1px solid #e5e7eb',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+            <h2 className="r-page-title" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
               {orgName}
             </h2>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4 }}>
@@ -327,7 +327,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               {/* Sección 2: Agenda confirmada */}
               {org.ministroData?.scheduledDate ? (
                 <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#166534' }}>
                       Agenda Confirmada
                     </h4>
@@ -432,12 +432,12 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                     : null;
                 })()}
               </p>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="r-table-wrap" style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
                       {['N°', 'Nombre', 'RUT', 'Edad', 'Email', 'Teléfono'].map(h => (
-                        <th key={h} style={{
+                        <th key={h} className={h === 'Email' || h === 'Teléfono' ? 'r-hide-mobile' : undefined} style={{
                           padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #e5e7eb',
                           fontSize: 12, fontWeight: 600, color: '#374151'
                         }}>{h}</th>
@@ -468,8 +468,8 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                               </span>
                             ) : '—'}
                           </td>
-                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.email || '—'}</td>
-                          <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.phone || '—'}</td>
+                          <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.email || '—'}</td>
+                          <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.phone || '—'}</td>
                         </tr>
                       );
                     })}
@@ -486,7 +486,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 return (
                   <div key={key} style={{
                     padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                   }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
@@ -548,7 +548,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   {electoralCommission.map((m, i) => (
                     <div key={m.rut || i} style={{
                       padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f0f9ff',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                     }}>
                       <div>
                         <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
@@ -570,7 +570,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
               {org.estatutosSnapshot?.articulos?.length > 0 ? (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{
+                  <div className="r-toolbar" style={{
                     padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 10,
                     background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>
@@ -621,7 +621,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 return (
                   <div key={key} style={{
                     padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                   }}>
                     <div>
                       <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{label}: </span>
@@ -659,7 +659,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   {org.documents.map((doc, i) => (
                     <div key={i} style={{
                       padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                     }}>
                       <span style={{ fontSize: 14 }}>{doc.name || doc.type || `Documento ${i + 1}`}</span>
                       <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(doc.uploadedAt)}</span>
@@ -863,7 +863,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   padding: 12, borderLeft: '3px solid #2563eb', marginBottom: 12,
                   background: '#f9fafb', borderRadius: '0 8px 8px 0'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <StatusBadge status={h.status || h.newStatus} />
                     <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(h.date || h.timestamp)}</span>
                   </div>
@@ -878,7 +878,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         </div>
 
         {/* Actions */}
-        <div style={{
+        <div className="r-btn-row" style={{
           padding: '16px 24px', borderTop: '1px solid #e5e7eb',
           display: 'flex', gap: 8, flexWrap: 'wrap'
         }}>
@@ -924,7 +924,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               placeholder="Motivo del rechazo..."
             />
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowReject(false)} style={actionBtn('#6b7280')}>Cancelar</button>
             <button onClick={handleReject} disabled={isActioning} style={actionBtn('#ef4444')}>
               {isActioning ? 'Rechazando...' : 'Confirmar Rechazo'}
@@ -990,7 +990,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+          <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
             <button onClick={() => setShowSchedule(false)} style={actionBtn('#6b7280')}>Cancelar</button>
             <button onClick={handleScheduleMinistro} disabled={isActioning} style={actionBtn('#2563eb')}>
               {isActioning ? 'Agendando...' : 'Agendar'}

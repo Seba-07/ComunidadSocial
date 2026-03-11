@@ -45,7 +45,7 @@ export default function MetricsDashboardView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Métricas</h1>
         <button onClick={loadStats} style={{
           padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,

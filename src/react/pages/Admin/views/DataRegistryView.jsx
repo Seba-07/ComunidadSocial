@@ -32,7 +32,7 @@ export default function DataRegistryView() {
       {(registry.categoriasDatos || []).map(cat => (
         <div key={cat.id} style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: '0 0 12px' }}>{cat.nombre}</h3>
-          <div style={{ overflow: 'auto' }}>
+          <div className="r-table-wrap" style={{ overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
@@ -62,7 +62,7 @@ export default function DataRegistryView() {
         <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: '0 0 12px' }}>Flujos de Transferencia</h3>
         <div style={{ display: 'grid', gap: 10 }}>
           {(registry.flujosTransferencia || []).map((f, i) => (
-            <div key={i} style={{ background: '#f9fafb', borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div key={i} style={{ background: '#f9fafb', borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 600, fontSize: 13, color: '#2563eb', minWidth: 120 }}>{f.origen}</span>
               <span style={{ color: '#9ca3af' }}>&rarr;</span>
               <span style={{ fontWeight: 600, fontSize: 13, color: '#111827', minWidth: 120 }}>{f.destino}</span>

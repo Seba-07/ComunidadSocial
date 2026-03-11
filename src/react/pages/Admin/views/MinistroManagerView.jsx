@@ -126,7 +126,7 @@ export default function MinistroManagerView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
           Ministros de Fe
         </h1>
@@ -139,7 +139,7 @@ export default function MinistroManagerView() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="r-toolbar" style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ maxWidth: 300, flex: 1 }}>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar ministro..." />
         </div>
@@ -161,7 +161,7 @@ export default function MinistroManagerView() {
           {filtered.map(m => (
             <div key={m._id} style={{
               background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-              padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
@@ -176,14 +176,14 @@ export default function MinistroManagerView() {
                   <div style={{ fontWeight: 600, fontSize: 15, color: '#111827' }}>
                     {m.firstName} {m.lastName}
                   </div>
-                  <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
+                  <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <span>{m.rut}</span>
                     <span>{m.email}</span>
                     <span>{SPECIALTIES.find(s => s.value === m.specialty)?.label || m.specialty}</span>
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="r-btn-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{
                   padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
                   background: m.isActive !== false ? '#d1fae5' : '#fee2e2',
@@ -249,7 +249,7 @@ export default function MinistroManagerView() {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+        <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
           <button onClick={() => setShowModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', borderRadius: 10, background: 'white', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={handleSave} disabled={saving} style={{
             padding: '10px 20px', border: 'none', borderRadius: 10, background: '#2563eb',

@@ -88,14 +88,14 @@ export default function ScheduleManagerView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>Gestión de Horarios</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
             {monthData.totalMinistros} Ministro{monthData.totalMinistros !== 1 ? 's' : ''} de Fe activo{monthData.totalMinistros !== 1 ? 's' : ''}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
             { color: '#10b981', label: 'Todo disponible' },
             { color: '#f59e0b', label: 'Parcial' },
@@ -110,7 +110,7 @@ export default function ScheduleManagerView() {
       </div>
 
       {isLoading ? <LoadingSpinner text="Cargando horarios..." /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: selectedDate ? '1fr 360px' : '1fr', gap: 20 }}>
+        <div className="r-grid-2" style={{ display: 'grid', gridTemplateColumns: selectedDate ? '1fr 360px' : '1fr', gap: 20 }}>
           <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
             <Calendar
               events={calendarEvents}

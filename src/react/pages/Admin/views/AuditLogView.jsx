@@ -112,7 +112,7 @@ export default function AuditLogView() {
       }
     },
     {
-      key: 'userName', label: 'Usuario',
+      key: 'userName', label: 'Usuario', hideOnTablet: true,
       render: (val, row) => (
         <div>
           <span style={{ fontSize: 13 }}>{val || 'Sistema'}</span>
@@ -145,7 +145,7 @@ export default function AuditLogView() {
       )
     },
     {
-      key: 'detail', label: 'Detalle',
+      key: 'detail', label: 'Detalle', hideOnMobile: true,
       render: (val) => (
         <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {val || '-'}
@@ -156,7 +156,7 @@ export default function AuditLogView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Historial de Auditoría</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>{totalRecords} registros</p>
@@ -168,22 +168,22 @@ export default function AuditLogView() {
       </div>
 
       {/* Filters */}
-      <div style={{
+      <div className="r-toolbar" style={{
         background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16,
         display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20
       }}>
-        <div>
+        <div style={{ minWidth: 120 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Acción</label>
           <select value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }}>
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%' }}>
             <option value="">Todas</option>
             {Object.entries(ACTION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div>
+        <div style={{ minWidth: 120 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Recurso</label>
           <select value={filters.resource} onChange={e => setFilters(f => ({ ...f, resource: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }}>
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%' }}>
             <option value="">Todos</option>
             {Object.entries(RESOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
@@ -215,7 +215,7 @@ export default function AuditLogView() {
       </div>
 
       {/* Table */}
-      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+      <div className="r-table-wrap" style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
         {isLoading ? <LoadingSpinner text="Cargando registros..." /> : (
           <DataTable columns={columns} data={logs} emptyMessage="Sin registros de auditoría" />
         )}
@@ -223,7 +223,7 @@ export default function AuditLogView() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16, fontSize: 13 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16, fontSize: 13, flexWrap: 'wrap' }}>
           <button onClick={() => loadLogs(currentPage - 1)} disabled={currentPage <= 1}
             style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, background: 'white', cursor: currentPage <= 1 ? 'default' : 'pointer', color: currentPage <= 1 ? '#9ca3af' : '#374151' }}>
             Anterior
