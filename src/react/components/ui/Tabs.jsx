@@ -14,7 +14,7 @@ export default function Tabs({ tabs, activeTab, onChange }) {
             key={tab.key}
             onClick={() => onChange(tab.key)}
             style={{
-              padding: '10px 18px',
+              padding: '10px 14px',
               border: 'none',
               borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
               background: 'none',

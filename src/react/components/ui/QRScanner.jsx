@@ -56,7 +56,7 @@ export default function QRScanner({ onScan, onError, paused = false, width = 320
       <div
         id="qr-scanner-container"
         ref={containerRef}
-        style={{ width, height, margin: '0 auto', borderRadius: 12, overflow: 'hidden' }}
+        style={{ width: '100%', maxWidth: width, height, margin: '0 auto', borderRadius: 12, overflow: 'hidden' }}
       />
       {paused && (
         <div style={{

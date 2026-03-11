@@ -2,7 +2,7 @@ export default function StatsGrid({ stats }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
       gap: 16
     }}>
       {stats.map((stat, i) => (
