@@ -126,7 +126,7 @@ export default function WizardPage() {
           activeKey="mis-org"
           onItemClick={handleSidebarClick}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
+        <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
           {/* Wizard header bar */}
           <div style={{
             background: 'white',

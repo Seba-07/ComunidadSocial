@@ -76,14 +76,16 @@ export default function OrgOverview({ org, onNavigateTab }) {
                 marginBottom: 8,
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap'
               }}
             >
-              <div>
-                <span style={{ fontWeight: 600, color: a.status === 'en_curso' ? '#065f46' : '#1e40af' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ fontWeight: 600, color: a.status === 'en_curso' ? '#065f46' : '#1e40af', wordBreak: 'break-word' }}>
                   {a.title}
                 </span>
-                <span style={{ marginLeft: 8, fontSize: 13, color: '#6b7280' }}>
+                <span style={{ marginLeft: 8, fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>
                   {formatDate(a.date)}
                 </span>
               </div>
@@ -103,15 +105,15 @@ export default function OrgOverview({ org, onNavigateTab }) {
       )}
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
+      <div className="r-grid-2" style={{ marginBottom: 32 }}>
         <StatCard label="Socios" value={memberCount} color="#3b82f6" onClick={() => onNavigateTab('members')} />
         <StatCard label="Asambleas" value={assemblyCount} color="#8b5cf6" onClick={() => onNavigateTab('asambleas')} />
       </div>
 
       {/* Organization Info */}
-      <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 16 }}>Información de la Organización</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+      <div className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb', marginBottom: 24 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 16 }}>Información de la Organización</h3>
+        <div className="r-grid-2">
           <InfoRow label="Nombre" value={org.organizationName} />
           <InfoRow label="Tipo" value={prettifyType(org.organizationType)} />
           <InfoRow label="Estado"><StatusBadge status={org.status} /></InfoRow>
@@ -124,11 +126,11 @@ export default function OrgOverview({ org, onNavigateTab }) {
 
       {/* Directorio Summary */}
       {org.provisionalDirectorio && (
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 16 }}>
+        <div className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
+          <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 16 }}>
             Directorio {org.provisionalDirectorio.type === 'ELECTO' ? 'Electo' : 'Provisorio'}
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div className="r-grid-2">
             <DirMember label="Presidente" member={org.provisionalDirectorio.president} />
             <DirMember label="Vicepresidente" member={org.provisionalDirectorio.vicePresident} />
             <DirMember label="Secretario" member={org.provisionalDirectorio.secretary} />

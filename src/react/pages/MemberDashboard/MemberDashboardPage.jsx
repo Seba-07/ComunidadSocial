@@ -100,7 +100,7 @@ export default function MemberDashboardPage() {
           onItemClick={setActiveTab}
           header={orgSelectorHeader}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
+        <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
           <EmailVerificationBanner />
           {activeTab === 'overview' && <OrgInfo org={activeOrg} />}
           {activeTab === 'directorio' && <MemberDirectorio org={activeOrg} />}

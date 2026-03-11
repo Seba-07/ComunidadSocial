@@ -356,7 +356,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
           );
         })()}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+        <div className="r-form-row">
           <div>
             <label style={labelStyle}>Calle *</label>
             <input value={org.street} onChange={e => handleStreetChange(e.target.value)}
@@ -369,7 +369,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="r-form-row">
           <div>
             <label style={labelStyle}>Región</label>
             <input value={org.region} disabled style={{ ...inputStyle, background: '#f3f4f6' }} />
@@ -427,7 +427,7 @@ export default function Step1_OrgData({ onNext, isFirst }) {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="r-form-row">
           <div>
             <label style={labelStyle}>Email de contacto *</label>
             <input type="email" value={org.email} onChange={e => update('email', e.target.value)}

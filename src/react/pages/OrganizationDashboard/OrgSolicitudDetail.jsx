@@ -270,7 +270,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       {/* 1. Datos Generales */}
       <div style={sectionStyle}>
         <h3 style={sectionTitle}>Datos Generales</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+        <div className="r-grid-2" style={{ gap: '12px 24px' }}>
           <div><span style={labelStyle}>Tipo de Organización</span><div style={valueStyle}>{(org.organizationType || '').replace(/_/g, ' ')}</div></div>
           <div><span style={labelStyle}>Fecha de Solicitud</span><div style={valueStyle}>{org.createdAt ? new Date(org.createdAt).toLocaleDateString('es-CL') : '—'}</div></div>
           <div><span style={labelStyle}>Dirección</span><div style={valueStyle}>{[org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '—'}</div></div>
@@ -307,7 +307,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       {org.ministroData?.scheduledDate ? (
         <div style={{ ...sectionStyle, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
           <h3 style={{ ...sectionTitle, color: '#166534' }}>Asamblea Confirmada</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+          <div className="r-grid-2" style={{ gap: '12px 24px' }}>
             <div><span style={labelStyle}>Fecha Confirmada</span><div style={valueStyle}>{new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL')}</div></div>
             <div><span style={labelStyle}>Hora Confirmada</span><div style={valueStyle}>{org.ministroData.scheduledTime || '—'}</div></div>
             <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.ministroData.location || org.assemblyAddress || '—'}</div></div>
@@ -317,7 +317,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       ) : (org.electionDate || org.assemblyAddress) ? (
         <div style={sectionStyle}>
           <h3 style={sectionTitle}>Asamblea Solicitada</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 24px' }}>
+          <div className="r-grid-3" style={{ gap: '12px 24px' }}>
             {org.electionDate && <div><span style={labelStyle}>Fecha</span><div style={valueStyle}>{new Date(org.electionDate).toLocaleDateString('es-CL')}</div></div>}
             {org.electionTime && <div><span style={labelStyle}>Hora</span><div style={valueStyle}>{org.electionTime}</div></div>}
             {org.assemblyAddress && <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.assemblyAddress}</div></div>}
@@ -332,7 +332,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       <div style={sectionStyle}>
         <h3 style={sectionTitle}>Miembros ({members.length})</h3>
         {members.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="r-table-wrap">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f9fafb' }}>

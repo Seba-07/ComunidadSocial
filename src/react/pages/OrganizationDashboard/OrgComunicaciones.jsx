@@ -47,15 +47,15 @@ export default function OrgComunicaciones({ org, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Comunicaciones</h3>
-        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => { setTemplateData(null); setShowCreate(true); }}>
+      <div className="r-toolbar" style={{ marginBottom: 16 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Comunicaciones</h3>
+        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => { setTemplateData(null); setShowCreate(true); }}>
           + Nueva Comunicación
         </button>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div className="r-grid-3" style={{ marginBottom: 24 }}>
         <StatCard label="Miembros registrados" value={members.length} color="#3b82f6" />
         <StatCard label="Con email" value={membersWithEmail} color="#10b981" />
         <StatCard label="Comunicaciones enviadas" value={communications.length} color="#8b5cf6" />
@@ -64,7 +64,7 @@ export default function OrgComunicaciones({ org, onRefresh }) {
       {/* Quick Templates */}
       <div style={{ marginBottom: 24 }}>
         <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Plantillas Rápidas</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <div className="r-grid-2">
           {TEMPLATES.map((t) => (
             <button
               key={t.type}
@@ -96,17 +96,17 @@ export default function OrgComunicaciones({ org, onRefresh }) {
           {communications.map((comm, i) => {
             const commId = comm.id || comm._id || i;
             return (
-              <div key={commId} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600, color: '#1e3a8a' }}>{comm.subject || 'Sin asunto'}</span>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div key={commId} className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
+                <div className="r-toolbar" style={{ marginBottom: 8 }}>
+                  <span style={{ fontWeight: 600, color: '#1e3a8a', wordBreak: 'break-word' }}>{comm.subject || 'Sin asunto'}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(comm.date)}</span>
                     <button onClick={() => handleDelete(commId)} style={{ padding: '2px 8px', fontSize: 11, border: '1px solid #fca5a5', borderRadius: 4, background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                       Eliminar
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12 }}>
+                <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   {comm.type && (
                     <span style={{ padding: '1px 8px', borderRadius: 8, background: '#f3f4f6', fontSize: 11 }}>
                       {COMM_TYPES.find((t) => t.value === comm.type)?.label || comm.type}
@@ -197,10 +197,10 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
             placeholder="Escribe el mensaje..." rows={6}
             style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
         </FormField>
-        <div style={{ background: '#eff6ff', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+        <div className="r-info-card" style={{ background: '#eff6ff', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
           Se enviará a {membersWithEmail} miembro(s) con email registrado.
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="r-form-row">
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
           <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Enviando...' : 'Enviar Comunicación'}</button>
         </div>

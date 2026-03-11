@@ -179,7 +179,7 @@ export default function OrgNoticias() {
           No hay noticias{activeCategory !== 'TODAS' ? ' en esta categoría' : ''} por el momento
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+        <div className="r-grid-auto" style={{ gap: 20 }}>
           {filtered.map(article => (
             <div
               key={article._id}

@@ -104,8 +104,8 @@ export default function OrgDirectorio({ org }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0 }}>Directorio</h3>
+      <div className="r-toolbar" style={{ marginBottom: 16 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: 0 }}>Directorio</h3>
         <span style={{
           padding: '4px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
           background: dirType === 'Electo' ? '#d1fae5' : '#fef3c7',
@@ -150,7 +150,7 @@ export default function OrgDirectorio({ org }) {
       {members.length === 0 ? (
         <p style={{ color: '#9ca3af', textAlign: 'center', padding: 24 }}>No hay miembros asignados al directorio</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        <div className="r-grid-auto">
           {members.map((m, i) => (
             <DirectorCard key={m.cargoId || i} member={m} />
           ))}

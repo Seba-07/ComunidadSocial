@@ -89,7 +89,7 @@ export default function MinistroDashboardPage() {
           activeKey={activeView}
           onItemClick={setActiveView}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
+        <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
           <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
             <StatsGrid stats={stats} />
 

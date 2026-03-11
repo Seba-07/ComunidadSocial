@@ -71,7 +71,7 @@ export default function Step3_Config({ onNext, onPrev }) {
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Socios (UTM)</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 300 }}>
+          <div className="r-form-row" style={{ maxWidth: 300 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Mínima</label>
               <input type="number" step="0.01" value={config.cuotaMin ?? 0.1}
@@ -122,7 +122,7 @@ export default function Step3_Config({ onNext, onPrev }) {
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Citaciones a Asambleas</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
+          <div className="r-form-row" style={{ maxWidth: 500 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Método de citación</label>
               <select value={config.metodoCitacion || 'carta_certificada'}
@@ -153,7 +153,7 @@ export default function Step3_Config({ onNext, onPrev }) {
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Disolución</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 500 }}>
+          <div className="r-form-row" style={{ maxWidth: 500 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
                 Entidad beneficiaria

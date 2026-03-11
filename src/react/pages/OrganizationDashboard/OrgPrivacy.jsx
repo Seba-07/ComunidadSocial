@@ -177,7 +177,7 @@ export default function OrgPrivacy() {
         <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
           Datos Personales Almacenados
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
+        <div className="r-grid-2">
           {[
             { label: 'Nombre', value: `${user?.firstName || ''} ${user?.lastName || ''}` },
             { label: 'RUT', value: user?.rut || '-' },
@@ -289,7 +289,7 @@ export default function OrgPrivacy() {
         <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
           Descargue una copia de todos sus datos personales almacenados en la plataforma (derecho de portabilidad).
         </p>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="r-form-row">
           <button
             onClick={() => handleExport('json')}
             disabled={exporting}
@@ -340,7 +340,7 @@ export default function OrgPrivacy() {
         ) : arcopHistory.length === 0 ? (
           <p style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>No hay solicitudes registradas.</p>
         ) : (
-          <div style={{ maxHeight: 300, overflow: 'auto' }}>
+          <div className="r-table-wrap" style={{ maxHeight: 300 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e5e7eb' }}>

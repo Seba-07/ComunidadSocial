@@ -116,10 +116,8 @@ export default function OrgBiblioteca() {
           placeholder="Buscar documentos..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14,
-            width: 220, outline: 'none',
-          }}
+          className="r-search"
+          style={{ outline: 'none' }}
         />
         {CATEGORIES.map(c => (
           <button key={c.key} style={chipStyle(activeCategory === c.key)} onClick={() => setActiveCategory(c.key)}>
@@ -136,7 +134,7 @@ export default function OrgBiblioteca() {
           No se encontraron documentos{activeCategory !== 'TODOS' ? ' en esta categoría' : ''}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        <div className="r-grid-auto">
           {filtered.map(doc => (
             <div key={doc._id} style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>

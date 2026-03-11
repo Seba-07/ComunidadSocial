@@ -137,7 +137,7 @@ export default function OrgDashboardPage() {
           onItemClick={handleTabClick}
           header={orgSelectorHeader}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
+        <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease', padding: 24, maxWidth: 1200 }}>
           <EmailVerificationBanner />
           {effectiveTab === 'mis-org' && <OrgMisOrganizaciones />}
           {effectiveTab === 'guia' && <OrgGuia />}

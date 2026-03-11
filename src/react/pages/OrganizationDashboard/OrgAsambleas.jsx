@@ -63,25 +63,25 @@ export default function OrgAsambleas({ org, onRefresh }) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Asambleas</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowElections(true)} style={{ padding: '8px 16px', fontSize: 14, border: '1px solid #8b5cf6', borderRadius: 8, background: 'white', color: '#8b5cf6', cursor: 'pointer', fontWeight: 600 }}>
+      <div className="r-toolbar" style={{ marginBottom: 16 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Asambleas</h3>
+        <div className="r-toolbar__actions">
+          <button onClick={() => setShowElections(true)} style={{ padding: '8px 16px', fontSize: 14, border: '1px solid #8b5cf6', borderRadius: 8, background: 'white', color: '#8b5cf6', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
             Elecciones
           </button>
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => setShowCreate(true)}>
+          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowCreate(true)}>
             + Nueva Asamblea
           </button>
         </div>
       </div>
 
       {/* Educational cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14 }}>
+      <div className="r-grid-2" style={{ marginBottom: 24 }}>
+        <div className="r-info-card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14 }}>
           <div style={{ fontWeight: 600, color: '#1e40af', fontSize: 14, marginBottom: 4 }}>Ordinaria</div>
           <div style={{ fontSize: 12, color: '#1e40af' }}>Se realiza al menos una vez al año para tratar temas regulares de la organización.</div>
         </div>
-        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 12, padding: 14 }}>
+        <div className="r-info-card" style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 12, padding: 14 }}>
           <div style={{ fontWeight: 600, color: '#92400e', fontSize: 14, marginBottom: 4 }}>Extraordinaria</div>
           <div style={{ fontSize: 12, color: '#92400e' }}>Se convoca para temas urgentes o especiales (elecciones, reformas, etc).</div>
         </div>
@@ -125,15 +125,15 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
   if (a.status === 'en_curso') actions.push({ label: 'Finalizar', action: 'finalizar', color: '#8b5cf6' });
 
   return (
-    <div style={{ border: '1px solid #e5e7eb', borderLeft: `4px solid ${color}`, borderRadius: 12, padding: 16, background: 'white' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+    <div className="r-card" style={{ border: '1px solid #e5e7eb', borderLeft: `4px solid ${color}`, background: 'white' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 600, color: '#1e3a8a', cursor: 'pointer' }} onClick={onView}>{a.title}</span>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
           {hasVoting && <span style={{ fontSize: 11, fontWeight: 600, color: '#10b981', padding: '2px 8px', background: '#d1fae5', borderRadius: 12 }}>Votación Abierta</span>}
           <span style={{ fontSize: 12, fontWeight: 600, color, padding: '2px 10px', borderRadius: 12, background: `${color}15` }}>{STATUS_LABELS[a.status]}</span>
         </div>
       </div>
-      <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16, marginBottom: 4 }}>
+      <div className="r-assembly-meta">
         <span>{formatDate(a.date)}</span>
         {a.time && <span>{a.time}</span>}
         <span>{a.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'}</span>
@@ -144,7 +144,7 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
           {agendaTypes.map((t) => <span key={t} style={{ fontSize: 11, padding: '1px 8px', borderRadius: 8, background: '#f3f4f6', color: '#374151' }}>{t}</span>)}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="r-btn-row">
         <button onClick={onView} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6, background: 'white', cursor: 'pointer', color: '#374151' }}>Ver detalle</button>
         {actions.map(({ label, action, color: c }) => (
           <button key={action} onClick={() => onAction(id, action)} style={{ padding: '4px 12px', fontSize: 12, border: 'none', borderRadius: 6, background: c, color: 'white', cursor: 'pointer', fontWeight: 600 }}>{label}</button>
@@ -209,7 +209,7 @@ function AssemblyDetailModal({ assembly, onClose, orgId, org, onRefresh, addToas
   return (
     <Modal open={true} onClose={onClose} title={a.title}>
       {/* Info Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+      <div className="r-grid-2" style={{ marginBottom: 24 }}>
         <InfoPill label="Estado" value={STATUS_LABELS[a.status]} />
         <InfoPill label="Tipo" value={a.type === 'ordinaria' ? 'Ordinaria' : 'Extraordinaria'} />
         <InfoPill label="Fecha" value={formatDate(a.date)} />
@@ -433,7 +433,7 @@ function ManoAlzadaForm({ agendaItemId, orgId, assemblyId, onDone, addToast }) {
           <input type="radio" checked={resolucion === 'rechazado'} onChange={() => setResolucion('rechazado')} /> Rechazado
         </label>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+      <div className="r-input-row" style={{ marginBottom: 8 }}>
         <input type="number" min={0} placeholder="A favor" value={votosAFavor} onChange={e => setVotosAFavor(e.target.value)}
           style={{ flex: 1, padding: '6px 10px', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12 }} />
         <input type="number" min={0} placeholder="En contra" value={votosEnContra} onChange={e => setVotosEnContra(e.target.value)}
@@ -498,7 +498,7 @@ function AddCandidatesForm({ orgId, assemblyId, agendaItemId, onClose, onAdded, 
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, cursor: 'pointer' }}>&times;</button>
       </div>
       {candidates.map((c, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <div key={i} className="r-input-row" style={{ marginBottom: 8 }}>
           <input placeholder="Nombre" value={c.firstName} onChange={(e) => updateCandidate(i, 'firstName', e.target.value)} style={inputSm} />
           <input placeholder="Apellido" value={c.lastName} onChange={(e) => updateCandidate(i, 'lastName', e.target.value)} style={inputSm} />
           <input placeholder="RUT" value={c.rut} onChange={(e) => updateCandidate(i, 'rut', e.target.value)} style={inputSm} />
@@ -549,7 +549,7 @@ function ElectionsModal({ open, onClose, elections, org }) {
       {/* Renewal Status */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontWeight: 600, color: '#1e3a8a', marginBottom: 8 }}>Estado de Renovación</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="r-grid-2">
           <InfoPill label="Directorio Actual" value={dirType} />
           <InfoPill label="Última Elección" value={lastElectionDate ? formatDate(lastElectionDate.toISOString()) : 'Sin registro'} />
           {deadline && (
@@ -633,7 +633,7 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
             <option value="extraordinaria">Extraordinaria</option>
           </select>
         </FormField>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="r-form-row">
           <FormField label="Quórum" id="asm-quorum-type" style={{ flex: 1 }}>
             <select id="asm-quorum-type" value={form.quorumType} onChange={set('quorumType')} style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
               <option value="percentage">Porcentaje (%)</option>
@@ -657,9 +657,9 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Puntos de Tabla</label>
           {agendaItems.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <div key={idx} className="r-form-row" style={{ marginBottom: 8 }}>
               <input placeholder="Título del punto" value={item.title} onChange={(e) => updateAgenda(idx, 'title', e.target.value)}
-                style={{ flex: 1, padding: '10px 14px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 14 }} />
+                style={{ flex: 1, padding: '10px 14px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 14, minWidth: 0 }} />
               <select value={item.type} onChange={(e) => updateAgenda(idx, 'type', e.target.value)}
                 style={{ padding: '10px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 14 }}>
                 <option value="custom">Otro</option>
@@ -675,7 +675,7 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="r-form-row">
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
           <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Creando...' : 'Crear Asamblea'}</button>
         </div>

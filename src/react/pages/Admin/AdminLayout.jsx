@@ -40,7 +40,7 @@ export default function AdminLayout({ activeView, onViewChange, children, orgCou
           activeKey={activeView}
           onItemClick={onViewChange}
         />
-        <main style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
+        <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
           {children}
         </main>
       </div>

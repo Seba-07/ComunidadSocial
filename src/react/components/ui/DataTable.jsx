@@ -39,7 +39,7 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div className="r-table-wrap">
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
@@ -47,6 +47,7 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
               <th
                 key={col.key}
                 onClick={() => col.sortable !== false && handleSort(col.key)}
+                className={col.hideOnMobile ? 'r-hide-mobile' : col.hideOnTablet ? 'r-hide-tablet' : ''}
                 style={{
                   padding: '12px 16px',
                   textAlign: 'left',
@@ -55,7 +56,8 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
                   fontWeight: 600,
                   color: '#374151',
                   cursor: col.sortable !== false ? 'pointer' : 'default',
-                  userSelect: 'none'
+                  userSelect: 'none',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {col.label}
@@ -70,6 +72,7 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
               {columns.map((col) => (
                 <td
                   key={col.key}
+                  className={col.hideOnMobile ? 'r-hide-mobile' : col.hideOnTablet ? 'r-hide-tablet' : ''}
                   style={{ padding: '12px 16px', fontSize: 14, color: '#374151' }}
                 >
                   {col.render ? col.render(row[col.key], row) : row[col.key]}
@@ -84,11 +87,12 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: 12,
-          padding: '12px 16px',
+          gap: 8,
+          padding: '12px 8px',
           fontSize: 13,
           color: '#374151',
-          borderTop: '1px solid #e5e7eb'
+          borderTop: '1px solid #e5e7eb',
+          flexWrap: 'wrap'
         }}>
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
@@ -107,7 +111,7 @@ export default function DataTable({ columns, data, emptyMessage = 'Sin datos', p
             Anterior
           </button>
           <span>
-            Página {currentPage + 1} de {totalPages}
+            {currentPage + 1} / {totalPages}
           </span>
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}

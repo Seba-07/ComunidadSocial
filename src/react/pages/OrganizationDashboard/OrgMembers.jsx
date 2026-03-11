@@ -60,6 +60,7 @@ export default function OrgMembers({ org, onRefresh }) {
     {
       key: 'age',
       label: 'Edad',
+      hideOnMobile: true,
       render: (_, row) => {
         const age = calcAge(row.birthDate);
         if (age === null) return '—';
@@ -74,6 +75,7 @@ export default function OrgMembers({ org, onRefresh }) {
     {
       key: 'role',
       label: 'Rol',
+      hideOnMobile: true,
       render: (val) => {
         const ROLE_LABELS = { president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero', director: 'Director', member: 'Socio', electoral_commission: 'Comisión Electoral' };
         const label = ROLE_LABELS[val] || val || 'Socio';
@@ -85,10 +87,10 @@ export default function OrgMembers({ org, onRefresh }) {
     },
     {
       key: 'actions',
-      label: 'Acciones',
+      label: '',
       sortable: false,
       render: (_, row) => (
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="r-btn-row" style={{ gap: 6 }}>
           <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
           <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>
           <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
@@ -102,32 +104,32 @@ export default function OrgMembers({ org, onRefresh }) {
   return (
     <div>
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-        <div style={{ background: '#eff6ff', borderRadius: 12, padding: '12px 20px' }}>
+      <div className="r-stats" style={{ marginBottom: 20 }}>
+        <div style={{ background: '#eff6ff', borderRadius: 12, padding: '12px 20px', flex: 1, minWidth: 120 }}>
           <span style={{ fontSize: 12, color: '#6b7280' }}>Total socios</span>
           <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: '#1e40af' }}>{members.length}</span>
         </div>
-        <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '12px 20px' }}>
+        <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '12px 20px', flex: 1, minWidth: 120 }}>
           <span style={{ fontSize: 12, color: '#6b7280' }}>Activos</span>
           <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: '#059669' }}>{activeCount}</span>
         </div>
       </div>
 
       {/* Info */}
-      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+      <div className="r-info-card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
         Para ser socio se requiere tener al menos 14 años de edad y residencia en la unidad vecinal respectiva.
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>
+      <div className="r-toolbar" style={{ marginBottom: 16 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>
           Miembros
         </h3>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="r-toolbar__actions">
           <input type="text" placeholder="Buscar por nombre o RUT..." value={search} onChange={(e) => setSearch(e.target.value)}
-            style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, width: 260 }} />
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => setShowAdd(true)}>
-            + Agregar Miembro
+            className="r-search" />
+          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowAdd(true)}>
+            + Agregar
           </button>
         </div>
       </div>
@@ -248,7 +250,7 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
         <FormField label="Teléfono" id="m-phone" type="tel" placeholder="+56 9 1234 5678" value={form.phone} onChange={set('phone')} />
         <FormField label="Email" id="m-email" type="email" placeholder="juan@email.cl" value={form.email} onChange={set('email')} />
         <FormField label="Dirección" id="m-address" type="text" placeholder="Calle 123" value={form.address} onChange={set('address')} />
-        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+        <div className="r-form-row" style={{ marginTop: 16 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>
             Cancelar
           </button>
@@ -279,16 +281,17 @@ function MemberProfileModal({ open, onClose, member, org }) {
 
   return (
     <Modal open={open} onClose={onClose} title="Perfil de Miembro">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+      <div className="r-profile-header" style={{ marginBottom: 24 }}>
         <div style={{
           width: 64, height: 64, borderRadius: '50%', background: '#3b82f6', color: 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700,
+          flexShrink: 0
         }}>
           {(member.firstName || '?')[0].toUpperCase()}
         </div>
         <div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#1e3a8a' }}>{member.firstName} {member.lastName}</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
             {dirRole && <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: '#dbeafe', color: '#1e40af' }}>{dirRole}</span>}
             <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: ['president', 'secretary', 'treasurer', 'director'].includes(member.role) ? '#dbeafe' : '#f3f4f6', color: ['president', 'secretary', 'treasurer', 'director'].includes(member.role) ? '#1e40af' : '#374151' }}>
               {({ president: 'Presidente', secretary: 'Secretario', treasurer: 'Tesorero', director: 'Director', member: 'Socio', electoral_commission: 'Comisión Electoral' })[member.role] || member.role || 'Socio'}
@@ -297,7 +300,7 @@ function MemberProfileModal({ open, onClose, member, org }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="r-grid-2">
         <ProfileField label="RUT" value={member.rut} />
         <ProfileField label="Edad" value={age !== null ? `${age} años${age < 18 ? ' (Menor de edad)' : ''}` : '—'} />
         <ProfileField label="Fecha de Nacimiento" value={member.birthDate ? new Date(member.birthDate).toLocaleDateString('es-CL') : '—'} />
@@ -315,7 +318,7 @@ function ProfileField({ label, value }) {
   return (
     <div style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>
       <span style={{ fontSize: 11, color: '#6b7280', display: 'block' }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 500, color: '#374151' }}>{value}</span>
+      <span style={{ fontSize: 14, fontWeight: 500, color: '#374151', wordBreak: 'break-word' }}>{value}</span>
     </div>
   );
 }

@@ -72,12 +72,13 @@ export default function OrgFinanzas({ org, onRefresh }) {
     { key: 'concept', label: 'Concepto' },
     {
       key: 'category', label: 'Categoría',
+      hideOnMobile: true,
       render: (val) => CATEGORY_LABELS[val] || val || '—'
     },
     {
       key: 'amount', label: 'Monto',
       render: (val) => (
-        <span style={{ fontWeight: 600, color: val >= 0 ? '#059669' : '#ef4444' }}>
+        <span style={{ fontWeight: 600, color: val >= 0 ? '#059669' : '#ef4444', whiteSpace: 'nowrap' }}>
           {val >= 0 ? '+' : ''}{formatCLP(val)}
         </span>
       )
@@ -95,23 +96,23 @@ export default function OrgFinanzas({ org, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Finanzas</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13 }} onClick={() => setShowCreate(true)}>
-            + Nueva Transacción
+      <div className="r-toolbar" style={{ marginBottom: 16 }}>
+        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Finanzas</h3>
+        <div className="r-toolbar__actions">
+          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setShowCreate(true)}>
+            + Transacción
           </button>
           <button onClick={exportCSV} style={outlineBtn}>Exportar CSV</button>
         </div>
       </div>
 
       {/* Info card */}
-      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+      <div className="r-info-card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
         Cada organización debe tener una cuenta bancaria a su nombre y presentar un balance anual. Las juntas de vecinos no pueden perseguir fines de lucro.
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="r-grid-3" style={{ marginBottom: 24 }}>
         <SummaryCard label="Ingresos Totales" value={totals.ingresos} color="#059669" />
         <SummaryCard label="Egresos Totales" value={totals.egresos} color="#ef4444" />
         <SummaryCard label="Balance" value={totals.balance} color={totals.balance >= 0 ? '#059669' : '#ef4444'} />
@@ -122,7 +123,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
       {/* Filter */}
       <div style={{ marginBottom: 16 }}>
         <select value={filter} onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14 }}>
+          style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, maxWidth: '100%' }}>
           <option value="all">Todas las categorías</option>
           {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
@@ -141,13 +142,13 @@ export default function OrgFinanzas({ org, onRefresh }) {
   );
 }
 
-const outlineBtn = { padding: '8px 16px', fontSize: 13, border: '1px solid #3b82f6', borderRadius: 8, background: 'white', color: '#3b82f6', cursor: 'pointer', fontWeight: 600 };
+const outlineBtn = { padding: '8px 16px', fontSize: 13, border: '1px solid #3b82f6', borderRadius: 8, background: 'white', color: '#3b82f6', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' };
 
 function SummaryCard({ label, value, color }) {
   return (
     <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
       <span style={{ fontSize: 12, color: '#6b7280', display: 'block', marginBottom: 4 }}>{label}</span>
-      <span style={{ fontSize: 20, fontWeight: 700, color }}>{formatCLP(value)}</span>
+      <span style={{ fontSize: 20, fontWeight: 700, color, whiteSpace: 'nowrap' }}>{formatCLP(value)}</span>
     </div>
   );
 }
@@ -199,7 +200,7 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
         <FormField label="Monto *" id="tx-amount" type="number" placeholder="0" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
         <FormField label="Tipo" id="tx-direction">
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="r-form-row" style={{ gap: 8 }}>
             <button
               type="button"
               onClick={() => setDirection('ingreso')}
@@ -236,7 +237,7 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
 
         <FormField label="Fecha" id="tx-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+        <div className="r-form-row" style={{ marginTop: 8 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
           <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Guardando...' : 'Registrar Transacción'}</button>
         </div>

@@ -1,0 +1,420 @@
+/* ============================================
+   RESPONSIVE UTILITIES
+   Mobile-first responsive classes for React components
+   that use inline styles (can't use @media queries)
+   ============================================ */
+
+/* ============================================
+   RESPONSIVE GRIDS
+   Use className alongside inline grid styles
+   ============================================ */
+
+/* 2-column grid → 1 col on mobile */
+.r-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* 3-column grid → 2 col tablet → 1 col mobile */
+.r-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+/* Auto-fit grid with reasonable minimums */
+.r-grid-auto {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .r-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .r-grid-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .r-grid-auto {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+    .r-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================
+   RESPONSIVE TOOLBAR
+   flex-row on desktop, stacked on mobile
+   ============================================ */
+.r-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.r-toolbar__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 639px) {
+    .r-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .r-toolbar__actions {
+        flex-wrap: wrap;
+    }
+
+    .r-toolbar__actions > * {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+/* ============================================
+   RESPONSIVE SEARCH INPUT
+   ============================================ */
+.r-search {
+    padding: 8px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 260px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+    .r-search {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   RESPONSIVE STATS ROW
+   Horizontal scroll on very small screens
+   ============================================ */
+.r-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .r-stats {
+        gap: 8px;
+    }
+
+    .r-stats > * {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE CARD - reduces padding on mobile
+   ============================================ */
+.r-card {
+    border-radius: 12px;
+    padding: 16px;
+}
+
+@media (max-width: 639px) {
+    .r-card {
+        padding: 12px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE BUTTONS ROW
+   Wraps and grows on mobile
+   ============================================ */
+.r-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .r-btn-row > button,
+    .r-btn-row > a {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   RESPONSIVE FORM ROW
+   Side-by-side on desktop, stacked on mobile
+   ============================================ */
+.r-form-row {
+    display: flex;
+    gap: 12px;
+}
+
+@media (max-width: 639px) {
+    .r-form-row {
+        flex-direction: column;
+    }
+}
+
+/* ============================================
+   RESPONSIVE CANDIDATE/INPUT ROWS
+   Horizontal on desktop, grid on mobile
+   ============================================ */
+.r-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 639px) {
+    .r-input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .r-input-row > input:last-child:nth-child(odd) {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 380px) {
+    .r-input-row {
+        grid-template-columns: 1fr;
+    }
+
+    .r-input-row > input:last-child:nth-child(odd) {
+        grid-column: span 1;
+    }
+}
+
+/* ============================================
+   RESPONSIVE DATA TABLE
+   Tighter padding and smaller text on mobile
+   ============================================ */
+.r-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.r-table-wrap table {
+    min-width: 500px;
+}
+
+@media (max-width: 768px) {
+    .r-table-wrap table th,
+    .r-table-wrap table td {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .r-table-wrap table th {
+        font-size: 11px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .r-table-wrap table {
+        min-width: 400px;
+    }
+
+    .r-table-wrap table th,
+    .r-table-wrap table td {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ASSEMBLY CARD
+   Better wrapping for status/actions on mobile
+   ============================================ */
+.r-assembly-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    background: white;
+}
+
+.r-assembly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.r-assembly-meta {
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+@media (max-width: 639px) {
+    .r-assembly-card {
+        padding: 12px;
+    }
+
+    .r-assembly-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .r-assembly-meta {
+        gap: 8px;
+        font-size: 12px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE PROFILE/DETAIL VIEW
+   ============================================ */
+.r-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+@media (max-width: 480px) {
+    .r-profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* ============================================
+   RESPONSIVE MODAL CONTENT
+   Reduces padding on mobile
+   ============================================ */
+@media (max-width: 639px) {
+    .r-modal-body {
+        padding: 4px 0;
+    }
+
+    .r-modal-body .auth-form {
+        gap: 12px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE HEADER with description text
+   ============================================ */
+@media (max-width: 639px) {
+    .r-page-title {
+        font-size: 16px !important;
+    }
+
+    .r-info-card {
+        font-size: 12px !important;
+        padding: 10px !important;
+    }
+}
+
+/* ============================================
+   HIDE COLUMNS ON MOBILE
+   Add to <th> and <td> to hide non-essential columns
+   ============================================ */
+@media (max-width: 640px) {
+    .r-hide-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .r-hide-tablet {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE TEXT TRUNCATION
+   ============================================ */
+.r-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+}
+
+@media (min-width: 769px) {
+    .r-truncate {
+        max-width: none;
+    }
+}
+
+/* ============================================
+   MOBILE-FRIENDLY ACTION BUTTONS
+   Bigger touch targets on mobile
+   ============================================ */
+@media (max-width: 639px) {
+    .r-action-btn {
+        min-height: 36px;
+        min-width: 36px;
+        padding: 6px 10px !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE MAIN CONTENT AREA
+   Reduces padding on mobile
+   ============================================ */
+@media (max-width: 1023px) {
+    .r-main-content {
+        margin-left: 0 !important;
+        padding: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .r-main-content {
+        padding: 12px !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE SECTION CARDS
+   ============================================ */
+@media (max-width: 639px) {
+    .r-section {
+        padding: 14px !important;
+        border-radius: 10px !important;
+    }
+
+    .r-section h2,
+    .r-section h3 {
+        font-size: 16px !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE SOLICITUD DETAIL
+   Header wraps better on mobile
+   ============================================ */
+@media (max-width: 639px) {
+    .r-solicitud-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .r-solicitud-header h2 {
+        font-size: 18px !important;
+    }
+}
