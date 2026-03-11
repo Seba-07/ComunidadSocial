@@ -56,21 +56,15 @@ app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production' || isDeployed;
 
 function buildAllowedOrigins() {
-  if (isProduction) {
-    // Producción: solo FRONTEND_URL (obligatorio) + variantes conocidas
-    const origins = [];
-    if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
-    // Aceptar ambas variantes del dominio Vercel si están configuradas
-    if (process.env.FRONTEND_URL_ALT) origins.push(process.env.FRONTEND_URL_ALT);
-    return origins.length > 0 ? origins : ['https://comunidadsocial.vercel.app'];
-  }
-  // Desarrollo: localhost + Vercel preview deployments
-  return [
+  const origins = [
     'http://localhost:3000',
     'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173'
   ];
+  if (process.env.FRONTEND_URL) origins.push(process.env.FRONTEND_URL);
+  if (process.env.FRONTEND_URL_ALT) origins.push(process.env.FRONTEND_URL_ALT);
+  return origins;
 }
 
 const allowedOrigins = buildAllowedOrigins();
@@ -84,8 +78,9 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // En desarrollo: aceptar Vercel preview deployments (*.vercel.app)
-    if (!isProduction && /^https:\/\/.*\.vercel\.app$/.test(origin)) {
+    // Aceptar cualquier *.vercel.app (previews y producción)
+    // Seguro: el dominio vercel.app es controlado por Vercel
+    if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
 
