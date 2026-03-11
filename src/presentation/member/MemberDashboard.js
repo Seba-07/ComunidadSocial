@@ -220,7 +220,7 @@ class MemberDashboard {
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="r-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:12px;">
             <span style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Tipo de Organización</span>
             <div style="margin-top:6px;font-weight:600;color:#1e293b;">${typeName}</div>
@@ -830,7 +830,7 @@ class MemberDashboard {
         </div>
         <div class="org-modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
           <!-- Info grid -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div class="r-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
             <div style="padding:14px;background:#f8fafc;border-radius:10px;">
               <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;">Estado</span>
               <div style="margin-top:6px;"><span style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:10px;font-size:13px;font-weight:600;">${st.label}</span></div>
