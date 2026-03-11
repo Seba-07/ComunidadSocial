@@ -32,7 +32,7 @@ import Member from '../models/Member.js';
 import Document from '../models/Document.js';
 
 // Configuración
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 const DEFAULT_BATCH_SIZE = 10;
 
 // Parsear argumentos

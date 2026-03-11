@@ -37,11 +37,11 @@
 
 | Fase | Estado | Detalle |
 |------|--------|---------|
-| Fase 1 | EN PROGRESO | 1B hecho (codigo). 1A pendiente (Atlas manual — usuario debe crear users) |
+| Fase 1 | COMPLETADA | Atlas: cs_dev_user + cs_renca_user creados. Railway actualizado. Codigo protegido |
 | Fase 2 | COMPLETADA | tenant.js backend + frontend + API endpoint + .env.example |
-| Fase 3 | COMPLETADA | 30+ refs reemplazadas. Build OK. Quedan solo seeds/tests/datos geograficos |
-| Fase 4 | PENDIENTE | Templates de deploy + seeds |
-| Fase 5 | PENDIENTE | Documentacion |
+| Fase 3 | COMPLETADA | 30+ refs reemplazadas. Build OK. Quedan solo datos geograficos/examples |
+| Fase 4 | COMPLETADA | deploy/ structure, templates, ONBOARDING.md, seeds refactorizados |
+| Fase 5 | COMPLETADA | CLAUDE.md + ENVIRONMENT_ARCHITECTURE.md actualizados |
 
 ---
 

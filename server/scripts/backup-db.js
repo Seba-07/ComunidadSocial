@@ -11,7 +11,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 
 // Collections to backup (exclude heavy base64 fields where possible)
 const COLLECTIONS = [
@@ -64,7 +64,7 @@ async function backup() {
     // Save metadata
     const meta = {
       date: new Date().toISOString(),
-      database: 'comunidad_social',
+      database: MONGODB_URI.split('/').pop()?.split('?')[0] || 'comunidad_social_dev',
       totalCollections: COLLECTIONS.length,
       totalDocuments: totalDocs,
       note: 'Base64/binary fields excluded. Use S3 for document recovery.'

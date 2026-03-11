@@ -15,7 +15,7 @@ import { upload, isS3Configured } from '../services/s3Service.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const batchArg = args.find(a => a.startsWith('--batch-size='));

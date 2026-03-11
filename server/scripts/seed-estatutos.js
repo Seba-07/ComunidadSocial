@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad-social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 
 // Configuración específica de directorio por tipo de organización
 const DIRECTORIO_CONFIG = {

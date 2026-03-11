@@ -11,7 +11,7 @@ import Notification from '../models/Notification.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 
 async function cleanDatabase() {
   try {
@@ -75,7 +75,7 @@ async function cleanDatabase() {
         email: 'admin@renca.cl',
         password: 'admin123',
         phone: '+56 2 2345 6789',
-        address: 'Municipalidad de Renca, Blanco Encalada 1335',
+        address: process.env.TENANT_ADDRESS || 'Municipalidad',
         role: 'MUNICIPALIDAD',
         active: true
       });

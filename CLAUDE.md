@@ -54,6 +54,7 @@ Roles: ORGANIZADOR, MIEMBRO, MIEMBRO_DIRECTIVO, MUNICIPALIDAD, MINISTRO_FE.
 5. Usar imports relativos en vez de los aliases `@services/`, `@react/`, `@shared/`
 6. Crear rutas nuevas sin `validate(schema)` → datos sin validar llegan a MongoDB
 7. Asumir que solo React maneja auth: `main.js` también lee localStorage
+8. **Hardcodear nombres de municipalidad** (Renca, etc.) — usar `tenant.communeName` o similar
 
 ## Comandos
 ```bash
@@ -81,6 +82,15 @@ npm run optimize-indexes  # Optimizar índices MongoDB
 | Migración Base64 → S3 | Infra lista, NO activada | `s3Service.js` + `storageService.js` + script migración listos. Falta configurar credenciales AWS en Railway |
 | Limpieza Organization model | Parcial (~70%) | Schema refactoreado con campos `DEPRECATED`. Falta ejecutar `migrate-to-normalized.js` en DB |
 | `.env` con credenciales AWS | Activo | Necesitan rotación — NUNCA commitear |
+| Multi-tenancy | Completado | Config tenant via env vars. Ver `PLAN_MULTI_TENANCY.md` |
+
+## Multi-tenancy (municipalidades)
+- **Arquitectura**: Un repo, N deploys. Cada municipalidad = Railway + Vercel + MongoDB separados
+- **Config**: `server/config/tenant.js` (backend) + `src/config/tenant.js` (frontend)
+- **NUNCA hardcodear** nombres de municipalidad, direcciones, o datos municipales. Siempre usar `tenant.*`
+- **Endpoint**: `GET /api/tenant` retorna config publica de la municipalidad
+- **Onboarding**: Ver `deploy/ONBOARDING.md` para agregar nueva municipalidad
+- **Convencion DB**: `cs_<comuna>` (ej: `cs_renca`, `cs_maipu`). User Atlas: `cs_<comuna>_user`
 
 ## Modo paralelo con worktrees
 Para trabajar en múltiples tareas simultáneas:

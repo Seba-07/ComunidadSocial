@@ -12,7 +12,7 @@ import Assembly from '../models/Assembly.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const orgIdArg = args.find(a => a.startsWith('--org-id='));

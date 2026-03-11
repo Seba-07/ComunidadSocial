@@ -4,10 +4,11 @@ import User from '../models/User.js';
 import Organization from '../models/Organization.js';
 import Assignment from '../models/Assignment.js';
 import Notification from '../models/Notification.js';
+import tenant from '../config/tenant.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 
 // Configuración: cambiar a 50 para cargar 50 miembros
 const TOTAL_MEMBERS = 15; // Opciones: 15 o 50
@@ -89,7 +90,7 @@ function generateTestMembers(count) {
       lastName,
       email: `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.${lastName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}${i}@email.cl`,
       phone: `+56 9 ${String(1000 + i).padStart(4, '0')} ${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-      address: `${street} ${streetNum}, Renca`,
+      address: `${street} ${streetNum}, ${tenant.communeName}`,
       birthDate: generateBirthDate(14, 17) // Todos entre 14-17 años
     });
   }
@@ -116,15 +117,15 @@ async function seed() {
       rut: '11.111.111-1',
       firstName: 'Administrador',
       lastName: 'Sistema',
-      email: 'admin@renca.cl',
+      email: tenant.adminEmail || 'admin@comunidadsocial.cl',
       password: 'admin123',
-      phone: '+56 2 2345 6789',
-      address: 'Municipalidad de Renca, Blanco Encalada 1335',
+      phone: tenant.phone || '+56 2 2345 6789',
+      address: tenant.address || 'Municipalidad',
       role: 'MUNICIPALIDAD',
       active: true
     });
     await admin.save();
-    console.log('✅ Admin creado: admin@renca.cl / admin123');
+    console.log(`✅ Admin creado: ${tenant.adminEmail || 'admin@comunidadsocial.cl'} / admin123`);
 
     // Generar y crear usuarios de prueba (todos menores de edad)
     console.log(`\n👥 Creando ${TOTAL_MEMBERS} usuarios de prueba (14-17 años)...`);
@@ -165,7 +166,7 @@ async function seed() {
     console.log('\n📋 CREDENCIALES DE ACCESO:');
     console.log('─'.repeat(50));
     console.log('ADMINISTRADOR:');
-    console.log('  Email: admin@renca.cl');
+    console.log(`  Email: ${tenant.adminEmail || 'admin@comunidadsocial.cl'}`);
     console.log('  Password: admin123');
     console.log('');
     console.log(`USUARIOS DE PRUEBA (${TOTAL_MEMBERS} menores de edad 14-17 años):`);

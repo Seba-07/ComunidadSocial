@@ -5,7 +5,7 @@ import Assignment from '../models/Assignment.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social_dev';
 
 async function clearOrganizations() {
   try {
