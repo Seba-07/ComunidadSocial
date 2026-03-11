@@ -132,7 +132,7 @@ export default function MiHorario() {
       </p>
 
       {/* Week navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         <button onClick={() => setWeekOffset(w => w - 1)}
           style={{ padding: '8px 16px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
           &larr; Anterior
@@ -154,7 +154,8 @@ export default function MiHorario() {
       </div>
 
       {/* Schedule grid */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden', minWidth: 500 }}>
         {/* Header row */}
         <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(5, 1fr)', borderBottom: '2px solid #e5e7eb' }}>
           <div style={{ padding: '12px 8px', fontSize: 12, fontWeight: 600, color: '#6b7280', textAlign: 'center' }}>Hora</div>
@@ -217,6 +218,7 @@ export default function MiHorario() {
             })}
           </div>
         ))}
+      </div>
       </div>
 
       {/* Block summary */}

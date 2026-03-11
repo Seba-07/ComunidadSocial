@@ -475,13 +475,13 @@ export default function EstatutosManagerView() {
             <div>
               <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
                 <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Mínimo miembros para constituir</label>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>Mínimo miembros para constituir</label>
                   <input type="number" value={selectedTemplate.miembrosMinimos ?? ''}
                     onChange={e => setSelectedTemplate(t => ({ ...t, miembrosMinimos: parseInt(e.target.value) || 15 }))}
                     style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
                 </div>
                 <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Miembros comisión electoral</label>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>Miembros comisión electoral</label>
                   <input type="number" value={selectedTemplate.comisionElectoral?.cantidad ?? ''}
                     onChange={e => setSelectedTemplate(t => ({ ...t, comisionElectoral: { ...(t.comisionElectoral || {}), cantidad: parseInt(e.target.value) || 3 } }))}
                     style={{ width: 80, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
@@ -492,7 +492,7 @@ export default function EstatutosManagerView() {
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 12px' }}>Configuración de Mandato</h3>
               <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
                 <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Tipo de mandato</label>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>Tipo de mandato</label>
                   <select value={selectedTemplate.mandatoTipo || 'fijo'}
                     onChange={e => setSelectedTemplate(t => ({ ...t, mandatoTipo: e.target.value }))}
                     style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
@@ -501,7 +501,7 @@ export default function EstatutosManagerView() {
                   </select>
                 </div>
                 <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>
                     {selectedTemplate.mandatoTipo === 'variable' ? 'Opciones de años permitidas' : 'Duración fija (años)'}
                   </label>
                   <input value={(selectedTemplate.mandatoOpciones || [3]).join(', ')}
@@ -546,7 +546,7 @@ export default function EstatutosManagerView() {
                 {selectedTemplate.edadConfig?.permiteMenores !== false && (
                   <>
                     <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 24 }}>
-                      <label style={{ fontSize: 14, fontWeight: 600, minWidth: 250 }}>Edad mínima para ser miembro</label>
+                      <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>Edad mínima para ser miembro</label>
                       <input type="number" min={10} max={18}
                         value={selectedTemplate.edadConfig?.edadMinima ?? 14}
                         onChange={e => setSelectedTemplate(t => ({

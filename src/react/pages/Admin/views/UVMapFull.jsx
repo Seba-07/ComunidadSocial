@@ -210,9 +210,9 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
   const isDrawMode = mode === 'drawPoly' || mode === 'reDraw' || mode === 'create';
 
   return (
-    <div style={{ display: 'flex', gap: 0, height: 680, borderRadius: 14, overflow: 'hidden', border: '1px solid #d1d5db', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+    <div style={{ display: 'flex', gap: 0, minHeight: 400, borderRadius: 14, overflow: 'hidden', border: '1px solid #d1d5db', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', flexWrap: 'wrap' }}>
       {/* === SIDE PANEL === */}
-      <div style={{ width: 300, background: '#fafbfc', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: 300, minWidth: 280, flex: '1 1 300px', background: '#fafbfc', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb', background: '#fff' }}>

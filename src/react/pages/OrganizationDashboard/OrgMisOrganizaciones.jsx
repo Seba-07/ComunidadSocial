@@ -185,7 +185,7 @@ export default function OrgMisOrganizaciones() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
             Mis Organizaciones
@@ -212,7 +212,7 @@ export default function OrgMisOrganizaciones() {
           marginBottom: 24, background: '#fefce8', borderRadius: 12,
           border: '2px dashed #d97706', padding: 20,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827' }}>
@@ -270,7 +270,7 @@ export default function OrgMisOrganizaciones() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.1)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ display: 'flex', gap: 14, flex: 1 }}>
                       <div style={{
                         width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg, #dbeafe, #eff6ff)',
@@ -357,7 +357,7 @@ export default function OrgMisOrganizaciones() {
             {approvedOrgs.map(org => (
               <div key={org._id} style={{
                 background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-                padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 20 }}>🏢</span>

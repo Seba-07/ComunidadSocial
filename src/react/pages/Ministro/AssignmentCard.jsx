@@ -19,7 +19,7 @@ export default function AssignmentCard({ assignment, onValidate }) {
   return (
     <div style={{
       background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-      padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12
     }}>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -34,7 +34,7 @@ export default function AssignmentCard({ assignment, onValidate }) {
             {STATUS_LABELS[status] || status}
           </span>
         </div>
-        <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16 }}>
+        <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {(a.date || a.scheduledDate) && <span>{formatDate(a.date || a.scheduledDate)}</span>}
           {a.time && <span>{a.time}</span>}
           {a.address && <span>{a.address}</span>}

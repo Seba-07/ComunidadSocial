@@ -169,7 +169,7 @@ export default function UVMapEditor({ uvList, onPolygonSaved }) {
   const uvsWithout = uvList?.filter(uv => !uv.geometry?.coordinates) || [];
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: 600 }}>
+    <div style={{ display: 'flex', gap: 16, minHeight: 400, flexWrap: 'wrap' }}>
       {/* Map */}
       <div style={{ flex: 1, position: 'relative' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: 12, border: '1px solid #e5e7eb' }} />
@@ -181,7 +181,7 @@ export default function UVMapEditor({ uvList, onPolygonSaved }) {
       </div>
 
       {/* Panel */}
-      <div style={{ width: 260, overflow: 'auto', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12 }}>
+      <div style={{ flex: '1 1 260px', minWidth: 240, overflow: 'auto', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12 }}>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
           Unidades Vecinales
         </h3>

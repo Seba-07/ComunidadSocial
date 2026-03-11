@@ -405,7 +405,7 @@ export default function DocumentTemplatesView() {
 
     return (
       <div style={{ padding: 24, maxWidth: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div className="r-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <button onClick={() => setSelected(null)} style={btnOutline}>
             ← Volver
           </button>
@@ -488,7 +488,7 @@ export default function DocumentTemplatesView() {
 
         {/* Tab: Contenido */}
         {editTab === 'contenido' && (
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
               <div style={cardStyle}>
                 <label style={labelStyle}>Contenido (texto con placeholders)</label>
@@ -534,7 +534,7 @@ export default function DocumentTemplatesView() {
                 />
               </div>
             </div>
-            <div style={{ width: 240, flexShrink: 0 }}>
+            <div style={{ width: 240 }}>
               <div style={{ ...cardStyle, position: 'sticky', top: 80 }}>
                 <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b', marginBottom: 10 }}>
                   Variables disponibles
