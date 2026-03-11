@@ -305,8 +305,8 @@ class OrganizationDashboard {
               <tr>
                 <th>Nombre</th>
                 <th>RUT</th>
-                <th>Teléfono</th>
-                <th>Fecha Ingreso</th>
+                <th class="r-hide-mobile">Teléfono</th>
+                <th class="r-hide-mobile">Fecha Ingreso</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -333,8 +333,8 @@ class OrganizationDashboard {
                     </div>
                   </td>
                   <td>${member.rut || '-'}</td>
-                  <td>${member.phone || '-'}</td>
-                  <td>${member.joinDate ? new Date(member.joinDate).toLocaleDateString('es-CL') : 'Fundador'}</td>
+                  <td class="r-hide-mobile">${member.phone || '-'}</td>
+                  <td class="r-hide-mobile">${member.joinDate ? new Date(member.joinDate).toLocaleDateString('es-CL') : 'Fundador'}</td>
                   <td>
                     <span class="status-badge ${member.status || 'active'}">${member.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
                   </td>
@@ -1805,7 +1805,7 @@ class OrganizationDashboard {
         </div>
         <div class="org-modal-body" style="max-height: 70vh; overflow-y: auto;">
           <form id="form-new-assembly">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div class="form-group">
                 <label>Tipo de Asamblea *</label>
                 <select id="assembly-type" required>
@@ -1831,7 +1831,7 @@ class OrganizationDashboard {
               <textarea id="assembly-description" rows="2" placeholder="Descripción breve de la asamblea"></textarea>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px;">
+            <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px;">
               <div class="form-group" style="margin-bottom:0;">
                 <label>Tipo de Quórum</label>
                 <select id="assembly-quorum-type">
@@ -2587,7 +2587,7 @@ class OrganizationDashboard {
             </p>
           </div>
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button type="button" class="btn btn-secondary" id="btn-cancel-user-validation">
               Cancelar
             </button>
@@ -2746,7 +2746,7 @@ class OrganizationDashboard {
               </div>
             `;
           }).join('')}
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-save-directorio" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
@@ -2825,7 +2825,7 @@ class OrganizationDashboard {
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Observaciones</label>
               <textarea id="election-notes" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 80px;" placeholder="Notas adicionales..."></textarea>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
               <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Convocar Eleccion</button>
             </div>
@@ -2904,7 +2904,7 @@ class OrganizationDashboard {
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mensaje *</label>
               <textarea id="comm-message" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 120px;" placeholder="Escriba el mensaje..." required></textarea>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
               <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Enviar Comunicacion</button>
             </div>
@@ -2962,7 +2962,7 @@ class OrganizationDashboard {
         </div>
         <div class="org-modal-body" style="padding: 24px;">
           <form id="form-edit-member">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group">
                 <label style="font-weight: 600; display: block; margin-bottom: 6px;">Nombre *</label>
                 <input type="text" id="edit-firstName" value="${member.firstName || member.primerNombre || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
@@ -2972,7 +2972,7 @@ class OrganizationDashboard {
                 <input type="text" id="edit-lastName" value="${member.lastName || member.apellidoPaterno || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
               <div class="form-group">
                 <label style="font-weight: 600; display: block; margin-bottom: 6px;">RUT</label>
                 <input type="text" value="${member.rut || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #f1f5f9;" disabled>
@@ -2994,7 +2994,7 @@ class OrganizationDashboard {
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Dirección</label>
               <input type="text" id="edit-address" value="${member.address || ''}" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
               <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
@@ -3105,7 +3105,7 @@ class OrganizationDashboard {
 
           <!-- Datos personales -->
           <h4 style="font-size: 13px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 12px;">Datos Personales</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
             <div>
               <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">RUT</div>
               <div style="font-size: 14px; font-weight: 500;">${member.rut || '-'}</div>
@@ -3131,7 +3131,7 @@ class OrganizationDashboard {
 
           <!-- Estado -->
           <h4 style="font-size: 13px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 12px;">Estado</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="r-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
             <div>
               <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Estado</div>
               <span class="status-badge ${member.status || 'active'}" style="font-size: 12px;">${member.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
@@ -3346,7 +3346,7 @@ class OrganizationDashboard {
         </div>
         <div class="org-modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
           <!-- Info general -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
             <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
               <span style="font-weight: 600; font-size:12px; color:#6b7280;">Estado</span>
               <div style="margin-top:4px;"><span class="assembly-status-badge" style="background:${st.bg};color:${st.color};padding:4px 12px;border-radius:10px;font-size:13px;font-weight:600;">${st.label}</span></div>
@@ -3475,7 +3475,7 @@ class OrganizationDashboard {
             </div>
           ` : '<p style="color:#6b7280;font-size:13px;">Sin asistentes registrados.</p>'}
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             ${assembly.status === 'finalizada' ? `<button id="btn-download-assembly-acta" style="padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg,#2563eb,#1d4ed8); color: white; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Descargar Acta PDF
@@ -3661,7 +3661,7 @@ class OrganizationDashboard {
             <button id="btn-add-candidate" style="padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;font-weight:600;">Agregar Candidato</button>
           </div>
 
-          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+          <div class="r-btn-row" style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
             <button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cerrar</button>
             <button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">Guardar Candidatos</button>
           </div>
@@ -3818,7 +3818,7 @@ class OrganizationDashboard {
       + (minorCount > 0 ? '<p style="color:#b45309;font-size:12px;margin-bottom:16px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">Los socios menores de edad no son elegibles como candidatos.</p>' : '')
       + '<div id="cargo-slots-container">' + buildCargoSlots() + '</div>'
       + '<div id="save-validation-msg" style="display:none;margin-top:12px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#991b1b;"></div>'
-      + '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">'
+      + '<div class="r-btn-row" style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">'
       + '<button class="btn-cancel" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;cursor:pointer;">Cancelar</button>'
       + '<button id="btn-save-candidates" style="padding:10px 20px;border:none;border-radius:8px;background:#059669;color:white;cursor:pointer;font-weight:600;">' + btnLabel + '</button>'
       + '</div></div></div>';
@@ -3988,7 +3988,7 @@ class OrganizationDashboard {
               <input type="range" id="edit-project-progress" min="0" max="100" value="${project.progress || 0}" style="width: 100%;">
             </div>
           </div>
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
             <button class="btn-save-project" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>
@@ -4093,7 +4093,7 @@ ${comm.message || 'Sin contenido'}
                 <option value="medioambiental" ${act.category === 'medioambiental' ? 'selected' : ''}>Medioambiental</option>
               </select>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
               <div>
                 <label style="font-weight: 600; display: block; margin-bottom: 6px;">Fecha *</label>
                 <input type="date" id="edit-act-date" value="${act.date || ''}" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
@@ -4111,7 +4111,7 @@ ${comm.message || 'Sin contenido'}
               <label style="font-weight: 600; display: block; margin-bottom: 6px;">Descripción</label>
               <textarea id="edit-act-desc" rows="3" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">${act.description || ''}</textarea>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+            <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
               <button type="button" class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
               <button type="submit" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar</button>
             </div>
@@ -4313,7 +4313,7 @@ ${comm.message || 'Sin contenido'}
           <button class="modal-close">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="r-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
             <div style="text-align: center; padding: 16px; background: #f0fdf4; border-radius: 10px;">
               <div style="font-size: 20px; font-weight: 700; color: #166534;">+$${totalIncome.toLocaleString('es-CL')}</div>
               <div style="font-size: 12px; color: #4ade80; margin-top: 4px;">Total Ingresos</div>
@@ -4327,6 +4327,7 @@ ${comm.message || 'Sin contenido'}
               <div style="font-size: 12px; color: #3b82f6; margin-top: 4px;">Saldo Actual</div>
             </div>
           </div>
+          <div class="r-table-wrap">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
               <tr style="border-bottom: 2px solid #e5e7eb;">
@@ -4347,6 +4348,7 @@ ${comm.message || 'Sin contenido'}
               `).join('')}
             </tbody>
           </table>
+          </div>
           <div style="text-align: right; margin-top: 20px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cerrar</button>
           </div>
@@ -4443,7 +4445,7 @@ ${comm.message || 'Sin contenido'}
             <label style="font-weight: 600; color: #1e293b; margin-bottom: 6px; display: block;">Fecha de Elección en Asamblea *</label>
             <input type="date" id="def-dir-date" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;" required>
           </div>
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-save-def-dir" style="padding: 10px 20px; border: none; border-radius: 8px; background: #059669; color: white; cursor: pointer; font-weight: 600;">Registrar Directorio Definitivo</button>
           </div>
@@ -4522,7 +4524,7 @@ ${comm.message || 'Sin contenido'}
             </p>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="r-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
             <div style="background: #f0fdf4; border-radius: 10px; padding: 16px; text-align: center;">
               <div style="font-size: 24px; font-weight: 700; color: #059669;">${activeCount}</div>
               <div style="font-size: 12px; color: #6b7280;">Socios Activos</div>
@@ -4567,7 +4569,7 @@ ${comm.message || 'Sin contenido'}
             <textarea id="registro-obs" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 60px;" placeholder="Notas sobre cambios en el registro..."></textarea>
           </div>
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-confirm-registro" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Confirmar Actualización</button>
           </div>
@@ -4647,7 +4649,7 @@ ${comm.message || 'Sin contenido'}
               </select>
             </div>
           `).join('')}
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-save-comision" style="padding: 10px 20px; border: none; border-radius: 8px; background: #059669; color: white; cursor: pointer; font-weight: 600;">Designar Comisión</button>
           </div>
@@ -4746,7 +4748,7 @@ ${comm.message || 'Sin contenido'}
               </select>
             </div>
           `).join('')}
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-save-tricel" style="padding: 10px 20px; border: none; border-radius: 8px; background: #7c3aed; color: white; cursor: pointer; font-weight: 600;">Designar TRICEL</button>
           </div>
@@ -4816,7 +4818,7 @@ ${comm.message || 'Sin contenido'}
           <button class="modal-close">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
             <div>
               <label style="font-size: 12px; color: #6b7280; display: block;">Fecha</label>
               <span style="font-weight: 600;">${new Date(election.date).toLocaleDateString('es-CL')}</span>
@@ -4859,7 +4861,7 @@ ${comm.message || 'Sin contenido'}
             <textarea id="election-notes-edit" class="input-styled" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; min-height: 60px;">${election.notes || ''}</textarea>
           </div>
 
-          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <div class="r-btn-row" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
             <button class="btn-cancel" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer;">Cancelar</button>
             <button class="btn-save-election" style="padding: 10px 20px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">Guardar Cambios</button>
           </div>

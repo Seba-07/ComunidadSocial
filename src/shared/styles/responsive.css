@@ -32,21 +32,21 @@
 
 @media (max-width: 768px) {
     .r-grid-2 {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 
     .r-grid-3 {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 
     .r-grid-auto {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
     .r-grid-3 {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
@@ -416,5 +416,104 @@
 
     .r-solicitud-header h2 {
         font-size: 18px !important;
+    }
+}
+
+/* ============================================
+   VANILLA JS — Org Dashboard responsive fixes
+   Override inline styles on mobile with !important
+   ============================================ */
+
+/* org-modal: full width on small screens */
+@media (max-width: 639px) {
+    .org-modal-overlay {
+        padding: 8px !important;
+    }
+
+    .org-modal {
+        max-width: 100% !important;
+    }
+
+    .org-modal-header {
+        padding: 14px 16px !important;
+    }
+
+    .org-modal-header h3 {
+        font-size: 15px !important;
+    }
+
+    .org-modal-body {
+        padding: 16px !important;
+    }
+
+    .org-modal-footer {
+        padding: 12px 16px !important;
+        flex-wrap: wrap;
+    }
+
+    .org-modal-footer button {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* form-row inside modals: stack on mobile */
+    .form-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Section headers: wrap on mobile */
+    .section-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Doc items: stack vertically */
+    .org-doc-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .org-doc-actions {
+        width: 100%;
+        justify-content: flex-start !important;
+    }
+
+    /* Members table: tighter */
+    .members-table th,
+    .members-table td {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Alert cards: better mobile layout */
+    .alert-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .alert-status {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .org-stat-card {
+        padding: 12px !important;
+    }
+
+    .stat-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+    }
+
+    .stat-value {
+        font-size: 18px !important;
+    }
+
+    .members-table th,
+    .members-table td {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
     }
 }
