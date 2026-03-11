@@ -89,7 +89,7 @@ export default function UserManagerView() {
         </div>
       )
     },
-    { key: 'email', label: 'Email', sortable: true },
+    { key: 'email', label: 'Email', sortable: true, hideOnMobile: true },
     {
       key: 'role', label: 'Rol', sortable: true,
       render: (val) => (
@@ -103,7 +103,7 @@ export default function UserManagerView() {
       )
     },
     {
-      key: 'isActive', label: 'Estado',
+      key: 'isActive', label: 'Estado', hideOnTablet: true,
       render: (val) => (
         <span style={{
           padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
@@ -117,7 +117,7 @@ export default function UserManagerView() {
     {
       key: 'actions', label: 'Acciones', sortable: false,
       render: (_, row) => (
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="r-btn-row" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={(e) => { e.stopPropagation(); handleToggle(row); }} style={smallBtn}>
             {row.isActive !== false ? 'Desactivar' : 'Activar'}
           </button>
@@ -136,7 +136,7 @@ export default function UserManagerView() {
 
       {statsCards.length > 0 && <StatsGrid stats={statsCards} />}
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 20, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="r-toolbar" style={{ display: 'flex', gap: 16, marginTop: 20, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ maxWidth: 300, flex: 1 }}>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar usuario..." />
         </div>

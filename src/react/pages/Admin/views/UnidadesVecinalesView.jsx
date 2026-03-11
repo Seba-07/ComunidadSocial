@@ -56,7 +56,7 @@ export default function UnidadesVecinalesView() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>Unidades Vecinales</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>

@@ -88,7 +88,7 @@ export default function OrganizationsList() {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
           Organizaciones
         </h1>
@@ -140,7 +140,7 @@ export default function OrganizationsList() {
                   </span>
                   <StatusBadge status={org.status} />
                 </div>
-                <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16 }}>
+                <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <span>{(org.organizationType || org.type || 'Sin tipo').replace(/_/g, ' ')}</span>
                   {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
                   {org.memberCount != null && <span>{org.memberCount} miembros</span>}
