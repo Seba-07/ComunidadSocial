@@ -20,6 +20,7 @@ import { pdfService } from './src/services/PDFService.js';
 import { apiService } from './src/services/ApiService.js';
 import { indexedDBService } from './src/infrastructure/database/IndexedDBService.js';
 import { sessionManager } from './src/shared/SessionManager.js';
+import tenant from './src/config/tenant.js';
 
 // Componente de estado de conexión (se auto-inicializa)
 import './src/shared/components/ConnectionStatus.js';
@@ -1152,7 +1153,7 @@ function renderProfileUI(user) {
   const phone = user.phone || '';
   const address = user.address || '';
   const region = user.region || (user.role === 'MUNICIPALIDAD' ? 'RM' : '');
-  const commune = user.commune || (user.role === 'MUNICIPALIDAD' ? 'Renca' : '');
+  const commune = user.commune || (user.role === 'MUNICIPALIDAD' ? tenant.communeName : '');
 
   // Header
   const initials = `${(firstName || 'U')[0]}${(lastName || 'S')[0]}`.toUpperCase();
@@ -1815,7 +1816,7 @@ function getSavedWizardProgress() {
       organizationType: orgData.type,
       organizationName: orgData.name,
       address: orgData.address,
-      comuna: orgData.commune || 'Renca',
+      comuna: orgData.commune || tenant.communeName,
       organization: orgData,
       members: progress.formData?.members || [],
       createdAt: progress.savedAt,
@@ -1853,7 +1854,7 @@ function renderOrganizationCard(org) {
   const orgType = org.organizationType || org.organization?.type;
   const orgName = org.organizationName || org.organization?.name || 'Sin nombre';
   const orgAddress = org.address || org.organization?.address || '';
-  const orgComuna = org.comuna || org.organization?.commune || 'Renca';
+  const orgComuna = org.comuna || org.organization?.commune || tenant.communeName;
 
   // Iconos según tipo
   const typeIcon = getOrgIcon(orgType);
@@ -3107,7 +3108,7 @@ async function viewOrganization(orgId, forceRefresh = false) {
           </div>
           <div class="detail-row ${corrections?.fields?.commune ? 'needs-correction' : ''}">
             <span class="detail-label">Comuna:</span>
-            <span class="detail-value">${org.commune || org.organization?.commune || 'Renca'}</span>
+            <span class="detail-value">${org.commune || org.organization?.commune || tenant.communeName}</span>
           </div>
           <div class="detail-row ${corrections?.fields?.region ? 'needs-correction' : ''}">
             <span class="detail-label">Región:</span>
@@ -4755,7 +4756,7 @@ function continueDraftOrganization(orgId) {
         name: org.organizationName,
         address: org.address,
         region: org.region || 'RM',
-        commune: org.comuna || 'Renca',
+        commune: org.comuna || tenant.communeName,
         territory: org.territory,
         unidadVecinal: org.unidadVecinal
       },
@@ -5401,7 +5402,7 @@ function setupAdminUI() {
   // Cambiar título del header
   const headerTitle = document.querySelector('.header-title');
   if (headerTitle) {
-    headerTitle.textContent = 'Admin - Comunidad Renca';
+    headerTitle.textContent = 'Admin - ' + tenant.platformShortName;
   }
 }
 

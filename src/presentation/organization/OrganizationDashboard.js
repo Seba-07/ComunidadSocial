@@ -12,6 +12,7 @@ import { pdfService } from '../../services/PDFService.js';
 import { apiService } from '../../services/ApiService.js';
 import { jsPDF } from 'jspdf';
 import { showToast } from '../../app.js';
+import tenant from '../../config/tenant.js';
 
 // Importar utilidades compartidas
 import {
@@ -4223,12 +4224,12 @@ ${comm.message || 'Sin contenido'}
 
         doc.setFontSize(12);
         doc.setTextColor(40);
-        const text = `La ${orgType} "${orgName}", con domicilio en ${org.organization?.address || 'dirección no registrada'}, comuna de ${org.organization?.commune || 'Renca'}, Región Metropolitana, certifica que la organización se encuentra constituida y vigente, con personalidad jurídica otorgada conforme a la Ley 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.`;
+        const text = `La ${orgType} "${orgName}", con domicilio en ${org.organization?.address || 'dirección no registrada'}, comuna de ${org.organization?.commune || tenant.communeName}, Región Metropolitana, certifica que la organización se encuentra constituida y vigente, con personalidad jurídica otorgada conforme a la Ley 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.`;
         doc.text(text, 30, 70, { maxWidth: 150 });
 
         doc.text(`Número de socios activos: ${(org.members || []).length}`, 30, 115);
         doc.text(`Se extiende el presente certificado a petición del interesado.`, 30, 130);
-        doc.text(`Renca, ${today}`, 30, 155);
+        doc.text(`${tenant.communeName}, ${today}`, 30, 155);
 
         doc.setFontSize(10);
         doc.text('_____________________________', 105, 190, { align: 'center' });
@@ -4263,7 +4264,7 @@ ${comm.message || 'Sin contenido'}
 
         y += 10;
         doc.setFontSize(11);
-        doc.text(`Renca, ${today}`, 30, y);
+        doc.text(`${tenant.communeName}, ${today}`, 30, y);
         y += 25;
         doc.setFontSize(10);
         doc.text('_____________________________', 105, y, { align: 'center' });
