@@ -4040,7 +4040,7 @@ class OrganizationDashboard {
           <button class="modal-close">&times;</button>
         </div>
         <div class="org-modal-body" style="padding: 24px;">
-          <div style="display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: #6b7280;">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; font-size: 13px; color: #6b7280;">
             <span>${new Date(comm.date).toLocaleDateString('es-CL')}</span>
             <span>${typeLabels[comm.type] || comm.type}</span>
             <span>${comm.recipients || 0} destinatarios</span>

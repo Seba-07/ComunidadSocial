@@ -4192,7 +4192,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
                 <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">RUT</label>
                 <input type="text" id="edit-member-rut" value="${member.rut || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="r-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                   <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Primer Nombre</label>
                   <input type="text" id="edit-member-firstName" value="${member.firstName || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
@@ -4202,7 +4202,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
                   <input type="text" id="edit-member-segundoNombre" value="${member.segundoNombre || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
                 </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="r-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                   <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Apellido Paterno</label>
                   <input type="text" id="edit-member-lastName" value="${member.lastName || ''}" style="width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
@@ -4453,7 +4453,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
           </div>
 
           <!-- Campos editables -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
               <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
               <input type="text" id="edit-comm-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
@@ -4605,7 +4605,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
           </div>
 
           <!-- Campos editables -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
               <label style="display: block; font-weight: 600; color: #374151; font-size: 13px; margin-bottom: 6px;">Primer Nombre <span style="color: #dc2626;">*</span></label>
               <input type="text" id="edit-member-firstname" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" value="${member.firstName || member.primerNombre || ''}">
@@ -4860,7 +4860,7 @@ window.showAppointmentHistory = function(orgId) {
             <span style="font-size: 13px; color: #6b7280;">${changeDateFormatted} - ${changeTimeFormatted}</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
+          <div class="r-grid-2" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start;">
             <!-- Datos anteriores -->
             <div style="background: #fee2e2; border-radius: 8px; padding: 16px;">
               <h5 style="margin: 0 0 12px 0; color: #991b1b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -4952,7 +4952,7 @@ window.showAppointmentHistory = function(orgId) {
             <p style="margin: 2px 0 0; color: #2563eb; font-size: 13px;">Asignada el ${originalDateFormatted}</p>
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div class="r-grid-2" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
           <div style="background: white; padding: 12px; border-radius: 8px;">
             <span style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Ministro de Fe</span>
             <p style="margin: 4px 0 0; font-weight: 600; color: #1e40af;">${original.name}</p>
@@ -4990,7 +4990,7 @@ window.showAppointmentHistory = function(orgId) {
             <p style="margin: 2px 0 0; color: #10b981; font-size: 13px;">Esta es la cita confirmada</p>
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div class="r-grid-2" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
           <div style="background: white; padding: 12px; border-radius: 8px;">
             <span style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Ministro de Fe</span>
             <p style="margin: 4px 0 0; font-weight: 600; color: #065f46;">${current.name}</p>
@@ -5020,13 +5020,13 @@ window.showAppointmentHistory = function(orgId) {
     <div style="background: white; border-radius: 20px; max-width: 800px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 24px; color: white;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+            <div style="width: 40px; height: 40px; flex-shrink: 0; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
               📜
             </div>
-            <div>
-              <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Historial de Cambios</h2>
+            <div style="min-width: 0;">
+              <h2 style="margin: 0; font-size: 20px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Historial de Cambios</h2>
               <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">${org.organization?.name || 'Organización'}</p>
             </div>
           </div>
