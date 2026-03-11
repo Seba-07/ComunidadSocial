@@ -106,7 +106,7 @@ export default function SignatureCapture({ wizardData, updateWizardData, onNext,
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+      <div className="r-btn-row" style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
         <button onClick={clearSignature} style={{
           padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
           background: 'white', fontSize: 13, cursor: 'pointer'
@@ -129,7 +129,7 @@ export default function SignatureCapture({ wizardData, updateWizardData, onNext,
         />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={saveAndNext} style={nextBtn}>Siguiente</button>
       </div>

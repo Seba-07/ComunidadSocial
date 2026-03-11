@@ -60,7 +60,7 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
       <Section title="Firma Ministro">
         {wizardData.ministroSignature ? (
           <img src={wizardData.ministroSignature} alt="Firma"
-            style={{ maxWidth: 300, border: '1px solid #e5e7eb', borderRadius: 8 }} />
+            style={{ maxWidth: '100%', width: 300, border: '1px solid #e5e7eb', borderRadius: 8 }} />
         ) : (
           <p style={{ color: '#ef4444', fontSize: 13 }}>Sin firma</p>
         )}
@@ -97,7 +97,7 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
         </p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onSubmit} disabled={isSubmitting || hasMissingCerts} style={{
           padding: '14px 32px', border: 'none', borderRadius: 10,
@@ -126,7 +126,7 @@ function Section({ title, children }) {
 function Row({ label, value }) {
   if (!value) return null;
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '3px 0', fontSize: 14 }}>
+    <div style={{ display: 'flex', gap: 12, padding: '3px 0', fontSize: 14, flexWrap: 'wrap' }}>
       <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, textTransform: 'capitalize' }}>{label}:</span>
       <span style={{ color: '#6b7280' }}>{value}</span>
     </div>

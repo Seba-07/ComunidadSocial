@@ -30,7 +30,8 @@ export default function ValidateDirectorio({ wizardData, updateWizardData, org, 
           <div key={i} style={{
             padding: 16, border: '1px solid #e5e7eb', borderRadius: 10,
             background: m.validated ? '#f0fdf4' : 'white',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: 8
           }}>
             <div>
               <span style={{ fontWeight: 600, fontSize: 14, color: '#111827', textTransform: 'capitalize' }}>
@@ -59,7 +60,7 @@ export default function ValidateDirectorio({ wizardData, updateWizardData, org, 
         <p style={{ color: '#6b7280', textAlign: 'center', padding: 20 }}>Sin directorio provisorio</p>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+      <div className="r-btn-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
         <button onClick={onNext} style={nextBtn}>Siguiente</button>
       </div>
     </div>

@@ -21,7 +21,8 @@ export default function ValidateCommission({ wizardData, updateWizardData, onNex
           <div key={i} style={{
             padding: 16, border: '1px solid #e5e7eb', borderRadius: 10,
             background: m.validated ? '#f0fdf4' : 'white',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: 8
           }}>
             <div>
               <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
@@ -52,7 +53,7 @@ export default function ValidateCommission({ wizardData, updateWizardData, onNex
         </p>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onNext} style={nextBtn}>Siguiente</button>
       </div>

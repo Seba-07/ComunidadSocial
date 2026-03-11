@@ -44,8 +44,8 @@ export default function AttendeeCheckin({ wizardData, updateWizardData, onNext, 
         }} />
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-        <div style={{ flex: 1, maxWidth: 300 }}>
+      <div className="r-toolbar" style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 180, maxWidth: 300 }}>
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar miembro..." />
         </div>
         <button onClick={markAllPresent} style={{
@@ -63,7 +63,8 @@ export default function AttendeeCheckin({ wizardData, updateWizardData, onNext, 
               padding: '10px 14px', borderRadius: 8, cursor: 'pointer',
               border: `1px solid ${a.present ? '#bbf7d0' : '#e5e7eb'}`,
               background: a.present ? '#f0fdf4' : 'white',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 8
             }}
           >
             <div>
@@ -84,7 +85,7 @@ export default function AttendeeCheckin({ wizardData, updateWizardData, onNext, 
         ))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onNext} style={nextBtn}>Siguiente</button>
       </div>
