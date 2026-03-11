@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comunidad-renca-v4';
+const CACHE_NAME = 'comunidad-social-v4';
 const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 // ============ PRECACHE ASSETS ============
@@ -168,7 +168,7 @@ async function syncOfflineQueue() {
 // Helper: Abrir IndexedDB
 function openIndexedDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ComunidadRencaDB', 3);
+    const request = indexedDB.open('ComunidadSocialDB', 3);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
   });
@@ -258,7 +258,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Comunidad Renca', options)
+    self.registration.showNotification('Comunidad Social', options)
   );
 });
 

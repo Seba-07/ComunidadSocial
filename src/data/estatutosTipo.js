@@ -1,6 +1,6 @@
 /**
  * Estatutos Tipo Oficiales
- * Documentos legales aprobados por la Municipalidad de Renca
+ * Documentos legales tipo para organizaciones comunitarias
  * NO MODIFICAR EL TEXTO - Solo se rellenan los campos en blanco con datos de la organización
  */
 
@@ -62,7 +62,7 @@ i) Ejercer los derechos y cumplir las obligaciones que las leyes les señalen;
 
 j) Realizar todo aquello que, en definitiva, vaya en busca del bien común de la comunidad educacional en su conjunto.
 
-Artículo tercero: El domicilio de este Centro de Padres y Apoderados será en {{DOMICILIO}} la ciudad de Santiago, comuna Renca, Región Metropolitana.
+Artículo tercero: El domicilio de este Centro de Padres y Apoderados será en {{DOMICILIO}} la ciudad de Santiago, comuna {{COMUNA}}, Región {{REGION}}.
 
 La duración será indefinida y el número de sus socios ilimitado.
 

@@ -35,6 +35,7 @@ import ministroBlocksRoutes from './routes/ministroBlocks.js';
 import securityIncidentsRoutes from './routes/securityIncidents.js';
 import documentTemplatesRoutes from './routes/documentTemplates.js';
 import documentRegistryRoutes from './routes/documentRegistry.js';
+import tenantRoutes from './routes/tenant.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -144,10 +145,14 @@ app.use('/uploads', express.static('uploads', {
 
 // MongoDB Connection (skip in test - tests manage their own connection)
 if (process.env.NODE_ENV !== 'test') {
-  const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/comunidad_social';
+  const MONGODB_URI = process.env.MONGODB_URI || (
+    isDeployed
+      ? (() => { console.error('FATAL: MONGODB_URI is required in deployed environments.'); process.exit(1); })()
+      : 'mongodb://localhost:27017/comunidad_social_dev'
+  );
   mongoose.connect(MONGODB_URI)
     .then(async () => {
-      console.log('Connected to MongoDB Atlas');
+      console.log(`Connected to MongoDB: ${MONGODB_URI.replace(/\/\/[^@]+@/, '//***:***@')}`);
       await autoMigrateOrganizations();
     })
     .catch((err) => {
@@ -181,6 +186,7 @@ app.use('/api/ministro-blocks', ministroBlocksRoutes);
 app.use('/api/security-incidents', securityIncidentsRoutes);
 app.use('/api/document-templates', documentTemplatesRoutes);
 app.use('/api/document-registry', documentRegistryRoutes);
+app.use('/api/tenant', tenantRoutes);
 
 // CSP violation report endpoint (no auth required)
 app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {

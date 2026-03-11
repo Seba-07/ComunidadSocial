@@ -41,9 +41,10 @@ Roles: ORGANIZADOR, MIEMBRO, MIEMBRO_DIRECTIVO, MUNICIPALIDAD, MINISTRO_FE.
 - CSS: no crear módulos CSS. Seguir BEM-ish en styles.css. Estado con `.show`, `.active`, `.open`
 - Modals en React: inline styles, no CSS classes. Click-outside con `e.target === e.currentTarget`
 - Commits: verbo imperativo + objeto, sin prefijos `feat:/fix:`. Incluir refs legales si aplica
-- **Al terminar una tarea**: siempre hacer commit + push. Reglas:
-  - **En rama main**: preguntar "¿Hago commit + push a main?" y ejecutar si confirma
-  - **En worktree/branch**: preguntar "¿Push a la rama actual o merge a main (producción)?" y ejecutar según respuesta
+- **Al terminar una tarea**: siempre hacer commit. Reglas de push:
+  - **Push por defecto**: siempre a `develop`. Nunca a `main`.
+  - **PROHIBIDO pushear a `main`** (producción) a menos que el usuario lo pida **explícitamente** en ese momento. No asumir permisos previos, no inferir intención. Si hay duda, preguntar.
+  - Si el usuario pide deploy a producción, confirmar antes: "¿Confirmo push a main (producción)?"
 
 ## Errores comunes a evitar
 1. Crear componente React con clases CSS nuevas sin revisar conflictos con styles.css
@@ -70,15 +71,15 @@ npm run seed       # Seed datos iniciales
 npm run optimize-indexes  # Optimizar índices MongoDB
 ```
 
-## NO tocar — en construcción o pendiente
+## Estado de features
 | Feature | Estado | Detalle |
 |---|---|---|
 | Objetivos Sugeridos | Completado | Pestaña admin + wizard dinámico (commit 93647d0) |
-| Migración Base64 → S3 | Infra lista, NO ejecutada | `s3Service.js` existe pero docs siguen en base64 en MongoDB |
-| TTL Notificaciones | Pendiente | Deben expirar a 90 días |
-| Auditoría de índices | Pendiente | 89 índices en 19 colecciones sin revisar |
-| Limpieza Organization model | Pendiente | Datos legacy embebidos a remover |
-| Ley 21.719 compliance | Plan escrito | Deadline diciembre 2026 |
+| TTL Notificaciones | Completado | Index TTL 90 días en `Notification.js` + 365 días en `AuditLog.js` |
+| Auditoría de índices | Completado | Script `optimize-indexes.js` reduce 89→83 índices |
+| Ley 21.719 compliance | Completado | 10 fases implementadas (ARCOP, masking, consent, incidents, retention) |
+| Migración Base64 → S3 | Infra lista, NO activada | `s3Service.js` + `storageService.js` + script migración listos. Falta configurar credenciales AWS en Railway |
+| Limpieza Organization model | Parcial (~70%) | Schema refactoreado con campos `DEPRECATED`. Falta ejecutar `migrate-to-normalized.js` en DB |
 | `.env` con credenciales AWS | Activo | Necesitan rotación — NUNCA commitear |
 
 ## Modo paralelo con worktrees

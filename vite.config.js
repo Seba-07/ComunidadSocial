@@ -22,7 +22,16 @@ export default defineConfig({
     react({
       include: ['src/react/**/*.{jsx,tsx}']
     }),
-    spaFallbackPlugin()
+    spaFallbackPlugin(),
+    {
+      name: 'tenant-html-transform',
+      transformIndexHtml(html) {
+        return html
+          .replace(/__TENANT_PLATFORM_NAME__/g, process.env.VITE_TENANT_PLATFORM_NAME || 'Comunidad Social')
+          .replace(/__TENANT_PLATFORM_SHORT_NAME__/g, process.env.VITE_TENANT_PLATFORM_SHORT_NAME || 'Comunidad Social')
+          .replace(/__TENANT_COMMUNE__/g, process.env.VITE_TENANT_COMMUNE_NAME || '');
+      }
+    }
   ],
   resolve: {
     alias: {

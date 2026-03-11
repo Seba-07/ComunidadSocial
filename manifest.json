@@ -1,7 +1,7 @@
 {
-  "name": "Comunidad Renca - Participación Ciudadana",
-  "short_name": "Comunidad Renca",
-  "description": "Plataforma de Participación Ciudadana y Formación Educativa - Municipalidad de Renca",
+  "name": "__TENANT_PLATFORM_NAME__",
+  "short_name": "__TENANT_PLATFORM_SHORT_NAME__",
+  "description": "Plataforma de Participación Ciudadana y Formación Educativa",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",

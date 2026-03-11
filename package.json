@@ -1,5 +1,5 @@
 {
-  "name": "comunidad-renca-pwa",
+  "name": "comunidad-social-pwa",
   "version": "2.0.0",
   "description": "Sistema digital para formación de Juntas de Vecinos y Organizaciones Comunitarias - Ley 19.418",
   "type": "module",
@@ -16,10 +16,10 @@
     "juntas-vecinos",
     "organizaciones-comunitarias",
     "ley-19418",
-    "renca",
+    "comunidad-social",
     "clean-architecture"
   ],
-  "author": "Municipalidad de Renca",
+  "author": "Comunidad Social",
   "license": "MIT",
   "dependencies": {
     "dompurify": "^3.3.1",
