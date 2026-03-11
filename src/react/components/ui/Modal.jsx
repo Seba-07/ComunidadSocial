@@ -8,7 +8,8 @@ const overlayStyle = {
   zIndex: 9999,
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center'
+  justifyContent: 'center',
+  padding: '16px'
 };
 
 const cardStyle = {
@@ -16,8 +17,8 @@ const cardStyle = {
   overflowY: 'auto',
   background: 'white',
   borderRadius: 24,
-  padding: 48,
-  width: '90%',
+  padding: 'clamp(24px, 5vw, 48px)',
+  width: '100%',
   maxWidth: 500,
   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
 };
@@ -26,13 +27,14 @@ const headerStyle = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: 24
+  marginBottom: 24,
+  gap: 12
 };
 
 const titleStyle = {
   margin: 0,
   color: '#2563eb',
-  fontSize: 28,
+  fontSize: 'clamp(20px, 5vw, 28px)',
   fontWeight: 700
 };
 
@@ -42,7 +44,8 @@ const closeStyle = {
   fontSize: 32,
   color: '#6b7280',
   cursor: 'pointer',
-  lineHeight: 1
+  lineHeight: 1,
+  flexShrink: 0
 };
 
 export default function Modal({ open, onClose, title, children }) {

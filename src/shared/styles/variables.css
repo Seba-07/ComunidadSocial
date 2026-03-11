@@ -4,6 +4,12 @@
  * Paleta: Blue/Green moderna + Glassmorphism
  */
 
+/* Prevenir scroll horizontal en móviles */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 :root {
   /* ============================================
      COLORES PRIMARIOS - Blue
