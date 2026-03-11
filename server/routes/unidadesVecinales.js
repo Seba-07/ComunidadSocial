@@ -1,6 +1,7 @@
 import express from 'express';
 import UnidadVecinal from '../models/UnidadVecinal.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import tenant from '../config/tenant.js';
 
 const router = express.Router();
 
@@ -51,16 +52,16 @@ router.get('/buscar', async (req, res) => {
       let results = [];
       const tryGeocode = async (q) => {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=cl`;
-        const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' } });
+        const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocial/1.0' } });
         return resp.json();
       };
 
-      results = await tryGeocode(`${cleanAddr}, Renca, Santiago, Chile`);
+      results = await tryGeocode(`${cleanAddr}, ${tenant.communeName || 'Santiago'}, Santiago, Chile`);
 
       // If no result, try without "Avenida/Calle/Pasaje" prefix
       if (results.length === 0) {
         const simplified = cleanAddr.replace(/^(avenida|av\.|calle|pasaje|psje\.|pje\.)\s+/i, '');
-        results = await tryGeocode(`${simplified}, Renca, Chile`);
+        results = await tryGeocode(`${simplified}, ${tenant.communeName || 'Santiago'}, Chile`);
       }
 
       if (results.length > 0) {
@@ -133,14 +134,14 @@ router.get('/geocode', async (req, res) => {
 
     const tryGeocode = async (q) => {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=cl`;
-      const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocialRenca/1.0' } });
+      const resp = await fetch(url, { headers: { 'User-Agent': 'ComunidadSocial/1.0' } });
       return resp.json();
     };
 
-    let results = await tryGeocode(`${cleanAddr}, Renca, Santiago, Chile`);
+    let results = await tryGeocode(`${cleanAddr}, ${tenant.communeName || 'Santiago'}, Santiago, Chile`);
     if (results.length === 0) {
       const simplified = cleanAddr.replace(/^(avenida|av\.|calle|pasaje|psje\.|pje\.)\s+/i, '');
-      results = await tryGeocode(`${simplified}, Renca, Chile`);
+      results = await tryGeocode(`${simplified}, ${tenant.communeName || 'Santiago'}, Chile`);
     }
 
     if (results.length === 0) {

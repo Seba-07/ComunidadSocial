@@ -7,6 +7,7 @@ import Assembly from '../models/Assembly.js';
 import DocumentRegistry, { DOCUMENT_TYPE_LABELS } from '../models/DocumentRegistry.js';
 import * as assemblyService from '../services/assemblyService.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import tenant from '../config/tenant.js';
 
 const router = express.Router();
 
@@ -225,7 +226,7 @@ const generateActaHTML = (org, assembly = null) => {
 
   <div class="content">
     <p>
-      En Renca, Región Metropolitana de Santiago, a ${today}, siendo las _______ horas,
+      En ${tenant.communeName || 'la comuna'}, Región Metropolitana de Santiago, a ${today}, siendo las _______ horas,
       se reúnen en _____________________________________, los ciudadanos que al final suscriben,
       con el objeto de constituir una organización comunitaria de carácter ${tipoOrg === 'Junta de Vecinos' ? 'territorial' : 'funcional'},
       que se denominará "${orgName}".
@@ -236,7 +237,7 @@ const generateActaHTML = (org, assembly = null) => {
       ${assembly && assembly.attendees?.length
         ? `Asisten a esta Asamblea Constitutiva un total de <strong>${assembly.attendees.length}</strong> personas`
         : 'Asisten a esta Asamblea Constitutiva un total de ______ personas'}, mayores de 14 años,
-      que residen en la comuna de Renca${unidadVecinal ? `, específicamente en la Unidad Vecinal ${unidadVecinal}` : ''},
+      que residen en la comuna de ${tenant.communeName || 'la comuna'}${unidadVecinal ? `, específicamente en la Unidad Vecinal ${unidadVecinal}` : ''},
       cuyos nombres, RUT, domicilios y firmas se encuentran en el registro de asistentes anexo a la presente acta.
     </p>
     ${assembly ? `<p>
@@ -275,7 +276,7 @@ const generateActaHTML = (org, assembly = null) => {
     <p class="section-title">CUARTO: DOMICILIO</p>
     <p>
       Se fija como domicilio de la organización: ${address || '___________________________________'},
-      comuna de Renca, Región Metropolitana.
+      comuna de ${tenant.communeName || 'la comuna'}, Región Metropolitana.
     </p>
 
     <p class="section-title">QUINTO: CIERRE</p>
@@ -304,7 +305,7 @@ const generateActaHTML = (org, assembly = null) => {
   </div>
 
   <div class="footer">
-    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca
+    Documento generado por Sistema de Organizaciones Comunitarias - ${tenant.municipalityName}
   </div>
 </body>
 </html>
@@ -419,7 +420,7 @@ const generateMembersListHTML = (org) => {
   </div>
 
   <div class="footer">
-    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca
+    Documento generado por Sistema de Organizaciones Comunitarias - ${tenant.municipalityName}
   </div>
 </body>
 </html>
@@ -706,7 +707,7 @@ const generateActaEscrutinioHTML = (org, assembly) => {
   </div>
 
   <div class="footer">
-    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca<br>
+    Documento generado por Sistema de Organizaciones Comunitarias - ${tenant.municipalityName}<br>
     Generado el ${formatDate(new Date())} — Este documento constituye acta oficial de escrutinio conforme al Art. 24, Ley 19.418
   </div>
 </body></html>`;
@@ -787,7 +788,7 @@ const generateListaAsistenciaHTML = (org, assembly) => {
   </div>
 
   <div class="footer">
-    Documento generado por Sistema de Organizaciones Comunitarias - Municipalidad de Renca<br>
+    Documento generado por Sistema de Organizaciones Comunitarias - ${tenant.municipalityName}<br>
     ${formatDate(new Date())}
   </div>
 </body></html>`;
@@ -981,7 +982,7 @@ function generateCertificadoBorradorHTML(org) {
   @media print { body { margin: 20mm; } }
 </style></head><body>
 <h1>Certificado de Personalidad Juridica</h1>
-<div class="subtitle">Municipalidad de ${comuna || 'Renca'}</div>
+<div class="subtitle">Municipalidad de ${comuna || tenant.communeName || 'la comuna'}</div>
 
 <p>Certifico que con fecha ${dateStr}, se ha constituido legalmente la organizacion comunitaria denominada
 <strong>"${name}"</strong>, de tipo <strong>${type}</strong>, con domicilio en

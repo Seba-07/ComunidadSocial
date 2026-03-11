@@ -14,6 +14,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import EstatutoTemplate from '../models/EstatutoTemplate.js';
+import tenant from '../config/tenant.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,7 +44,7 @@ const PLACEHOLDERS_V14 = [
   { key: '{{NOMBRE_ORGANIZACION}}', label: 'Nombre de la Organización', tipo: 'text', required: true },
   { key: '{{TIPO_ORGANIZACION}}', label: 'Tipo de Organización', tipo: 'text', required: true },
   { key: '{{OBJETIVOS}}', label: 'Objetivos de la organización', tipo: 'text', required: false },
-  { key: '{{COMUNA}}', label: 'Comuna', tipo: 'text', required: true, defaultValue: 'Renca' },
+  { key: '{{COMUNA}}', label: 'Comuna', tipo: 'text', required: true, defaultValue: tenant.communeName || '' },
   { key: '{{REGION}}', label: 'Región', tipo: 'text', required: true, defaultValue: 'Región Metropolitana' },
   { key: '{{DIRECCION}}', label: 'Dirección', tipo: 'text', required: true },
   { key: '{{CUOTA_MENSUAL}}', label: 'Cuota mensual de socios', tipo: 'text', required: false },
@@ -52,7 +53,7 @@ const PLACEHOLDERS_V14 = [
   { key: '{{METODO_CITACION}}', label: 'Método de citación', tipo: 'select', required: true, defaultValue: 'carta certificada al domicilio registrado', opciones: [{ value: 'carta_certificada', label: 'Carta certificada al domicilio registrado' }, { value: 'correo_electronico', label: 'Correo electrónico al correo registrado' }, { value: 'aviso_sede', label: 'Aviso publicado en la sede de la organización' }, { value: 'comunicacion_directa', label: 'Comunicación directa a cada socio' }] },
   { key: '{{DIAS_ANTICIPACION}}', label: 'Días de anticipación para citación', tipo: 'number', required: true, defaultValue: '10' },
   { key: '{{CUOTA_INC}}', label: 'Cuota de incorporación (UTM)', tipo: 'text', required: false },
-  { key: '{{ENTIDAD_DISOLUCION}}', label: 'Entidad beneficiaria en disolución', tipo: 'text', required: false, defaultValue: 'Corporación Municipal de Renca' },
+  { key: '{{ENTIDAD_DISOLUCION}}', label: 'Entidad beneficiaria en disolución', tipo: 'text', required: false, defaultValue: tenant.dissolutionEntity || '' },
   { key: '{{RUT_DISOLUCION}}', label: 'RUT entidad beneficiaria', tipo: 'text', required: false },
   { key: '{{MIEMBROS_MINIMOS}}', label: 'Mínimo de socios', tipo: 'number', required: true, defaultValue: '15' },
   { key: '{{NUM_MIEMBROS}}', label: 'Número de miembros actual', tipo: 'number', required: false },

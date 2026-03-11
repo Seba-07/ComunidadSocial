@@ -172,8 +172,7 @@ const organizationSchema = new mongoose.Schema({
     trim: true
   },
   comuna: {
-    type: String,
-    default: 'Renca'
+    type: String
   },
   region: {
     type: String,
