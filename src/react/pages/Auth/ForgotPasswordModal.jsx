@@ -1,4 +1,5 @@
 import Modal from '../../components/ui/Modal';
+import tenant from '../../../config/tenant.js';
 
 export default function ForgotPasswordModal({ open, onClose }) {
   return (
@@ -17,7 +18,7 @@ export default function ForgotPasswordModal({ open, onClose }) {
           Información de contacto
         </p>
         <p style={{ margin: 0, color: '#374151', fontSize: 14, lineHeight: 1.8 }}>
-          <strong>Email:</strong> admin@renca.cl<br />
+          <strong>Email:</strong> {tenant.adminEmail}<br />
           <strong>Teléfono:</strong> +56 2 2345 6789
         </p>
       </div>

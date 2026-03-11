@@ -3,6 +3,8 @@
  * Define si usar mocks (desarrollo local) o servicios reales (producción)
  */
 
+import tenant from '../../config/tenant.js';
+
 export const APP_CONFIG = {
   // Modo de desarrollo (true = usa mocks, false = usa Firebase)
   USE_MOCKS: true,
@@ -19,7 +21,7 @@ export const APP_CONFIG = {
 
   // Configuración de la aplicación
   APP: {
-    name: 'Comunidad Renca',
+    name: tenant.platformShortName,
     version: '2.0.0',
     environment: 'development' // 'development' | 'production'
   },

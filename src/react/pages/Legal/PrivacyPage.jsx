@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import tenant from '../../../config/tenant.js';
 
 const sectionStyle = { marginBottom: 24 };
 const h2Style = { fontSize: 18, fontWeight: 600, color: '#111827', margin: '24px 0 8px' };
@@ -18,7 +19,7 @@ export default function PrivacyPage() {
         >
           Volver
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>Comunidad Social Renca</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>{tenant.platformName}</h1>
       </header>
 
       <main style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
@@ -33,8 +34,8 @@ export default function PrivacyPage() {
           <div style={sectionStyle}>
             <h2 style={h2Style}>1. Responsable del Tratamiento</h2>
             <p style={pStyle}>
-              La plataforma <strong>Comunidad Social Renca</strong> es operada por la Ilustre Municipalidad de Renca,
-              con domicilio en Renca, Región Metropolitana, Chile. En calidad de responsable del tratamiento de datos
+              La plataforma <strong>{tenant.platformName}</strong> es operada por la {tenant.municipalityFullName},
+              con domicilio en {tenant.communeName || ''}, Región Metropolitana, Chile. En calidad de responsable del tratamiento de datos
               personales, nos comprometemos a proteger la privacidad de nuestros usuarios conforme a la
               <strong> Ley 19.628 sobre Protección de la Vida Privada</strong> y la <strong>Ley 21.719 sobre Protección
               de Datos Personales</strong>.
@@ -74,7 +75,7 @@ export default function PrivacyPage() {
               <li><strong>Esencial:</strong> Gestión de su cuenta de usuario, autenticación y funcionamiento de la plataforma.</li>
               <li><strong>Gestión organizacional:</strong> Constitución, registro y administración de organizaciones comunitarias conforme a la Ley 19.418.</li>
               <li><strong>Comunicaciones:</strong> Envío de notificaciones sobre el estado de sus trámites y organizaciones (con su consentimiento).</li>
-              <li><strong>Compartir con Municipalidad:</strong> Transmisión de datos a la Ilustre Municipalidad de Renca para fines de registro y fiscalización (con su consentimiento).</li>
+              <li><strong>Compartir con Municipalidad:</strong> Transmisión de datos a la {tenant.municipalityFullName} para fines de registro y fiscalización (con su consentimiento).</li>
               <li><strong>Cumplimiento legal:</strong> Cumplimiento de obligaciones legales, incluyendo la Ley 19.418 sobre Juntas de Vecinos y demás Organizaciones Comunitarias.</li>
             </ul>
           </div>
@@ -142,7 +143,7 @@ export default function PrivacyPage() {
               Sus datos pueden ser compartidos con:
             </p>
             <ul style={ulStyle}>
-              <li>La Ilustre Municipalidad de Renca, para fines de registro y fiscalización de organizaciones comunitarias (solo con su consentimiento explícito).</li>
+              <li>La {tenant.municipalityFullName}, para fines de registro y fiscalización de organizaciones comunitarias (solo con su consentimiento explícito).</li>
               <li>Proveedores de infraestructura tecnológica (hosting, base de datos) que actúan como encargados del tratamiento bajo contratos de confidencialidad.</li>
             </ul>
             <p style={pStyle}>No vendemos ni compartimos sus datos personales con terceros para fines comerciales.</p>
@@ -155,7 +156,7 @@ export default function PrivacyPage() {
             </p>
             <ul style={ulStyle}>
               <li>Plataforma: Sección "Privacidad" en su panel de usuario.</li>
-              <li>Dirección: Ilustre Municipalidad de Renca, Renca, Región Metropolitana, Chile.</li>
+              <li>Dirección: {tenant.municipalityFullName}, {tenant.communeName || ''}, Región Metropolitana, Chile.</li>
             </ul>
           </div>
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiService } from '@services/ApiService.js';
+import tenant from '../../config/tenant.js';
 
 const STORAGE_KEY = 'wizard_progress';
 const EXPIRY_DAYS = 7;
@@ -8,7 +9,7 @@ const initialFormData = {
   organization: {
     type: '', name: '', description: '', objectives: '', address: '', street: '',
     streetNumber: '', postalCode: '', region: 'Región Metropolitana',
-    commune: 'Renca', neighborhood: '', email: '', phone: '', contactPreference: 'email'
+    commune: tenant.communeName, neighborhood: '', email: '', phone: '', contactPreference: 'email'
   },
   members: [],
   config: {

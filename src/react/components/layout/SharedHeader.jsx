@@ -1,5 +1,6 @@
 import { useAuthStore } from '../../stores/authStore';
 import NotificationBell from '../ui/NotificationBell';
+import tenant from '../../../config/tenant.js';
 
 /**
  * SharedHeader - Minimal top bar beside the sidebar.
@@ -24,6 +25,10 @@ export default function SharedHeader() {
     window.location.href = '/app/login';
   }
 
+  function openMobileSidebar() {
+    document.dispatchEvent(new CustomEvent('open-mobile-sidebar'));
+  }
+
   return (
     <header
       className="app-header"
@@ -31,9 +36,23 @@ export default function SharedHeader() {
       style={{ left: 'var(--sidebar-width, 260px)', transition: 'left 0.25s ease' }}
     >
       <div className="header-content">
+        {/* Hamburger button (mobile only) */}
+        <button
+          className="menu-btn"
+          onClick={openMobileSidebar}
+          aria-label="Abrir menú"
+          style={{ color: '#374151' }}
+        >
+          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
         {/* Left side - breadcrumb / title area */}
         <div className="header-left">
-          <span className="header-welcome">Comunidad Social Renca</span>
+          <span className="header-welcome">{tenant.platformName}</span>
         </div>
 
         {/* Right side - notifications + user info */}

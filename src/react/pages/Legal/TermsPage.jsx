@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import tenant from '../../../config/tenant.js';
 
 const sectionStyle = { marginBottom: 24 };
 const h2Style = { fontSize: 18, fontWeight: 600, color: '#111827', margin: '24px 0 8px' };
@@ -17,7 +18,7 @@ export default function TermsPage() {
         >
           Volver
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>Comunidad Social Renca</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>{tenant.platformName}</h1>
       </header>
 
       <main style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
@@ -32,7 +33,7 @@ export default function TermsPage() {
           <div style={sectionStyle}>
             <h2 style={h2Style}>1. Aceptación de los Términos</h2>
             <p style={pStyle}>
-              Al registrarse y utilizar la plataforma <strong>Comunidad Social Renca</strong>, usted acepta estos
+              Al registrarse y utilizar la plataforma <strong>{tenant.platformName}</strong>, usted acepta estos
               Términos de Uso en su totalidad. Si no está de acuerdo con alguno de estos términos, no debe utilizar
               la plataforma.
             </p>
@@ -41,8 +42,8 @@ export default function TermsPage() {
           <div style={sectionStyle}>
             <h2 style={h2Style}>2. Descripción del Servicio</h2>
             <p style={pStyle}>
-              Comunidad Social Renca es una plataforma digital que facilita la constitución, registro y gestión
-              de organizaciones comunitarias en la comuna de Renca, conforme a la <strong>Ley 19.418 sobre Juntas
+              {tenant.platformName} es una plataforma digital que facilita la constitución, registro y gestión
+              de organizaciones comunitarias en la comuna de {tenant.communeName || 'la comuna'}, conforme a la <strong>Ley 19.418 sobre Juntas
               de Vecinos y demás Organizaciones Comunitarias</strong>. El servicio incluye:
             </p>
             <ul style={ulStyle}>
@@ -96,8 +97,7 @@ export default function TermsPage() {
           <div style={sectionStyle}>
             <h2 style={h2Style}>6. Propiedad Intelectual</h2>
             <p style={pStyle}>
-              La plataforma, su diseño, código fuente, logotipos y contenido son propiedad de la Ilustre
-              Municipalidad de Renca o sus licenciantes. Los documentos generados por los usuarios
+              La plataforma, su diseño, código fuente, logotipos y contenido son propiedad de la {tenant.municipalityFullName} o sus licenciantes. Los documentos generados por los usuarios
               (actas, estatutos, etc.) son propiedad de las respectivas organizaciones comunitarias.
             </p>
           </div>
@@ -152,7 +152,7 @@ export default function TermsPage() {
             <h2 style={h2Style}>11. Legislación Aplicable</h2>
             <p style={pStyle}>
               Estos Términos de Uso se rigen por la legislación chilena. Cualquier controversia será sometida a los
-              tribunales ordinarios de justicia con jurisdicción en la comuna de Renca, Región Metropolitana.
+              tribunales ordinarios de justicia con jurisdicción en la comuna de {tenant.communeName || 'la comuna'}, Región Metropolitana.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function TermsPage() {
             <h2 style={h2Style}>13. Contacto</h2>
             <p style={pStyle}>
               Para consultas sobre estos Términos de Uso, puede contactarnos a través de la plataforma o dirigirse
-              a la Ilustre Municipalidad de Renca, Renca, Región Metropolitana, Chile.
+              a la {tenant.municipalityFullName}, {tenant.communeName || ''}, Región Metropolitana, Chile.
             </p>
           </div>
         </div>

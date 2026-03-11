@@ -6,7 +6,7 @@
 
 export class IndexedDBService {
   constructor() {
-    this.dbName = 'ComunidadRencaDB';
+    this.dbName = 'ComunidadSocialDB';
     this.version = 3; // Incrementado para añadir stores de validation wizard y offline queue
     this.db = null;
   }

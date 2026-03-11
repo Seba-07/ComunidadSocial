@@ -5,6 +5,7 @@
  */
 
 import { apiService } from '../../services/ApiService.js';
+import tenant from '../../config/tenant.js';
 
 // ============================================
 // TIPOS DE ORGANIZACIÓN DINÁMICOS
@@ -248,8 +249,8 @@ export function getOrgAddress(org) {
  * @returns {string} Comuna
  */
 export function getOrgComuna(org) {
-  if (!org) return 'Renca';
-  return org.comuna || org.commune || 'Renca';
+  if (!org) return tenant.communeName;
+  return org.comuna || org.commune || tenant.communeName;
 }
 
 /**
