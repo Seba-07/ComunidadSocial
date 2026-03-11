@@ -1,16 +1,17 @@
 /**
  * PDFService - Servicio de generación de documentos PDF oficiales
- * Basado en los documentos de la Municipalidad de Renca para la Ley Nº 19.418
+ * Genera documentos PDF oficiales para la Ley Nº 19.418
  */
 
 import { jsPDF } from 'jspdf';
 import { getOrgType as getOrgTypeFromUtils, formatDate as formatDateFromUtils } from '../shared/utils/index.js';
 import { parseTemplateBlocks } from '../shared/utils/templateBlockParser.js';
+import tenant from '../config/tenant.js';
 
 // Alias para compatibilidad
 const getOrgTypeName = getOrgTypeFromUtils;
 
-// Colores institucionales de Renca
+// Colores institucionales
 const COLORS = {
   primary: '#0891b2',      // Cyan/Turquesa
   secondary: '#065f46',    // Verde oscuro
@@ -137,7 +138,7 @@ class PDFService {
     }
 
     // Institutional text (custom or default)
-    const headerText = headerConfig?.text || 'REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE RENCA';
+    const headerText = headerConfig?.text || tenant.pdfHeaderText;
     const headerSubtitle = headerConfig?.subtitle || 'SECRETARÍA MUNICIPAL';
 
     if (!headerConfig?.imageDataUrl) {
@@ -205,12 +206,12 @@ class PDFService {
       doc.setFont('helvetica', 'normal');
 
       const contactY = footerY - 5;
-      const footerText = footerConfig?.text || 'Blanco Encalada 1335, Renca';
+      const footerText = footerConfig?.text || tenant.address;
       const footerSubtitle = footerConfig?.subtitle || '+562 2685 6600';
       doc.text(footerText, 40, contactY, { align: 'center' });
       doc.text(footerSubtitle, pageW / 2, contactY, { align: 'center' });
       if (!footerConfig?.text) {
-        doc.text('www.renca.cl', pageW - 40, contactY, { align: 'center' });
+        doc.text(tenant.website, pageW - 40, contactY, { align: 'center' });
       }
     }
 
@@ -573,7 +574,7 @@ class PDFService {
                          '___________________________________';
     const minMembers = members.length || 15;
 
-    const actaText = `En Renca, a ${dateFormatted}, siendo las ${timeFormatted} horas, en el local ubicado en ${location}, ante la presencia del funcionario municipal Sr. (a) ${ministroName} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.`;
+    const actaText = `En ${tenant.communeName}, a ${dateFormatted}, siendo las ${timeFormatted} horas, en el local ubicado en ${location}, ante la presencia del funcionario municipal Sr. (a) ${ministroName} como Ministro de Fe y la concurrencia de los futuros miembros de la Organización que en el listado adjunto se individualizan y firman, tuvo lugar la Asamblea General destinar a aprobar el Estatuto por el que se regirá la Organización y la elección del Directorio Provisional, todo conforme a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995.`;
 
     this.currentY = this.addWrappedText(doc, actaText, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
     this.currentY += 5;
@@ -975,7 +976,7 @@ class PDFService {
     this.currentY += 10;
 
     doc.setFont('helvetica', 'normal');
-    doc.text(`Renca, ${this.formatDate(organization.validationData?.validatedAt || new Date())}`, MARGIN_LEFT, this.currentY);
+    doc.text(`${tenant.communeName}, ${this.formatDate(organization.validationData?.validatedAt || new Date())}`, MARGIN_LEFT, this.currentY);
 
     this.drawFooter(doc, 1);
 
@@ -1008,7 +1009,7 @@ class PDFService {
     const orgName = org.organizationName || org.name || '_______________________________________________';
     const dateFormatted = this.formatDate(new Date());
     const unidadVecinal = org.unidadVecinal || org.neighborhood || organization.unidadVecinal || organization.neighborhood || '______';
-    const text1 = `En Renca, a ${dateFormatted}, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización Denominada ${orgName} de la Unidad Vecinal Nº ${unidadVecinal} depositó en esta Secretaría Municipal, copia autorizada del Acta de Asamblea Constitutiva.`;
+    const text1 = `En ${tenant.communeName}, a ${dateFormatted}, en cumplimiento a lo que establece el Artículo 8º de la Ley Nº 19.418 de 1995, el Secretario Municipal que suscribe certifica que, la Organización Denominada ${orgName} de la Unidad Vecinal Nº ${unidadVecinal} depositó en esta Secretaría Municipal, copia autorizada del Acta de Asamblea Constitutiva.`;
 
     this.currentY = this.addWrappedText(doc, text1, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 5);
     this.currentY += 8;
@@ -1245,7 +1246,7 @@ class PDFService {
     this.currentY += 15;
 
     const dateFormatted = this.formatDate(new Date());
-    const text1 = `En Renca, a ${dateFormatted} de conformidad a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995, procedo a inscribir en el presente Libro de Registro a la Organización Comunitaria antes señalada.`;
+    const text1 = `En ${tenant.communeName}, a ${dateFormatted} de conformidad a lo que establece la Ley Nº 19.418 del 09 de octubre de 1995, procedo a inscribir en el presente Libro de Registro a la Organización Comunitaria antes señalada.`;
     this.currentY = this.addWrappedText(doc, text1, MARGIN_LEFT, this.currentY, CONTENT_WIDTH, 6);
     this.currentY += 15;
 

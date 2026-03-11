@@ -5,6 +5,7 @@
 
 import { apiService } from './ApiService.js';
 import { scheduleService } from './ScheduleService.js';
+import tenant from '../config/tenant.js';
 
 // Estados posibles de una organización
 export const ORG_STATUS = {
@@ -498,7 +499,7 @@ class OrganizationsService {
         street: orgInfo.street || '',
         streetNumber: orgInfo.streetNumber || '',
         postalCode: orgInfo.postalCode || '',
-        comuna: orgInfo.comuna || orgInfo.commune || 'Renca',
+        comuna: orgInfo.comuna || orgInfo.commune || tenant.communeName,
         region: orgInfo.region || 'Metropolitana',
         unidadVecinal: orgInfo.unidadVecinal || '',
         territory: orgInfo.territory || orgInfo.territorio || '',

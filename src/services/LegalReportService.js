@@ -1,11 +1,12 @@
 /**
  * LegalReportService - Generacion de informes legales requeridos por Ley 19.418
- * Para organizaciones comunitarias de la comuna de Renca
+ * Para organizaciones comunitarias
  */
 
 import { jsPDF } from 'jspdf';
 import { apiService } from './ApiService.js';
 import { pdfService } from './PDFService.js';
+import tenant from '../config/tenant.js';
 
 // Constantes del documento (mismas que PDFService)
 const PAGE_WIDTH = 210;
@@ -14,7 +15,7 @@ const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 
-// Colores institucionales de Renca
+// Colores institucionales
 const COLORS = {
   primary: '#0891b2',
   secondary: '#065f46',
@@ -177,7 +178,7 @@ class LegalReportService {
     doc.setFontSize(11);
     doc.setTextColor(COLORS.primary);
     doc.setFont('helvetica', 'bold');
-    doc.text('REPUBLICA DE CHILE - I. MUNICIPALIDAD DE RENCA', PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+    doc.text(tenant.pdfHeaderText, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
 
     this.currentY += 5;
     doc.setFontSize(9);
@@ -231,9 +232,9 @@ class LegalReportService {
     doc.setFont('helvetica', 'normal');
 
     const contactY = footerY - 5;
-    doc.text('Blanco Encalada 1335, Renca', 40, contactY, { align: 'center' });
-    doc.text('+562 2685 6600', PAGE_WIDTH / 2, contactY, { align: 'center' });
-    doc.text('www.renca.cl', PAGE_WIDTH - 40, contactY, { align: 'center' });
+    doc.text(tenant.address, 40, contactY, { align: 'center' });
+    doc.text(tenant.phone, PAGE_WIDTH / 2, contactY, { align: 'center' });
+    doc.text(tenant.website, PAGE_WIDTH - 40, contactY, { align: 'center' });
 
     // Numero de pagina
     doc.text(String(pageNum), PAGE_WIDTH - MARGIN_RIGHT, footerY - 12, { align: 'right' });
@@ -319,7 +320,7 @@ class LegalReportService {
     this.currentY += 5;
     doc.text(`Direccion: ${org.address || 'No especificada'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 5;
-    doc.text(`Comuna: ${org.comuna || 'Renca'}`, MARGIN_LEFT, this.currentY);
+    doc.text(`Comuna: ${org.comuna || tenant.communeName}`, MARGIN_LEFT, this.currentY);
     this.currentY += 5;
     doc.text(`Unidad Vecinal: ${org.unidadVecinal || 'No especificada'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 8;
@@ -767,7 +768,7 @@ class LegalReportService {
     this.currentY += 5;
     doc.text(`Direccion: ${org.address || 'No especificada'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 5;
-    doc.text(`Comuna: ${org.comuna || 'Renca'}`, MARGIN_LEFT, this.currentY);
+    doc.text(`Comuna: ${org.comuna || tenant.communeName}`, MARGIN_LEFT, this.currentY);
     this.currentY += 5;
     doc.text(`Unidad Vecinal: ${org.unidadVecinal || 'No especificada'}`, MARGIN_LEFT, this.currentY);
     this.currentY += 5;
@@ -964,7 +965,7 @@ class LegalReportService {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.text);
 
-    doc.text(`Renca, ${this.formatDateLong(new Date())}`, MARGIN_LEFT, this.currentY);
+    doc.text(`${tenant.communeName}, ${this.formatDateLong(new Date())}`, MARGIN_LEFT, this.currentY);
     this.currentY += 15;
 
     doc.text('_________________________________', PAGE_WIDTH / 2, this.currentY, { align: 'center' });
