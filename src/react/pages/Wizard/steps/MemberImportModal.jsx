@@ -311,8 +311,8 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
                 { field: 'genero', label: 'Género' },
                 { field: 'address', label: 'Domicilio' }
               ].map(({ field, label }) => (
-                <div key={field} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ width: 140, fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</span>
+                <div key={field} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ minWidth: 120, fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</span>
                   <select
                     value={columnMap[field] || ''}
                     onChange={(e) => setColumnMap(prev => ({ ...prev, [field]: e.target.value || undefined }))}
@@ -325,7 +325,7 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+            <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={() => { setStep(1); setParseError(''); }} style={secondaryBtn}>Volver</button>
               <button onClick={handleMapContinue} style={primaryBtn}>Continuar</button>
             </div>
@@ -335,13 +335,13 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
         {/* Step 3: Preview + validation */}
         {step === 3 && (
           <div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <StatBadge color="#10b981" bg="#d1fae5" label="Válidos" count={validCount} />
               <StatBadge color="#dc2626" bg="#fef2f2" label="Con errores" count={errorCount} />
               {warnCount > 0 && <StatBadge color="#d97706" bg="#fef3c7" label="Advertencias" count={warnCount} />}
             </div>
 
-            <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <div className="r-table-wrap" style={{ maxHeight: 320, border: '1px solid #e5e7eb', borderRadius: 8 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', position: 'sticky', top: 0 }}>
@@ -377,7 +377,7 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
               </table>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+            <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={() => setStep(2)} style={secondaryBtn}>Volver</button>
               <button onClick={handleImport} disabled={validCount === 0 || importing} style={{
                 ...primaryBtn, opacity: validCount === 0 ? 0.5 : 1

@@ -213,7 +213,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
             <div key={cargo.id} style={{
               padding: 16, border: '1px solid #e5e7eb', borderRadius: 10, background: 'white'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
                   {cargo.nombre} {cargo.required && '*'}
                 </span>
@@ -225,7 +225,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
               </div>
 
               {assigned ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <span style={{ fontSize: 14, color: '#374151' }}>
                     {assigned.firstName} {assigned.lastName} - {assigned.rut}
                   </span>
@@ -309,7 +309,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         {comision.members.map((m, i) => (
           <div key={i} style={{
             padding: 12, border: '1px solid #e5e7eb', borderRadius: 8,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8
           }}>
             <span style={{ fontSize: 14 }}>{m.firstName} {m.lastName} - {m.rut}</span>
             <button onClick={() => removeComisionMember(i)} style={{
@@ -341,7 +341,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+      <div className="r-toolbar" style={{ marginTop: 32 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={handleNext} style={nextBtnS}>Siguiente</button>
       </div>

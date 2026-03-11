@@ -170,7 +170,7 @@ export default function Step7_Schedule({ onPrev }) {
         {/* Legend */}
         <div style={{
           display: 'flex', gap: 16, justifyContent: 'center', marginTop: 12,
-          fontSize: 12, color: '#6b7280'
+          fontSize: 12, color: '#6b7280', flexWrap: 'wrap'
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
@@ -270,7 +270,7 @@ export default function Step7_Schedule({ onPrev }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+      <div className="r-toolbar" style={{ marginTop: 24 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button
           onClick={handleSubmit}

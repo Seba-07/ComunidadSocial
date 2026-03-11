@@ -197,9 +197,9 @@ export default function Step6_Review({ onNext, onPrev }) {
       {/* Directorio */}
       <Section title="Directorio Provisorio">
         {Object.entries(directorio).map(([cargo, data]) => (
-          <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center' }}>
+          <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || cargo}:</span>
-            <span style={{ color: '#6b7280', flex: 1 }}>{data.firstName} {data.lastName} - {data.rut}</span>
+            <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{data.firstName} {data.lastName} - {data.rut}</span>
             {certs[cargo]
               ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
               : <span style={{ fontSize: 11, color: '#d97706' }}>Pendiente</span>}
@@ -243,7 +243,7 @@ export default function Step6_Review({ onNext, onPrev }) {
         ].map(doc => (
           <div key={doc.key} style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 0', borderBottom: '1px solid #f3f4f6'
+            padding: '8px 0', borderBottom: '1px solid #f3f4f6', flexWrap: 'wrap', gap: 8
           }}>
             <span style={{ fontSize: 14, color: '#374151' }}>{doc.label}</span>
             <button onClick={() => previewDocument(doc.key)} style={{
@@ -264,7 +264,7 @@ export default function Step6_Review({ onNext, onPrev }) {
         </p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="r-toolbar">
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onNext} style={{
           padding: '12px 28px', border: 'none', borderRadius: 10,
@@ -291,7 +291,7 @@ function Section({ title, children }) {
 function Row({ label, value }) {
   if (!value) return null;
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14 }}>
+    <div style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, flexWrap: 'wrap' }}>
       <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{label}:</span>
       <span style={{ color: '#6b7280' }}>{value}</span>
     </div>

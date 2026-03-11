@@ -215,7 +215,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+      <div className="r-toolbar" style={{ marginTop: 32 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onNext} style={nextBtnS}>Siguiente</button>
       </div>

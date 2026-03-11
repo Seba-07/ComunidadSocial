@@ -130,9 +130,9 @@ export default function Step2_Members({ onNext, onPrev }) {
   const columns = [
     { key: 'firstName', label: 'Nombre', sortable: true },
     { key: 'lastName', label: 'Apellido', sortable: true },
-    { key: 'rut', label: 'RUT', sortable: true },
+    { key: 'rut', label: 'RUT', sortable: true, hideOnMobile: true },
     {
-      key: 'birthDate', label: 'Edad', sortable: true,
+      key: 'birthDate', label: 'Edad', sortable: true, hideOnTablet: true,
       render: (val) => {
         const age = calculateAge(val);
         if (age === null) return <span style={{ color: '#9ca3af' }}>--</span>;
@@ -194,7 +194,7 @@ export default function Step2_Members({ onNext, onPrev }) {
         }} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div className="r-btn-row" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <button onClick={openAdd} style={{
           padding: '10px 20px', border: 'none', borderRadius: 10,
           background: '#2563eb', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer'
@@ -231,7 +231,7 @@ export default function Step2_Members({ onNext, onPrev }) {
         <DataTable columns={columns} data={members} emptyMessage="Sin miembros registrados" pageSize={10} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
+      <div className="r-toolbar" style={{ marginTop: 24 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           {members.length < minMembers && members.length > 0 && (
@@ -277,7 +277,7 @@ export default function Step2_Members({ onNext, onPrev }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+        <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
           <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', borderRadius: 10, background: 'white', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={saveMember} style={{ padding: '10px 20px', border: 'none', borderRadius: 10, background: '#2563eb', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Guardar</button>
         </div>
