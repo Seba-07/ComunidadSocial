@@ -101,7 +101,8 @@ export default function ValidationWizard({ assignment, onClose }) {
       <div style={{
         background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
         color: 'white', padding: '16px 24px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        flexWrap: 'wrap', gap: 8
       }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
           Validación: {org?.name || 'Organización'}
@@ -120,7 +121,7 @@ export default function ValidationWizard({ assignment, onClose }) {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
         <div style={{
           background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-          padding: 32, boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+          padding: 'clamp(16px, 4vw, 32px)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
         }}>
           {currentStep === 0 && <ValidateDirectorio {...stepProps} />}
           {currentStep === 1 && <AttendeeCheckin {...stepProps} />}

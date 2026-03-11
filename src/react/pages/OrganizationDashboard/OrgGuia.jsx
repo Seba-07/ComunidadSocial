@@ -22,7 +22,7 @@ const sectionHeaderStyle = {
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
   gap: 12
 };
 
@@ -109,7 +109,7 @@ export default function OrgGuia() {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 14px', background: '#eff6ff', borderRadius: 8, fontSize: 13, color: '#1e40af' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 14px', background: '#eff6ff', borderRadius: 8, fontSize: 13, color: '#1e40af', flexWrap: 'wrap' }}>
           <span>ℹ️</span>
           Todos los miembros deben ser residentes de la comuna y presentar cédula de identidad vigente
         </div>

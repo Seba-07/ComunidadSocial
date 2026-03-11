@@ -97,7 +97,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="r-toolbar" style={{ marginBottom: 24 }}>
         <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Documentos</h3>
         <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => setShowUpload(true)}>
           + Subir Documento
@@ -118,7 +118,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
       {/* Certificates */}
       <div style={{ marginBottom: 32 }}>
         <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados</h4>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="r-btn-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Residencia</button>
           <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Socio</button>
         </div>
@@ -162,7 +162,8 @@ export default function OrgDocumentos({ org, onRefresh }) {
             {docs.map((doc) => (
               <div key={doc._id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+                padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                flexWrap: 'wrap', gap: 8
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 20 }}>📄</span>
@@ -361,7 +362,7 @@ function UploadModal({ open, onClose, orgId, onUploaded, addToast }) {
           <input ref={fileRef} type="file" onChange={(e) => setFile(e.target.files[0])}
             style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 14 }} />
         </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+        <div className="r-btn-row" style={{ display: 'flex', gap: 12, marginTop: 16 }}>
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
           <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Subiendo...' : 'Subir Documento'}</button>
         </div>

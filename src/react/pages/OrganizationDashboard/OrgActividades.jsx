@@ -10,7 +10,7 @@ export default function OrgActividades({ org }) {
       {actividades.length > 0 ? (
         <div style={{ display: 'grid', gap: 12 }}>
           {actividades.map((a, i) => (
-            <div key={i} style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            <div key={i} style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <div style={{ background: '#eff6ff', borderRadius: 8, padding: '8px 12px', textAlign: 'center', minWidth: 56 }}>
                 <div style={{ fontSize: 20, fontWeight: 700, color: '#1e40af' }}>
                   {new Date(a.date).getDate()}
