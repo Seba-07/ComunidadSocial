@@ -2,6 +2,7 @@ import express from 'express';
 import Assignment from '../models/Assignment.js';
 import Organization from '../models/Organization.js';
 import Counter from '../models/Counter.js';
+import MinistroBlock from '../models/MinistroBlock.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { withTransactionFallback } from '../utils/withTransaction.js';
 import { storeDocument, isS3Configured } from '../services/storageService.js';
@@ -197,7 +198,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       location
     } = req.body;
 
-    // Check for schedule conflict
+    // Check for schedule conflict with existing assignments
     const conflict = await Assignment.findOne({
       ministroId,
       scheduledDate: new Date(scheduledDate),
@@ -208,6 +209,30 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
     if (conflict) {
       return res.status(400).json({
         error: 'El ministro ya tiene una asignación en ese horario'
+      });
+    }
+
+    // Check for MF blocks on this date/time
+    const dateStr = new Date(scheduledDate).toISOString().split('T')[0];
+    const activeBlocks = await MinistroBlock.find({
+      ministroId,
+      date: dateStr,
+      active: true
+    }).lean();
+
+    const isBlockedSlot = activeBlocks.some(b => {
+      if (b.blockType === 'full_day') return true;
+      if (b.time === scheduledTime) return true;
+      if (b.blockType === 'duration' && b.time && b.endTime) {
+        return scheduledTime >= b.time && scheduledTime < b.endTime;
+      }
+      return false;
+    });
+
+    if (isBlockedSlot) {
+      const blockReason = activeBlocks.find(b => b.reason)?.reason;
+      return res.status(409).json({
+        error: `El ministro tiene bloqueado ese horario${blockReason ? ': ' + blockReason : ''}`
       });
     }
 
@@ -519,7 +544,30 @@ router.get('/check-conflict/:ministroId/:date/:time', authenticate, async (req, 
       status: { $ne: 'cancelled' }
     }).lean();
 
-    res.json({ hasConflict: !!conflict });
+    // Also check MF blocks
+    const dateStr = new Date(date).toISOString().split('T')[0];
+    const activeBlocks = await MinistroBlock.find({
+      ministroId,
+      date: dateStr,
+      active: true
+    }).lean();
+
+    const isBlocked = activeBlocks.some(b => {
+      if (b.blockType === 'full_day') return true;
+      if (b.time === time) return true;
+      if (b.blockType === 'duration' && b.time && b.endTime) {
+        return time >= b.time && time < b.endTime;
+      }
+      return false;
+    });
+
+    const blockReason = isBlocked ? (activeBlocks.find(b => b.reason)?.reason || '') : '';
+
+    res.json({
+      hasConflict: !!conflict || isBlocked,
+      conflictType: conflict ? 'assignment' : isBlocked ? 'block' : null,
+      blockReason
+    });
   } catch (error) {
     console.error('Check conflict error:', error);
     res.status(500).json({ error: 'Error al verificar conflicto' });
