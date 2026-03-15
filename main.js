@@ -2187,7 +2187,6 @@ async function handleDeleteOrganization(orgId, org) {
   });
 
   cancelBtn.addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
   confirmBtn.addEventListener('click', async () => {
     const reason = textarea.value.trim();
@@ -3221,7 +3220,6 @@ async function viewOrganization(orgId, forceRefresh = false) {
 
   document.body.appendChild(modal);
   modal.querySelector('.modal-close-btn').addEventListener('click', () => modal.remove());
-  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
   // Event listeners para PDFs oficiales
   modal.querySelectorAll('.btn-view-user-pdf').forEach(btn => {
@@ -3301,7 +3299,6 @@ async function viewOrganization(orgId, forceRefresh = false) {
 
         // Event: Cancelar
         confirmModal.querySelector('#btn-cancel-resubmit').addEventListener('click', () => confirmModal.remove());
-        confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) confirmModal.remove(); });
 
         // Event: Confirmar
         confirmModal.querySelector('#btn-confirm-resubmit').addEventListener('click', async () => {
@@ -3463,7 +3460,6 @@ async function viewUserPDF(orgId, docId) {
     };
 
     previewModal.querySelector('.btn-close-preview').addEventListener('click', closeModal);
-    previewModal.addEventListener('click', (e) => { if (e.target === previewModal) closeModal(); });
     previewModal.querySelector('.btn-download-preview').addEventListener('click', () => {
       downloadUserPDF(orgId, docId);
     });
@@ -3687,7 +3683,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
     editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
       const newValue = document.getElementById('correction-new-value').value.trim();
@@ -4235,7 +4230,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
       // Event listeners
       subModal.querySelector('.sub-modal-close').addEventListener('click', () => subModal.remove());
       subModal.querySelector('.btn-cancel-sub').addEventListener('click', () => subModal.remove());
-      subModal.addEventListener('click', (e) => { if (e.target === subModal) subModal.remove(); });
 
       subModal.querySelector('.btn-save-member-data').addEventListener('click', () => {
         const newData = {
@@ -4326,7 +4320,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
     // Guardar cambios
     editModal.querySelector('.btn-save-directorio').addEventListener('click', async () => {
@@ -4480,7 +4473,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
     editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
       const newFirstName = document.getElementById('edit-comm-firstname').value.trim();
@@ -4632,7 +4624,6 @@ function openCorrectionEditor(org, type, key, parentModal) {
 
     editModal.querySelector('.modal-close-btn').addEventListener('click', () => editModal.remove());
     editModal.querySelector('.btn-cancel-edit').addEventListener('click', () => editModal.remove());
-    editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.remove(); });
 
     editModal.querySelector('.btn-save-edit').addEventListener('click', async () => {
       const newFirstName = document.getElementById('edit-member-firstname').value.trim();
@@ -5075,9 +5066,6 @@ window.showAppointmentHistory = function(orgId) {
   // Event listeners para cerrar
   modal.querySelector('#close-history-modal').addEventListener('click', () => modal.remove());
   modal.querySelector('#close-history-btn').addEventListener('click', () => modal.remove());
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
-  });
 };
 
 // ========================================

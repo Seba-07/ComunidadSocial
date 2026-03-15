@@ -554,7 +554,6 @@ class MemberDashboard {
     `;
     document.body.appendChild(modal);
     modal.querySelector('#modal-close-pdf').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
     modal.querySelector('#modal-download-pdf').addEventListener('click', () => {
       const orgName = (this.org.organizationName || 'Doc').replace(/\s+/g, '_');
       pdfService.downloadPDF(doc, `${title.replace(/\s+/g, '_')}_${orgName}.pdf`);
@@ -998,7 +997,6 @@ class MemberDashboard {
 
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Vote submission handlers
     modal.querySelectorAll('.btn-submit-vote').forEach(btn => {

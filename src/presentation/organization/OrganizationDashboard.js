@@ -1485,7 +1485,6 @@ class OrganizationDashboard {
     // Close handlers
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Submit
     modal.querySelector('#form-upload-org-doc').addEventListener('submit', async (e) => {
@@ -1597,7 +1596,6 @@ class OrganizationDashboard {
 
     confirmModal.querySelector('.modal-close').addEventListener('click', () => confirmModal.remove());
     confirmModal.querySelector('.btn-cancel').addEventListener('click', () => confirmModal.remove());
-    confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) confirmModal.remove(); });
 
     confirmModal.querySelector('#btn-confirm-delete-doc').addEventListener('click', async () => {
       try {
@@ -1745,7 +1743,6 @@ class OrganizationDashboard {
 
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Auto-formateo de RUT
     const rutInput = modal.querySelector('#member-rut');
@@ -2407,7 +2404,6 @@ class OrganizationDashboard {
     // Event listeners
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Form submit
     modal.querySelector('#form-dissolution').addEventListener('submit', async (e) => {
@@ -2759,7 +2755,6 @@ class OrganizationDashboard {
 
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('.btn-save-directorio').addEventListener('click', async () => {
       const newCommission = roles.map(role => {
@@ -2838,7 +2833,6 @@ class OrganizationDashboard {
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('#form-new-election').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2917,7 +2911,6 @@ class OrganizationDashboard {
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('#form-new-communication').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -3007,7 +3000,6 @@ class OrganizationDashboard {
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('#form-edit-member').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -3173,7 +3165,6 @@ class OrganizationDashboard {
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   /**
@@ -3284,7 +3275,6 @@ class OrganizationDashboard {
 
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-close-summary').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   // ============ DETALLE Y EDICIÓN ============
@@ -3491,7 +3481,6 @@ class OrganizationDashboard {
     appendTarget.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     // Descargar acta PDF para asambleas finalizadas
     const btnDownloadActa = modal.querySelector('#btn-download-assembly-acta');
@@ -4000,7 +3989,6 @@ class OrganizationDashboard {
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     const rangeInput = modal.querySelector('#edit-project-progress');
     const progressLabel = modal.querySelector('#progress-value');
@@ -4060,7 +4048,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   /**
@@ -4124,7 +4111,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('#form-edit-activity').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -4360,7 +4346,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   }
 
   /**
@@ -4457,7 +4442,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('.btn-save-def-dir').addEventListener('click', async () => {
       const roles = ['Presidente', 'Secretario', 'Tesorero'];
@@ -4581,7 +4565,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('.btn-confirm-registro').addEventListener('click', async () => {
       try {
@@ -4661,7 +4644,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('.btn-save-comision').addEventListener('click', async () => {
       const selectedMembers = [1, 2, 3].map(i => {
@@ -4760,7 +4742,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     modal.querySelector('.btn-save-tricel').addEventListener('click', async () => {
       const tricelRoles = ['presidente', 'secretario', 'vocal'];
@@ -4873,7 +4854,6 @@ ${comm.message || 'Sin contenido'}
     parentOverlay.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
     const rangeInput = modal.querySelector('#election-participation-edit');
     const display = modal.querySelector('#participation-display');
@@ -5207,7 +5187,6 @@ ${comm.message || 'Sin contenido'}
     document.body.appendChild(modal);
 
     modal.querySelector('#modal-close-pdf').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
     modal.querySelector('#modal-download-pdf').addEventListener('click', () => {
       const orgName = (this.currentOrg.organizationName || this.currentOrg.organization?.name || 'Doc').replace(/\s+/g, '_');
       pdfService.downloadPDF(doc, `${title.replace(/\s+/g, '_')}_${orgName}.pdf`);
@@ -5648,7 +5627,6 @@ ${comm.message || 'Sin contenido'}
     document.body.appendChild(modal);
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
     modal.querySelector('.btn-close-cert').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
     modal.querySelector('.btn-dl-cert').addEventListener('click', () => this.downloadCertificateFile(idx));
   }
 
@@ -5735,7 +5713,6 @@ ${comm.message || 'Sin contenido'}
       document.body.appendChild(modal);
       modal.querySelector('.modal-close').addEventListener('click', () => { modal.remove(); window.URL.revokeObjectURL(blobUrl); });
       modal.querySelector('.btn-close-doc').addEventListener('click', () => { modal.remove(); window.URL.revokeObjectURL(blobUrl); });
-      modal.addEventListener('click', (e) => { if (e.target === modal) { modal.remove(); window.URL.revokeObjectURL(blobUrl); } });
       modal.querySelector('.btn-dl-doc').addEventListener('click', () => this.downloadOrgDocument(docId));
     } catch (error) {
       console.error('Error al ver documento:', error);

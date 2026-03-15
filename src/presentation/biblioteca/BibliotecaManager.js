@@ -348,9 +348,6 @@ class BibliotecaManager {
 
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
 
     // Drag and drop
     uploadArea.addEventListener('dragover', (e) => {
@@ -477,9 +474,6 @@ class BibliotecaManager {
 
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

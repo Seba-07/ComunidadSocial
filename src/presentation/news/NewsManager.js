@@ -373,9 +373,6 @@ class NewsManager {
 
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
 
     // Enviar formulario
     form.addEventListener('submit', async (e) => {
