@@ -34,7 +34,7 @@ async function cleanDatabase() {
     console.log('─'.repeat(40));
     console.log(`  Usuarios totales: ${countsBefore.users}`);
     console.log(`    - Ministros de Fe: ${countsBefore.ministros}`);
-    console.log(`    - Organizadores: ${countsBefore.organizadores}`);
+    console.log(`    - Dirigentes Sociales: ${countsBefore.organizadores}`);
     console.log(`    - Miembros: ${countsBefore.miembros}`);
     console.log(`  Organizaciones: ${countsBefore.organizations}`);
     console.log(`  Asignaciones: ${countsBefore.assignments}`);
@@ -70,8 +70,8 @@ async function cleanDatabase() {
 
       municipalidadUser = new User({
         rut: '11.111.111-1',
-        firstName: 'Administrador',
-        lastName: 'Municipalidad',
+        firstName: 'Secretario',
+        lastName: 'Municipal',
         email: 'admin@renca.cl',
         password: 'admin123',
         phone: '+56 2 2345 6789',
@@ -106,7 +106,7 @@ async function cleanDatabase() {
     // Eliminar todos los usuarios EXCEPTO el usuario municipalidad guardado
     const deletedUsers = await User.deleteMany({ _id: { $ne: municipalidadId } });
     console.log(`  ✅ Usuarios eliminados: ${deletedUsers.deletedCount}`);
-    console.log(`     (Ministros, Organizadores, Miembros, otros)`);
+    console.log(`     (Ministros, Dirigentes Sociales, Miembros, otros)`);
 
     // Verificar estado final
     const countsAfter = {
@@ -142,7 +142,7 @@ async function cleanDatabase() {
     console.log('💡 PRÓXIMOS PASOS:');
     console.log('   1. Inicia sesión en /auth.html con las credenciales');
     console.log('   2. Crea un Ministro de Fe desde Panel Admin → Ministros');
-    console.log('   3. Registra usuarios organizadores para crear organizaciones');
+    console.log('   3. Registra dirigentes sociales para crear organizaciones');
     console.log('');
 
     process.exit(0);

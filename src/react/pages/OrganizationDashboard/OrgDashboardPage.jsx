@@ -131,7 +131,7 @@ export default function OrgDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title={sidebarTitle}
-          subtitle="Organizador"
+          subtitle="Dirigente Social"
           sections={sidebarSections}
           activeKey={effectiveTab}
           onItemClick={handleTabClick}

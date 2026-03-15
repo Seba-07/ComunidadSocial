@@ -137,7 +137,7 @@ export default function MetricsDashboardView() {
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Usuarios</h3>
           <StatsGrid stats={[
             { icon: '\uD83D\uDC65', label: 'Total', value: userStats.total || 0, color: '#2563eb' },
-            { icon: '\uD83D\uDCDD', label: 'Organizadores', value: userStats.organizers || 0, color: '#3b82f6' },
+            { icon: '\uD83D\uDCDD', label: 'Dirigentes Sociales', value: userStats.organizers || 0, color: '#3b82f6' },
             { icon: '\uD83D\uDC64', label: 'Miembros', value: userStats.members || 0, color: '#22c55e' },
             { icon: '\u2795', label: 'Nuevos (mes)', value: userStats.registeredThisMonth || 0, color: '#f59e0b' }
           ]} />

@@ -930,7 +930,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     organization.statusHistory.push({
       status: 'deletion_requested',
       date: new Date(),
-      comment: `Eliminación solicitada por el organizador. Motivo: ${reason}`
+      comment: `Eliminación solicitada por el dirigente social. Motivo: ${reason}`
     });
 
     await organization.save();
@@ -961,7 +961,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 
     logger.info(`Deletion requested: ${organization.organizationName} (${organization._id}) by user ${req.userId}`);
-    res.json({ message: 'Solicitud de eliminación enviada al administrador', deletionRequested: true });
+    res.json({ message: 'Solicitud de eliminación enviada al Secretario Municipal', deletionRequested: true });
   } catch (error) {
     console.error('Delete organization error:', error);
     res.status(500).json({ error: 'Error al eliminar organización' });
@@ -1018,7 +1018,7 @@ router.post('/:id/approve-deletion', authenticate, requireRole('MUNICIPALIDAD'),
       userId: orgUserId,
       type: 'organization_deleted',
       title: 'Organización eliminada',
-      message: `Tu solicitud de eliminación de "${orgName}" ha sido aprobada por el administrador. La organización y todos sus datos asociados han sido eliminados.`,
+      message: `Tu solicitud de eliminación de "${orgName}" ha sido aprobada por el Secretario Municipal. La organización y todos sus datos asociados han sido eliminados.`,
       data: { organizationName: orgName, deletedAt: new Date().toISOString() }
     });
 
@@ -1048,7 +1048,7 @@ router.post('/:id/reject-deletion', authenticate, requireRole('MUNICIPALIDAD'), 
     organization.statusHistory.push({
       status: previousStatus,
       date: new Date(),
-      comment: `Solicitud de eliminación rechazada por el administrador. ${req.body?.reason ? 'Motivo: ' + req.body.reason : ''}`
+      comment: `Solicitud de eliminación rechazada por el Secretario Municipal. ${req.body?.reason ? 'Motivo: ' + req.body.reason : ''}`
     });
     organization.deletionRequest = undefined;
 
@@ -1059,7 +1059,7 @@ router.post('/:id/reject-deletion', authenticate, requireRole('MUNICIPALIDAD'), 
       userId: organization.userId,
       type: 'status_change',
       title: 'Solicitud de eliminación rechazada',
-      message: `Tu solicitud de eliminación de "${organization.organizationName}" fue rechazada por el administrador.${req.body?.reason ? ' Motivo: ' + req.body.reason : ''}`,
+      message: `Tu solicitud de eliminación de "${organization.organizationName}" fue rechazada por el Secretario Municipal.${req.body?.reason ? ' Motivo: ' + req.body.reason : ''}`,
       organizationId: organization._id
     });
 
@@ -1259,7 +1259,7 @@ router.post('/:id/retract', authenticate, async (req, res) => {
     organization.statusHistory.push({
       status: 'draft',
       date: new Date(),
-      comment: `El organizador ha retractado la solicitud de constitución (estado anterior: ${previousStatus})`
+      comment: `El dirigente social ha retractado la solicitud de constitución (estado anterior: ${previousStatus})`
     });
 
     await organization.save();
@@ -1271,7 +1271,7 @@ router.post('/:id/retract', authenticate, async (req, res) => {
         userId: admin._id,
         type: 'status_change',
         title: 'Solicitud retractada',
-        message: `El organizador ha cancelado la solicitud de constitución de "${orgName}"`,
+        message: `El dirigente social ha cancelado la solicitud de constitución de "${orgName}"`,
         data: { organizationId: organization._id, organizationName: orgName, previousStatus, action: 'retract' },
         organizationId: organization._id
       });
@@ -1283,7 +1283,7 @@ router.post('/:id/retract', authenticate, async (req, res) => {
         ministroId: ministroId,
         type: 'status_change',
         title: 'Asamblea cancelada',
-        message: `La asamblea constitutiva de "${orgName}" ha sido cancelada por el organizador`,
+        message: `La asamblea constitutiva de "${orgName}" ha sido cancelada por el dirigente social`,
         data: { organizationId: organization._id, organizationName: orgName, action: 'retract' },
         organizationId: organization._id
       });

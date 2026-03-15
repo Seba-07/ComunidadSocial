@@ -850,7 +850,7 @@ async function seedUnidadesVecinales() {
     console.log('  - Nombre de población');
     console.log('  - Nombre de calle');
     console.log('  - Palabras clave');
-    console.log('\nNOTA: El administrador puede refinar los datos desde el panel de administración.');
+    console.log('\nNOTA: El Secretario Municipal puede refinar los datos desde el panel de administración.');
 
   } catch (error) {
     console.error('Error en seed:', error);

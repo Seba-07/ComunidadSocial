@@ -2624,7 +2624,7 @@ class OrganizationDashboard {
       const validationData = {
         validatedBy: 'ORGANIZADOR',
         validatorId: org.userId,
-        validatorName: 'Organizador',
+        validatorName: 'Dirigente Social',
         signatures: {
           presidente: {
             name: modal.querySelector('#user-presidente-name').value.trim(),

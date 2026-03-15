@@ -34,7 +34,7 @@ export default function MemberCredencial({ user }) {
     <div>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', marginBottom: 8 }}>Mi Credencial QR</h3>
       <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>
-        Presenta este código QR al organizador para registrar tu asistencia en asambleas.
+        Presenta este código QR al dirigente social para registrar tu asistencia en asambleas.
       </p>
 
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -72,7 +72,7 @@ export default function MemberCredencial({ user }) {
       </div>
 
       <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 14, fontSize: 13, color: '#166534' }}>
-        <strong>Cómo funciona:</strong> El organizador de la asamblea escaneará tu código QR con la cámara del celular para registrar tu asistencia. No necesitas hacer nada más — solo muestra tu credencial.
+        <strong>Cómo funciona:</strong> El dirigente social escaneará tu código QR con la cámara del celular para registrar tu asistencia. No necesitas hacer nada más — solo muestra tu credencial.
       </div>
     </div>
   );

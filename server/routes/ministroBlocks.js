@@ -138,7 +138,7 @@ router.put('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), async (req
       ministroId: block.ministroId,
       type: 'ministro_block_rejected',
       title: 'Bloqueo rechazado',
-      message: `Tu bloqueo del ${block.date}${block.time ? ' a las ' + block.time : ' (día completo)'} fue rechazado por el administrador.`,
+      message: `Tu bloqueo del ${block.date}${block.time ? ' a las ' + block.time : ' (día completo)'} fue rechazado por el Secretario Municipal.`,
       data: { blockId: block._id, date: block.date, time: block.time }
     });
 

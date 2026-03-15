@@ -79,7 +79,7 @@ router.get('/buscar', async (req, res) => {
         encontrada: false,
         coords,
         mensaje: 'No se encontró una unidad vecinal para esta dirección',
-        sugerencia: 'El administrador debe asignar la unidad vecinal manualmente'
+        sugerencia: 'El Secretario Municipal debe asignar la unidad vecinal manualmente'
       });
     }
 

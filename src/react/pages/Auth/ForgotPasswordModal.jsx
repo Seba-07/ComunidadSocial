@@ -5,7 +5,7 @@ export default function ForgotPasswordModal({ open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} title="¿Olvidaste tu contraseña?">
       <p style={{ color: '#374151', marginBottom: 20, fontSize: 15, lineHeight: 1.6 }}>
-        Para restablecer tu contraseña, contacta al administrador de tu organización o al equipo de soporte.
+        Para restablecer tu contraseña, contacta al Secretario Municipal o al equipo de soporte.
       </p>
       <div style={{
         padding: 20,

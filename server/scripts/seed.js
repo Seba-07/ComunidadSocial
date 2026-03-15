@@ -111,12 +111,12 @@ async function seed() {
     await Notification.deleteMany({});
     console.log('✅ Base de datos completamente limpiada');
 
-    // Crear administrador
-    console.log('\n👤 Creando administrador...');
+    // Crear Secretario Municipal
+    console.log('\n👤 Creando Secretario Municipal...');
     const admin = new User({
       rut: '11.111.111-1',
-      firstName: 'Administrador',
-      lastName: 'Sistema',
+      firstName: 'Secretario',
+      lastName: 'Municipal',
       email: tenant.adminEmail || 'admin@comunidadsocial.cl',
       password: 'admin123',
       phone: tenant.phone || '+56 2 2345 6789',
@@ -165,7 +165,7 @@ async function seed() {
     console.log('='.repeat(50));
     console.log('\n📋 CREDENCIALES DE ACCESO:');
     console.log('─'.repeat(50));
-    console.log('ADMINISTRADOR:');
+    console.log('SECRETARIO MUNICIPAL:');
     console.log(`  Email: ${tenant.adminEmail || 'admin@comunidadsocial.cl'}`);
     console.log('  Password: admin123');
     console.log('');
@@ -174,7 +174,7 @@ async function seed() {
     console.log('  Ejemplo: ' + testMembers[0].email + ' / user123');
     console.log('─'.repeat(50));
     console.log('\n📊 DATOS CREADOS:');
-    console.log(`  - 1 Administrador`);
+    console.log(`  - 1 Secretario Municipal`);
     console.log(`  - ${TOTAL_MEMBERS} Usuarios de prueba (todos 14-17 años)`);
     console.log('');
     console.log('⚠️  NOTA: No se creó Ministro de Fe.');

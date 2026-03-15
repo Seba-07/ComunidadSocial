@@ -291,10 +291,10 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
           {tab === 'asamblea' && (
             <div style={{ display: 'grid', gap: 20 }}>
-              {/* Sección 1: Solicitud del organizador */}
+              {/* Sección 1: Solicitud del dirigente social */}
               <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 10, border: '1px solid #bae6fd' }}>
                 <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#0369a1' }}>
-                  Solicitud del Organizador
+                  Solicitud del Dirigente Social
                 </h4>
                 {(org.electionDate || org.electionTime || org.assemblyAddress) ? (
                   <div style={{ display: 'grid', gap: 8 }}>
@@ -319,7 +319,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   </div>
                 ) : (
                   <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
-                    El organizador no especificó fecha, hora o lugar para la asamblea.
+                    El dirigente social no especificó fecha, hora o lugar para la asamblea.
                   </p>
                 )}
               </div>
@@ -808,7 +808,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   Paso 3: Aprobar Organizacion
                 </h4>
                 <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
-                  Al aprobar, se guardara el certificado firmado y se notificara al organizador.
+                  Al aprobar, se guardara el certificado firmado y se notificara al dirigente social.
                   Se crearan automaticamente las cuentas de los socios.
                 </p>
                 <button
@@ -942,7 +942,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               padding: 12, background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', marginBottom: 16,
             }}>
               <span style={{ fontWeight: 600, fontSize: 13, color: '#0369a1', display: 'block', marginBottom: 4 }}>
-                Solicitado por organizador:
+                Solicitado por dirigente social:
               </span>
               <div style={{ fontSize: 13, color: '#374151' }}>
                 {org.electionDate && <div>Fecha: {new Date(org.electionDate).toLocaleDateString('es-CL')}</div>}

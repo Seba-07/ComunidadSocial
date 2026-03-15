@@ -1186,8 +1186,8 @@ function renderProfileUI(user) {
   const roleBadge = document.getElementById('profile-role-badge');
   if (roleBadge) {
     const roleLabels = {
-      'MUNICIPALIDAD': 'Municipalidad',
-      'ORGANIZADOR': 'Organizador',
+      'MUNICIPALIDAD': 'Secretario Municipal',
+      'ORGANIZADOR': 'Dirigente Social',
       'MIEMBRO': 'Miembro',
       'MINISTRO_FE': 'Ministro de Fe'
     };
@@ -1255,8 +1255,8 @@ function renderProfileUI(user) {
 
   if (displayAccountType) {
     const roleLabels = {
-      'MUNICIPALIDAD': 'Municipalidad',
-      'ORGANIZADOR': 'Organizador',
+      'MUNICIPALIDAD': 'Secretario Municipal',
+      'ORGANIZADOR': 'Dirigente Social',
       'MIEMBRO': 'Miembro',
       'MINISTRO_FE': 'Ministro de Fe'
     };
@@ -1697,7 +1697,7 @@ async function renderOrganizations() {
               <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
               <h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#991b1b;">Organización eliminada</h3>
               <p style="margin:0 0 4px;font-size:14px;color:#dc2626;font-weight:600;">"${orgName}"</p>
-              <p style="margin:0 0 16px;font-size:13px;color:#7f1d1d;line-height:1.4;">${notif.message || 'La eliminación fue aprobada por el administrador.'}</p>
+              <p style="margin:0 0 16px;font-size:13px;color:#7f1d1d;line-height:1.4;">${notif.message || 'La eliminación fue aprobada por el Secretario Municipal.'}</p>
               <button class="btn-dismiss-deletion" data-notif-id="${notifId}" style="
                 background:#dc2626;color:white;border:none;padding:8px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;
               ">Entendido, eliminar aviso</button>
@@ -1938,7 +1938,7 @@ function renderOrganizationCard(org) {
               <span style="font-size: 24px;">🗑️</span>
               <div style="flex: 1;">
                 <p style="margin: 0; font-weight: 700; color: #991b1b; font-size: 14px;">Eliminación solicitada</p>
-                <p style="margin: 2px 0 0; font-size: 12px; color: #dc2626;">Esperando aprobación del administrador</p>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #dc2626;">Esperando aprobación del Secretario Municipal</p>
               </div>
             </div>
           </div>
@@ -1950,7 +1950,7 @@ function renderOrganizationCard(org) {
               <span style="font-size: 24px;">❌</span>
               <div style="flex: 1;">
                 <p style="margin: 0; font-weight: 700; color: #92400e; font-size: 14px;">Solicitud de eliminación rechazada</p>
-                ${deletionRejectionReason ? `<p style="margin: 4px 0 0; font-size: 13px; color: #78350f; line-height: 1.4;"><strong>Motivo del administrador:</strong> ${deletionRejectionReason}</p>` : '<p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">El administrador rechazó la solicitud sin especificar motivo.</p>'}
+                ${deletionRejectionReason ? `<p style="margin: 4px 0 0; font-size: 13px; color: #78350f; line-height: 1.4;"><strong>Motivo del Secretario Municipal:</strong> ${deletionRejectionReason}</p>` : '<p style="margin: 2px 0 0; font-size: 12px; color: #a16207;">El Secretario Municipal rechazó la solicitud sin especificar motivo.</p>'}
               </div>
             </div>
           </div>
@@ -2151,7 +2151,7 @@ async function handleDeleteOrganization(orgId, org) {
         </div>
         <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;margin-bottom:16px;">
           <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
-            Esta solicitud ya tiene avances con la municipalidad o el ministro de fe. Se enviará una solicitud de eliminación al administrador para su aprobación.
+            Esta solicitud ya tiene avances con la municipalidad o el ministro de fe. Se enviará una solicitud de eliminación al Secretario Municipal para su aprobación.
           </p>
         </div>
         <label style="display:block;font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">Motivo de la eliminación <span style="color:#dc2626;">*</span></label>
@@ -2214,7 +2214,7 @@ async function handleDeleteOrganization(orgId, org) {
             </svg>
           </div>
           <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111;">${isDeletionRequest ? 'Solicitud enviada' : 'Solicitud eliminada'}</h3>
-          <p style="margin:0;font-size:14px;color:#6b7280;">${isDeletionRequest ? 'Tu solicitud de eliminación ha sido enviada al administrador para su aprobación.' : 'La solicitud ha sido eliminada y se ha notificado a los involucrados.'}</p>
+          <p style="margin:0;font-size:14px;color:#6b7280;">${isDeletionRequest ? 'Tu solicitud de eliminación ha sido enviada al Secretario Municipal para su aprobación.' : 'La solicitud ha sido eliminada y se ha notificado a los involucrados.'}</p>
           <button id="delete-org-done" style="margin-top:20px;padding:10px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-weight:600;font-size:14px;cursor:pointer;">Entendido</button>
         </div>
       `;
@@ -4673,7 +4673,7 @@ function openCorrectionEditor(org, type, key, parentModal) {
   // ═══════════════════════════════════════════════════════════════
   } else if (type === 'documentos' || type === 'certificados' || type === 'document' || type === 'certificate') {
     // Por ahora mostrar mensaje - se podría implementar un file picker
-    showToast('Para resubir documentos o certificados, por favor contacte al administrador o vuelva a enviar la solicitud completa', 'info');
+    showToast('Para resubir documentos o certificados, por favor contacte al Secretario Municipal o vuelva a enviar la solicitud completa', 'info');
   } else {
     // Tipo desconocido
     console.warn('Tipo de corrección desconocido:', type, key);

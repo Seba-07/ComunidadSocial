@@ -10,7 +10,7 @@ import DataTable from '../../../components/ui/DataTable';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 const ROLE_LABELS = {
-  ORGANIZADOR: 'Organizador', MUNICIPALIDAD: 'Municipalidad',
+  ORGANIZADOR: 'Dirigente Social', MUNICIPALIDAD: 'Secretario Municipal',
   MINISTRO_FE: 'Ministro de Fe', MIEMBRO: 'Miembro'
 };
 
@@ -48,7 +48,7 @@ export default function UserManagerView() {
       { icon: '\uD83D\uDC65', label: 'Total', value: stats.total, color: '#2563eb' },
       { icon: '\u2705', label: 'Activos', value: stats.active, color: '#10b981' },
       { icon: '\u26A0\uFE0F', label: 'Inactivos', value: stats.inactive, color: '#f59e0b' },
-      { icon: '\uD83D\uDC64', label: 'Organizadores', value: stats.byRole?.ORGANIZADOR || 0, color: '#2563eb' }
+      { icon: '\uD83D\uDC64', label: 'Dirigentes Sociales', value: stats.byRole?.ORGANIZADOR || 0, color: '#2563eb' }
     ];
   }, [stats]);
 

@@ -633,7 +633,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             </div>
             <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 20px' }}>
               ¿Estás seguro de que deseas retractar esta solicitud? La organización volverá a estado <strong>Borrador</strong>,
-              se cancelará la revisión del Administrador y se anulará cualquier fecha agendada con el Ministro de Fe.
+              se cancelará la revisión del Secretario Municipal y se anulará cualquier fecha agendada con el Ministro de Fe.
             </p>
             <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px', fontStyle: 'italic' }}>
               Podrás volver a enviar la solicitud posteriormente desde el wizard.

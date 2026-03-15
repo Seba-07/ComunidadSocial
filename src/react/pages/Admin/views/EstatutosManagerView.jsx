@@ -497,8 +497,8 @@ export default function EstatutosManagerView() {
                   <select value={selectedTemplate.mandatoTipo || 'fijo'}
                     onChange={e => setSelectedTemplate(t => ({ ...t, mandatoTipo: e.target.value }))}
                     style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
-                    <option value="fijo">Fijo (no editable por organizador)</option>
-                    <option value="variable">Variable (organizador elige)</option>
+                    <option value="fijo">Fijo (no editable por dirigente social)</option>
+                    <option value="variable">Variable (dirigente social elige)</option>
                   </select>
                 </div>
                 <div className="r-form-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -1271,7 +1271,7 @@ export default function EstatutosManagerView() {
                       fontSize: 13, color: '#1e40af', lineHeight: 1.5
                     }}>
                       Crea un tipo de organizacion que no existe en el sistema. Una vez publicada,
-                      los organizadores podran seleccionarlo al crear una nueva organizacion.
+                      los dirigentes sociales podran seleccionarlo al crear una nueva organizacion.
                     </div>
 
                     <div style={{ display: 'grid', gap: 20 }}>

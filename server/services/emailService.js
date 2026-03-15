@@ -489,7 +489,7 @@ const emailService = {
 
       <p><strong>Importante:</strong> Por seguridad, le recomendamos cambiar su contraseña temporal la primera vez que inicie sesión en la plataforma.</p>
 
-      <p>Si tiene alguna consulta, no dude en contactarse con el administrador de su organización.</p>
+      <p>Si tiene alguna consulta, no dude en contactarse con el dirigente social de su organización.</p>
     `;
 
     const subject = `Bienvenido/a a ${orgName} — ${tenant.platformShortName}`;

@@ -29,7 +29,7 @@ export class IndexedDBUserRepository extends IUserRepository {
   }
 
   async createDefaultUsers() {
-    // Solo crear usuario administrador (el único pre-creado en el sistema)
+    // Solo crear usuario Secretario Municipal (el único pre-creado en el sistema)
     await indexedDBService.add(this.storeName, {
       id: 'admin-1',
       email: 'admin@renca.cl',
@@ -37,7 +37,7 @@ export class IndexedDBUserRepository extends IUserRepository {
       role: 'MUNICIPALIDAD',
       profile: {
         rut: '12.345.678-9',
-        firstName: 'Administrador',
+        firstName: 'Secretario',
         lastName: 'Municipal',
         phone: '+56912345678',
         address: 'Municipalidad de Renca',
@@ -47,7 +47,7 @@ export class IndexedDBUserRepository extends IUserRepository {
       createdAt: new Date().toISOString()
     });
 
-    console.log('✅ Administrador creado en el sistema');
+    console.log('✅ Secretario Municipal creado en el sistema');
   }
 
   async create(user) {

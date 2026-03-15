@@ -81,7 +81,7 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, is
         }}>
           <p style={{ margin: 0, fontSize: 13, color: '#dc2626', fontWeight: 600 }}>
             No se puede aprobar: faltan certificados de antecedentes para {missingCerts.length} miembro(s) del directorio.
-            El organizador debe subirlos desde el panel de la organización.
+            El dirigente social debe subirlos desde el panel de la organización.
           </p>
         </div>
       )}
