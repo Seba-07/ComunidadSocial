@@ -62,14 +62,23 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
+      const communeFallback = tenant.communeName || '';
       setProfile({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         phone: user.phone || '',
         address: user.address || '',
         region: user.region || 'Región Metropolitana',
-        commune: user.commune || tenant.communeName || ''
+        commune: user.commune || communeFallback
       });
+
+      // If tenant.communeName is empty (build without env var), fetch from API
+      if (!user.commune && !communeFallback) {
+        apiService.get('/tenant').then(res => {
+          const name = res.data?.communeName || res.communeName || '';
+          if (name) setProfile(p => ({ ...p, commune: p.commune || name }));
+        }).catch(() => {});
+      }
     }
   }, [user]);
 
