@@ -3,7 +3,9 @@ import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '../../../services/ApiService';
 
-const HOURS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+const MORNING_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00'];
+const AFTERNOON_HOURS = ['14:00', '15:00', '16:00', '17:00', '18:00'];
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
 
 function formatDateStr(d) {
@@ -73,23 +75,46 @@ export default function MiHorario() {
     if (!showBlockModal) return;
     setSaving(true);
     try {
-      const blockData = {
-        ministroId: user._id,
-        ministroName: `${user.firstName} ${user.lastName}`,
-        date: showBlockModal.date,
-        reason: blockReason || 'Bloqueo manual',
-        createdBy: user._id
-      };
+      // If blocking morning/afternoon, create multiple blocks
+      const hoursToBlock = showBlockModal.period === 'morning' ? MORNING_HOURS
+        : showBlockModal.period === 'afternoon' ? AFTERNOON_HOURS
+        : null;
 
-      if (showBlockModal.time) {
-        blockData.time = showBlockModal.time;
-        blockData.blockType = 'manual';
+      if (hoursToBlock) {
+        for (const hour of hoursToBlock) {
+          if (!isBlocked(showBlockModal.date, hour)) {
+            await apiService.createMinistroBlock({
+              ministroId: user._id,
+              ministroName: `${user.firstName} ${user.lastName}`,
+              date: showBlockModal.date,
+              time: hour,
+              blockType: 'manual',
+              reason: blockReason || (showBlockModal.period === 'morning' ? 'Bloqueo mañana' : 'Bloqueo tarde'),
+              createdBy: user._id
+            });
+          }
+        }
+        addToast(showBlockModal.period === 'morning' ? 'Mañana bloqueada' : 'Tarde bloqueada', 'success');
       } else {
-        blockData.blockType = 'full_day';
+        const blockData = {
+          ministroId: user._id,
+          ministroName: `${user.firstName} ${user.lastName}`,
+          date: showBlockModal.date,
+          reason: blockReason || 'Bloqueo manual',
+          createdBy: user._id
+        };
+
+        if (showBlockModal.time) {
+          blockData.time = showBlockModal.time;
+          blockData.blockType = 'manual';
+        } else {
+          blockData.blockType = 'full_day';
+        }
+
+        await apiService.createMinistroBlock(blockData);
+        addToast(showBlockModal.time ? `${showBlockModal.time} bloqueado` : 'Día bloqueado', 'success');
       }
 
-      await apiService.createMinistroBlock(blockData);
-      addToast(showBlockModal.time ? `${showBlockModal.time} bloqueado` : 'Día bloqueado', 'success');
       setShowBlockModal(null);
       setBlockReason('');
       loadBlocks();
@@ -172,10 +197,22 @@ export default function MiHorario() {
                 <div style={{ fontSize: 12, fontWeight: 600, color: isToday ? '#2563eb' : '#374151' }}>{DAYS[i]}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: isToday ? '#2563eb' : '#111827' }}>{date.getDate()}</div>
                 {!fullyBlocked && (
-                  <button onClick={() => { setShowBlockModal({ date: dateStr }); setBlockReason(''); }}
-                    style={{ fontSize: 10, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
-                    Bloquear día
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
+                    <button onClick={() => { setShowBlockModal({ date: dateStr }); setBlockReason(''); }}
+                      style={{ fontSize: 10, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                      Bloquear día
+                    </button>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      <button onClick={() => { setShowBlockModal({ date: dateStr, period: 'morning' }); setBlockReason(''); }}
+                        style={{ fontSize: 9, color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        AM
+                      </button>
+                      <button onClick={() => { setShowBlockModal({ date: dateStr, period: 'afternoon' }); setBlockReason(''); }}
+                        style={{ fontSize: 9, color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        PM
+                      </button>
+                    </div>
+                  </div>
                 )}
                 {fullyBlocked && (
                   <span style={{ fontSize: 10, color: '#dc2626', fontWeight: 600 }}>Día bloqueado</span>
@@ -261,7 +298,10 @@ export default function MiHorario() {
           <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 400, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
-              {showBlockModal.time ? `Bloquear ${showBlockModal.time}` : 'Bloquear día completo'}
+              {showBlockModal.time ? `Bloquear ${showBlockModal.time}`
+                : showBlockModal.period === 'morning' ? 'Bloquear mañana (09:00–13:00)'
+                : showBlockModal.period === 'afternoon' ? 'Bloquear tarde (14:00–18:00)'
+                : 'Bloquear día completo'}
             </h3>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
               {new Date(showBlockModal.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
