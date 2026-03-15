@@ -168,11 +168,12 @@ export default function AuditLogView() {
       </div>
 
       {/* Filters */}
-      <div className="r-toolbar" style={{
+      <div className="audit-filters" style={{
         background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16,
-        display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12,
+        alignItems: 'end', marginBottom: 20
       }}>
-        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
+        <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Acción</label>
           <select value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
             style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }}>
@@ -180,7 +181,7 @@ export default function AuditLogView() {
             {Object.entries(ACTION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
+        <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Recurso</label>
           <select value={filters.resource} onChange={e => setFilters(f => ({ ...f, resource: e.target.value }))}
             style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }}>
@@ -188,23 +189,23 @@ export default function AuditLogView() {
             {Object.entries(RESOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
+        <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Desde</label>
           <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
             style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
+        <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Hasta</label>
           <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
             style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ flex: '2 1 200px', minWidth: 120 }}>
+        <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Buscar</label>
           <input type="text" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
             placeholder="Nombre usuario/recurso..."
             style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, flex: '1 1 100%' }}>
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8 }}>
           <button onClick={applyFilters} style={{
             padding: '8px 16px', border: 'none', borderRadius: 6,
             background: '#2563eb', color: 'white', fontSize: 13, cursor: 'pointer', flex: 1

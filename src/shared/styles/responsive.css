@@ -527,6 +527,10 @@
         padding: 12px !important;
     }
 
+    .audit-filters {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
     .r-table-wrap table th,
     .r-table-wrap table td {
         padding: 8px 10px !important;
@@ -541,6 +545,12 @@
 
     .audit-log-page h1 {
         font-size: 18px !important;
+    }
+
+    .audit-filters {
+        grid-template-columns: 1fr !important;
+        padding: 12px !important;
+        gap: 8px !important;
     }
 
     .r-table-wrap table th,
