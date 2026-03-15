@@ -501,24 +501,63 @@ export default function EstatutosManagerView() {
                     <option value="variable">Variable (organizador elige)</option>
                   </select>
                 </div>
-                <div className="r-form-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180 }}>
+                <div className="r-form-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, minWidth: 180, marginTop: 8 }}>
                     {selectedTemplate.mandatoTipo === 'variable' ? 'Opciones de años permitidas' : 'Duración fija (años)'}
                   </label>
-                  <input value={(selectedTemplate.mandatoOpciones || [3]).join(', ')}
-                    onChange={e => {
-                      const nums = e.target.value.split(',').map(s => parseInt(s.trim())).filter(n => n > 0 && !isNaN(n));
-                      setSelectedTemplate(t => ({
-                        ...t,
-                        mandatoOpciones: nums.length ? nums : [3],
-                        directorio: { ...(t.directorio || {}), duracionMandato: nums[0] || 3 }
-                      }));
-                    }}
-                    placeholder="ej: 1, 2, 3"
-                    style={{ width: 160, padding: 8, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>
-                    {selectedTemplate.mandatoTipo === 'variable' ? 'separar con comas' : ''}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {(selectedTemplate.mandatoOpciones || [3]).map((yr, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '4px 8px'
+                      }}>
+                        <input
+                          type="number" min="1" max="10" value={yr}
+                          onChange={e => {
+                            const val = parseInt(e.target.value);
+                            if (!val || val < 1) return;
+                            setSelectedTemplate(t => {
+                              const opts = [...(t.mandatoOpciones || [3])];
+                              opts[i] = val;
+                              return { ...t, mandatoOpciones: opts, directorio: { ...(t.directorio || {}), duracionMandato: opts[0] } };
+                            });
+                          }}
+                          style={{
+                            width: 44, padding: '4px 2px', border: '1px solid #93c5fd', borderRadius: 6,
+                            fontSize: 14, textAlign: 'center', background: '#fff'
+                          }}
+                        />
+                        <span style={{ fontSize: 12, color: '#6b7280' }}>año{yr > 1 ? 's' : ''}</span>
+                        {(selectedTemplate.mandatoOpciones || [3]).length > 1 && (
+                          <button
+                            onClick={() => setSelectedTemplate(t => {
+                              const opts = (t.mandatoOpciones || [3]).filter((_, j) => j !== i);
+                              return { ...t, mandatoOpciones: opts, directorio: { ...(t.directorio || {}), duracionMandato: opts[0] } };
+                            })}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444',
+                              fontSize: 16, lineHeight: 1, padding: '0 2px', fontWeight: 700
+                            }}
+                            title="Eliminar opción"
+                          >&times;</button>
+                        )}
+                      </div>
+                    ))}
+                    {selectedTemplate.mandatoTipo === 'variable' && (
+                      <button
+                        onClick={() => setSelectedTemplate(t => {
+                          const opts = [...(t.mandatoOpciones || [3])];
+                          const next = Math.max(...opts) + 1;
+                          return { ...t, mandatoOpciones: [...opts, next > 10 ? 1 : next] };
+                        })}
+                        style={{
+                          padding: '4px 10px', background: '#2563eb', color: '#fff', border: 'none',
+                          borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                        }}
+                        title="Agregar opción de años"
+                      >+ Agregar</button>
+                    )}
+                  </div>
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
                   <input type="checkbox"
