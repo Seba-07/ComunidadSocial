@@ -496,7 +496,41 @@
     }
 }
 
+/* === UV Map layout (mobile/tablet) === */
+@media (max-width: 768px) {
+    .uv-map-container {
+        flex-direction: column-reverse !important;
+        min-height: auto !important;
+        height: auto !important;
+    }
+
+    .uv-map-sidebar {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+        border-right: none !important;
+        border-top: 1px solid #e5e7eb;
+        max-height: 45vh;
+        overflow: auto;
+    }
+
+    .uv-map-area {
+        flex: none !important;
+        height: 50vh !important;
+        min-height: 300px;
+    }
+}
+
 @media (max-width: 480px) {
+    .uv-map-area {
+        height: 40vh !important;
+        min-height: 250px;
+    }
+
+    .uv-map-sidebar {
+        max-height: 50vh;
+    }
+
     .org-stat-card {
         padding: 12px !important;
     }

@@ -210,9 +210,9 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
   const isDrawMode = mode === 'drawPoly' || mode === 'reDraw' || mode === 'create';
 
   return (
-    <div style={{ display: 'flex', gap: 0, minHeight: 400, borderRadius: 14, overflow: 'hidden', border: '1px solid #d1d5db', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', flexWrap: 'wrap' }}>
+    <div className="uv-map-container" style={{ display: 'flex', gap: 0, minHeight: 400, borderRadius: 14, overflow: 'hidden', border: '1px solid #d1d5db', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
       {/* === SIDE PANEL === */}
-      <div style={{ width: 300, minWidth: 280, flex: '1 1 300px', background: '#fafbfc', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
+      <div className="uv-map-sidebar" style={{ width: 300, minWidth: 280, flex: '0 0 300px', background: '#fafbfc', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
@@ -409,7 +409,7 @@ export default function UVMapFull({ uvList, selectedUv, onSelectUv, onDataChange
       </div>
 
       {/* === MAP === */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div className="uv-map-area" style={{ flex: 1, position: 'relative', minHeight: 500 }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
         {saving && (
           <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: '#2563eb', color: '#fff', padding: '6px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>

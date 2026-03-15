@@ -169,9 +169,9 @@ export default function UVMapEditor({ uvList, onPolygonSaved }) {
   const uvsWithout = uvList?.filter(uv => !uv.geometry?.coordinates) || [];
 
   return (
-    <div style={{ display: 'flex', gap: 16, minHeight: 400, flexWrap: 'wrap' }}>
+    <div className="uv-map-container" style={{ display: 'flex', gap: 16, minHeight: 400 }}>
       {/* Map */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div className="uv-map-area" style={{ flex: 1, position: 'relative', minHeight: 500 }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: 12, border: '1px solid #e5e7eb' }} />
         {saving && (
           <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: '#2563eb', color: '#fff', padding: '6px 16px', borderRadius: 8, fontSize: 13, zIndex: 1000 }}>
@@ -181,7 +181,7 @@ export default function UVMapEditor({ uvList, onPolygonSaved }) {
       </div>
 
       {/* Panel */}
-      <div style={{ flex: '1 1 260px', minWidth: 240, overflow: 'auto', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12 }}>
+      <div className="uv-map-sidebar" style={{ flex: '0 0 280px', minWidth: 240, overflow: 'auto', background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12 }}>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
           Unidades Vecinales
         </h3>
