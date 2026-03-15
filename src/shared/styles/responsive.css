@@ -521,14 +521,29 @@
     }
 }
 
-/* === Audit log + DataTable mobile === */
+/* === Admin pages mobile (audit log, organizations, etc.) === */
 @media (max-width: 768px) {
-    .audit-log-page {
+    .audit-log-page,
+    .admin-orgs-page {
         padding: 12px !important;
     }
 
     .audit-filters {
         grid-template-columns: 1fr 1fr !important;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .stats-grid__card {
+        padding: 14px !important;
+        gap: 10px !important;
+    }
+
+    .org-list-card {
+        padding: 14px !important;
     }
 
     .r-table-wrap table th,
@@ -539,11 +554,13 @@
 }
 
 @media (max-width: 480px) {
-    .audit-log-page {
+    .audit-log-page,
+    .admin-orgs-page {
         padding: 8px !important;
     }
 
-    .audit-log-page h1 {
+    .audit-log-page h1,
+    .admin-orgs-page h1 {
         font-size: 18px !important;
     }
 
@@ -551,6 +568,39 @@
         grid-template-columns: 1fr !important;
         padding: 12px !important;
         gap: 8px !important;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .stats-grid__card {
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+
+    .stats-grid__icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+    }
+
+    .stats-grid__value {
+        font-size: 20px !important;
+    }
+
+    .org-list-card {
+        padding: 12px !important;
+    }
+
+    .filter-chips {
+        gap: 6px !important;
+    }
+
+    .filter-chips button {
+        padding: 5px 10px !important;
+        font-size: 11px !important;
     }
 
     .r-table-wrap table th,

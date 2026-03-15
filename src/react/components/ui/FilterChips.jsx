@@ -1,6 +1,6 @@
 export default function FilterChips({ filters, active, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <div className="filter-chips" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       {filters.map(f => {
         const isActive = active === f.key;
         return (

@@ -87,7 +87,7 @@ export default function OrganizationsList() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="admin-orgs-page" style={{ padding: 24 }}>
       <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
           Organizaciones
@@ -106,7 +106,7 @@ export default function OrganizationsList() {
         <FilterChips filters={filtersWithCounts} active={currentFilter} onChange={setFilter} />
       </div>
 
-      <div style={{ marginBottom: 20, maxWidth: 400 }}>
+      <div style={{ marginBottom: 20 }}>
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -124,32 +124,29 @@ export default function OrganizationsList() {
             <div
               key={org._id}
               onClick={() => openReview(org)}
+              className="org-list-card"
               style={{
                 background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-                padding: 20, cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', transition: 'box-shadow 0.15s',
+                padding: 20, cursor: 'pointer', transition: 'box-shadow 0.15s',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
               }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                    {org.organizationName || org.name || 'Sin nombre'}
-                  </span>
-                  <StatusBadge status={org.status} />
-                </div>
-                <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  <span>{(org.organizationType || org.type || 'Sin tipo').replace(/_/g, ' ')}</span>
-                  {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
-                  {org.memberCount != null && <span>{org.memberCount} miembros</span>}
-                  {org.createdAt && (
-                    <span>{new Date(org.createdAt).toLocaleDateString('es-CL')}</span>
-                  )}
-                </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>
+                  {org.organizationName || org.name || 'Sin nombre'}
+                </span>
+                <StatusBadge status={org.status} />
               </div>
-              <span style={{ color: '#9ca3af', fontSize: 20 }}>&rsaquo;</span>
+              <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <span>{(org.organizationType || org.type || 'Sin tipo').replace(/_/g, ' ')}</span>
+                {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
+                {org.memberCount != null && <span>{org.memberCount} miembros</span>}
+                {org.createdAt && (
+                  <span>{new Date(org.createdAt).toLocaleDateString('es-CL')}</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
