@@ -204,6 +204,18 @@ export const createOrganizationSchema = z.object({
   assemblyAddress: z.string().max(200).optional().nullable(),
   comments: z.string().max(1000).optional().nullable(),
   estatutos: z.string().optional().or(z.literal('')),
+  config: z.object({
+    asambleas: z.array(z.string()).optional(),
+    cuotaMin: z.number().min(0).optional(),
+    cuotaMax: z.number().min(0).optional(),
+    cuotaIncorporacion: z.number().min(0).optional(),
+    duracionMandato: z.number().min(1).max(10).optional(),
+    metodoCitacion: z.enum(['carta_certificada', 'correo_electronico', 'mensajeria_instantanea', 'entrega_personal', 'aviso_sede', 'comunicacion_directa']).optional(),
+    diasAnticipacion: z.number().min(1).max(60).optional(),
+    beneficiarioDisolucion: z.string().max(200).optional(),
+    rutDisolucion: z.string().max(20).optional(),
+    accountReviewMonth: z.string().max(20).optional()
+  }).optional(),
   // certificatesStep5 es un objeto con keys dinámicas (presidente, secretario, etc.)
   certificatesStep5: z.record(z.string(), certificateStep5Schema).optional()
 }).passthrough()

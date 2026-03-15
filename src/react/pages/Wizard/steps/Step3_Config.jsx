@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 
@@ -7,10 +7,32 @@ const MONTHS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
+const UTM_FALLBACK = 65000;
+
+function formatCLP(amount) {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
+}
+
 export default function Step3_Config({ onNext, onPrev }) {
   const { formData, updateFormData, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const config = formData.config || {};
+  const [utmValue, setUtmValue] = useState(UTM_FALLBACK);
+
+  // Fetch UTM value from mindicador.cl
+  useEffect(() => {
+    async function fetchUTM() {
+      try {
+        const res = await fetch('https://mindicador.cl/api/utm');
+        const data = await res.json();
+        const val = data?.serie?.[0]?.valor;
+        if (val && typeof val === 'number') setUtmValue(val);
+      } catch {
+        // Fallback silently to UTM_FALLBACK
+      }
+    }
+    fetchUTM();
+  }, []);
 
   // Set default duracionMandato from template when it loads
   useEffect(() => {
@@ -38,6 +60,15 @@ export default function Step3_Config({ onNext, onPrev }) {
     }
     onNext();
   }
+
+  const clpHint = (utmAmount) => {
+    if (!utmAmount || utmAmount <= 0) return null;
+    return (
+      <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
+        Equivale aprox. a {formatCLP(utmAmount * utmValue)}
+      </p>
+    );
+  };
 
   return (
     <div>
@@ -71,18 +102,23 @@ export default function Step3_Config({ onNext, onPrev }) {
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Socios (UTM)</h3>
+          <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280' }}>
+            Valor UTM actual: {formatCLP(utmValue)}
+          </p>
           <div className="r-form-row" style={{ maxWidth: 300 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Mínima</label>
               <input type="number" step="0.01" value={config.cuotaMin ?? 0.1}
                 onChange={e => update('cuotaMin', parseFloat(e.target.value) || 0)}
                 style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+              {clpHint(config.cuotaMin ?? 0.1)}
             </div>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Máxima</label>
               <input type="number" step="0.01" value={config.cuotaMax ?? 0.5}
                 onChange={e => update('cuotaMax', parseFloat(e.target.value) || 0)}
                 style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+              {clpHint(config.cuotaMax ?? 0.5)}
             </div>
           </div>
         </div>
@@ -129,9 +165,9 @@ export default function Step3_Config({ onNext, onPrev }) {
                 onChange={e => update('metodoCitacion', e.target.value)}
                 style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
                 <option value="carta_certificada">Carta certificada</option>
-                <option value="correo_electronico">Correo electrónico</option>
-                <option value="aviso_sede">Cartelera en sede</option>
-                <option value="comunicacion_directa">Comunicación directa</option>
+                <option value="correo_electronico">Correo Electrónico</option>
+                <option value="mensajeria_instantanea">Mensajería Instantánea (ej: WhatsApp)</option>
+                <option value="entrega_personal">Entrega personal por escrito</option>
               </select>
             </div>
             <div>
@@ -144,10 +180,28 @@ export default function Step3_Config({ onNext, onPrev }) {
         </div>
 
         <div>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Comisión Revisora de Cuentas</h3>
+          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+            Mes de balance anual
+          </label>
+          <select value={config.accountReviewMonth || 'Marzo'}
+            onChange={e => update('accountReviewMonth', e.target.value)}
+            style={{ width: '100%', maxWidth: 250, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+            {MONTHS.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+            Mes en que la Comisión Revisora presenta el informe de cuentas a la asamblea.
+          </p>
+        </div>
+
+        <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Incorporación (UTM)</h3>
           <input type="number" step="0.01" min={0} value={config.cuotaIncorporacion ?? 0.5}
             onChange={e => update('cuotaIncorporacion', parseFloat(e.target.value) || 0)}
             style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+          {clpHint(config.cuotaIncorporacion ?? 0.5)}
           <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Monto que pagan nuevos socios al ingresar</p>
         </div>
 

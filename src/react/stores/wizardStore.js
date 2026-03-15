@@ -21,6 +21,7 @@ const initialFormData = {
     metodoCitacion: 'carta_certificada',
     diasAnticipacion: 10,
     cuotaIncorporacion: 0.5,
+    accountReviewMonth: 'Marzo',
     rutDisolucion: ''
   },
   estatutos: { type: 'template', content: null, customFile: null },

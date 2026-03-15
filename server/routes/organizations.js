@@ -554,7 +554,8 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       assemblyAddress,
       comments,
       estatutos,
-      certificatesStep5
+      certificatesStep5,
+      config: wizardConfig
     } = req.body;
 
     const orgData = {
@@ -579,6 +580,7 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       assemblyAddress,
       comments,
       estatutos,
+      config: wizardConfig || {},
       userId: req.userId,
       status: 'waiting_ministro',
       statusHistory: [{

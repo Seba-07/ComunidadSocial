@@ -1003,3 +1003,47 @@ Llevar el Dashboard de Métricas a nivel 10/10 incorporando 3 métricas avanzada
 | `src/react/pages/Admin/views/MetricsDashboardView.jsx` | 3 tarjetas métricas + botón exportar |
 | `src/services/ApiService.js` | Nuevo método `exportDashboardReport()` con blob download |
 | `server/package.json` | Dependencia `json2csv` agregada |
+
+---
+
+## FASE 18: UX de Configuración y Mapeo de Documentos
+
+> Estado: COMPLETADO
+> Fecha: 2026-03-15
+
+### Objetivo
+
+Mejorar la usabilidad y cobertura legal del Paso 3 (Configuración Preliminar) del Wizard:
+1. **Conversor UTM dinámico** — mostrar equivalencia en CLP consultando API mindicador.cl
+2. **Métodos de citación actualizados** — agregar opciones reales (WhatsApp, entrega personal)
+3. **Comisión Revisora de Cuentas** — nuevo campo `accountReviewMonth` (mes de balance anual)
+4. **Trazabilidad documental** — asegurar que todas las variables de configuración lleguen a los documentos finales (estatutos y PDFs)
+
+### Tareas
+
+| # | Tarea | Estado |
+|---|-------|--------|
+| 18.1 | Agregar FASE 18 al plan de trabajo | COMPLETADO |
+| 18.2 | Frontend Step3: fetch UTM desde mindicador.cl con fallback 65000 | COMPLETADO |
+| 18.3 | Frontend Step3: texto de equivalencia CLP bajo campos de cuota | COMPLETADO |
+| 18.4 | Frontend Step3: actualizar opciones de método de citación | COMPLETADO |
+| 18.5 | Frontend Step3: nuevo campo "Mes de balance anual (Comisión Revisora)" | COMPLETADO |
+| 18.6 | Backend: agregar `accountReviewMonth` al schema Organization.js | COMPLETADO |
+| 18.7 | Backend: actualizar enum de citación en validation.js (si existe) | COMPLETADO |
+| 18.8 | Frontend Step6: agregar variables faltantes a `buildTemplateData()` | COMPLETADO |
+| 18.9 | Backend DocumentTemplate: agregar placeholders faltantes a AVAILABLE_PLACEHOLDERS | COMPLETADO |
+| 18.10 | Frontend Step4: actualizar CITACION_LABELS con nuevas opciones | COMPLETADO |
+| 18.11 | WizardStore: agregar `accountReviewMonth` a initialFormData.config | COMPLETADO |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 18 |
+| `src/react/pages/Wizard/steps/Step3_Config.jsx` | Fetch UTM, equivalencia CLP, citación actualizada, campo accountReviewMonth |
+| `src/react/pages/Wizard/steps/Step4_Estatutos.jsx` | Nuevas opciones en CITACION_LABELS |
+| `src/react/pages/Wizard/steps/Step6_Review.jsx` | Variables faltantes en buildTemplateData() |
+| `src/react/stores/wizardStore.js` | accountReviewMonth en initialFormData.config |
+| `server/models/Organization.js` | Campo config.accountReviewMonth + config.metodoCitacion |
+| `server/models/DocumentTemplate.js` | 6 nuevos placeholders en AVAILABLE_PLACEHOLDERS |
+| `server/middleware/validation.js` | Nuevos valores en enum de citación (si aplica) |

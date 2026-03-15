@@ -333,6 +333,24 @@ const organizationSchema = new mongoose.Schema({
   // Kept for backward compatibility during transition.
   comisionElectoral: [memberSchema],
 
+  // Configuración preliminar del wizard (Step 3)
+  config: {
+    asambleas: [{ type: String }],
+    cuotaMin: { type: Number, default: 0.1 },
+    cuotaMax: { type: Number, default: 0.5 },
+    cuotaIncorporacion: { type: Number, default: 0.5 },
+    duracionMandato: { type: Number, default: 3 },
+    metodoCitacion: {
+      type: String,
+      enum: ['carta_certificada', 'correo_electronico', 'mensajeria_instantanea', 'entrega_personal', 'aviso_sede', 'comunicacion_directa'],
+      default: 'carta_certificada'
+    },
+    diasAnticipacion: { type: Number, default: 10 },
+    beneficiarioDisolucion: { type: String, default: '' },
+    rutDisolucion: { type: String, default: '' },
+    accountReviewMonth: { type: String, default: 'Marzo' }
+  },
+
   // Estatutos de la organización
   estatutos: {
     type: String,

@@ -102,7 +102,23 @@ export default function Step6_Review({ onNext, onPrev }) {
       FECHA_ASAMBLEA: '___',
       HORA_ASAMBLEA: '___',
       DURACION_MANDATO: String(config.duracionMandato || 3),
-      CUOTA_INCORPORACION: String(config.cuotaIncorporacion || 0.5),
+      CUOTA_INCORPORACION: config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '0.5 UTM',
+      CUOTA_MENSUAL: config.cuotaMin && config.cuotaMax
+        ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
+        : '_______________',
+      METODO_CITACION: ({
+        carta_certificada: 'carta certificada al domicilio registrado',
+        correo_electronico: 'correo electrónico al correo registrado',
+        mensajeria_instantanea: 'mensajería instantánea (ej: WhatsApp) al número registrado',
+        entrega_personal: 'entrega personal por escrito a cada socio',
+        aviso_sede: 'aviso publicado en la sede de la organización',
+        comunicacion_directa: 'comunicación directa a cada socio'
+      })[config.metodoCitacion] || 'carta certificada al domicilio registrado',
+      DIAS_ANTICIPACION: String(config.diasAnticipacion || 10),
+      MESES_ASAMBLEA: (config.asambleas || []).join(' y ') || '_______________',
+      ENTIDAD_DISOLUCION: config.beneficiarioDisolucion || tenant.dissolutionEntity || '_______________',
+      RUT_DISOLUCION: config.rutDisolucion || '_______________',
+      MES_INFORME: config.accountReviewMonth || 'Marzo',
       FECHA_HOY: new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
       MINISTRO_FE: '___',
       RUT_MINISTRO_FE: '___',

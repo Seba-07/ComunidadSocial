@@ -51,6 +51,8 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
   const CITACION_LABELS = {
     carta_certificada: 'carta certificada al domicilio registrado',
     correo_electronico: 'correo electrónico al correo registrado',
+    mensajeria_instantanea: 'mensajería instantánea (ej: WhatsApp) al número registrado',
+    entrega_personal: 'entrega personal por escrito a cada socio',
     aviso_sede: 'aviso publicado en la sede de la organización',
     comunicacion_directa: 'comunicación directa a cada socio'
   };
@@ -80,6 +82,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
       '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || tenant.dissolutionEntity,
       '{{RUT_DISOLUCION}}': config.rutDisolucion || '_______________',
+      '{{MES_INFORME}}': config.accountReviewMonth || 'Marzo',
       '{{FECHA_DIA}}': '_______________',
       '{{FECHA_MES}}': '_______________',
       '{{FECHA_ANIO}}': '_______________',

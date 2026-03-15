@@ -58,6 +58,13 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'FIRMA_SECRETARIO', label: 'Firma Secretario', description: 'Bloque de firma: línea + nombre + cargo + RUT del secretario' },
   { key: 'FIRMA_TESORERO', label: 'Firma Tesorero', description: 'Bloque de firma: línea + nombre + cargo + RUT del tesorero' },
   { key: 'FIRMA_MINISTRO_FE', label: 'Firma Ministro de Fe', description: 'Bloque de firma: línea + nombre + cargo + RUT del ministro de fe' },
+  { key: 'CUOTA_MENSUAL', label: 'Cuota mensual', description: 'Rango de cuota mensual en UTM (ej: mínima de 0.1 UTM y máxima de 0.5 UTM)' },
+  { key: 'METODO_CITACION', label: 'Método de citación', description: 'Método de citación a asambleas (ej: carta certificada al domicilio registrado)' },
+  { key: 'DIAS_ANTICIPACION', label: 'Días de anticipación', description: 'Días de anticipación para citación a asambleas' },
+  { key: 'MESES_ASAMBLEA', label: 'Meses de asamblea', description: 'Meses en que se realizan asambleas ordinarias' },
+  { key: 'ENTIDAD_DISOLUCION', label: 'Entidad disolución', description: 'Entidad beneficiaria en caso de disolución' },
+  { key: 'RUT_DISOLUCION', label: 'RUT disolución', description: 'RUT de la entidad beneficiaria de disolución' },
+  { key: 'MES_INFORME', label: 'Mes informe Comisión Revisora', description: 'Mes en que la Comisión Revisora presenta el balance anual' },
 ];
 
 const headerFooterSchema = new mongoose.Schema({
