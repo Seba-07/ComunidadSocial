@@ -124,7 +124,12 @@ export const useWizardStore = create((set, get) => ({
         formData: {
           ...initialFormData,
           ...saved.formData,
-          organization: { ...initialFormData.organization, ...(saved.formData?.organization || {}) },
+          organization: {
+            ...initialFormData.organization,
+            ...(saved.formData?.organization || {}),
+            commune: saved.formData?.organization?.commune || initialFormData.organization.commune,
+            region: saved.formData?.organization?.region || initialFormData.organization.region
+          },
           config: { ...initialFormData.config, ...(saved.formData?.config || {}) }
         },
         existingOrgId: saved.existingOrgId || null,
