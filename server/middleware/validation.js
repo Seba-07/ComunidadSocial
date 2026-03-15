@@ -454,17 +454,17 @@ export const createMinistroBlockFromConfirmSchema = z.object({
  * Esquema para incidentes de seguridad
  */
 export const createSecurityIncidentSchema = z.object({
-  type: z.enum(['data_breach', 'unauthorized_access', 'malware', 'phishing', 'dos', 'other']),
+  type: z.enum(['unauthorized_access', 'data_leak', 'system_compromise', 'phishing', 'malware', 'denial_of_service', 'other']),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   title: z.string().min(1, 'Título requerido').max(200).trim(),
-  description: z.string().max(5000).optional().or(z.literal('')),
-  dataAffected: z.string().max(2000).optional().or(z.literal('')),
-  usersAffectedCount: z.number().int().min(0).optional(),
+  description: z.string().min(1, 'Descripción requerida').max(5000),
+  dataAffected: z.array(z.string().max(200)).max(50).optional().default([]),
+  usersAffectedCount: z.number().int().min(0).optional().default(0),
   measuresTaken: z.string().max(5000).optional().or(z.literal(''))
 });
 
 export const updateSecurityIncidentSchema = z.object({
-  status: z.enum(['open', 'investigating', 'contained', 'resolved', 'closed']).optional(),
+  status: z.enum(['reported', 'investigating', 'contained', 'resolved', 'closed']).optional(),
   measuresTaken: z.string().max(5000).optional().or(z.literal('')),
   notifiedAgency: z.boolean().optional(),
   notifiedAgencyAt: z.string().optional().nullable(),

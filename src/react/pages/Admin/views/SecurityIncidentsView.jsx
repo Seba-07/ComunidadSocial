@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../../../../services/ApiService';
+import { apiService } from '@services/ApiService';
 import { useUiStore } from '../../../stores/uiStore';
 
 const SEVERITY_COLORS = {
@@ -231,6 +231,12 @@ export default function SecurityIncidentsView() {
                   <button onClick={() => updateStatus(inc._id, 'resolved')}
                     style={{ padding: '6px 14px', fontSize: 12, background: '#10b981', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
                     Resolver
+                  </button>
+                )}
+                {inc.status === 'resolved' && (
+                  <button onClick={() => updateStatus(inc._id, 'closed')}
+                    style={{ padding: '6px 14px', fontSize: 12, background: '#6b7280', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                    Cerrar Incidente
                   </button>
                 )}
                 {!inc.notifiedAgency && (
