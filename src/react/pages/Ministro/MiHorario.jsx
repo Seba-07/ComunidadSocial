@@ -63,6 +63,16 @@ export default function MiHorario() {
     });
   }
 
+  function isPending(dateStr, time) {
+    return blocks.some(b => {
+      if (!b.active || b.status !== 'pending') return false;
+      if (b.date !== dateStr) return false;
+      if (b.blockType === 'full_day') return true;
+      if (b.time === time) return true;
+      return false;
+    });
+  }
+
   function isDayFullyBlocked(dateStr) {
     return blocks.some(b => b.active && b.date === dateStr && b.blockType === 'full_day');
   }
@@ -231,6 +241,7 @@ export default function MiHorario() {
             {weekDates.map((date, i) => {
               const dateStr = formatDateStr(date);
               const blocked = isBlocked(dateStr, hour);
+              const pending = blocked && isPending(dateStr, hour);
               const isPast = dateStr < today || (dateStr === today && parseInt(hour) <= new Date().getHours());
               return (
                 <div
@@ -239,17 +250,17 @@ export default function MiHorario() {
                   style={{
                     padding: '10px 8px', textAlign: 'center',
                     borderLeft: '1px solid #f3f4f6',
-                    background: blocked ? '#fef2f2' : isPast ? '#f9fafb' : '#f0fdf4',
+                    background: pending ? '#fffbeb' : blocked ? '#fef2f2' : isPast ? '#f9fafb' : '#f0fdf4',
                     cursor: isPast ? 'default' : 'pointer',
                     transition: 'background 0.1s',
                     fontSize: 12,
-                    color: blocked ? '#dc2626' : isPast ? '#d1d5db' : '#16a34a',
+                    color: pending ? '#92400e' : blocked ? '#dc2626' : isPast ? '#d1d5db' : '#16a34a',
                     fontWeight: blocked ? 600 : 400
                   }}
-                  onMouseEnter={e => { if (!isPast) e.currentTarget.style.background = blocked ? '#fee2e2' : '#dcfce7'; }}
-                  onMouseLeave={e => { if (!isPast) e.currentTarget.style.background = blocked ? '#fef2f2' : '#f0fdf4'; }}
+                  onMouseEnter={e => { if (!isPast) e.currentTarget.style.background = pending ? '#fef3c7' : blocked ? '#fee2e2' : '#dcfce7'; }}
+                  onMouseLeave={e => { if (!isPast) e.currentTarget.style.background = pending ? '#fffbeb' : blocked ? '#fef2f2' : '#f0fdf4'; }}
                 >
-                  {blocked ? 'Bloqueado' : isPast ? '—' : 'Disponible'}
+                  {pending ? 'Pendiente' : blocked ? 'Bloqueado' : isPast ? '—' : 'Disponible'}
                 </div>
               );
             })}
@@ -278,6 +289,11 @@ export default function MiHorario() {
                     <span style={{ color: '#dc2626', marginLeft: 8 }}>Día completo</span>
                   ) : (
                     <span style={{ color: '#dc2626', marginLeft: 8 }}>{b.time}</span>
+                  )}
+                  {b.status === 'pending' && (
+                    <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>
+                      Pendiente
+                    </span>
                   )}
                   {b.reason && <span style={{ color: '#6b7280', marginLeft: 8 }}>— {b.reason}</span>}
                 </div>

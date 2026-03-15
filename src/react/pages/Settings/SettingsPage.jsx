@@ -30,8 +30,34 @@ export default function SettingsPage() {
   const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [savingPw, setSavingPw] = useState(false);
 
+  // Admin preferences (only for MUNICIPALIDAD)
+  const [requireBlockConfirmation, setRequireBlockConfirmation] = useState(false);
+  const [savingPref, setSavingPref] = useState(false);
+
   // Email verification
   const [sendingVerification, setSendingVerification] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'MUNICIPALIDAD') {
+      apiService.getAdminPreference('requireBlockConfirmation')
+        .then(res => { if (res.value !== null) setRequireBlockConfirmation(res.value); })
+        .catch(() => {});
+    }
+  }, [user?.role]);
+
+  async function handleToggleBlockConfirmation() {
+    const newVal = !requireBlockConfirmation;
+    setSavingPref(true);
+    try {
+      await apiService.setAdminPreference('requireBlockConfirmation', newVal);
+      setRequireBlockConfirmation(newVal);
+      addToast(newVal ? 'Bloqueos de MF ahora requieren aprobación' : 'Bloqueos de MF ahora se aprueban automáticamente', 'success');
+    } catch (err) {
+      addToast(err.message || 'Error al guardar preferencia', 'error');
+    } finally {
+      setSavingPref(false);
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -214,6 +240,41 @@ export default function SettingsPage() {
           </p>
         </div>
       </form>
+
+      {/* Admin Preferences */}
+      {user?.role === 'MUNICIPALIDAD' && (
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 16 }}>Preferencias de Administración</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
+                Aprobación de bloqueos de Ministros de Fe
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+                {requireBlockConfirmation
+                  ? 'Los bloqueos creados por MF requieren tu aprobación antes de activarse.'
+                  : 'Los bloqueos de MF se activan automáticamente y solo recibes una notificación.'}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleBlockConfirmation}
+              disabled={savingPref}
+              style={{
+                flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                background: requireBlockConfirmation ? '#2563eb' : '#d1d5db',
+                position: 'relative', transition: 'background 0.2s',
+                opacity: savingPref ? 0.6 : 1
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, left: requireBlockConfirmation ? 27 : 3,
+                width: 22, height: 22, borderRadius: '50%', background: '#fff',
+                transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Account info */}
       <div style={cardStyle}>

@@ -33,6 +33,23 @@ export default function MinistroManagerView() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [credentials, setCredentials] = useState(null);
   const [blocksMinistro, setBlocksMinistro] = useState(null); // { id, name, blocks }
+  const [blockCounts, setBlockCounts] = useState({}); // { ministroId: count }
+  const [pendingBlocks, setPendingBlocks] = useState([]);
+  const [showPending, setShowPending] = useState(false);
+
+  async function loadBlockCounts() {
+    try {
+      const counts = await apiService.getMinistroBlockCounts();
+      setBlockCounts(counts);
+    } catch { /* ignore */ }
+  }
+
+  async function loadPendingBlocks() {
+    try {
+      const blocks = await apiService.getPendingBlocks();
+      setPendingBlocks(blocks);
+    } catch { /* ignore */ }
+  }
 
   async function viewBlocks(m) {
     try {
@@ -44,7 +61,11 @@ export default function MinistroManagerView() {
     }
   }
 
-  useEffect(() => { fetchMinistros().catch(err => addToast(err.message, 'error')); }, []);
+  useEffect(() => {
+    fetchMinistros().catch(err => addToast(err.message, 'error'));
+    loadBlockCounts();
+    loadPendingBlocks();
+  }, []);
 
   const filtered = ministros.filter(m => {
     if (filter === 'active' && m.isActive === false) return false;
@@ -122,21 +143,62 @@ export default function MinistroManagerView() {
     }
   }
 
+  async function handleApproveBlock(blockId) {
+    try {
+      await apiService.approveMinistroBlock(blockId);
+      addToast('Bloqueo aprobado', 'success');
+      loadPendingBlocks();
+      loadBlockCounts();
+    } catch (err) {
+      addToast(err.message || 'Error al aprobar', 'error');
+    }
+  }
+
+  async function handleRejectBlock(blockId) {
+    try {
+      await apiService.rejectMinistroBlock(blockId);
+      addToast('Bloqueo rechazado', 'success');
+      loadPendingBlocks();
+      loadBlockCounts();
+    } catch (err) {
+      addToast(err.message || 'Error al rechazar', 'error');
+    }
+  }
+
   if (isLoading && ministros.length === 0) return <LoadingSpinner text="Cargando ministros..." />;
 
   return (
     <div style={{ padding: 24 }}>
-      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
           Ministros de Fe
         </h1>
-        <button onClick={openCreate} style={{
-          padding: '10px 20px', border: 'none', borderRadius: 10,
-          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer'
-        }}>
-          Agregar Ministro
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {pendingBlocks.length > 0 && (
+            <button onClick={() => setShowPending(true)} style={{
+              padding: '10px 20px', border: '1px solid #f59e0b', borderRadius: 10,
+              background: '#fffbeb', color: '#92400e',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', position: 'relative'
+            }}>
+              Pendientes
+              <span style={{
+                position: 'absolute', top: -6, right: -6,
+                background: '#f59e0b', color: '#fff', fontSize: 11, fontWeight: 700,
+                width: 20, height: 20, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {pendingBlocks.length}
+              </span>
+            </button>
+          )}
+          <button onClick={openCreate} style={{
+            padding: '10px 20px', border: 'none', borderRadius: 10,
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer'
+          }}>
+            Agregar Ministro
+          </button>
+        </div>
       </div>
 
       <div className="r-toolbar" style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -191,7 +253,20 @@ export default function MinistroManagerView() {
                 }}>
                   {m.isActive !== false ? 'Activo' : 'Inactivo'}
                 </span>
-                <button onClick={() => viewBlocks(m)} style={smallBtn}>Bloqueos</button>
+                <button onClick={() => viewBlocks(m)} style={{ ...smallBtn, position: 'relative' }}>
+                  Bloqueos
+                  {(blockCounts[m._id] || 0) > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -6, right: -6,
+                      background: '#dc2626', color: '#fff', fontSize: 10, fontWeight: 700,
+                      minWidth: 18, height: 18, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px'
+                    }}>
+                      {blockCounts[m._id]}
+                    </span>
+                  )}
+                </button>
                 <button onClick={() => handleToggle(m)} style={smallBtn}>{m.isActive !== false ? 'Desactivar' : 'Activar'}</button>
                 <button onClick={() => openEdit(m)} style={smallBtn}>Editar</button>
                 <button onClick={() => setDeleteTarget(m)} style={{ ...smallBtn, color: '#ef4444' }}>Eliminar</button>
@@ -295,20 +370,31 @@ export default function MinistroManagerView() {
                   .map(b => (
                     <div key={b._id} style={{
                       padding: '10px 14px', borderRadius: 8,
-                      border: '1px solid #fecaca', background: '#fef2f2',
+                      border: `1px solid ${b.status === 'pending' ? '#fbbf24' : '#fecaca'}`,
+                      background: b.status === 'pending' ? '#fffbeb' : '#fef2f2',
                       fontSize: 13
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 600, color: '#111827' }}>
                           {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: b.blockType === 'full_day' ? '#dc2626' : '#f59e0b',
-                          color: '#fff'
-                        }}>
-                          {b.blockType === 'full_day' ? 'Día completo' : b.time}
-                        </span>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {b.status === 'pending' && (
+                            <span style={{
+                              padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                              background: '#f59e0b', color: '#fff'
+                            }}>
+                              Pendiente
+                            </span>
+                          )}
+                          <span style={{
+                            padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                            background: b.blockType === 'full_day' ? '#dc2626' : '#f59e0b',
+                            color: '#fff'
+                          }}>
+                            {b.blockType === 'full_day' ? 'Día completo' : b.time}
+                          </span>
+                        </div>
                       </div>
                       {b.reason && (
                         <div style={{ color: '#6b7280', marginTop: 4, fontSize: 12 }}>
@@ -319,6 +405,55 @@ export default function MinistroManagerView() {
                   ))}
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Pending Blocks Approval Modal */}
+      <Modal open={showPending} onClose={() => setShowPending(false)} title="Bloqueos Pendientes de Aprobación">
+        {pendingBlocks.length === 0 ? (
+          <p style={{ color: '#6b7280', textAlign: 'center', padding: 20, fontSize: 14 }}>
+            No hay bloqueos pendientes
+          </p>
+        ) : (
+          <div style={{ display: 'grid', gap: 10, maxHeight: 500, overflow: 'auto' }}>
+            {pendingBlocks.map(b => (
+              <div key={b._id} style={{
+                padding: '12px 16px', borderRadius: 10,
+                border: '1px solid #fbbf24', background: '#fffbeb', fontSize: 13
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#111827', fontSize: 14 }}>
+                      {b.ministroName}
+                    </div>
+                    <div style={{ color: '#374151', marginTop: 2 }}>
+                      {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      {b.blockType === 'full_day' ? ' — Día completo' : ` — ${b.time}`}
+                    </div>
+                    {b.reason && (
+                      <div style={{ color: '#6b7280', marginTop: 2, fontSize: 12 }}>
+                        Motivo: {b.reason}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => handleApproveBlock(b._id)} style={{
+                      padding: '6px 14px', border: 'none', borderRadius: 6,
+                      background: '#16a34a', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer'
+                    }}>
+                      Aprobar
+                    </button>
+                    <button onClick={() => handleRejectBlock(b._id)} style={{
+                      padding: '6px 14px', border: '1px solid #dc2626', borderRadius: 6,
+                      background: '#fff', color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer'
+                    }}>
+                      Rechazar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </Modal>

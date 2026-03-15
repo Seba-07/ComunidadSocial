@@ -1011,6 +1011,36 @@ class ApiService {
     return this.post('/ministro-blocks/create-from-confirmation', data);
   }
 
+  async getMinistroBlockCounts() {
+    return this.get('/ministro-blocks/counts');
+  }
+
+  async getPendingBlocks() {
+    return this.get('/ministro-blocks/pending');
+  }
+
+  async approveMinistroBlock(blockId) {
+    return this.put(`/ministro-blocks/${blockId}/approve`);
+  }
+
+  async rejectMinistroBlock(blockId) {
+    return this.put(`/ministro-blocks/${blockId}/reject`);
+  }
+
+  // ==================== ADMIN PREFERENCES ====================
+
+  async getAdminPreferences() {
+    return this.get('/admin-preferences');
+  }
+
+  async getAdminPreference(key) {
+    return this.get(`/admin-preferences/${key}`);
+  }
+
+  async setAdminPreference(key, value) {
+    return this.put(`/admin-preferences/${key}`, { value });
+  }
+
   // ==================== PRIVACY & CONSENT (Ley 21.719) ====================
 
   async getMyConsents() {

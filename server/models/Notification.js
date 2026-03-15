@@ -46,7 +46,12 @@ const notificationSchema = new mongoose.Schema({
       'election_notification',
       'organization_update',
       'organization_deleted',
-      'deletion_requested'
+      'deletion_requested',
+      // Tipos para bloqueos de ministros
+      'ministro_block_created',
+      'ministro_block_pending',
+      'ministro_block_approved',
+      'ministro_block_rejected'
     ],
     required: true
   },

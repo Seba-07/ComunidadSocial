@@ -36,6 +36,11 @@ const ministroBlockSchema = new mongoose.Schema({
     ref: 'Assignment',
     default: null
   },
+  status: {
+    type: String,
+    enum: ['approved', 'pending'],
+    default: 'approved'
+  },
   active: {
     type: Boolean,
     default: true

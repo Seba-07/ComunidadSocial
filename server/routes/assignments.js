@@ -217,7 +217,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
     const activeBlocks = await MinistroBlock.find({
       ministroId,
       date: dateStr,
-      active: true
+      active: true,
+      status: { $ne: 'pending' }
     }).lean();
 
     const isBlockedSlot = activeBlocks.some(b => {

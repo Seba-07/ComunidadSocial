@@ -2,6 +2,8 @@ import express from 'express';
 import MinistroBlock from '../models/MinistroBlock.js';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
+import Notification from '../models/Notification.js';
+import AdminPreference from '../models/AdminPreference.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createMinistroBlockSchema, createMinistroBlockFromConfirmSchema } from '../middleware/validation.js';
 
@@ -48,6 +50,7 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 // GET /api/ministro-blocks/ministro/:ministroId - Bloques de un ministro
 router.get('/ministro/:ministroId', authenticate, async (req, res) => {
   try {
+    // Return all active blocks (approved + pending) so UI can differentiate
     const blocks = await MinistroBlock.find({
       ministroId: req.params.ministroId,
       active: true
@@ -58,6 +61,91 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Get ministro blocks error:', error);
     res.status(500).json({ error: 'Error al obtener bloqueos del ministro' });
+  }
+});
+
+// GET /api/ministro-blocks/counts - Active block counts per ministro (for admin badge)
+router.get('/counts', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const counts = await MinistroBlock.aggregate([
+      { $match: { active: true, status: { $ne: 'pending' }, date: { $gte: today } } },
+      { $group: { _id: '$ministroId', count: { $sum: 1 } } }
+    ]);
+    const result = {};
+    for (const c of counts) {
+      result[c._id.toString()] = c.count;
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Get block counts error:', error);
+    res.status(500).json({ error: 'Error al obtener conteos' });
+  }
+});
+
+// GET /api/ministro-blocks/pending - Pending blocks awaiting admin approval
+router.get('/pending', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const blocks = await MinistroBlock.find({ active: true, status: 'pending' })
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(blocks);
+  } catch (error) {
+    console.error('Get pending blocks error:', error);
+    res.status(500).json({ error: 'Error al obtener bloqueos pendientes' });
+  }
+});
+
+// PUT /api/ministro-blocks/:id/approve - Approve a pending block
+router.put('/:id/approve', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const block = await MinistroBlock.findById(req.params.id);
+    if (!block) return res.status(404).json({ error: 'Bloqueo no encontrado' });
+    if (block.status !== 'pending') return res.status(400).json({ error: 'Este bloqueo no está pendiente' });
+
+    block.status = 'approved';
+    await block.save();
+
+    // Notify the ministro
+    await Notification.create({
+      ministroId: block.ministroId,
+      type: 'ministro_block_approved',
+      title: 'Bloqueo aprobado',
+      message: `Tu bloqueo del ${block.date}${block.time ? ' a las ' + block.time : ' (día completo)'} fue aprobado.`,
+      data: { blockId: block._id, date: block.date, time: block.time }
+    });
+
+    res.json({ message: 'Bloqueo aprobado', block });
+  } catch (error) {
+    console.error('Approve block error:', error);
+    res.status(500).json({ error: 'Error al aprobar bloqueo' });
+  }
+});
+
+// PUT /api/ministro-blocks/:id/reject - Reject a pending block
+router.put('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const block = await MinistroBlock.findById(req.params.id);
+    if (!block) return res.status(404).json({ error: 'Bloqueo no encontrado' });
+    if (block.status !== 'pending') return res.status(400).json({ error: 'Este bloqueo no está pendiente' });
+
+    block.status = 'approved'; // technically marking it as processed
+    block.active = false; // deactivate = rejected
+    await block.save();
+
+    // Notify the ministro
+    await Notification.create({
+      ministroId: block.ministroId,
+      type: 'ministro_block_rejected',
+      title: 'Bloqueo rechazado',
+      message: `Tu bloqueo del ${block.date}${block.time ? ' a las ' + block.time : ' (día completo)'} fue rechazado por el administrador.`,
+      data: { blockId: block._id, date: block.date, time: block.time }
+    });
+
+    res.json({ message: 'Bloqueo rechazado', block });
+  } catch (error) {
+    console.error('Reject block error:', error);
+    res.status(500).json({ error: 'Error al rechazar bloqueo' });
   }
 });
 
@@ -77,6 +165,15 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), vali
 
     const type = blockType || (time ? 'manual' : 'full_day');
 
+    // Check if MF blocks require admin confirmation
+    let blockStatus = 'approved';
+    if (req.user.role === 'MINISTRO_FE') {
+      const confirmPref = await AdminPreference.findOne({ key: 'requireBlockConfirmation' }).lean();
+      if (confirmPref?.value === true) {
+        blockStatus = 'pending';
+      }
+    }
+
     const block = new MinistroBlock({
       ministroId,
       ministroName,
@@ -85,10 +182,33 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD', 'MINISTRO_FE'), vali
       endTime: null,
       blockType: type,
       reason: reason || '',
+      status: blockStatus,
       createdBy: req.userId
     });
 
     await block.save();
+
+    // Notify admin(s) when MF creates a block
+    if (req.user.role === 'MINISTRO_FE') {
+      const admins = await User.find({ role: 'MUNICIPALIDAD', active: true }).select('_id').lean();
+      const timeLabel = type === 'full_day' ? 'día completo' : time;
+      const notifType = blockStatus === 'pending' ? 'ministro_block_pending' : 'ministro_block_created';
+      const notifTitle = blockStatus === 'pending' ? 'Bloqueo pendiente de aprobación' : 'Nuevo bloqueo de MF';
+      const notifMessage = blockStatus === 'pending'
+        ? `${ministroName} solicita bloquear ${date} (${timeLabel}).${reason ? ' Motivo: ' + reason : ''} Requiere tu aprobación.`
+        : `${ministroName} bloqueó ${date} (${timeLabel}).${reason ? ' Motivo: ' + reason : ''}`;
+
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: notifType,
+          title: notifTitle,
+          message: notifMessage,
+          data: { blockId: block._id, ministroId, ministroName, date, time, blockType: type, status: blockStatus }
+        });
+      }
+    }
+
     res.status(201).json(block);
   } catch (error) {
     console.error('Create ministro block error:', error);
@@ -133,8 +253,8 @@ router.get('/availability/date/:date', async (req, res) => {
       .lean();
     const totalMinistros = ministros.length;
 
-    // 2. Obtener bloques activos para la fecha
-    const blocks = await MinistroBlock.find({ date, active: true }).lean();
+    // 2. Obtener bloques activos y aprobados para la fecha
+    const blocks = await MinistroBlock.find({ date, active: true, status: { $ne: 'pending' } }).lean();
 
     // 3. Obtener assignments activos para la fecha
     const dateStart = new Date(date + 'T00:00:00.000Z');
@@ -199,10 +319,11 @@ router.get('/availability/month/:year/:month', async (req, res) => {
     // Total ministros activos
     const totalMinistros = await User.countDocuments({ role: 'MINISTRO_FE', active: true });
 
-    // Bloques activos del mes
+    // Bloques activos y aprobados del mes
     const blocks = await MinistroBlock.find({
       date: { $regex: `^${prefix}` },
-      active: true
+      active: true,
+      status: 'approved'
     }).lean();
 
     // Assignments del mes
