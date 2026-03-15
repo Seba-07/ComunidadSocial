@@ -214,6 +214,55 @@ secure: isDeployed,  // true en Railway, false en localhost
 
 ### Base de datos equivocada
 
-1. Verificar `MONGODB_URI` en Railway — debe terminar en `/comunidad_social` (prod) o `/comunidad_social_dev` (dev)
+1. Verificar `MONGODB_URI` en Railway — debe terminar en `/cs_<comuna>` (prod) o `/comunidad_social_dev` (dev)
 2. En local, verificar `server/.env`
 3. En MongoDB Atlas, comparar las colecciones de ambas bases para confirmar aislamiento
+
+---
+
+## 7. Multi-Municipalidad (Multi-Tenancy)
+
+> Implementado 2026-03-15. Ver `PLAN_MULTI_TENANCY.md` para detalles completos.
+
+### Arquitectura
+
+Un solo repositorio, multiples deploys. Cada municipalidad tiene su propia infraestructura:
+
+```
+                    Repositorio Git (unico)
+                            |
+                    main (produccion estable)
+                            |
+            +---------------+---------------+
+            |               |               |
+    Railway: cs-renca-api   cs-maipu-api    cs-pudahuel-api
+    Vercel:  cs-renca       cs-maipu        cs-pudahuel
+    Atlas:   cs_renca       cs_maipu        cs_pudahuel
+    User:    cs_renca_user  cs_maipu_user   cs_pudahuel_user
+```
+
+### Configuracion por municipalidad
+
+Cada deploy lee su identidad desde variables de entorno:
+
+| Variable (Backend) | Variable (Frontend) | Ejemplo |
+|---------------------|---------------------|---------|
+| `TENANT_COMMUNE_NAME` | `VITE_TENANT_COMMUNE_NAME` | `Renca` |
+| `TENANT_MUNICIPALITY_NAME` | `VITE_TENANT_MUNICIPALITY_NAME` | `Municipalidad de Renca` |
+| `TENANT_ADDRESS` | `VITE_TENANT_ADDRESS` | `Blanco Encalada 1335, Renca` |
+| `TENANT_WEBSITE` | `VITE_TENANT_WEBSITE` | `www.renca.cl` |
+| `TENANT_ADMIN_EMAIL` | `VITE_TENANT_ADMIN_EMAIL` | `admin@renca.cl` |
+| `TENANT_PLATFORM_NAME` | `VITE_TENANT_PLATFORM_NAME` | `Comunidad Social Renca` |
+
+Ver `deploy/template.env.server` y `deploy/template.env.frontend` para la lista completa.
+
+### Aislamiento de datos
+
+- Cada municipalidad tiene su **propio usuario Atlas** con acceso solo a su base de datos
+- Un usuario de una municipalidad **no puede** acceder a la base de otra
+- Si falta `MONGODB_URI` en produccion, el servidor **no inicia** (crash con error FATAL)
+- En desarrollo local, el fallback siempre apunta a `comunidad_social_dev`
+
+### Agregar nueva municipalidad
+
+Seguir el checklist completo en `deploy/ONBOARDING.md`

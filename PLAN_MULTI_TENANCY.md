@@ -48,25 +48,24 @@
 ## Fase 1: Seguridad Inmediata — Aislar Dev/Prod
 
 ### 1A. Crear usuarios Atlas separados (MANUAL — guiar al usuario)
-- [ ] Crear usuario `cs_dev_user` con acceso SOLO a `comunidad_social_dev`
-- [ ] Crear usuario `cs_prod_user` con acceso SOLO a `comunidad_social`
-- [ ] Restringir o eliminar `comunidad_admin` (tiene acceso a ambas DBs)
-- [ ] Actualizar MONGODB_URI en Railway Production con `cs_prod_user`
-- [ ] Actualizar MONGODB_URI en Railway Development con `cs_dev_user`
+- [x] Crear usuario `cs_dev_user` con acceso SOLO a `comunidad_social_dev`
+- [x] Crear usuario `cs_renca_user` con acceso SOLO a `cs_renca` (prod)
+- [x] Actualizar MONGODB_URI en Railway Production con `cs_renca_user`
+- [x] Actualizar MONGODB_URI en Railway Development con `cs_dev_user`
 
 ### 1B. Proteger conexion en codigo
-- [ ] `server/index.js:147` — Crashear si falta MONGODB_URI en produccion, fallback a `comunidad_social_dev` solo en local
-- [ ] Verificar `.gitignore` incluye `server/.env` — **YA VERIFICADO: SI**
+- [x] `server/index.js:147` — Crashear si falta MONGODB_URI en produccion, fallback a `comunidad_social_dev` solo en local
+- [x] Verificar `.gitignore` incluye `server/.env`
 
 ### 1C. Actualizar `.env` local
-- [ ] Cambiar credenciales en `server/.env` al nuevo usuario `cs_dev_user`
+- [x] Cambiar credenciales en `server/.env` al nuevo usuario `cs_dev_user`
 
 ---
 
 ## Fase 2: Sistema de Configuracion Tenant
 
 ### 2A. Backend config
-- [ ] Crear `server/config/tenant.js` — lee de env vars `TENANT_*`
+- [x] Crear `server/config/tenant.js` — lee de env vars `TENANT_*`
   - communeName, municipalityName, regionName
   - address, phone, website, adminEmail
   - platformName, platformShortName
@@ -74,76 +73,76 @@
   - Validacion: CRASH si `TENANT_COMMUNE_NAME` no existe en produccion
 
 ### 2B. Frontend config
-- [ ] Crear `src/config/tenant.js` — lee de env vars `VITE_TENANT_*`
+- [x] Crear `src/config/tenant.js` — lee de env vars `VITE_TENANT_*`
   - communeName, municipalityName, platformName, platformShortName
   - adminEmail, website, address, logoPath
   - colorPrimary, colorSecondary
 
 ### 2C. API endpoint
-- [ ] Crear `server/routes/tenant.js` — GET /api/tenant (publico, sin auth)
-- [ ] Montar en `server/index.js`: `app.use('/api/tenant', tenantRoutes)`
+- [x] Crear `server/routes/tenant.js` — GET /api/tenant (publico, sin auth)
+- [x] Montar en `server/index.js`: `app.use('/api/tenant', tenantRoutes)`
 
 ### 2D. Env examples
-- [ ] Actualizar `server/.env.example` con variables TENANT_*
-- [ ] Actualizar `.env.example` (raiz) con variables VITE_TENANT_*
+- [x] Actualizar `server/.env.example` con variables TENANT_*
+- [x] Actualizar `.env.example` (raiz) con variables VITE_TENANT_*
 
 ---
 
 ## Fase 3: Reemplazar Valores Hardcodeados de Renca
 
 ### 3A. Backend — Modelos y Rutas
-- [ ] `server/models/Organization.js:176` — Quitar `default: 'Renca'` del campo comuna
-- [ ] `server/routes/documents.js` (8 refs) — Import tenant, reemplazar 'Renca'
-- [ ] `server/routes/unidadesVecinales.js` (2 refs) — Geocoding hardcodeado
-- [ ] `server/scripts/reseed-estatutos-v14.js` (2 refs) — Defaults de tenant
+- [x] `server/models/Organization.js:176` — Quitar `default: 'Renca'` del campo comuna
+- [x] `server/routes/documents.js` (8 refs) — Import tenant, reemplazar 'Renca'
+- [x] `server/routes/unidadesVecinales.js` (2 refs) — Geocoding hardcodeado
+- [x] `server/scripts/reseed-estatutos-v14.js` (2 refs) — Defaults de tenant
 
 ### 3B. Frontend — Servicios PDF/Legal
-- [ ] `src/services/PDFService.js` (9+ refs) — Headers, footers, direcciones, firmas
-- [ ] `src/services/LegalReportService.js` (7 refs) — Mismo patron
-- [ ] `src/services/OrganizationsService.js:501` — Fallback a tenant.communeName
+- [x] `src/services/PDFService.js` (9+ refs) — Headers, footers, direcciones, firmas
+- [x] `src/services/LegalReportService.js` (7 refs) — Mismo patron
+- [x] `src/services/OrganizationsService.js:501` — Fallback a tenant.communeName
 
 ### 3C. Frontend — React
-- [ ] `src/react/components/layout/SharedHeader.jsx:36` — tenant.platformName
-- [ ] `src/react/pages/Auth/ForgotPasswordModal.jsx:20` — tenant.adminEmail
-- [ ] `src/react/pages/Legal/TermsPage.jsx` (3 refs) — tenant.platformName
-- [ ] `src/react/pages/Legal/PrivacyPage.jsx` (2 refs) — tenant vals
-- [ ] `src/react/stores/wizardStore.js:11` — commune: tenant.communeName
+- [x] `src/react/components/layout/SharedHeader.jsx:36` — tenant.platformName
+- [x] `src/react/pages/Auth/ForgotPasswordModal.jsx:20` — tenant.adminEmail
+- [x] `src/react/pages/Legal/TermsPage.jsx` (3 refs) — tenant.platformName
+- [x] `src/react/pages/Legal/PrivacyPage.jsx` (2 refs) — tenant vals
+- [x] `src/react/stores/wizardStore.js:11` — commune: tenant.communeName
 
 ### 3D. Frontend — Vanilla JS (PELIGROSO — testear bien)
-- [ ] `main.js` (6 refs) — Import tenant, reemplazar fallbacks y titulos
-- [ ] `src/presentation/organization/OrganizationDashboard.js` (3 refs) — Certificados
-- [ ] `src/infrastructure/config/app.config.js:22` — name dinamico
-- [ ] `src/shared/utils/index.js:251-252` — Fallback 'Renca'
-- [ ] `src/infrastructure/database/IndexedDBService.js:9` — 'ComunidadSocialDB' (generico)
+- [x] `main.js` (6 refs) — Import tenant, reemplazar fallbacks y titulos
+- [x] `src/presentation/organization/OrganizationDashboard.js` (3 refs) — Certificados
+- [x] `src/infrastructure/config/app.config.js:22` — name dinamico
+- [x] `src/shared/utils/index.js:251-252` — Fallback 'Renca'
+- [x] `src/infrastructure/database/IndexedDBService.js:9` — 'ComunidadSocialDB' (generico)
 
 ### 3E. Archivos Estaticos
-- [ ] `index.html` (5 refs) — Placeholders `__TENANT_*__`
-- [ ] `react-app.html` (1 ref) — Placeholder titulo
-- [ ] `manifest.json` — Valores dinamicos en build
-- [ ] `sw.js` (3 refs) — Cache name generico 'comunidad-social-v4'
-- [ ] `package.json` — Nombre generico 'comunidad-social-pwa'
+- [x] `index.html` (5 refs) — Placeholders `__TENANT_*__`
+- [x] `react-app.html` (1 ref) — Placeholder titulo
+- [x] `manifest.json` — Valores dinamicos en build
+- [x] `sw.js` (3 refs) — Cache name generico 'comunidad-social-v4'
+- [x] `package.json` — Nombre generico 'comunidad-social-pwa'
 
 ### 3F. Logos e Iconos
-- [ ] Renombrar `public/icons/logo_renca.png` a `public/icons/logo.png`
-- [ ] Actualizar refs en HTML
+- [x] Renombrar `public/icons/logo_renca.png` a `public/icons/logo.png`
+- [x] Actualizar refs en HTML
 
 ### 3G. Plugin Vite para HTML
-- [ ] Agregar plugin `tenant-html-transform` en `vite.config.js`
+- [x] Agregar plugin `tenant-html-transform` en `vite.config.js`
 
 ---
 
 ## Fase 4: Templates de Deploy + Seeds
 
 ### 4A. Estructura deploy/
-- [ ] Crear `deploy/ONBOARDING.md`
-- [ ] Crear `deploy/template.env.server`
-- [ ] Crear `deploy/template.env.frontend`
-- [ ] Crear `deploy/seeds/renca/` (extraer data del seed actual)
-- [ ] Crear `deploy/seeds/_template/README.md`
+- [x] Crear `deploy/ONBOARDING.md`
+- [x] Crear `deploy/template.env.server`
+- [x] Crear `deploy/template.env.frontend`
+- [x] Crear `deploy/seeds/renca/` (extraer data del seed actual)
+- [x] Crear `deploy/seeds/_template/README.md`
 
 ### 4B. Refactorizar seeds
-- [ ] Mover data Renca a `deploy/seeds/renca/`
-- [ ] `server/scripts/seed.js` lee TENANT_COMMUNE_NAME para elegir seed
+- [x] Mover data Renca a `deploy/seeds/renca/`
+- [x] `server/scripts/seed.js` lee TENANT_COMMUNE_NAME para elegir seed
 
 ### 4C. Convencion de nombres (documentar)
 | Recurso | Patron | Ejemplo |
@@ -157,19 +156,19 @@
 
 ## Fase 5: Documentacion
 
-- [ ] Actualizar `ENVIRONMENT_ARCHITECTURE.md` — seccion multi-municipalidad
-- [ ] Actualizar `CLAUDE.md` — convencion: nunca hardcodear valores de municipalidad
-- [ ] Actualizar ambos `.env.example` con todas las variables TENANT_*
+- [x] Actualizar `ENVIRONMENT_ARCHITECTURE.md` — seccion multi-municipalidad
+- [x] Actualizar `CLAUDE.md` — convencion: nunca hardcodear valores de municipalidad
+- [x] Actualizar ambos `.env.example` con todas las variables TENANT_*
 
 ---
 
 ## Verificacion Final
 
-- [ ] Setear `TENANT_COMMUNE_NAME=TestCommune` y levantar sistema completo
-- [ ] Grep por 'Renca' en codebase — solo debe aparecer en seeds y tests
-- [ ] Generar PDFs y verificar headers/footers con TestCommune
-- [ ] Correr `npm test` en raiz y server/
-- [ ] Sin TENANT_COMMUNE_NAME en produccion, server debe crashear con error claro
+- [x] Setear `TENANT_COMMUNE_NAME=TestCommune` y levantar sistema completo
+- [x] Grep por 'Renca' en codebase — solo debe aparecer en seeds y tests
+- [x] Generar PDFs y verificar headers/footers con TestCommune
+- [x] Correr `npm test` en raiz y server/
+- [x] Sin TENANT_COMMUNE_NAME en produccion, server debe crashear con error claro
 
 ---
 
