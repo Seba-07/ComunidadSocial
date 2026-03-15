@@ -213,6 +213,7 @@ export const createOrganizationSchema = z.object({
     duracionMandato: z.number().min(1).max(10).optional(),
     metodoCitacion: z.enum(['carta_certificada', 'correo_electronico', 'mensajeria_instantanea', 'entrega_personal', 'aviso_sede', 'comunicacion_directa']).optional(),
     diasAnticipacion: z.number().min(1).max(60).optional(),
+    tipoEntidadDisolucion: z.enum(['municipalidad', 'bomberos', 'cruz_roja', 'otra', '']).optional(),
     beneficiarioDisolucion: z.string().max(200).optional(),
     rutDisolucion: z.string().max(20).optional(),
     accountReviewMonth: z.string().max(20).optional()

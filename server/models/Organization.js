@@ -351,6 +351,11 @@ const organizationSchema = new mongoose.Schema({
       default: 'carta_certificada'
     },
     diasAnticipacion: { type: Number, default: 10 },
+    tipoEntidadDisolucion: {
+      type: String,
+      enum: ['municipalidad', 'bomberos', 'cruz_roja', 'otra', ''],
+      default: ''
+    },
     beneficiarioDisolucion: { type: String, default: '' },
     rutDisolucion: { type: String, default: '' },
     accountReviewMonth: { type: String, default: 'Marzo' }

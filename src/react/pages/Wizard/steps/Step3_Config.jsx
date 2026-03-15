@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
+import tenant from '../../../../config/tenant.js';
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -266,25 +267,114 @@ export default function Step3_Config({ onNext, onPrev }) {
 
         <div>
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Disolución</h3>
-          <div className="r-form-row" style={{ maxWidth: 500 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
+            Institución sin fines de lucro que recibirá los bienes de esta organización en caso de que algún día deje de existir o se disuelva.
+          </p>
+
+          <div style={{ display: 'grid', gap: 12, maxWidth: 500 }}>
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                Entidad beneficiaria
-              </label>
-              <input value={config.beneficiarioDisolucion || ''}
-                onChange={e => update('beneficiarioDisolucion', e.target.value)}
-                placeholder="Nombre de entidad..."
-                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+              <label style={labelSt}>Entidad beneficiaria</label>
+              <select
+                value={config.tipoEntidadDisolucion || ''}
+                onChange={e => {
+                  const tipo = e.target.value;
+                  const store = useWizardStore.getState();
+                  if (tipo === 'municipalidad') {
+                    store.setFormDataField('config', {
+                      ...store.formData.config,
+                      tipoEntidadDisolucion: tipo,
+                      beneficiarioDisolucion: tenant.municipalityFullName || `Ilustre Municipalidad de ${tenant.communeName}`,
+                      rutDisolucion: tenant.municipalityRut || ''
+                    });
+                  } else if (tipo === 'bomberos') {
+                    store.setFormDataField('config', {
+                      ...store.formData.config,
+                      tipoEntidadDisolucion: tipo,
+                      beneficiarioDisolucion: 'Cuerpo de Bomberos de ' + tenant.communeName,
+                      rutDisolucion: ''
+                    });
+                  } else if (tipo === 'cruz_roja') {
+                    store.setFormDataField('config', {
+                      ...store.formData.config,
+                      tipoEntidadDisolucion: tipo,
+                      beneficiarioDisolucion: 'Cruz Roja Chilena',
+                      rutDisolucion: ''
+                    });
+                  } else if (tipo === 'otra') {
+                    store.setFormDataField('config', {
+                      ...store.formData.config,
+                      tipoEntidadDisolucion: tipo,
+                      beneficiarioDisolucion: '',
+                      rutDisolucion: ''
+                    });
+                  } else {
+                    store.setFormDataField('config', {
+                      ...store.formData.config,
+                      tipoEntidadDisolucion: '',
+                      beneficiarioDisolucion: '',
+                      rutDisolucion: ''
+                    });
+                  }
+                }}
+                style={inputSt}
+              >
+                <option value="">Seleccione una entidad...</option>
+                <option value="municipalidad">Municipalidad</option>
+                <option value="bomberos">Cuerpo de Bomberos</option>
+                <option value="cruz_roja">Cruz Roja Chilena</option>
+                <option value="otra">Otra institución (Personalizada)</option>
+              </select>
             </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                RUT de la entidad
-              </label>
-              <input value={config.rutDisolucion || ''}
-                onChange={e => update('rutDisolucion', e.target.value)}
-                placeholder="12.345.678-9"
-                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-            </div>
+
+            {config.tipoEntidadDisolucion && (
+              <div className="r-form-row">
+                <div>
+                  <label style={labelSt}>Nombre de la entidad</label>
+                  {config.tipoEntidadDisolucion === 'otra' ? (
+                    <input
+                      value={config.beneficiarioDisolucion || ''}
+                      onChange={e => update('beneficiarioDisolucion', e.target.value)}
+                      placeholder="Nombre de la institución sin fines de lucro"
+                      style={inputSt}
+                    />
+                  ) : (
+                    <input
+                      value={config.beneficiarioDisolucion || ''}
+                      readOnly
+                      style={{ ...inputSt, background: '#f3f4f6', color: '#6b7280' }}
+                    />
+                  )}
+                </div>
+                <div>
+                  <label style={labelSt}>RUT de la entidad</label>
+                  {config.tipoEntidadDisolucion === 'municipalidad' && tenant.municipalityRut ? (
+                    <input
+                      value={config.rutDisolucion || ''}
+                      readOnly
+                      style={{ ...inputSt, background: '#f3f4f6', color: '#6b7280' }}
+                    />
+                  ) : (
+                    <input
+                      value={config.rutDisolucion || ''}
+                      onChange={e => update('rutDisolucion', e.target.value)}
+                      placeholder="Ej: 70.000.000-0"
+                      style={inputSt}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {config.tipoEntidadDisolucion === 'municipalidad' && (
+              <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1e40af' }}>
+                Los datos de la municipalidad se completan automáticamente desde la configuración del sistema.
+                {!tenant.municipalityRut && (
+                  <span style={{ display: 'block', marginTop: 4, color: '#92400e' }}>
+                    El RUT de la municipalidad no está configurado. Ingréselo manualmente.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -297,5 +387,7 @@ export default function Step3_Config({ onNext, onPrev }) {
   );
 }
 
+const labelSt = { fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 };
+const inputSt = { width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' };
 const prevBtn = { padding: '12px 28px', border: '1px solid #d1d5db', borderRadius: 10, background: 'white', fontSize: 15, cursor: 'pointer', color: '#374151' };
 const nextBtn = { padding: '12px 28px', border: 'none', borderRadius: 10, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' };

@@ -17,6 +17,7 @@ const initialFormData = {
     monedaCuota: 'UTM',
     cuotaMin: 0.1,
     cuotaMax: 0.5,
+    tipoEntidadDisolucion: '',
     beneficiarioDisolucion: '',
     duracionMandato: 2,
     metodoCitacion: 'carta_certificada',

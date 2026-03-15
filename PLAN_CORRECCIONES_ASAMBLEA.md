@@ -1047,3 +1047,55 @@ Mejorar la usabilidad y cobertura legal del Paso 3 (Configuración Preliminar) d
 | `server/models/Organization.js` | Campo config.accountReviewMonth + config.metodoCitacion |
 | `server/models/DocumentTemplate.js` | 6 nuevos placeholders en AVAILABLE_PLACEHOLDERS |
 | `server/middleware/validation.js` | Nuevos valores en enum de citación (si aplica) |
+
+---
+
+## FASE 19: UX Inteligente en Sección Disolución
+
+> Estado: COMPLETADO
+> Fecha: 2026-03-15
+
+### Objetivo
+
+Mejorar la UX del campo "Disolución" en el Paso 3 del Wizard:
+1. **Selector inteligente de entidades** — menú desplegable con opciones predefinidas
+2. **Autocompletado de RUT** — datos de la municipalidad desde tenant config
+3. **Textos de ayuda** — explicación clara del propósito del campo
+4. **RUT de municipalidad en tenant** — nueva variable `TENANT_MUNICIPALITY_RUT`
+
+### Tareas
+
+| # | Tarea | Estado |
+|---|-------|--------|
+| 19.1 | Agregar FASE 19 al plan de trabajo | COMPLETADO |
+| 19.2 | Frontend: selector de entidad (Municipalidad/Bomberos/Cruz Roja/Otra) | COMPLETADO |
+| 19.3 | Frontend: autocompletado nombre+RUT según selección | COMPLETADO |
+| 19.4 | Frontend: texto de ayuda explicativo bajo título Disolución | COMPLETADO |
+| 19.5 | Backend: campo `tipoEntidadDisolucion` en Organization.config | COMPLETADO |
+| 19.6 | Backend: `municipalityRut` en tenant config (frontend + backend) | COMPLETADO |
+| 19.7 | Backend: exponer `municipalityRut` en endpoint GET /api/tenant | COMPLETADO |
+| 19.8 | Actualizar .env.example con `TENANT_MUNICIPALITY_RUT` | COMPLETADO |
+
+### Lógica de autocompletado
+
+| Opción | Nombre (readOnly) | RUT |
+|--------|-------------------|-----|
+| Municipalidad | `tenant.municipalityFullName` | `tenant.municipalityRut` (readOnly) |
+| Bomberos | "Cuerpo de Bomberos de {comuna}" (readOnly) | Vacío, editable |
+| Cruz Roja | "Cruz Roja Chilena" (readOnly) | Vacío, editable |
+| Otra | Vacío, editable | Vacío, editable |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `PLAN_CORRECCIONES_ASAMBLEA.md` | Sección FASE 19 |
+| `src/react/pages/Wizard/steps/Step3_Config.jsx` | Selector inteligente disolución + import tenant |
+| `src/react/stores/wizardStore.js` | `tipoEntidadDisolucion` en initialFormData.config |
+| `src/config/tenant.js` | Nuevo campo `municipalityRut` |
+| `server/config/tenant.js` | Nuevo campo `municipalityRut` |
+| `server/routes/tenant.js` | Exponer `municipalityRut` en endpoint público |
+| `server/models/Organization.js` | Campo `tipoEntidadDisolucion` en config |
+| `server/middleware/validation.js` | Validación Zod para `tipoEntidadDisolucion` |
+| `.env.example` | Variable `VITE_TENANT_MUNICIPALITY_RUT` |
+| `server/.env.example` | Variable `TENANT_MUNICIPALITY_RUT` |

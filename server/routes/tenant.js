@@ -16,6 +16,7 @@ router.get('/', (req, res) => {
       website: tenant.website,
       address: tenant.address,
       phone: tenant.phone,
+      municipalityRut: tenant.municipalityRut,
     }
   });
 });
