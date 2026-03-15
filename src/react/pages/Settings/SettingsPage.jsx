@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '../../../services/ApiService';
+import tenant from '../../../config/tenant.js';
 
 const cardStyle = {
   background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24, marginBottom: 16
@@ -17,7 +18,7 @@ const btnPrimary = {
 };
 
 export default function SettingsPage() {
-  const user = useAuthStore(s => s.user);
+  const { user, hydrate } = useAuthStore();
   const addToast = useUiStore(s => s.addToast);
 
   // Profile form
@@ -66,8 +67,8 @@ export default function SettingsPage() {
         lastName: user.lastName || '',
         phone: user.phone || '',
         address: user.address || '',
-        region: user.region || '',
-        commune: user.commune || ''
+        region: user.region || 'Metropolitana',
+        commune: user.commune || tenant.communeName || ''
       });
     }
   }, [user]);
@@ -82,6 +83,7 @@ export default function SettingsPage() {
       const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
       Object.assign(stored, updated);
       localStorage.setItem('currentUser', JSON.stringify(stored));
+      hydrate(); // Update auth store so other components see the changes
       addToast('Perfil actualizado', 'success');
     } catch (err) {
       addToast(err.message || 'Error al actualizar perfil', 'error');
@@ -282,7 +284,7 @@ export default function SettingsPage() {
         <div className="r-grid-2" style={{ gap: 12, fontSize: 14 }}>
           <div><span style={{ color: '#6b7280' }}>RUT:</span> <strong>{user?.rut || '-'}</strong></div>
           <div><span style={{ color: '#6b7280' }}>Email:</span> <strong>{user?.email || '-'}</strong></div>
-          <div><span style={{ color: '#6b7280' }}>Rol:</span> <strong>{user?.role || '-'}</strong></div>
+          <div><span style={{ color: '#6b7280' }}>Rol:</span> <strong>{{ ORGANIZADOR: 'Dirigente Social', MUNICIPALIDAD: 'Secretario Municipal', MINISTRO_FE: 'Ministro de Fe', MIEMBRO: 'Miembro', MIEMBRO_DIRECTIVO: 'Miembro Directivo' }[user?.role] || user?.role || '-'}</strong></div>
           <div><span style={{ color: '#6b7280' }}>Estado:</span> <strong style={{ color: '#16a34a' }}>Activo</strong></div>
         </div>
       </div>

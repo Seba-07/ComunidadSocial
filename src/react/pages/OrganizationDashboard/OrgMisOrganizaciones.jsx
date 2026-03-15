@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
+import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import OrgSolicitudDetail from './OrgSolicitudDetail';
 
@@ -101,6 +102,7 @@ function getWizardDraft() {
 
 export default function OrgMisOrganizaciones() {
   const navigate = useNavigate();
+  const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +111,24 @@ export default function OrgMisOrganizaciones() {
   const [selectedOrgId, setSelectedOrgId] = useState(null);
   const [orgDetail, setOrgDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // Check profile completeness
+  const missingFields = [];
+  if (!user?.firstName) missingFields.push('Nombre');
+  if (!user?.lastName) missingFields.push('Apellido');
+  if (!user?.phone) missingFields.push('Teléfono');
+  if (!user?.address) missingFields.push('Dirección');
+  if (!user?.region) missingFields.push('Región');
+  if (!user?.commune) missingFields.push('Comuna');
+  const profileIncomplete = missingFields.length > 0;
+
+  function handleCreateOrg() {
+    if (profileIncomplete) {
+      addToast('Completa tus datos personales en Configuración antes de crear una organización', 'error');
+      return;
+    }
+    navigate('/wizard');
+  }
 
   useEffect(() => {
     loadOrgs();
@@ -195,16 +215,43 @@ export default function OrgMisOrganizaciones() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/wizard')}
+          onClick={handleCreateOrg}
           style={{
-            padding: '10px 20px', background: '#2563eb', color: 'white', border: 'none',
-            borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            padding: '10px 20px', background: profileIncomplete ? '#9ca3af' : '#2563eb', color: 'white', border: 'none',
+            borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: profileIncomplete ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', gap: 8,
           }}
         >
           + Crear Nueva Organización
         </button>
       </div>
+
+      {/* Profile incomplete warning */}
+      {profileIncomplete && (
+        <div style={{
+          marginBottom: 24, background: '#fef2f2', borderRadius: 12,
+          border: '1px solid #fecaca', padding: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap'
+        }}>
+          <div>
+            <div style={{ fontWeight: 600, color: '#991b1b', fontSize: 14, marginBottom: 4 }}>
+              Completa tu perfil para crear organizaciones
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: '#b91c1c' }}>
+              Campos pendientes: {missingFields.join(', ')}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/app/org/auto', { state: { tab: 'settings' } })}
+            style={{
+              padding: '8px 16px', background: '#dc2626', color: 'white', border: 'none',
+              borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0
+            }}
+          >
+            Ir a Configuración
+          </button>
+        </div>
+      )}
 
       {/* Local Draft */}
       {draft && (
@@ -241,8 +288,8 @@ export default function OrgMisOrganizaciones() {
                 style={{ padding: '8px 16px', borderRadius: 8, background: 'white', color: '#6b7280', border: '1px solid #d1d5db', fontSize: 13, cursor: 'pointer' }}>
                 Descartar
               </button>
-              <button onClick={() => navigate('/wizard')}
-                style={{ padding: '8px 16px', borderRadius: 8, background: '#d97706', color: 'white', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={handleCreateOrg}
+                style={{ padding: '8px 16px', borderRadius: 8, background: profileIncomplete ? '#9ca3af' : '#d97706', color: 'white', border: 'none', fontSize: 13, fontWeight: 600, cursor: profileIncomplete ? 'not-allowed' : 'pointer' }}>
                 Continuar
               </button>
             </div>
@@ -385,8 +432,8 @@ export default function OrgMisOrganizaciones() {
           <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 15 }}>
             Crea tu primera organización comunitaria para comenzar
           </p>
-          <button onClick={() => navigate('/wizard')}
-            style={{ padding: '12px 28px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={handleCreateOrg}
+            style={{ padding: '12px 28px', background: profileIncomplete ? '#9ca3af' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: profileIncomplete ? 'not-allowed' : 'pointer' }}>
             Crear Organización
           </button>
         </div>

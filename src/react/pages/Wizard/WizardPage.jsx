@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWizardStore } from '../../stores/wizardStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
@@ -40,11 +41,21 @@ export default function WizardPage() {
     currentStep, setStep, formData, loadProgress, clearProgress,
     saveProgress, fetchOrganizationTypes, isSubmitting
   } = useWizardStore();
+  const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
   const [showResume, setShowResume] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // Block wizard if profile is incomplete
+  const profileComplete = user?.firstName && user?.lastName && user?.phone && user?.address && user?.region && user?.commune;
+
   useEffect(() => {
+    if (!profileComplete) {
+      addToast('Completa tus datos personales en Configuración antes de crear una organización', 'error');
+      navigate('/org/auto');
+      return;
+    }
+
     fetchOrganizationTypes().catch(() => {});
 
     // Check for saved progress
