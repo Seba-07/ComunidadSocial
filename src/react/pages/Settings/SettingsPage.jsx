@@ -67,7 +67,7 @@ export default function SettingsPage() {
         lastName: user.lastName || '',
         phone: user.phone || '',
         address: user.address || '',
-        region: user.region || 'Metropolitana',
+        region: user.region || 'Región Metropolitana',
         commune: user.commune || tenant.communeName || ''
       });
     }
@@ -196,16 +196,16 @@ export default function SettingsPage() {
             </div>
             <div>
               <label style={labelStyle}>Región</label>
-              <input value={profile.region} onChange={e => setProfile(p => ({ ...p, region: e.target.value }))} style={inputStyle} />
+              <input value={profile.region} disabled style={{ ...inputStyle, background: '#f3f4f6', color: '#6b7280' }} />
             </div>
             <div>
               <label style={labelStyle}>Comuna</label>
-              <input value={profile.commune} onChange={e => setProfile(p => ({ ...p, commune: e.target.value }))} style={inputStyle} />
+              <input value={profile.commune} disabled style={{ ...inputStyle, background: '#f3f4f6', color: '#6b7280' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
             <p style={{ flex: 1, fontSize: 12, color: '#9ca3af', margin: 0 }}>
-              RUT y email no se pueden modificar.
+              RUT, email, región y comuna no se pueden modificar.
             </p>
             <button type="submit" disabled={savingProfile} style={{ ...btnPrimary, opacity: savingProfile ? 0.6 : 1 }}>
               {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
