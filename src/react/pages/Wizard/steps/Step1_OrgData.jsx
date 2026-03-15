@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWizardStore } from '../../../stores/wizardStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '../../../../services/ApiService';
 
@@ -113,9 +115,19 @@ const CONTACT_PREFS = [
 ];
 
 export default function Step1_OrgData({ onNext, isFirst }) {
-  const { formData, updateFormData, organizationTypes, fetchTemplateConfig, templateConfig } = useWizardStore();
+  const { formData, updateFormData, organizationTypes, fetchTemplateConfig, templateConfig, saveProgress } = useWizardStore();
+  const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
+  const navigate = useNavigate();
   const org = formData.organization;
+
+  // Pre-load email and phone from user profile if empty
+  useEffect(() => {
+    const updates = {};
+    if (!org.email && user?.email) updates.email = user.email;
+    if (!org.phone && user?.phone) updates.phone = user.phone;
+    if (Object.keys(updates).length) updateFormData('organization', updates);
+  }, []);
 
   // UV auto-detection state
   const [uvOptions, setUvOptions] = useState([]);
@@ -430,15 +442,20 @@ export default function Step1_OrgData({ onNext, isFirst }) {
         <div className="r-form-row">
           <div>
             <label style={labelStyle}>Email de contacto *</label>
-            <input type="email" value={org.email} onChange={e => update('email', e.target.value)}
-              placeholder="email@ejemplo.cl" style={inputStyle} />
+            <input type="email" value={org.email} disabled style={{ ...inputStyle, background: '#f3f4f6' }} />
           </div>
           <div>
             <label style={labelStyle}>Teléfono</label>
-            <input value={org.phone || ''} onChange={e => update('phone', e.target.value)}
-              placeholder="+56 9 1234 5678" style={inputStyle} />
+            <input value={org.phone || ''} disabled style={{ ...inputStyle, background: '#f3f4f6' }} />
           </div>
         </div>
+        <p style={{ margin: '-4px 0 8px', fontSize: 12, color: '#6b7280' }}>
+          Email y teléfono provienen de tu perfil.{' '}
+          <button type="button" onClick={() => { saveProgress(); navigate('/org/auto?tab=configuracion'); }}
+            style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0, textDecoration: 'underline' }}>
+            Cambiar en Configuración
+          </button>
+        </p>
 
         <div>
           <label style={labelStyle}>Preferencia de contacto</label>
