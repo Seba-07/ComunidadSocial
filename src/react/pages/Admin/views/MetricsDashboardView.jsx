@@ -12,6 +12,7 @@ export default function MetricsDashboardView() {
   const addToast = useUiStore(s => s.addToast);
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   async function loadMetrics() {
     setIsLoading(true);
@@ -25,12 +26,24 @@ export default function MetricsDashboardView() {
     }
   }
 
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      await apiService.exportDashboardReport();
+      addToast('Reporte exportado correctamente', 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   useEffect(() => { loadMetrics(); }, []);
 
   if (isLoading) return <LoadingSpinner text="Cargando Centro de Comando..." />;
   if (!data) return <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>No se pudieron cargar las métricas</p>;
 
-  const { kpis, legalAlerts, boardExpirations, upcomingAssemblies, orgTypes, byStatus, recentApplications, ministroLoad } = data;
+  const { kpis, legalAlerts, boardExpirations, upcomingAssemblies, orgTypes, byStatus, recentApplications, ministroLoad, resolutionTime, observationRate, upcomingElections } = data;
 
   const totalOrgTypes = orgTypes.reduce((sum, t) => sum + t.count, 0) || 1;
   const maxStatusCount = Math.max(...Object.values(byStatus || {}), 1);
@@ -43,10 +56,21 @@ export default function MetricsDashboardView() {
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Centro de Comando</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>Cumplimiento Ley 19.418 y gestión operativa</p>
         </div>
-        <button onClick={loadMetrics} style={{
-          padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
-          background: 'white', fontSize: 13, cursor: 'pointer'
-        }}>Actualizar</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={loadMetrics} style={{
+            padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
+            background: 'white', fontSize: 13, cursor: 'pointer'
+          }}>Actualizar</button>
+          <button onClick={handleExport} disabled={isExporting} style={{
+            padding: '8px 16px', border: 'none', borderRadius: 8,
+            background: '#059669', color: '#fff', fontSize: 13, cursor: 'pointer',
+            fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
+            opacity: isExporting ? 0.7 : 1
+          }}>
+            <span style={{ fontSize: 15 }}>📊</span>
+            {isExporting ? 'Exportando...' : 'Exportar Reporte (CSV)'}
+          </button>
+        </div>
       </div>
 
       {/* ═══ FILA 1: Tarjetas de Alerta Crítica ═══ */}
@@ -90,6 +114,44 @@ export default function MetricsDashboardView() {
           color="#059669"
           bgColor="#f0fdf4"
           borderColor="#bbf7d0"
+        />
+      </div>
+
+      {/* ═══ FILA 1.5: Métricas Avanzadas de Gestión ═══ */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+        {/* Tiempo Promedio de Resolución */}
+        <AlertCard
+          icon="⏱️"
+          label="Tiempo de Resolución"
+          sublabel={resolutionTime?.count > 0
+            ? `Min: ${resolutionTime.min}d · Max: ${resolutionTime.max}d`
+            : 'Sin datos suficientes'}
+          value={resolutionTime?.avgDays > 0 ? `${resolutionTime.avgDays}d` : '—'}
+          color="#7c3aed"
+          bgColor="#f5f3ff"
+          borderColor="#ddd6fe"
+        />
+        {/* Tasa de Observaciones */}
+        <AlertCard
+          icon="📋"
+          label="Tasa de Observaciones"
+          sublabel={observationRate?.total > 0
+            ? `${observationRate.withObservations} con obs. · ${observationRate.directApproval} directo`
+            : 'Sin trámites procesados'}
+          value={observationRate?.total > 0 ? `${observationRate.rate}%` : '—'}
+          color={observationRate?.rate > 50 ? '#dc2626' : '#059669'}
+          bgColor={observationRate?.rate > 50 ? '#fef2f2' : '#f0fdf4'}
+          borderColor={observationRate?.rate > 50 ? '#fecaca' : '#bbf7d0'}
+        />
+        {/* Elecciones/Asambleas próximos 15 días hábiles */}
+        <AlertCard
+          icon="🗳️"
+          label="Elecciones 15 días háb."
+          sublabel="Art. 10 — Ley 19.418"
+          value={upcomingElections?.length || 0}
+          color="#0284c7"
+          bgColor="#f0f9ff"
+          borderColor="#bae6fd"
         />
       </div>
 

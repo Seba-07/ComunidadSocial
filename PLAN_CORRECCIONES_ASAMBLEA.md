@@ -875,8 +875,8 @@
 
 ## FASE 16: Rediseño del Dashboard Municipal — Centro de Comando (Métricas Avanzadas)
 
-> Estado: EN PROGRESO
-> Fecha inicio: 2026-03-15
+> Estado: COMPLETADO
+> Fecha: 2026-03-15
 
 ### Objetivo
 
@@ -932,3 +932,74 @@ Transformar el dashboard de métricas básico en un "Centro de Comando" enfocado
 | `server/routes/dashboard.js` | Nuevo endpoint `GET /advanced-metrics` con 9 secciones de datos |
 | `src/react/pages/Admin/views/MetricsDashboardView.jsx` | Rediseño completo — 4 filas, alertas, tablas, gráficos |
 | `src/services/ApiService.js` | Nuevo método `getAdvancedMetrics()` |
+
+---
+
+## FASE 17: Métricas Avanzadas V2 y Exportación de Reportes
+
+> Estado: COMPLETADO
+> Fecha: 2026-03-15
+
+### Objetivo
+
+Llevar el Dashboard de Métricas a nivel 10/10 incorporando 3 métricas avanzadas de gestión y un botón de exportación a CSV para el municipio.
+
+### Tareas
+
+| # | Tarea | Estado |
+|---|-------|--------|
+| 17.1 | Agregar FASE 17 al plan de trabajo | COMPLETADO |
+| 17.2 | Backend: `resolutionTime` — promedio días ingreso→aprobación (min/max/avg) | COMPLETADO |
+| 17.3 | Backend: `observationRate` — % trámites con observaciones vs aprobación directa | COMPLETADO |
+| 17.4 | Backend: `upcomingElections` — asambleas/elecciones próximos 15 días hábiles (Art. 10) | COMPLETADO |
+| 17.5 | Backend: `GET /dashboard/export` — endpoint CSV con json2csv, JWT protegido | COMPLETADO |
+| 17.6 | Frontend: 3 nuevas tarjetas de métricas (resolución, observaciones, elecciones) | COMPLETADO |
+| 17.7 | Frontend: Botón "Exportar Reporte (CSV)" junto a "Actualizar" | COMPLETADO |
+| 17.8 | Frontend: `exportDashboardReport()` con blob download en ApiService | COMPLETADO |
+
+### Nuevas Métricas en `/dashboard/advanced-metrics`
+
+```json
+{
+  "resolutionTime": {
+    "avgDays": 12.5,
+    "count": 8,
+    "min": 3,
+    "max": 28
+  },
+  "observationRate": {
+    "withObservations": 3,
+    "directApproval": 5,
+    "total": 8,
+    "rate": 37.5
+  },
+  "upcomingElections": [
+    {
+      "_id": "...",
+      "orgName": "Junta de Vecinos X",
+      "ministro": "Juan Pérez",
+      "date": "2026-03-20",
+      "time": "10:00",
+      "location": "Sede social",
+      "type": "asamblea"
+    }
+  ]
+}
+```
+
+### Endpoint de Exportación
+
+- **Ruta**: `GET /dashboard/export`
+- **Auth**: JWT + MUNICIPALIDAD
+- **Librería**: json2csv (con BOM UTF-8 para Excel)
+- **Campos**: Nombre, Tipo, Estado, RUT, Comuna, Dirección, Fecha Ingreso, Fecha Aprobación, Días en Sistema, N° Socios, Presidente
+- **Headers**: `Content-Disposition: attachment; filename=reporte_organizaciones_YYYY-MM-DD.csv`
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/routes/dashboard.js` | 3 nuevas secciones en advanced-metrics + endpoint export |
+| `src/react/pages/Admin/views/MetricsDashboardView.jsx` | 3 tarjetas métricas + botón exportar |
+| `src/services/ApiService.js` | Nuevo método `exportDashboardReport()` con blob download |
+| `server/package.json` | Dependencia `json2csv` agregada |

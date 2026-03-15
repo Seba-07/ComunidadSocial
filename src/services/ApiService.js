@@ -591,6 +591,29 @@ class ApiService {
     return this.get('/dashboard/advanced-metrics');
   }
 
+  async exportDashboardReport() {
+    const url = `${this.baseUrl}/dashboard/export`;
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {}
+    });
+    if (!response.ok) {
+      throw new Error('Error al exportar reporte');
+    }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    const disposition = response.headers.get('Content-Disposition');
+    const filename = disposition?.match(/filename=(.+)/)?.[1] || `reporte_organizaciones_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
   // ==================== MINISTROS ====================
 
   async getMinistros() {

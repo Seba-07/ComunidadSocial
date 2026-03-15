@@ -480,7 +480,92 @@ router.get(
         completed: m.completed
       }));
 
-      // ── 8. Summary KPIs ───────────────────────────────────────────
+      // ── 8. Resolution Time (avg days to approval) ─────────────
+      const approvedOrgsForRes = await Organization.find(
+        { status: 'approved' },
+        { createdAt: 1, statusHistory: 1 }
+      ).lean();
+
+      let resolutionTime = { avgDays: 0, count: 0, min: null, max: null };
+      if (approvedOrgsForRes.length > 0) {
+        let totalDays = 0;
+        let count = 0;
+        let minDays = Infinity;
+        let maxDays = 0;
+        for (const org of approvedOrgsForRes) {
+          const approvalEntry = org.statusHistory?.slice().reverse()
+            .find(h => h.status === 'approved');
+          if (approvalEntry?.date && org.createdAt) {
+            const diffDays = Math.round((new Date(approvalEntry.date) - new Date(org.createdAt)) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 0) {
+              totalDays += diffDays;
+              count++;
+              if (diffDays < minDays) minDays = diffDays;
+              if (diffDays > maxDays) maxDays = diffDays;
+            }
+          }
+        }
+        if (count > 0) {
+          resolutionTime = {
+            avgDays: Math.round((totalDays / count) * 10) / 10,
+            count,
+            min: minDays === Infinity ? null : minDays,
+            max: maxDays || null
+          };
+        }
+      }
+
+      // ── 9. Observation Rate (with observations vs direct approval) ──
+      const allProcessedOrgs = await Organization.find(
+        { status: { $in: ['approved', 'rejected'] } },
+        { statusHistory: 1 }
+      ).lean();
+
+      let observationRate = { withObservations: 0, directApproval: 0, total: 0, rate: 0 };
+      if (allProcessedOrgs.length > 0) {
+        let withObs = 0;
+        for (const org of allProcessedOrgs) {
+          const hadObservations = org.statusHistory?.some(
+            h => h.status === 'rejected' || (h.comment && h.comment.length > 0)
+          );
+          if (hadObservations) withObs++;
+        }
+        observationRate = {
+          withObservations: withObs,
+          directApproval: allProcessedOrgs.length - withObs,
+          total: allProcessedOrgs.length,
+          rate: Math.round((withObs / allProcessedOrgs.length) * 1000) / 10
+        };
+      }
+
+      // ── 10. Upcoming Elections/Assemblies (next 15 business days, Art. 10) ──
+      let businessDaysCount = 0;
+      const fifteenBizDaysFromNow = new Date(now);
+      while (businessDaysCount < 15) {
+        fifteenBizDaysFromNow.setDate(fifteenBizDaysFromNow.getDate() + 1);
+        const dayOfWeek = fifteenBizDaysFromNow.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDaysCount++;
+      }
+
+      const upcomingElectionAssignments = await Assignment.find({
+        status: 'pending',
+        scheduledDate: { $gte: now, $lte: fifteenBizDaysFromNow }
+      }, {
+        organizationName: 1, ministroName: 1,
+        scheduledDate: 1, scheduledTime: 1, location: 1, type: 1
+      }).sort({ scheduledDate: 1 }).lean();
+
+      const upcomingElections = upcomingElectionAssignments.map(a => ({
+        _id: a._id,
+        orgName: a.organizationName,
+        ministro: a.ministroName,
+        date: a.scheduledDate,
+        time: a.scheduledTime,
+        location: a.location,
+        type: a.type || 'asamblea'
+      }));
+
+      // ── 11. Summary KPIs ───────────────────────────────────────────
       const [totalOrgs, totalPending, totalMinistros, activeMinistros] = await Promise.all([
         Organization.countDocuments(),
         Organization.countDocuments({ status: { $in: ['pending_review', 'in_review', 'waiting_ministro'] } }),
@@ -488,7 +573,7 @@ router.get(
         User.countDocuments({ role: 'MINISTRO_FE', active: true })
       ]);
 
-      // ── 9. Status distribution for donut ──────────────────────────
+      // ── 12. Status distribution for donut ─────────────────────────
       const byStatusAgg = await Organization.aggregate([
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]);
@@ -515,11 +600,97 @@ router.get(
         orgTypes,
         byStatus,
         recentApplications: recentApps,
-        ministroLoad
+        ministroLoad,
+        resolutionTime,
+        observationRate,
+        upcomingElections
       });
     } catch (error) {
       console.error('Error fetching advanced metrics:', error);
       res.status(500).json({ error: 'Error al obtener métricas avanzadas' });
+    }
+  }
+);
+
+/**
+ * GET /export
+ * Export organization data as CSV file.
+ * Requires MUNICIPALIDAD role.
+ */
+router.get(
+  '/export',
+  authenticate,
+  requireRole('MUNICIPALIDAD'),
+  async (req, res) => {
+    try {
+      const { Parser } = await import('json2csv');
+
+      const orgs = await Organization.find(
+        {},
+        {
+          organizationName: 1, organizationType: 1, status: 1,
+          comuna: 1, address: 1, createdAt: 1,
+          statusHistory: 1, provisionalDirectorio: 1,
+          members: 1, rut: 1
+        }
+      ).lean();
+
+      const rows = orgs.map(org => {
+        // Find approval date from statusHistory
+        const approvalEntry = org.statusHistory?.slice().reverse()
+          .find(h => h.status === 'approved');
+        const approvalDate = approvalEntry?.date
+          ? new Date(approvalEntry.date).toISOString().split('T')[0]
+          : '';
+
+        // Count members
+        const memberCount = org.members?.length || 0;
+
+        // Get presidente from provisionalDirectorio
+        const presidente = org.provisionalDirectorio?.president;
+
+        // Days in system
+        const daysInSystem = Math.floor(
+          (new Date() - new Date(org.createdAt)) / (1000 * 60 * 60 * 24)
+        );
+
+        return {
+          'Nombre': org.organizationName || '',
+          'Tipo': org.organizationType || '',
+          'Estado': org.status || '',
+          'RUT': org.rut || '',
+          'Comuna': org.comuna || '',
+          'Dirección': org.address || '',
+          'Fecha Ingreso': org.createdAt
+            ? new Date(org.createdAt).toISOString().split('T')[0]
+            : '',
+          'Fecha Aprobación': approvalDate,
+          'Días en Sistema': daysInSystem,
+          'N° Socios': memberCount,
+          'Presidente': presidente
+            ? `${presidente.firstName || ''} ${presidente.lastName || ''}`.trim()
+            : ''
+        };
+      });
+
+      const parser = new Parser({
+        fields: [
+          'Nombre', 'Tipo', 'Estado', 'RUT', 'Comuna', 'Dirección',
+          'Fecha Ingreso', 'Fecha Aprobación', 'Días en Sistema',
+          'N° Socios', 'Presidente'
+        ],
+        withBOM: true // UTF-8 BOM for Excel compatibility
+      });
+
+      const csv = parser.parse(rows);
+
+      const date = new Date().toISOString().split('T')[0];
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename=reporte_organizaciones_${date}.csv`);
+      res.send(csv);
+    } catch (error) {
+      console.error('Error exporting dashboard data:', error);
+      res.status(500).json({ error: 'Error al exportar datos' });
     }
   }
 );
