@@ -562,7 +562,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20,
-        }} onClick={() => !deleting && setShowDeleteModal(false)}>
+        }}>
           <div style={{
             background: 'white', borderRadius: 16, padding: 28, maxWidth: 480, width: '100%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
@@ -615,7 +615,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20,
-        }} onClick={() => !retracting && setShowRetractModal(false)}>
+        }}>
           <div style={{
             background: 'white', borderRadius: 16, padding: 28, maxWidth: 480, width: '100%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',

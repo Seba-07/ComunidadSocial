@@ -229,7 +229,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
       background: 'rgba(0,0,0,0.5)', zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center'
-    }} onClick={e => e.target === e.currentTarget && onClose()}>
+    }}>
       <div className="r-section" style={{
         background: 'white', borderRadius: 16, width: '95%', maxWidth: 900,
         maxHeight: '95vh', height: '85vh', display: 'flex', flexDirection: 'column',

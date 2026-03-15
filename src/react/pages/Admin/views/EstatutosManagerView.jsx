@@ -1026,7 +1026,7 @@ export default function EstatutosManagerView() {
 
       {/* Modal confirmación eliminar tipo custom */}
       {deleteConfirm && (
-        <div onClick={e => { if (e.target === e.currentTarget) setDeleteConfirm(null); }} style={{
+        <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
         }}>
@@ -1093,7 +1093,7 @@ export default function EstatutosManagerView() {
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
             background: 'rgba(0,0,0,0.5)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }} onClick={e => { if (e.target === e.currentTarget) closeNewModal(); }}>
+          }}>
             <div style={{
               background: 'white', borderRadius: 16, width: '90%', maxWidth: 620,
               height: '85vh', display: 'flex', flexDirection: 'column',

@@ -443,7 +443,6 @@ export default function OrgPrivacy() {
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
           }}
-          onClick={() => !opposing && setShowOpposeModal(false)}
         >
           <div
             style={{
@@ -513,7 +512,6 @@ export default function OrgPrivacy() {
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
           }}
-          onClick={() => !deleting && setShowDeleteModal(false)}
         >
           <div
             style={{

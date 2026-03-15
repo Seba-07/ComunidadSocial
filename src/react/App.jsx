@@ -106,7 +106,7 @@ function SessionWarningModal({ secondsLeft, onKeepAlive }) {
   };
 
   return (
-    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onKeepAlive(); }}>
+    <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={iconStyle}>&#9200;</div>
         <div style={titleStyle}>Sesion por expirar</div>

@@ -52,7 +52,7 @@ export default function Modal({ open, onClose, title, children }) {
   if (!open) return null;
 
   return (
-    <div style={overlayStyle} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div style={overlayStyle}>
       <div style={cardStyle}>
         <div style={headerStyle}>
           <h3 style={titleStyle}>{title}</h3>
