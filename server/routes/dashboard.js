@@ -299,6 +299,232 @@ router.get(
 );
 
 /**
+ * GET /advanced-metrics
+ * Advanced metrics for the "Centro de Comando" dashboard.
+ * Calculates legal alerts, board expirations, upcoming assemblies,
+ * org type distribution, recent applications, and minister workload.
+ * Requires MUNICIPALIDAD role.
+ */
+router.get(
+  '/advanced-metrics',
+  authenticate,
+  requireRole('MUNICIPALIDAD'),
+  async (req, res) => {
+    try {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const sevenDaysFromNow = new Date(now);
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      // ── 1. Legal Alerts: Trámites por Vencer ──────────────────────
+      // TODO: Implement proper legal deadline calculation based on Ley 19.418
+      // Art. 7: El Secretario Municipal tiene 30 días para pronunciarse
+      // For now: orgs in pending_review/in_review for more than 20 days
+      const legalAlertOrgs = await Organization.find({
+        status: { $in: ['pending_review', 'in_review'] }
+      }, { organizationName: 1, status: 1, organizationType: 1, createdAt: 1, statusHistory: 1 }).lean();
+
+      const legalAlerts = [];
+      for (const org of legalAlertOrgs) {
+        // Find when it entered pending_review
+        const reviewEntry = org.statusHistory?.slice().reverse()
+          .find(h => h.status === 'pending_review' || h.status === 'in_review');
+        const enteredReview = reviewEntry?.date ? new Date(reviewEntry.date) : org.createdAt;
+        const daysInReview = Math.floor((now - enteredReview) / (1000 * 60 * 60 * 24));
+        // Legal deadline is 30 days per Ley 19.418 Art. 7
+        const daysRemaining = 30 - daysInReview;
+        if (daysRemaining <= 10) { // Alert when 10 or fewer days remaining
+          legalAlerts.push({
+            _id: org._id,
+            name: org.organizationName,
+            type: org.organizationType,
+            status: org.status,
+            daysInReview,
+            daysRemaining: Math.max(0, daysRemaining),
+            isOverdue: daysRemaining < 0
+          });
+        }
+      }
+      legalAlerts.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+      // ── 2. Directivas Vencidas ────────────────────────────────────
+      // TODO: Implement proper board expiration check
+      // Ley 19.418 Art. 24: Directorio dura 2 años, elecciones obligatorias
+      // For now: approved orgs where approval date > 2 years ago
+      const twoYearsAgo = new Date(now);
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
+      const expiredBoardOrgs = await Organization.find({
+        status: 'approved',
+        'statusHistory': {
+          $elemMatch: {
+            status: 'approved'
+          }
+        }
+      }, { organizationName: 1, organizationType: 1, statusHistory: 1 }).lean();
+
+      const boardExpirations = [];
+      for (const org of expiredBoardOrgs) {
+        const approvalEntry = org.statusHistory?.slice().reverse()
+          .find(h => h.status === 'approved');
+        if (approvalEntry?.date) {
+          const approvalDate = new Date(approvalEntry.date);
+          const expirationDate = new Date(approvalDate);
+          expirationDate.setFullYear(expirationDate.getFullYear() + 2);
+          if (expirationDate <= now) {
+            const daysExpired = Math.floor((now - expirationDate) / (1000 * 60 * 60 * 24));
+            boardExpirations.push({
+              _id: org._id,
+              name: org.organizationName,
+              type: org.organizationType,
+              approvalDate: approvalDate.toISOString().split('T')[0],
+              expirationDate: expirationDate.toISOString().split('T')[0],
+              daysExpired
+            });
+          }
+        }
+      }
+      boardExpirations.sort((a, b) => b.daysExpired - a.daysExpired);
+
+      // ── 3. Asambleas Próximos 7 días ──────────────────────────────
+      const upcomingAssignments = await Assignment.find({
+        status: 'pending',
+        scheduledDate: { $gte: now, $lte: sevenDaysFromNow }
+      }, {
+        organizationName: 1, ministroName: 1,
+        scheduledDate: 1, scheduledTime: 1, location: 1
+      }).sort({ scheduledDate: 1 }).lean();
+
+      const upcomingAssemblies = upcomingAssignments.map(a => ({
+        _id: a._id,
+        orgName: a.organizationName,
+        ministro: a.ministroName,
+        date: a.scheduledDate,
+        time: a.scheduledTime,
+        location: a.location
+      }));
+
+      // ── 4. Total Aprobadas Histórico ──────────────────────────────
+      const totalApproved = await Organization.countDocuments({ status: 'approved' });
+      const approvedThisMonth = await Organization.countDocuments({
+        status: 'approved',
+        'statusHistory': {
+          $elemMatch: {
+            status: 'approved',
+            date: { $gte: startOfThisMonth }
+          }
+        }
+      });
+
+      // ── 5. Tipos de Organización (distribución) ───────────────────
+      const orgTypeAgg = await Organization.aggregate([
+        { $group: { _id: '$organizationType', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]);
+      const orgTypes = orgTypeAgg.map(t => ({
+        type: t._id || 'Sin tipo',
+        count: t.count
+      }));
+
+      // ── 6. Últimas Solicitudes Ingresadas ─────────────────────────
+      const recentApplications = await Organization.find(
+        {},
+        {
+          organizationName: 1, organizationType: 1, status: 1, createdAt: 1,
+          userId: 1
+        }
+      ).sort({ createdAt: -1 }).limit(10).lean();
+
+      const recentApps = recentApplications.map(org => {
+        const daysInSystem = Math.floor((now - new Date(org.createdAt)) / (1000 * 60 * 60 * 24));
+        return {
+          _id: org._id,
+          name: org.organizationName,
+          type: org.organizationType,
+          status: org.status,
+          createdAt: org.createdAt,
+          daysInSystem
+        };
+      });
+
+      // ── 7. Carga de Ministros este mes ────────────────────────────
+      const ministroLoadAgg = await Assignment.aggregate([
+        {
+          $match: {
+            scheduledDate: { $gte: startOfThisMonth, $lte: endOfThisMonth }
+          }
+        },
+        {
+          $group: {
+            _id: '$ministroId',
+            name: { $first: '$ministroName' },
+            total: { $sum: 1 },
+            pending: {
+              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+            },
+            completed: {
+              $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+            }
+          }
+        },
+        { $sort: { total: -1 } }
+      ]);
+
+      const ministroLoad = ministroLoadAgg.map(m => ({
+        name: m.name,
+        total: m.total,
+        pending: m.pending,
+        completed: m.completed
+      }));
+
+      // ── 8. Summary KPIs ───────────────────────────────────────────
+      const [totalOrgs, totalPending, totalMinistros, activeMinistros] = await Promise.all([
+        Organization.countDocuments(),
+        Organization.countDocuments({ status: { $in: ['pending_review', 'in_review', 'waiting_ministro'] } }),
+        User.countDocuments({ role: 'MINISTRO_FE' }),
+        User.countDocuments({ role: 'MINISTRO_FE', active: true })
+      ]);
+
+      // ── 9. Status distribution for donut ──────────────────────────
+      const byStatusAgg = await Organization.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]);
+      const byStatus = {};
+      for (const entry of byStatusAgg) {
+        if (entry._id) byStatus[entry._id] = entry.count;
+      }
+
+      res.json({
+        kpis: {
+          legalAlertsCount: legalAlerts.length,
+          boardExpirationsCount: boardExpirations.length,
+          upcomingAssembliesCount: upcomingAssemblies.length,
+          totalApproved,
+          approvedThisMonth,
+          totalOrgs,
+          totalPending,
+          activeMinistros,
+          totalMinistros
+        },
+        legalAlerts,
+        boardExpirations,
+        upcomingAssemblies,
+        orgTypes,
+        byStatus,
+        recentApplications: recentApps,
+        ministroLoad
+      });
+    } catch (error) {
+      console.error('Error fetching advanced metrics:', error);
+      res.status(500).json({ error: 'Error al obtener métricas avanzadas' });
+    }
+  }
+);
+
+/**
  * GET /recent-activity
  * Return the last 20 status changes across all organizations,
  * extracted from each organization's statusHistory array.

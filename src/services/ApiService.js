@@ -587,6 +587,10 @@ class ApiService {
     return this.get('/organizations/stats/counts');
   }
 
+  async getAdvancedMetrics() {
+    return this.get('/dashboard/advanced-metrics');
+  }
+
   // ==================== MINISTROS ====================
 
   async getMinistros() {

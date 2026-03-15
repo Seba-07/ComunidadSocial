@@ -870,3 +870,65 @@
 | `src/services/OrgDocumentService.js` | Eliminados 2 fallbacks Railway hardcodeados |
 | `src/services/LibraryDocumentService.js` | Eliminados 2 fallbacks Railway hardcodeados |
 | `src/presentation/organization/OrganizationDashboard.js` | Eliminado fallback Railway hardcodeado |
+
+---
+
+## FASE 16: Rediseño del Dashboard Municipal — Centro de Comando (Métricas Avanzadas)
+
+> Estado: EN PROGRESO
+> Fecha inicio: 2026-03-15
+
+### Objetivo
+
+Transformar el dashboard de métricas básico en un "Centro de Comando" enfocado en:
+1. **Cumplimiento Ley 19.418** — alertas legales, plazos, directivas vencidas
+2. **Gestión operativa** — asambleas próximas, carga de MF, solicitudes recientes
+3. **Visibilidad completa** — distribución por tipo de organización, estados, tendencias
+
+### Tareas
+
+| # | Tarea | Estado |
+|---|-------|--------|
+| 16.1 | Crear endpoint `GET /dashboard/advanced-metrics` con métricas avanzadas | COMPLETADO |
+| 16.2 | Rediseñar `MetricsDashboardView.jsx` — layout "Centro de Comando" | COMPLETADO |
+| 16.3 | Fila 1: Tarjetas de alerta crítica (legal, directivas, asambleas, aprobadas) | COMPLETADO |
+| 16.4 | Fila 2: Distribución por tipo de organización + últimas solicitudes con botón "Revisar" | COMPLETADO |
+| 16.5 | Fila 3: Alertas legales detalladas (Art. 7, plazo 30 días) + carga de MF mensual | COMPLETADO |
+| 16.6 | Fila 4: Directivas vencidas (Art. 24, 2 años) + asambleas próximos 7 días | COMPLETADO |
+| 16.7 | Agregar método `getAdvancedMetrics()` en ApiService | COMPLETADO |
+| 16.8 | TODO: Implementar cálculos reales de expiración de directorio basados en fecha de elección | PENDIENTE |
+| 16.9 | TODO: Agregar tendencias y comparativas mes-a-mes en tarjetas KPI | PENDIENTE |
+| 16.10 | TODO: Enlace directo desde alertas legales a la revisión de cada organización | PENDIENTE |
+
+### Estructura del Endpoint
+
+```json
+{
+  "kpis": {
+    "legalAlertsCount": 0,
+    "boardExpirationsCount": 0,
+    "upcomingAssembliesCount": 0,
+    "totalApproved": 0,
+    "approvedThisMonth": 0,
+    "totalOrgs": 0,
+    "totalPending": 0,
+    "activeMinistros": 0,
+    "totalMinistros": 0
+  },
+  "legalAlerts": [],
+  "boardExpirations": [],
+  "upcomingAssemblies": [],
+  "orgTypes": [],
+  "byStatus": {},
+  "recentApplications": [],
+  "ministroLoad": []
+}
+```
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/routes/dashboard.js` | Nuevo endpoint `GET /advanced-metrics` con 9 secciones de datos |
+| `src/react/pages/Admin/views/MetricsDashboardView.jsx` | Rediseño completo — 4 filas, alertas, tablas, gráficos |
+| `src/services/ApiService.js` | Nuevo método `getAdvancedMetrics()` |
