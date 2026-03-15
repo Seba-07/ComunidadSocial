@@ -14,6 +14,7 @@ const initialFormData = {
   members: [],
   config: {
     asambleas: ['Marzo', 'Noviembre'],
+    monedaCuota: 'UTM',
     cuotaMin: 0.1,
     cuotaMax: 0.5,
     beneficiarioDisolucion: '',

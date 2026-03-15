@@ -20,51 +20,59 @@ const DOCUMENT_TYPE_LABELS = {
   carta_solicitud: 'Carta de Solicitud'
 };
 
-// Placeholders disponibles por tipo de documento
+// requiredFor: array de tipos de documento donde este placeholder es OBLIGATORIO
+// Si está vacío o ausente, el placeholder es opcional para todos los tipos
 const AVAILABLE_PLACEHOLDERS = [
-  { key: 'NOMBRE_ORG', label: 'Nombre organización', description: 'Nombre completo de la organización' },
-  { key: 'TIPO_ORG', label: 'Tipo organización', description: 'Tipo legible (ej: Club Deportivo)' },
-  { key: 'DIRECCION', label: 'Dirección', description: 'Dirección completa' },
-  { key: 'COMUNA', label: 'Comuna', description: 'Comuna de la municipalidad (valor fijo)' },
-  { key: 'REGION', label: 'Región', description: 'Región' },
-  { key: 'UNIDAD_VECINAL', label: 'Unidad Vecinal', description: 'Unidad vecinal' },
-  { key: 'EMAIL', label: 'Email contacto', description: 'Email de contacto' },
-  { key: 'TELEFONO', label: 'Teléfono', description: 'Teléfono de contacto' },
-  { key: 'OBJETIVOS', label: 'Objetivos', description: 'Objetivos de la organización' },
-  { key: 'TOTAL_SOCIOS', label: 'Total socios', description: 'Cantidad total de miembros' },
-  { key: 'LISTA_SOCIOS', label: 'Lista de socios', description: 'Tabla con nombres y RUTs de socios' },
-  { key: 'PRESIDENTE', label: 'Presidente', description: 'Nombre del presidente' },
-  { key: 'RUT_PRESIDENTE', label: 'RUT Presidente', description: 'RUT del presidente' },
-  { key: 'SECRETARIO', label: 'Secretario', description: 'Nombre del secretario' },
-  { key: 'RUT_SECRETARIO', label: 'RUT Secretario', description: 'RUT del secretario' },
-  { key: 'TESORERO', label: 'Tesorero', description: 'Nombre del tesorero' },
-  { key: 'RUT_TESORERO', label: 'RUT Tesorero', description: 'RUT del tesorero' },
-  { key: 'DIRECTORES', label: 'Directores', description: 'Lista de directores adicionales' },
-  { key: 'COMISION_ELECTORAL', label: 'Comisión Electoral', description: 'Lista comisión electoral' },
-  { key: 'FECHA_ASAMBLEA', label: 'Fecha asamblea', description: 'Fecha programada de asamblea' },
-  { key: 'HORA_ASAMBLEA', label: 'Hora asamblea', description: 'Hora programada de asamblea' },
-  { key: 'HORA_INICIO_ASAMBLEA', label: 'Hora inicio', description: 'Hora de inicio de la asamblea' },
-  { key: 'HORA_TERMINO_ASAMBLEA', label: 'Hora término', description: 'Hora de término de la asamblea' },
-  { key: 'VOTOS_FAVOR', label: 'Votos a favor', description: 'Cantidad de votos a favor' },
-  { key: 'VOTOS_CONTRA', label: 'Votos en contra', description: 'Cantidad de votos en contra' },
-  { key: 'ABSTENCIONES', label: 'Abstenciones', description: 'Cantidad de abstenciones' },
-  { key: 'DURACION_MANDATO', label: 'Duración mandato', description: 'Años de duración del mandato' },
-  { key: 'CUOTA_INCORPORACION', label: 'Cuota incorporación', description: 'Cuota de incorporación en UTM' },
-  { key: 'FECHA_HOY', label: 'Fecha actual', description: 'Fecha del día de generación' },
-  { key: 'MINISTRO_FE', label: 'Ministro de Fe', description: 'Nombre del ministro de fe' },
-  { key: 'RUT_MINISTRO_FE', label: 'RUT Ministro de Fe', description: 'RUT del ministro de fe' },
-  { key: 'UBICACION_ASAMBLEA', label: 'Ubicación asamblea', description: 'Dirección donde se realiza la asamblea' },
-  { key: 'FIRMA_PRESIDENTE', label: 'Firma Presidente', description: 'Bloque de firma: línea + nombre + cargo + RUT del presidente' },
-  { key: 'FIRMA_SECRETARIO', label: 'Firma Secretario', description: 'Bloque de firma: línea + nombre + cargo + RUT del secretario' },
-  { key: 'FIRMA_TESORERO', label: 'Firma Tesorero', description: 'Bloque de firma: línea + nombre + cargo + RUT del tesorero' },
-  { key: 'FIRMA_MINISTRO_FE', label: 'Firma Ministro de Fe', description: 'Bloque de firma: línea + nombre + cargo + RUT del ministro de fe' },
-  { key: 'CUOTA_MENSUAL', label: 'Cuota mensual', description: 'Rango de cuota mensual en UTM (ej: mínima de 0.1 UTM y máxima de 0.5 UTM)' },
-  { key: 'METODO_CITACION', label: 'Método de citación', description: 'Método de citación a asambleas (ej: carta certificada al domicilio registrado)' },
-  { key: 'DIAS_ANTICIPACION', label: 'Días de anticipación', description: 'Días de anticipación para citación a asambleas' },
-  { key: 'MESES_ASAMBLEA', label: 'Meses de asamblea', description: 'Meses en que se realizan asambleas ordinarias' },
-  { key: 'ENTIDAD_DISOLUCION', label: 'Entidad disolución', description: 'Entidad beneficiaria en caso de disolución' },
-  { key: 'RUT_DISOLUCION', label: 'RUT disolución', description: 'RUT de la entidad beneficiaria de disolución' },
-  { key: 'MES_INFORME', label: 'Mes informe Comisión Revisora', description: 'Mes en que la Comisión Revisora presenta el balance anual' },
+  // --- Datos de la organización (obligatorios en acta + carta) ---
+  { key: 'NOMBRE_ORG', label: 'Nombre organización', description: 'Nombre completo de la organización', requiredFor: ['acta_constitutiva', 'lista_socios', 'nomina_directorio', 'carta_solicitud'] },
+  { key: 'TIPO_ORG', label: 'Tipo organización', description: 'Tipo legible (ej: Club Deportivo)', requiredFor: ['acta_constitutiva', 'carta_solicitud'] },
+  { key: 'DIRECCION', label: 'Dirección', description: 'Dirección completa', requiredFor: ['acta_constitutiva'] },
+  { key: 'COMUNA', label: 'Comuna', description: 'Comuna de la municipalidad (valor fijo)', requiredFor: ['acta_constitutiva', 'carta_solicitud'] },
+  { key: 'REGION', label: 'Región', description: 'Región', requiredFor: [] },
+  { key: 'UNIDAD_VECINAL', label: 'Unidad Vecinal', description: 'Unidad vecinal', requiredFor: [] },
+  { key: 'EMAIL', label: 'Email contacto', description: 'Email de contacto', requiredFor: [] },
+  { key: 'TELEFONO', label: 'Teléfono', description: 'Teléfono de contacto', requiredFor: [] },
+  { key: 'OBJETIVOS', label: 'Objetivos', description: 'Objetivos de la organización', requiredFor: ['acta_constitutiva'] },
+  // --- Miembros ---
+  { key: 'TOTAL_SOCIOS', label: 'Total socios', description: 'Cantidad total de miembros', requiredFor: ['acta_constitutiva', 'lista_socios'] },
+  { key: 'LISTA_SOCIOS', label: 'Lista de socios', description: 'Tabla con nombres y RUTs de socios', requiredFor: ['lista_socios'] },
+  // --- Directorio ---
+  { key: 'PRESIDENTE', label: 'Presidente', description: 'Nombre del presidente', requiredFor: ['acta_constitutiva', 'nomina_directorio'] },
+  { key: 'RUT_PRESIDENTE', label: 'RUT Presidente', description: 'RUT del presidente', requiredFor: ['acta_constitutiva', 'nomina_directorio'] },
+  { key: 'SECRETARIO', label: 'Secretario', description: 'Nombre del secretario', requiredFor: ['acta_constitutiva', 'nomina_directorio'] },
+  { key: 'RUT_SECRETARIO', label: 'RUT Secretario', description: 'RUT del secretario', requiredFor: ['nomina_directorio'] },
+  { key: 'TESORERO', label: 'Tesorero', description: 'Nombre del tesorero', requiredFor: ['acta_constitutiva', 'nomina_directorio'] },
+  { key: 'RUT_TESORERO', label: 'RUT Tesorero', description: 'RUT del tesorero', requiredFor: ['nomina_directorio'] },
+  { key: 'DIRECTORES', label: 'Directores', description: 'Lista de directores adicionales', requiredFor: ['nomina_directorio'] },
+  { key: 'COMISION_ELECTORAL', label: 'Comisión Electoral', description: 'Lista comisión electoral', requiredFor: [] },
+  // --- Asamblea ---
+  { key: 'FECHA_ASAMBLEA', label: 'Fecha asamblea', description: 'Fecha programada de asamblea', requiredFor: ['acta_constitutiva'] },
+  { key: 'HORA_ASAMBLEA', label: 'Hora asamblea', description: 'Hora programada de asamblea', requiredFor: [] },
+  { key: 'HORA_INICIO_ASAMBLEA', label: 'Hora inicio', description: 'Hora de inicio de la asamblea', requiredFor: ['acta_constitutiva'] },
+  { key: 'HORA_TERMINO_ASAMBLEA', label: 'Hora término', description: 'Hora de término de la asamblea', requiredFor: [] },
+  { key: 'UBICACION_ASAMBLEA', label: 'Ubicación asamblea', description: 'Dirección donde se realiza la asamblea', requiredFor: ['acta_constitutiva'] },
+  // --- Votación ---
+  { key: 'VOTOS_FAVOR', label: 'Votos a favor', description: 'Cantidad de votos a favor', requiredFor: [] },
+  { key: 'VOTOS_CONTRA', label: 'Votos en contra', description: 'Cantidad de votos en contra', requiredFor: [] },
+  { key: 'ABSTENCIONES', label: 'Abstenciones', description: 'Cantidad de abstenciones', requiredFor: [] },
+  // --- Configuración de la organización ---
+  { key: 'DURACION_MANDATO', label: 'Duración mandato', description: 'Años de duración del mandato', requiredFor: ['acta_constitutiva'] },
+  { key: 'CUOTA_INCORPORACION', label: 'Cuota incorporación', description: 'Cuota de incorporación (en la moneda configurada)', requiredFor: ['acta_constitutiva'] },
+  { key: 'CUOTA_MENSUAL', label: 'Cuota mensual', description: 'Rango de cuota mensual (ej: mínima de 0.1 UTM y máxima de 0.5 UTM)', requiredFor: ['acta_constitutiva'] },
+  { key: 'METODO_CITACION', label: 'Método de citación', description: 'Método de citación a asambleas (ej: carta certificada al domicilio registrado)', requiredFor: ['acta_constitutiva'] },
+  { key: 'DIAS_ANTICIPACION', label: 'Días de anticipación', description: 'Días de anticipación para citación a asambleas', requiredFor: ['acta_constitutiva'] },
+  { key: 'MESES_ASAMBLEA', label: 'Meses de asamblea', description: 'Meses en que se realizan asambleas ordinarias', requiredFor: ['acta_constitutiva'] },
+  { key: 'MES_INFORME', label: 'Mes informe Comisión Revisora', description: 'Mes en que la Comisión Revisora presenta el balance anual', requiredFor: ['acta_constitutiva'] },
+  { key: 'ENTIDAD_DISOLUCION', label: 'Entidad disolución', description: 'Entidad beneficiaria en caso de disolución', requiredFor: ['acta_constitutiva'] },
+  { key: 'RUT_DISOLUCION', label: 'RUT disolución', description: 'RUT de la entidad beneficiaria de disolución', requiredFor: [] },
+  // --- Fechas y firmas ---
+  { key: 'FECHA_HOY', label: 'Fecha actual', description: 'Fecha del día de generación', requiredFor: ['carta_solicitud'] },
+  { key: 'MINISTRO_FE', label: 'Ministro de Fe', description: 'Nombre del ministro de fe', requiredFor: ['acta_constitutiva'] },
+  { key: 'RUT_MINISTRO_FE', label: 'RUT Ministro de Fe', description: 'RUT del ministro de fe', requiredFor: ['acta_constitutiva'] },
+  { key: 'FIRMA_PRESIDENTE', label: 'Firma Presidente', description: 'Bloque de firma: línea + nombre + cargo + RUT del presidente', requiredFor: ['acta_constitutiva', 'carta_solicitud'] },
+  { key: 'FIRMA_SECRETARIO', label: 'Firma Secretario', description: 'Bloque de firma: línea + nombre + cargo + RUT del secretario', requiredFor: ['acta_constitutiva'] },
+  { key: 'FIRMA_TESORERO', label: 'Firma Tesorero', description: 'Bloque de firma: línea + nombre + cargo + RUT del tesorero', requiredFor: [] },
+  { key: 'FIRMA_MINISTRO_FE', label: 'Firma Ministro de Fe', description: 'Bloque de firma: línea + nombre + cargo + RUT del ministro de fe', requiredFor: ['acta_constitutiva'] },
 ];
 
 const headerFooterSchema = new mongoose.Schema({
@@ -80,7 +88,8 @@ const headerFooterSchema = new mongoose.Schema({
 const placeholderSchema = new mongoose.Schema({
   key: { type: String, required: true },
   label: { type: String, required: true },
-  description: { type: String, default: '' }
+  description: { type: String, default: '' },
+  requiredFor: { type: [String], default: [] }
 }, { _id: false });
 
 const documentTemplateSchema = new mongoose.Schema({

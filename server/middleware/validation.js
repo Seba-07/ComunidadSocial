@@ -205,6 +205,7 @@ export const createOrganizationSchema = z.object({
   comments: z.string().max(1000).optional().nullable(),
   estatutos: z.string().optional().or(z.literal('')),
   config: z.object({
+    monedaCuota: z.enum(['UTM', 'UF', 'CLP']).optional(),
     asambleas: z.array(z.string()).optional(),
     cuotaMin: z.number().min(0).optional(),
     cuotaMax: z.number().min(0).optional(),

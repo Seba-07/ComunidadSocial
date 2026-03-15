@@ -73,9 +73,9 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{N_MIEMBROS}}': String(templateConfig?.directorio?.totalRequerido || 5),
       '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateConfig?.comisionElectoral?.cantidad || 3),
       '{{CUOTA_MENSUAL}}': config.cuotaMin && config.cuotaMax
-        ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
+        ? `mínima de ${config.cuotaMin} ${config.monedaCuota || 'UTM'} y máxima de ${config.cuotaMax} ${config.monedaCuota || 'UTM'}`
         : '_______________',
-      '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '_______________',
+      '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
       '{{DURACION_MANDATO}}': String(config.duracionMandato || 3),
       '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
       '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',

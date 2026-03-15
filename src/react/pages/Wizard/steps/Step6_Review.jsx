@@ -102,9 +102,9 @@ export default function Step6_Review({ onNext, onPrev }) {
       FECHA_ASAMBLEA: '___',
       HORA_ASAMBLEA: '___',
       DURACION_MANDATO: String(config.duracionMandato || 3),
-      CUOTA_INCORPORACION: config.cuotaIncorporacion ? `${config.cuotaIncorporacion} UTM` : '0.5 UTM',
+      CUOTA_INCORPORACION: config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '0.5 UTM',
       CUOTA_MENSUAL: config.cuotaMin && config.cuotaMax
-        ? `mínima de ${config.cuotaMin} UTM y máxima de ${config.cuotaMax} UTM`
+        ? `mínima de ${config.cuotaMin} ${config.monedaCuota || 'UTM'} y máxima de ${config.cuotaMax} ${config.monedaCuota || 'UTM'}`
         : '_______________',
       METODO_CITACION: ({
         carta_certificada: 'carta certificada al domicilio registrado',

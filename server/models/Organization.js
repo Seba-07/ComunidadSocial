@@ -335,6 +335,11 @@ const organizationSchema = new mongoose.Schema({
 
   // Configuración preliminar del wizard (Step 3)
   config: {
+    monedaCuota: {
+      type: String,
+      enum: ['UTM', 'UF', 'CLP'],
+      default: 'UTM'
+    },
     asambleas: [{ type: String }],
     cuotaMin: { type: Number, default: 0.1 },
     cuotaMax: { type: Number, default: 0.5 },

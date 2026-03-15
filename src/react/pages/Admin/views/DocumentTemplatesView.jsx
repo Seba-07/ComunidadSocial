@@ -80,6 +80,13 @@ const SAMPLE_DATA = {
   FIRMA_SECRETARIO: '________________________\nMaría López Soto\nSecretario(a) Provisorio(a)\nRUT: 11.234.567-K',
   FIRMA_TESORERO: '________________________\nCarmen Muñoz Díaz\nTesorero(a) Provisorio(a)\nRUT: 13.678.901-5',
   FIRMA_MINISTRO_FE: '________________________\nCarlos Ramírez Torres\nMinistro de Fe\nRUT: 7.654.321-0',
+  CUOTA_MENSUAL: 'mínima de 0.1 UTM y máxima de 0.5 UTM',
+  METODO_CITACION: 'carta certificada al domicilio registrado',
+  DIAS_ANTICIPACION: '10',
+  MESES_ASAMBLEA: 'Marzo y Noviembre',
+  ENTIDAD_DISOLUCION: 'Ilustre Municipalidad de ' + tenant.communeName,
+  RUT_DISOLUCION: '69.070.300-8',
+  MES_INFORME: 'Marzo',
 };
 
 const DEFAULT_CONTENT = {
@@ -535,7 +542,7 @@ export default function DocumentTemplatesView() {
                 />
               </div>
             </div>
-            <div style={{ width: 240 }}>
+            <div style={{ width: 260 }}>
               <div style={{ ...cardStyle, position: 'sticky', top: 80 }}>
                 <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b', marginBottom: 10 }}>
                   Variables disponibles
@@ -543,24 +550,75 @@ export default function DocumentTemplatesView() {
                 <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
                   Click para insertar en el cursor
                 </div>
+                {/* Missing required placeholders warning */}
+                {(() => {
+                  const docType = selected.documentType;
+                  const content = selected.content || '';
+                  const requiredForType = placeholders.filter(p =>
+                    (p.requiredFor || []).includes(docType)
+                  );
+                  const missing = requiredForType.filter(p => !content.includes(`{{${p.key}}}`));
+                  if (missing.length === 0) return (
+                    <div style={{ padding: '6px 10px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 6, marginBottom: 10, fontSize: 11, color: '#166534' }}>
+                      Todas las variables obligatorias incluidas
+                    </div>
+                  );
+                  return (
+                    <div style={{ padding: '6px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, marginBottom: 10, fontSize: 11, color: '#991b1b' }}>
+                      <strong>Faltan {missing.length} obligatoria{missing.length > 1 ? 's' : ''}:</strong>
+                      <div style={{ marginTop: 2 }}>{missing.map(p => p.label).join(', ')}</div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 500, overflowY: 'auto' }}>
-                  {placeholders.map(p => (
-                    <button
-                      key={p.key}
-                      onClick={() => insertPlaceholder(p.key)}
-                      title={p.description}
-                      style={{
-                        padding: '4px 8px', fontSize: 12, textAlign: 'left',
-                        border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc',
-                        cursor: 'pointer', color: '#334155', fontFamily: 'monospace',
-                      }}
-                    >
-                      {`{{${p.key}}}`}
-                      <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', fontFamily: 'inherit' }}>
-                        {p.label}
-                      </span>
-                    </button>
-                  ))}
+                  {/* Required placeholders first */}
+                  {placeholders
+                    .sort((a, b) => {
+                      const aReq = (a.requiredFor || []).includes(selected.documentType);
+                      const bReq = (b.requiredFor || []).includes(selected.documentType);
+                      if (aReq && !bReq) return -1;
+                      if (!aReq && bReq) return 1;
+                      return 0;
+                    })
+                    .map(p => {
+                      const isRequired = (p.requiredFor || []).includes(selected.documentType);
+                      const isPresent = (selected.content || '').includes(`{{${p.key}}}`);
+                      return (
+                        <button
+                          key={p.key}
+                          onClick={() => insertPlaceholder(p.key)}
+                          title={p.description}
+                          style={{
+                            padding: '4px 8px', fontSize: 12, textAlign: 'left',
+                            border: isRequired
+                              ? (isPresent ? '1px solid #86efac' : '1px solid #fca5a5')
+                              : '1px solid #e2e8f0',
+                            borderRadius: 6,
+                            background: isRequired
+                              ? (isPresent ? '#f0fdf4' : '#fef2f2')
+                              : '#f8fafc',
+                            cursor: 'pointer', color: '#334155', fontFamily: 'monospace',
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {`{{${p.key}}}`}
+                            {isRequired && (
+                              <span style={{
+                                fontSize: 9, fontWeight: 700, fontFamily: 'sans-serif',
+                                padding: '1px 4px', borderRadius: 3,
+                                background: isPresent ? '#dcfce7' : '#fee2e2',
+                                color: isPresent ? '#166534' : '#991b1b',
+                              }}>
+                                {isPresent ? 'OK' : 'REQUERIDA'}
+                              </span>
+                            )}
+                          </span>
+                          <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', fontFamily: 'inherit' }}>
+                            {p.label}
+                          </span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             </div>

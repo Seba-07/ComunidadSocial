@@ -8,6 +8,13 @@ const MONTHS = [
 ];
 
 const UTM_FALLBACK = 65000;
+const UF_FALLBACK = 38000;
+
+const CURRENCY_OPTIONS = [
+  { key: 'UTM', label: 'UTM (Unidad Tributaria Mensual)' },
+  { key: 'UF', label: 'UF (Unidad de Fomento)' },
+  { key: 'CLP', label: 'Pesos Chilenos (CLP)' },
+];
 
 function formatCLP(amount) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
@@ -18,20 +25,27 @@ export default function Step3_Config({ onNext, onPrev }) {
   const addToast = useUiStore(s => s.addToast);
   const config = formData.config || {};
   const [utmValue, setUtmValue] = useState(UTM_FALLBACK);
+  const [ufValue, setUfValue] = useState(UF_FALLBACK);
 
-  // Fetch UTM value from mindicador.cl
+  const moneda = config.monedaCuota || 'UTM';
+
+  // Fetch UTM and UF values from mindicador.cl
   useEffect(() => {
-    async function fetchUTM() {
+    async function fetchIndicadores() {
       try {
-        const res = await fetch('https://mindicador.cl/api/utm');
-        const data = await res.json();
-        const val = data?.serie?.[0]?.valor;
-        if (val && typeof val === 'number') setUtmValue(val);
+        const [utmRes, ufRes] = await Promise.all([
+          fetch('https://mindicador.cl/api/utm').then(r => r.json()).catch(() => null),
+          fetch('https://mindicador.cl/api/uf').then(r => r.json()).catch(() => null),
+        ]);
+        const utmVal = utmRes?.serie?.[0]?.valor;
+        const ufVal = ufRes?.serie?.[0]?.valor;
+        if (utmVal && typeof utmVal === 'number') setUtmValue(utmVal);
+        if (ufVal && typeof ufVal === 'number') setUfValue(ufVal);
       } catch {
-        // Fallback silently to UTM_FALLBACK
+        // Fallback silently
       }
     }
-    fetchUTM();
+    fetchIndicadores();
   }, []);
 
   // Set default duracionMandato from template when it loads
@@ -43,6 +57,16 @@ export default function Step3_Config({ onNext, onPrev }) {
 
   function update(field, value) {
     updateFormData('config', { [field]: value });
+  }
+
+  function handleCurrencyChange(newMoneda) {
+    // Reset cuota values when switching currency to avoid confusion
+    const defaults = newMoneda === 'CLP'
+      ? { cuotaMin: 5000, cuotaMax: 30000, cuotaIncorporacion: 30000 }
+      : newMoneda === 'UF'
+        ? { cuotaMin: 0.1, cuotaMax: 0.5, cuotaIncorporacion: 0.5 }
+        : { cuotaMin: 0.1, cuotaMax: 0.5, cuotaIncorporacion: 0.5 };
+    updateFormData('config', { monedaCuota: newMoneda, ...defaults });
   }
 
   function toggleMonth(month) {
@@ -61,14 +85,19 @@ export default function Step3_Config({ onNext, onPrev }) {
     onNext();
   }
 
-  const clpHint = (utmAmount) => {
-    if (!utmAmount || utmAmount <= 0) return null;
+  // CLP equivalence hint for UTM/UF values
+  const clpHint = (amount) => {
+    if (!amount || amount <= 0 || moneda === 'CLP') return null;
+    const factor = moneda === 'UF' ? ufValue : utmValue;
     return (
       <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
-        Equivale aprox. a {formatCLP(utmAmount * utmValue)}
+        Equivale aprox. a {formatCLP(amount * factor)}
       </p>
     );
   };
+
+  const currencyLabel = moneda === 'CLP' ? '$' : moneda;
+  const step = moneda === 'CLP' ? 1000 : 0.01;
 
   return (
     <div>
@@ -100,25 +129,53 @@ export default function Step3_Config({ onNext, onPrev }) {
           </div>
         </div>
 
+        {/* Moneda de cuotas */}
         <div>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Socios (UTM)</h3>
-          <p style={{ margin: '0 0 8px', fontSize: 12, color: '#6b7280' }}>
-            Valor UTM actual: {formatCLP(utmValue)}
-          </p>
-          <div className="r-form-row" style={{ maxWidth: 300 }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Moneda para Cuotas</h3>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            {CURRENCY_OPTIONS.map(opt => {
+              const selected = moneda === opt.key;
+              return (
+                <button key={opt.key} onClick={() => handleCurrencyChange(opt.key)} style={{
+                  padding: '8px 16px', borderRadius: 20,
+                  border: selected ? '2px solid #2563eb' : '1px solid #d1d5db',
+                  background: selected ? '#eff6ff' : 'white',
+                  color: selected ? '#2563eb' : '#374151',
+                  fontSize: 13, fontWeight: selected ? 600 : 400, cursor: 'pointer'
+                }}>
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          {moneda !== 'CLP' && (
+            <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+              Valor {moneda} actual: {formatCLP(moneda === 'UF' ? ufValue : utmValue)}
+            </p>
+          )}
+        </div>
+
+        {/* Cuota de socios */}
+        <div>
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>
+            Cuota de Socios ({currencyLabel})
+          </h3>
+          <div className="r-form-row" style={{ maxWidth: 350 }}>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Mínima</label>
-              <input type="number" step="0.01" value={config.cuotaMin ?? 0.1}
-                onChange={e => update('cuotaMin', parseFloat(e.target.value) || 0)}
-                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-              {clpHint(config.cuotaMin ?? 0.1)}
+              <div style={{ position: 'relative' }}>
+                <input type="number" step={step} value={config.cuotaMin ?? (moneda === 'CLP' ? 5000 : 0.1)}
+                  onChange={e => update('cuotaMin', parseFloat(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '10px 10px 10px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+              </div>
+              {clpHint(config.cuotaMin ?? (moneda === 'CLP' ? 5000 : 0.1))}
             </div>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>Máxima</label>
-              <input type="number" step="0.01" value={config.cuotaMax ?? 0.5}
+              <input type="number" step={step} value={config.cuotaMax ?? (moneda === 'CLP' ? 30000 : 0.5)}
                 onChange={e => update('cuotaMax', parseFloat(e.target.value) || 0)}
                 style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-              {clpHint(config.cuotaMax ?? 0.5)}
+              {clpHint(config.cuotaMax ?? (moneda === 'CLP' ? 30000 : 0.5))}
             </div>
           </div>
         </div>
@@ -197,11 +254,13 @@ export default function Step3_Config({ onNext, onPrev }) {
         </div>
 
         <div>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Cuota de Incorporación (UTM)</h3>
-          <input type="number" step="0.01" min={0} value={config.cuotaIncorporacion ?? 0.5}
+          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>
+            Cuota de Incorporación ({currencyLabel})
+          </h3>
+          <input type="number" step={step} min={0} value={config.cuotaIncorporacion ?? (moneda === 'CLP' ? 30000 : 0.5)}
             onChange={e => update('cuotaIncorporacion', parseFloat(e.target.value) || 0)}
             style={{ width: '100%', maxWidth: 200, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-          {clpHint(config.cuotaIncorporacion ?? 0.5)}
+          {clpHint(config.cuotaIncorporacion ?? (moneda === 'CLP' ? 30000 : 0.5))}
           <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Monto que pagan nuevos socios al ingresar</p>
         </div>
 
