@@ -25,7 +25,7 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'NOMBRE_ORG', label: 'Nombre organización', description: 'Nombre completo de la organización' },
   { key: 'TIPO_ORG', label: 'Tipo organización', description: 'Tipo legible (ej: Club Deportivo)' },
   { key: 'DIRECCION', label: 'Dirección', description: 'Dirección completa' },
-  { key: 'COMUNA', label: 'Comuna', description: 'Comuna de la organización' },
+  { key: 'COMUNA', label: 'Comuna', description: 'Comuna de la municipalidad (valor fijo)' },
   { key: 'REGION', label: 'Región', description: 'Región' },
   { key: 'UNIDAD_VECINAL', label: 'Unidad Vecinal', description: 'Unidad vecinal' },
   { key: 'EMAIL', label: 'Email contacto', description: 'Email de contacto' },
