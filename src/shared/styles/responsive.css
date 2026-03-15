@@ -521,7 +521,34 @@
     }
 }
 
+/* === Audit log + DataTable mobile === */
+@media (max-width: 768px) {
+    .audit-log-page {
+        padding: 12px !important;
+    }
+
+    .r-table-wrap table th,
+    .r-table-wrap table td {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+}
+
 @media (max-width: 480px) {
+    .audit-log-page {
+        padding: 8px !important;
+    }
+
+    .audit-log-page h1 {
+        font-size: 18px !important;
+    }
+
+    .r-table-wrap table th,
+    .r-table-wrap table td {
+        padding: 6px 6px !important;
+        font-size: 11px !important;
+    }
+
     .uv-map-area {
         height: 40vh !important;
         min-height: 250px;

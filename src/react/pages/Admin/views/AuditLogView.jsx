@@ -155,7 +155,7 @@ export default function AuditLogView() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="audit-log-page" style={{ padding: 24 }}>
       <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Historial de Auditoría</h1>
@@ -172,46 +172,48 @@ export default function AuditLogView() {
         background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16,
         display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20
       }}>
-        <div style={{ minWidth: 120 }}>
+        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Acción</label>
           <select value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%' }}>
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }}>
             <option value="">Todas</option>
             {Object.entries(ACTION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div style={{ minWidth: 120 }}>
+        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Recurso</label>
           <select value={filters.resource} onChange={e => setFilters(f => ({ ...f, resource: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%' }}>
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }}>
             <option value="">Todos</option>
             {Object.entries(RESOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        <div>
+        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Desde</label>
           <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }} />
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }} />
         </div>
-        <div>
+        <div style={{ flex: '1 1 140px', minWidth: 100 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Hasta</label>
           <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
-            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }} />
+            style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ flex: 1, minWidth: 150 }}>
+        <div style={{ flex: '2 1 200px', minWidth: 120 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Buscar</label>
           <input type="text" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
             placeholder="Nombre usuario/recurso..."
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }} />
+            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }} />
         </div>
-        <button onClick={applyFilters} style={{
-          padding: '8px 16px', border: 'none', borderRadius: 6,
-          background: '#2563eb', color: 'white', fontSize: 13, cursor: 'pointer'
-        }}>Filtrar</button>
-        <button onClick={clearFilters} style={{
-          padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 6,
-          background: 'white', fontSize: 13, cursor: 'pointer'
-        }}>Limpiar</button>
+        <div style={{ display: 'flex', gap: 8, flex: '1 1 100%' }}>
+          <button onClick={applyFilters} style={{
+            padding: '8px 16px', border: 'none', borderRadius: 6,
+            background: '#2563eb', color: 'white', fontSize: 13, cursor: 'pointer', flex: 1
+          }}>Filtrar</button>
+          <button onClick={clearFilters} style={{
+            padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 6,
+            background: 'white', fontSize: 13, cursor: 'pointer', flex: 1
+          }}>Limpiar</button>
+        </div>
       </div>
 
       {/* Table */}
