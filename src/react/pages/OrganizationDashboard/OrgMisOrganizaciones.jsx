@@ -100,7 +100,7 @@ function getWizardDraft() {
   } catch { return null; }
 }
 
-export default function OrgMisOrganizaciones() {
+export default function OrgMisOrganizaciones({ onNavigateTab }) {
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
@@ -242,7 +242,7 @@ export default function OrgMisOrganizaciones() {
             </p>
           </div>
           <button
-            onClick={() => navigate('/app/org/auto', { state: { tab: 'settings' } })}
+            onClick={() => onNavigateTab('configuracion')}
             style={{
               padding: '8px 16px', background: '#dc2626', color: 'white', border: 'none',
               borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0
