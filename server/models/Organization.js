@@ -198,7 +198,7 @@ const organizationSchema = new mongoose.Schema({
   },
   contactPreference: {
     type: String,
-    enum: ['phone', 'email'],
+    enum: ['phone', 'email', 'whatsapp'],
     default: 'phone'
   },
 

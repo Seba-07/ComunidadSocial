@@ -189,7 +189,7 @@ export const createOrganizationSchema = z.object({
   objectives: z.string().max(2000).optional().or(z.literal('')),
   contactEmail: emailSchema.optional().or(z.literal('')),
   contactPhone: phoneSchema,
-  contactPreference: z.enum(['phone', 'email']).optional(),
+  contactPreference: z.enum(['phone', 'email', 'whatsapp']).optional(),
   members: z.array(memberSchema).min(1, 'Debe tener al menos 1 miembro'),
   electoralCommission: z.array(memberSchema).optional(),
   provisionalDirectorio: z.object({
