@@ -16,6 +16,7 @@ const MENU_ITEMS = [
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
   { key: 'soporte', label: 'Soporte', icon: '🎧' },
   { key: 'seguridad', label: 'Incidentes', icon: '🛡️' },
+  { key: 'noticias', label: 'Noticias', icon: '📰' },
   { key: 'reg-datos', label: 'Reg. Datos', icon: '📋' },
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
 ];

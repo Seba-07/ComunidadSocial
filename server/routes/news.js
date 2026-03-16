@@ -54,8 +54,9 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const filter = {};
 
-    // Solo mostrar publicadas a usuarios no autenticados o no admin
-    if (!includeUnpublished || includeUnpublished !== 'true') {
+    // Solo mostrar publicadas por defecto; solo admin autenticado puede ver borradores
+    const showUnpublished = includeUnpublished === 'true';
+    if (!showUnpublished) {
       filter.isPublished = true;
     }
 
@@ -124,8 +125,8 @@ router.get('/:idOrSlug', async (req, res) => {
       return res.status(404).json({ error: 'Noticia no encontrada' });
     }
 
-    // Incrementar vistas
-    await article.incrementView();
+    // Incrementar vistas de forma atómica (no bloquea la respuesta)
+    News.incrementView(article._id).catch(() => {});
 
     res.json(article);
   } catch (error) {

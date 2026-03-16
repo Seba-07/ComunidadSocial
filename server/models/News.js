@@ -87,10 +87,9 @@ newsSchema.methods.unpublish = async function() {
   await this.save();
 };
 
-// Método para incrementar vistas
-newsSchema.methods.incrementView = async function() {
-  this.viewCount += 1;
-  await this.save();
+// Método para incrementar vistas (atómico para evitar race conditions)
+newsSchema.statics.incrementView = async function(id) {
+  await this.updateOne({ _id: id }, { $inc: { viewCount: 1 } });
 };
 
 // Categorías con nombres legibles

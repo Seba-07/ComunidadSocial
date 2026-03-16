@@ -21,6 +21,7 @@ const SupportTicketsView = lazy(() => import('./views/SupportTicketsView'));
 const DataRegistryView = lazy(() => import('./views/DataRegistryView'));
 const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
 const DocumentTemplatesView = lazy(() => import('./views/DocumentTemplatesView'));
+const NewsManagerView = lazy(() => import('./views/NewsManagerView'));
 
 const VIEW_MAP = {
   organizations: OrganizationsList,
@@ -38,6 +39,7 @@ export: ExportView,
   seguridad: SecurityIncidentsView,
   soporte: SupportTicketsView,
   'reg-datos': DataRegistryView,
+  noticias: NewsManagerView,
   configuracion: SettingsPage
 };
 
