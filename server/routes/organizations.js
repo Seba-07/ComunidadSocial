@@ -845,6 +845,28 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       }
     }
 
+    // Verify edadConfig against the actual template (prevent client-side tampering)
+    try {
+      const templateForAge = await EstatutoTemplate.findOne({
+        tipoOrganizacion: organizationType,
+        activo: true,
+        publicado: true
+      });
+      if (templateForAge?.edadConfig) {
+        const realCfg = templateForAge.edadConfig;
+        const clientCfg = req.body.edadConfig || {};
+        // If client claims minors allowed but template says no, reject
+        if (clientCfg.menoresEnDirectorio && !realCfg.menoresEnDirectorio) {
+          return res.status(400).json({ error: 'La plantilla no permite menores en el directorio' });
+        }
+        if (clientCfg.menoresEnComisionElectoral && !realCfg.menoresEnComisionElectoral) {
+          return res.status(400).json({ error: 'La plantilla no permite menores en la comisión electoral' });
+        }
+      }
+    } catch (err) {
+      logger.warn('CREATE ORG - No se pudo verificar edadConfig:', err.message);
+    }
+
     // Fetch and save estatutos snapshot from template, with placeholder replacement
     try {
       const template = await EstatutoTemplate.findOne({

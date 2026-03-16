@@ -219,7 +219,13 @@ export const createOrganizationSchema = z.object({
     accountReviewMonth: z.string().max(20).optional()
   }).optional(),
   // certificatesStep5 es un objeto con keys dinámicas (presidente, secretario, etc.)
-  certificatesStep5: z.record(z.string(), certificateStep5Schema).optional()
+  certificatesStep5: z.record(z.string(), certificateStep5Schema).optional(),
+  edadConfig: z.object({
+    permiteMenores: z.boolean().optional(),
+    edadMinima: z.number().optional(),
+    menoresEnDirectorio: z.boolean().optional(),
+    menoresEnComisionElectoral: z.boolean().optional()
+  }).optional()
 }).passthrough()
 // ============================================
 // VALIDACIONES LEY 19.418
@@ -248,9 +254,11 @@ export const createOrganizationSchema = z.object({
   path: ['members']
 })
 .refine((data) => {
-  // Validar que los directivos (presidente, secretario, tesorero) tengan 18+ años
+  // Si la plantilla permite menores en directorio, no validar edad mínima 18
+  if (data.edadConfig?.menoresEnDirectorio) return true;
+
   const directorio = data.provisionalDirectorio;
-  if (!directorio) return true; // Si no hay directorio, no validar
+  if (!directorio) return true;
 
   const directivos = [
     directorio.president,
@@ -273,7 +281,9 @@ export const createOrganizationSchema = z.object({
   path: ['provisionalDirectorio']
 })
 .refine((data) => {
-  // Validar que la comisión electoral tenga miembros mayores de 18 años
+  // Si la plantilla permite menores en comisión electoral, no validar edad mínima 18
+  if (data.edadConfig?.menoresEnComisionElectoral) return true;
+
   const comision = data.electoralCommission || [];
   for (const miembro of comision) {
     if (miembro.birthDate) {

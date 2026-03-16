@@ -247,7 +247,7 @@ export const useWizardStore = create((set, get) => ({
   async submitOrganization() {
     set({ isSubmitting: true, error: null });
     try {
-      const { formData, existingOrgId } = get();
+      const { formData, existingOrgId, templateConfig } = get();
       const org = formData.organization;
       const orgData = {
         organizationName: org.name,
@@ -268,7 +268,8 @@ export const useWizardStore = create((set, get) => ({
         config: formData.config,
         electionDate: formData.assemblySchedule?.date || null,
         electionTime: formData.assemblySchedule?.time || null,
-        assemblyAddress: formData.assemblySchedule?.address || ''
+        assemblyAddress: formData.assemblySchedule?.address || '',
+        edadConfig: templateConfig?.edadConfig || null
       };
 
       let data;
