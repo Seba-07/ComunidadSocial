@@ -16,10 +16,18 @@ function generateVerificationToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-// Helper: get frontend base URL
+// Helper: get frontend base URL (strict — no fallbacks in production)
 function getFrontendUrl() {
-  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
-  return 'http://localhost:5173';
+  const url = process.env.FRONTEND_URL;
+  if (!url) {
+    const isDeployed = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+    if (isDeployed) {
+      throw new Error('FRONTEND_URL no está definida en las variables de entorno. No se puede generar enlaces para correos.');
+    }
+    return 'http://localhost:5173';
+  }
+  // Remove trailing slash to avoid double slashes
+  return url.replace(/\/+$/, '');
 }
 
 // Register - Rate limited: 3 registros por hora por IP + validación Zod

@@ -12,8 +12,17 @@ import tenant from '../config/tenant.js';
 const router = express.Router();
 
 // URL base para validación pública de documentos
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://comunidad-social.vercel.app';
-const VALIDATION_URL = `${FRONTEND_URL}/app/validar`;
+function getValidationUrl() {
+  const url = process.env.FRONTEND_URL;
+  if (!url) {
+    const isDeployed = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+    if (isDeployed) {
+      throw new Error('FRONTEND_URL no está definida en las variables de entorno. No se puede generar enlaces de validación.');
+    }
+    return 'http://localhost:5173/app/validar';
+  }
+  return `${url.replace(/\/+$/, '')}/app/validar`;
+}
 
 /**
  * Registra un documento en DocumentRegistry y genera el bloque HTML del QR + folio
@@ -32,7 +41,7 @@ async function registerDocumentAndGetQR({ organizationId, documentType, document
   await record.save();
 
   const folio = record.folio;
-  const verifyUrl = `${VALIDATION_URL}/${folio}`;
+  const verifyUrl = `${getValidationUrl()}/${folio}`;
 
   // Generar QR en base64
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
