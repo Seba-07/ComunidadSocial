@@ -63,19 +63,76 @@ const MESES_CORTOS = [
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
 ];
 
+/** Chile timezone for all date display */
+export const CL_TZ = 'America/Santiago';
+
 /**
- * Parsea una fecha garantizando timezone local (no UTC).
- * Strings "YYYY-MM-DD" se interpretan como medianoche LOCAL, no UTC.
+ * Detecta si un string de fecha representa solo una fecha (sin hora real).
+ * Cubre: "2026-03-17", "2026-03-17T00:00:00.000Z", "2026-03-17T00:00:00Z"
+ */
+function isDateOnlyString(s) {
+  if (typeof s !== 'string') return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return true;
+  if (/^\d{4}-\d{2}-\d{2}T00:00:00(\.000)?Z$/.test(s)) return true;
+  return false;
+}
+
+/**
+ * Extrae [year, month, day] de un string tipo fecha.
+ */
+function extractDateParts(s) {
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+/**
+ * Formatea una fecha en zona horaria Chile.
+ * - Strings date-only ("YYYY-MM-DD" o "YYYY-MM-DDT00:00:00.000Z") se muestran
+ *   tal cual (día/mes/año) sin conversión de timezone.
+ * - Timestamps con hora real se convierten a timezone America/Santiago.
+ *
  * @param {Date|string|number} date
- * @returns {Date}
+ * @param {Intl.DateTimeFormatOptions} [opts] - opciones de formato
+ * @param {'date'|'datetime'} [mode='date'] - 'date' para solo fecha, 'datetime' para fecha+hora
+ * @returns {string}
+ */
+export function formatCL(date, opts, mode = 'date') {
+  if (!date) return '—';
+  try {
+    // Date-only: renderizar sin timezone para evitar el shift ±1 día
+    if (isDateOnlyString(date)) {
+      const parts = extractDateParts(date);
+      if (parts) {
+        // Crear Date en UTC y mostrar con timeZone: 'UTC' para que no haya shift
+        const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+        const finalOpts = { timeZone: 'UTC', ...opts };
+        return mode === 'datetime'
+          ? d.toLocaleString('es-CL', finalOpts)
+          : d.toLocaleDateString('es-CL', finalOpts);
+      }
+    }
+    // Timestamp real: usar timezone Chile
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    const finalOpts = { timeZone: CL_TZ, ...opts };
+    return mode === 'datetime'
+      ? d.toLocaleString('es-CL', finalOpts)
+      : d.toLocaleDateString('es-CL', finalOpts);
+  } catch { return '—'; }
+}
+
+/**
+ * Parsea una fecha. Si es date-only, la trata como fecha local (no UTC).
+ * @deprecated Preferir formatCL() para display. Solo usar para cálculos internos.
  */
 export function parseLocalDate(date) {
   if (!date) return null;
   if (date instanceof Date) return date;
-  // Date-only strings "YYYY-MM-DD" → parse as local (not UTC)
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    const [y, m, d] = date.split('-').map(Number);
-    return new Date(y, m - 1, d);
+  if (typeof date === 'string') {
+    if (isDateOnlyString(date)) {
+      const parts = extractDateParts(date);
+      if (parts) return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
   }
   return new Date(date);
 }
@@ -90,23 +147,14 @@ export function formatDate(date, options = {}) {
   if (!date) return options.fallback || '---';
 
   try {
-    const d = parseLocalDate(date);
-    if (isNaN(d.getTime())) return options.fallback || '---';
-
-    const day = d.getDate();
-    const month = d.getMonth();
-    const year = d.getFullYear();
-
     if (options.short) {
-      return `${day} ${MESES_CORTOS[month]} ${year}`;
+      return formatCL(date, { day: 'numeric', month: 'short', year: 'numeric' });
     }
-
     if (options.full) {
-      return `${day} de ${MESES[month]} del ${year}`;
+      return formatCL(date, { day: 'numeric', month: 'long', year: 'numeric' });
     }
-
     // Formato por defecto: DD/MM/YYYY
-    return `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+    return formatCL(date);
   } catch (e) {
     return options.fallback || '---';
   }
@@ -119,16 +167,8 @@ export function formatDate(date, options = {}) {
  */
 export function formatDateTime(date) {
   if (!date) return '---';
-
   try {
-    const d = parseLocalDate(date);
-    if (isNaN(d.getTime())) return '---';
-
-    const dateStr = formatDate(d);
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-
-    return `${dateStr} ${hours}:${minutes}`;
+    return formatCL(date, { hour: '2-digit', minute: '2-digit' }, 'datetime');
   } catch (e) {
     return '---';
   }
@@ -141,15 +181,10 @@ export function formatDateTime(date) {
  */
 export function formatTime(date) {
   if (!date) return '---';
-
   try {
-    const d = parseLocalDate(date);
+    const d = new Date(date);
     if (isNaN(d.getTime())) return '---';
-
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-
-    return `${hours}:${minutes}`;
+    return d.toLocaleTimeString('es-CL', { timeZone: CL_TZ, hour: '2-digit', minute: '2-digit' });
   } catch (e) {
     return '---';
   }

@@ -24,15 +24,19 @@ import { storeFile } from '../services/storageService.js';
 const router = express.Router();
 
 /**
- * Format date for Chile timezone. Handles date-only strings "YYYY-MM-DD"
- * without UTC shift, and full timestamps using Chile timezone.
+ * Format date for Chile timezone. Handles:
+ * - Date-only strings "YYYY-MM-DD" → shown as-is (no timezone shift)
+ * - MongoDB midnight "YYYY-MM-DDT00:00:00.000Z" → shown as-is
+ * - Full timestamps → converted to America/Santiago
  */
 function formatDateCL(date) {
   if (!date) return '—';
   try {
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      const [y, m, d] = date.split('-');
-      return `${d}/${m}/${y}`;
+    const s = typeof date === 'string' ? date : (date instanceof Date ? date.toISOString() : String(date));
+    // Date-only or midnight UTC → extract date part directly
+    const dateOnly = s.match(/^(\d{4})-(\d{2})-(\d{2})(T00:00:00(\.000)?Z)?$/);
+    if (dateOnly) {
+      return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
     }
     return new Date(date).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
   } catch { return '—'; }

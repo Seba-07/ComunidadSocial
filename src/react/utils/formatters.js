@@ -1,27 +1,22 @@
-import { parseLocalDate } from '@shared/utils/index.js';
+import { formatCL, parseLocalDate } from '@shared/utils/index.js';
 
-// Re-export parseLocalDate for convenience
-export { parseLocalDate };
+// Re-export for convenience
+export { parseLocalDate, formatCL };
 
 /**
- * Safe toLocaleDateString that handles date-only strings without UTC shift.
+ * Safe toLocaleDateString — date-only strings shown without timezone shift,
+ * timestamps shown in Chile timezone.
  * Drop-in replacement for: new Date(x).toLocaleDateString('es-CL', opts)
  */
 export function localeDateString(dateStr, opts) {
-  if (!dateStr) return '—';
-  const d = parseLocalDate(dateStr);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('es-CL', opts);
+  return formatCL(dateStr, opts, 'date');
 }
 
 /**
- * Safe toLocaleString (date + time) that handles date-only strings without UTC shift.
+ * Safe toLocaleString (date + time) — timestamps shown in Chile timezone.
  */
 export function localeString(dateStr, opts) {
-  if (!dateStr) return '—';
-  const d = parseLocalDate(dateStr);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-CL', opts);
+  return formatCL(dateStr, opts, 'datetime');
 }
 
 /**
@@ -29,7 +24,7 @@ export function localeString(dateStr, opts) {
  */
 export function formatDate(dateStr) {
   if (!dateStr) return '';
-  return localeDateString(dateStr, { year: 'numeric', month: 'long', day: 'numeric' });
+  return formatCL(dateStr, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 /**
@@ -37,7 +32,7 @@ export function formatDate(dateStr) {
  */
 export function formatDateShort(dateStr) {
   if (!dateStr) return '';
-  return localeDateString(dateStr);
+  return formatCL(dateStr);
 }
 
 /**
