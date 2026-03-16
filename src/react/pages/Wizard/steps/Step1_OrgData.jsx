@@ -127,6 +127,8 @@ export default function Step1_OrgData({ onNext, isFirst }) {
     if (!org.email && user?.email) updates.email = user.email;
     if (!org.phone && user?.phone) updates.phone = user.phone;
     if (Object.keys(updates).length) updateFormData('organization', updates);
+    // Always refresh template config on mount if org type is already set
+    if (org.type) fetchTemplateConfig(org.type).catch(() => {});
   }, []);
 
   // UV auto-detection state

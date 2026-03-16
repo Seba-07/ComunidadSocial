@@ -41,7 +41,8 @@ export default function WizardPage() {
   const navigate = useNavigate();
   const {
     currentStep, setStep, formData, loadProgress, clearProgress,
-    saveProgress, fetchOrganizationTypes, loadFromOrganization, isSubmitting
+    saveProgress, fetchOrganizationTypes, loadFromOrganization, isSubmitting,
+    fetchTemplateConfig
   } = useWizardStore();
   const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
@@ -76,6 +77,9 @@ export default function WizardPage() {
     const hasProgress = loadProgress();
     if (hasProgress && !orgId) {
       setShowResume(true);
+      // Re-fetch template config to get latest admin settings (edadConfig, cargos, etc.)
+      const orgType = useWizardStore.getState().formData?.organization?.type;
+      if (orgType) fetchTemplateConfig(orgType).catch(() => {});
     }
     setReady(true);
   }, []);
