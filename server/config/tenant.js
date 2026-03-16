@@ -21,7 +21,7 @@ const tenant = {
   // PDF / Legal
   pdfHeaderText: process.env.TENANT_PDF_HEADER || `REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE ${communeName.toUpperCase()}`,
   pdfHeaderSubtitle: process.env.TENANT_PDF_SUBTITLE || 'SECRETARÍA MUNICIPAL',
-  municipalityRut: process.env.TENANT_MUNICIPALITY_RUT || '',
+  // municipalityRut: removed — now stored in DB via AdminPreference 'municipalityConfig'
   dissolutionEntity: process.env.TENANT_DISSOLUTION_ENTITY || (communeName ? `Corporación Municipal de ${communeName}` : ''),
 
   // Branding

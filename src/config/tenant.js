@@ -25,7 +25,7 @@ const tenant = {
   // PDF / Legal (frontend genera PDFs tambien)
   pdfHeaderText: import.meta.env.VITE_TENANT_PDF_HEADER || `REPÚBLICA DE CHILE – I. MUNICIPALIDAD DE ${communeName.toUpperCase()}`,
   municipalityFullName: import.meta.env.VITE_TENANT_MUNICIPALITY_FULL_NAME || (communeName ? `Ilustre Municipalidad de ${communeName}` : 'Ilustre Municipalidad'),
-  municipalityRut: import.meta.env.VITE_TENANT_MUNICIPALITY_RUT || '',
+  // municipalityRut: removed — now stored in DB via /api/config/municipality
   dissolutionEntity: import.meta.env.VITE_TENANT_DISSOLUTION_ENTITY || (communeName ? `Corporación Municipal de ${communeName}` : ''),
 };
 

@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
       website: tenant.website,
       address: tenant.address,
       phone: tenant.phone,
-      municipalityRut: tenant.municipalityRut,
+      // municipalityRut removed — now stored in DB via /api/config/municipality
     }
   });
 });

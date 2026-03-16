@@ -19,10 +19,10 @@ router.get('/', async (req, res) => {
     // Return empty defaults with fallback from tenant config
     res.json({
       data: {
-        officialName: tenant.communeName || '',
+        officialName: tenant.municipalityFullName || '',
         rut: '',
-        address: '',
-        region: tenant.region || '',
+        address: tenant.address || '',
+        region: tenant.regionName || '',
         comuna: tenant.communeName || ''
       }
     });
@@ -51,7 +51,7 @@ router.put('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
 
     const pref = await AdminPreference.findOneAndUpdate(
       { key: PREF_KEY },
-      { value, updatedBy: req.user._id },
+      { value, updatedBy: req.userId },
       { upsert: true, new: true }
     );
 

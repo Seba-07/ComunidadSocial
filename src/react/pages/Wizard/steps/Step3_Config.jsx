@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { apiService } from '@services/ApiService.js';
 import tenant from '../../../../config/tenant.js';
 
 const MONTHS = [
@@ -29,6 +30,15 @@ export default function Step3_Config({ onNext, onPrev }) {
   const [ufValue, setUfValue] = useState(UF_FALLBACK);
 
   const moneda = config.monedaCuota || 'UTM';
+
+  // Municipality institutional data from DB (for dissolution auto-fill)
+  const [muniData, setMuniData] = useState(null);
+
+  useEffect(() => {
+    apiService.getMunicipalityConfig()
+      .then(res => { if (res.data) setMuniData(res.data); })
+      .catch(() => {});
+  }, []);
 
   // Fetch UTM and UF values from mindicador.cl
   useEffect(() => {
@@ -283,8 +293,8 @@ export default function Step3_Config({ onNext, onPrev }) {
                     store.setFormDataField('config', {
                       ...store.formData.config,
                       tipoEntidadDisolucion: tipo,
-                      beneficiarioDisolucion: tenant.municipalityFullName || `Ilustre Municipalidad de ${tenant.communeName}`,
-                      rutDisolucion: tenant.municipalityRut || ''
+                      beneficiarioDisolucion: muniData?.officialName || tenant.municipalityFullName || `Ilustre Municipalidad de ${tenant.communeName}`,
+                      rutDisolucion: muniData?.rut || ''
                     });
                   } else if (tipo === 'bomberos') {
                     store.setFormDataField('config', {
@@ -347,7 +357,7 @@ export default function Step3_Config({ onNext, onPrev }) {
                 </div>
                 <div>
                   <label style={labelSt}>RUT de la entidad</label>
-                  {config.tipoEntidadDisolucion === 'municipalidad' && tenant.municipalityRut ? (
+                  {config.tipoEntidadDisolucion === 'municipalidad' && muniData?.rut ? (
                     <input
                       value={config.rutDisolucion || ''}
                       readOnly
@@ -367,10 +377,10 @@ export default function Step3_Config({ onNext, onPrev }) {
 
             {config.tipoEntidadDisolucion === 'municipalidad' && (
               <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1e40af' }}>
-                Los datos de la municipalidad se completan automáticamente desde la configuración del sistema.
-                {!tenant.municipalityRut && (
+                Los datos de la municipalidad se completan automáticamente desde la configuración institucional.
+                {!muniData?.rut && (
                   <span style={{ display: 'block', marginTop: 4, color: '#92400e' }}>
-                    El RUT de la municipalidad no está configurado. Ingréselo manualmente.
+                    El RUT de la municipalidad aún no ha sido configurado por el Secretario Municipal. Ingréselo manualmente.
                   </span>
                 )}
               </div>

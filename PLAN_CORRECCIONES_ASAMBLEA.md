@@ -1099,3 +1099,43 @@ Mejorar la UX del campo "Disolución" en el Paso 3 del Wizard:
 | `server/middleware/validation.js` | Validación Zod para `tipoEntidadDisolucion` |
 | `.env.example` | Variable `VITE_TENANT_MUNICIPALITY_RUT` |
 | `server/.env.example` | Variable `TENANT_MUNICIPALITY_RUT` |
+
+---
+
+## FASE 20: Separación Institución vs Usuario (Tenant Architecture)
+
+### Problema
+La vista de Configuración mezclaba datos del usuario administrador (nombre, apellido, contraseña) con datos de la institución (municipalidad: nombre oficial, RUT, dirección). El Secretario Municipal es una persona; la Municipalidad es una entidad. Varios secretarios pueden existir, pero la municipalidad es una sola.
+
+Además, el RUT de la municipalidad estaba como variable de entorno (TENANT_MUNICIPALITY_RUT), pero debe ser editable desde la UI y almacenado en la base de datos.
+
+### Solución
+1. **Modelo**: Usar AdminPreference con key `municipalityConfig` para datos institucionales (officialName, rut, address, region, comuna)
+2. **Endpoint público**: `GET /api/config/municipality` (sin auth, para que el wizard lo consuma)
+3. **Endpoint protegido**: `PUT /api/config/municipality` (solo MUNICIPALIDAD)
+4. **SettingsPage**: Dos tarjetas separadas — "Datos de la Institución" + "Mi Perfil y Seguridad"
+5. **Wizard Step 3**: Lee datos municipales desde DB en vez de env vars
+6. **Cleanup**: Eliminadas variables TENANT_MUNICIPALITY_RUT de env vars y tenant configs
+
+### Tareas
+
+| # | Tarea | Estado |
+|---|-------|--------|
+| 20.1 | Backend: endpoint GET/PUT /api/config/municipality usando AdminPreference | COMPLETADO |
+| 20.2 | Frontend: separar SettingsPage en tarjeta Institución + tarjeta Perfil | COMPLETADO |
+| 20.3 | Wizard Step 3: fetch datos municipales desde DB para disolución | COMPLETADO |
+| 20.4 | Cleanup: eliminar municipalityRut de tenant configs y env vars | COMPLETADO |
+| 20.5 | Actualizar PLAN_CORRECCIONES_ASAMBLEA.md | COMPLETADO |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `server/routes/municipalityConfig.js` | Nuevo: GET (público) y PUT (MUNICIPALIDAD) para config institucional |
+| `server/index.js` | Montar ruta /api/config/municipality |
+| `src/services/ApiService.js` | Métodos getMunicipalityConfig() y updateMunicipalityConfig() |
+| `src/react/pages/Settings/SettingsPage.jsx` | Tarjeta "Datos de la Institución" separada de perfil personal |
+| `src/react/pages/Wizard/steps/Step3_Config.jsx` | Fetch muniData desde API, usar en disolución |
+| `src/config/tenant.js` | Eliminado municipalityRut (ahora en DB) |
+| `server/config/tenant.js` | Eliminado municipalityRut (ahora en DB) |
+| `server/routes/tenant.js` | Eliminado municipalityRut del response |
