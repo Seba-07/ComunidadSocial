@@ -141,10 +141,19 @@ export default function MemberImportModal({ open, onClose, existingMembers = [],
   }
 
   // Step 1: File upload
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
   const handleFile = useCallback(async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setParseError('');
+
+    if (file.size > MAX_FILE_SIZE) {
+      setParseError(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo 5MB.`);
+      e.target.value = '';
+      return;
+    }
+
     setFileName(file.name);
 
     const ext = file.name.split('.').pop().toLowerCase();

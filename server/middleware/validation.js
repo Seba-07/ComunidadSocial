@@ -12,7 +12,7 @@ import { validateRut, cleanRut, formatRut } from '../utils/rutValidator.js';
 
 // Mínimo de miembros según tipo de organización (Ley 19.418)
 const MINIMUM_MEMBERS_BY_TYPE = {
-  'JUNTA_VECINOS': 200,  // Art. 40 Ley 19.418
+  'JUNTA_VECINOS': 50,   // Art. 40 Ley 19.418 — quórum constitutivo
   'COMITE_VECINOS': 15,  // Organizaciones funcionales
   // Todas las demás organizaciones funcionales
   DEFAULT: 15
@@ -145,7 +145,7 @@ const memberSchema = z.object({
   address: z.string().max(200).optional().or(z.literal('')),
   phone: phoneSchema,
   email: z.string().optional().or(z.literal('')),
-  birthDate: z.string().optional().or(z.literal('')),
+  birthDate: z.string().min(1, 'Fecha de nacimiento es requerida'),
   occupation: z.string().max(100).optional().or(z.literal('')),
   genero: z.enum(['masculino', 'femenino', 'otro', 'no_especifica', '']).optional(),
   role: z.enum(['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission']).optional(),
