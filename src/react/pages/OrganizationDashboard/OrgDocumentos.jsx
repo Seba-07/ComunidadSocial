@@ -95,14 +95,55 @@ export default function OrgDocumentos({ org, onRefresh }) {
   // Assembly actas
   const assemblyActas = (org?.assemblies || []).filter((a) => a.status === 'finalizada');
 
+  // Separate official vs user-uploaded docs
+  const officialDocs = docs.filter(d => d.isOfficial);
+  const userDocs = docs.filter(d => !d.isOfficial);
+
   return (
     <div>
       <div className="r-toolbar" style={{ marginBottom: 24 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Documentos</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Archivo Histórico</h3>
         <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14 }} onClick={() => setShowUpload(true)}>
           + Subir Documento
         </button>
       </div>
+
+      {/* Official Documents from Municipality */}
+      {officialDocs.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Documentos Oficiales de la Municipalidad</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {officialDocs.map((doc) => (
+              <div key={doc._id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8,
+                flexWrap: 'wrap', gap: 8
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>📜</span>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: '#065f46' }}>{doc.name}</span>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 8, background: '#065f46', color: '#fff', fontWeight: 600 }}>
+                        Documento Oficial
+                      </span>
+                      <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 8, background: '#dbeafe', color: '#1e40af' }}>
+                        {CATEGORY_LABELS[doc.category] || doc.category}
+                      </span>
+                      {doc.fileSize && <span style={{ fontSize: 11, color: '#6b7280' }}>{formatFileSize(doc.fileSize)}</span>}
+                      {doc.createdAt && <span style={{ fontSize: 11, color: '#6b7280' }}>{localeDateString(doc.createdAt)}</span>}
+                    </div>
+                    {doc.description && <p style={{ fontSize: 12, color: '#374151', margin: '4px 0 0' }}>{doc.description}</p>}
+                  </div>
+                </div>
+                <button onClick={() => handleDownloadDoc(doc._id, doc.originalName || doc.name)} style={{ ...actionBtnStyle, color: '#065f46', borderColor: '#bbf7d0', fontWeight: 600 }}>
+                  Descargar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Legal Documents */}
       <div style={{ marginBottom: 32 }}>
@@ -111,16 +152,6 @@ export default function OrgDocumentos({ org, onRefresh }) {
           <LegalDoc name="Acta Constitutiva" icon="📋" onDownload={handleDownloadActa} />
           <LegalDoc name="Lista de Miembros" icon="📋" onDownload={handleDownloadMembers} />
           {org.estatutos && <LegalDoc name="Estatutos" icon="📜" />}
-          <LegalDoc name="Certificación Municipal" icon="📋" />
-        </div>
-      </div>
-
-      {/* Certificates */}
-      <div style={{ marginBottom: 32 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados</h4>
-        <div className="r-btn-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Residencia</button>
-          <button onClick={() => addToast('Certificados en desarrollo', 'info')} style={certBtnStyle}>Certificado de Socio</button>
         </div>
       </div>
 
@@ -151,16 +182,16 @@ export default function OrgDocumentos({ org, onRefresh }) {
         </div>
       )}
 
-      {/* Uploaded Documents */}
+      {/* User-Uploaded Documents */}
       <div>
-        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Documentos Subidos</h4>
+        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Mis Documentos</h4>
         {loading ? (
           <LoadingSpinner text="Cargando documentos..." />
-        ) : docs.length === 0 ? (
-          <p style={{ color: '#6b7280', textAlign: 'center', padding: 24 }}>No hay documentos subidos</p>
+        ) : userDocs.length === 0 ? (
+          <p style={{ color: '#6b7280', textAlign: 'center', padding: 24 }}>No hay documentos subidos por la organización</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {docs.map((doc) => (
+            {userDocs.map((doc) => (
               <div key={doc._id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
@@ -170,7 +201,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
                   <span style={{ fontSize: 20 }}>📄</span>
                   <div>
                     <span style={{ fontWeight: 500, fontSize: 14 }}>{doc.name}</span>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 8, background: '#dbeafe', color: '#1e40af' }}>
                         {CATEGORY_LABELS[doc.category] || doc.category}
                       </span>
@@ -180,7 +211,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => handleDownloadDoc(doc._id, doc.name)} style={actionBtnStyle}>Descargar</button>
+                  <button onClick={() => handleDownloadDoc(doc._id, doc.originalName || doc.name)} style={actionBtnStyle}>Descargar</button>
                   <button onClick={() => handleDeleteDoc(doc._id)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
                 </div>
               </div>

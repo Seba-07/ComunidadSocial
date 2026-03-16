@@ -14,9 +14,20 @@ const REVIEW_TABS = [
   { key: 'miembros', label: 'Miembros' },
   { key: 'directorio', label: 'Directorio' },
   { key: 'documentos', label: 'Documentos' },
+  { key: 'archivo', label: 'Archivo' },
   { key: 'historial', label: 'Historial' },
   { key: 'aprobar', label: 'Aprobar' }
 ];
+
+const ADMIN_DOC_CATEGORIES = [
+  { value: 'CERTIFICADO', label: 'Certificado' },
+  { value: 'ACTA_ASAMBLEA', label: 'Acta de Asamblea' },
+  { value: 'BALANCE', label: 'Balance' },
+  { value: 'INFORME', label: 'Informe' },
+  { value: 'CORRESPONDENCIA', label: 'Correspondencia' },
+  { value: 'OTRO', label: 'Otro' }
+];
+const CATEGORY_LABELS = Object.fromEntries(ADMIN_DOC_CATEGORIES.map(c => [c.value, c.label]));
 
 // Cargo keys used in provisionalDirectorio (EN keys from DB + ES fallback)
 const CARGO_KEYS = [
@@ -87,6 +98,9 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [isDragging, setIsDragging] = useState(false);
   const [showDissolve, setShowDissolve] = useState(false);
   const [dissolveReason, setDissolveReason] = useState('');
+  const [orgDocs, setOrgDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [showAdminUpload, setShowAdminUpload] = useState(false);
 
   const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
@@ -97,6 +111,19 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
     // Refresh org to get full data (list endpoint excludes members/docs)
     refreshOrganization(initialOrg._id).then(o => { if (o) setOrg(o); }).catch(() => {});
   }, [initialOrg._id]);
+
+  async function loadOrgDocs() {
+    setDocsLoading(true);
+    try {
+      const data = await apiService.get(`/org-documents/${org._id}`);
+      setOrgDocs(data.documents || data || []);
+    } catch { setOrgDocs([]); }
+    finally { setDocsLoading(false); }
+  }
+
+  useEffect(() => {
+    if (tab === 'archivo') loadOrgDocs();
+  }, [tab, org._id]);
 
   const members = org.members || [];
   const directorio = org.provisionalDirectorio || org.directorio || {};
@@ -877,6 +904,84 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             </div>
           )}
 
+          {tab === 'archivo' && (
+            <div>
+              <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                  Archivo Documental
+                </h4>
+                <button onClick={() => setShowAdminUpload(true)} style={actionBtn('#065f46')}>
+                  Subir Documento Oficial
+                </button>
+              </div>
+
+              {docsLoading ? (
+                <p style={{ textAlign: 'center', color: '#6b7280', padding: 24 }}>Cargando documentos...</p>
+              ) : orgDocs.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#6b7280', padding: 24 }}>No hay documentos en el archivo</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {orgDocs.map(doc => (
+                    <div key={doc._id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 16px', background: doc.isOfficial ? '#f0fdf4' : '#fff',
+                      border: `1px solid ${doc.isOfficial ? '#bbf7d0' : '#e5e7eb'}`, borderRadius: 8,
+                      flexWrap: 'wrap', gap: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: 18 }}>{doc.isOfficial ? '📜' : '📄'}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 500, fontSize: 14, color: '#111827' }}>{doc.name}</div>
+                          <div style={{ display: 'flex', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+                            {doc.isOfficial && (
+                              <span style={{ fontSize: 10, padding: '1px 8px', borderRadius: 8, background: '#065f46', color: '#fff', fontWeight: 600 }}>Oficial</span>
+                            )}
+                            <span style={{ fontSize: 10, padding: '1px 8px', borderRadius: 8, background: '#f3f4f6', color: '#374151' }}>
+                              {CATEGORY_LABELS[doc.category] || doc.category}
+                            </span>
+                            {doc.uploadedBy && (
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>
+                                por {doc.uploadedBy.firstName} {doc.uploadedBy.lastName}
+                              </span>
+                            )}
+                            {doc.createdAt && <span style={{ fontSize: 10, color: '#9ca3af' }}>{localeDateString(doc.createdAt)}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={async () => {
+                          try {
+                            const response = await fetch(`${apiService.baseUrl}/org-documents/${org._id}/${doc._id}/download`, {
+                              credentials: 'include',
+                              headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
+                            });
+                            if (!response.ok) throw new Error('Error');
+                            const blob = await response.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a'); a.href = url; a.download = doc.originalName || doc.name; a.click();
+                            URL.revokeObjectURL(url);
+                          } catch { addToast('Error al descargar', 'error'); }
+                        }} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#374151' }}>
+                          Descargar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Admin Upload Modal */}
+              {showAdminUpload && (
+                <AdminUploadModal
+                  orgId={org._id}
+                  onClose={() => setShowAdminUpload(false)}
+                  onUploaded={() => { setShowAdminUpload(false); loadOrgDocs(); }}
+                  addToast={addToast}
+                />
+              )}
+            </div>
+          )}
+
           {tab === 'historial' && (
             <div>
               {statusHistory.length > 0 ? statusHistory.map((h, i) => (
@@ -1062,4 +1167,84 @@ function actionBtn(color) {
     background: color, color: 'white', fontSize: 13, fontWeight: 600,
     cursor: 'pointer'
   };
+}
+
+function AdminUploadModal({ orgId, onClose, onUploaded, addToast }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('CERTIFICADO');
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!file) { addToast('Selecciona un archivo', 'error'); return; }
+    if (!name.trim()) { addToast('Ingresa un nombre', 'error'); return; }
+    if (file.size > 20 * 1024 * 1024) { addToast('El archivo no puede superar 20MB', 'error'); return; }
+
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('name', name);
+      formData.append('description', description);
+      formData.append('category', category);
+      formData.append('isOfficial', 'true');
+
+      const resp = await fetch(`${apiService.baseUrl}/org-documents/${orgId}/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
+      });
+      if (!resp.ok) throw new Error('Error al subir');
+      addToast('Documento oficial subido', 'success');
+      onUploaded();
+    } catch (error) {
+      addToast(error.message || 'Error al subir', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title="Subir Documento Oficial">
+      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+        Este documento quedará visible para la organización como "Documento Oficial de la Municipalidad".
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Nombre del documento *</label>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Certificado de Personalidad Jurídica"
+            style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Categoría</label>
+          <select value={category} onChange={e => setCategory(e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}>
+            {ADMIN_DOC_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Descripción</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+            placeholder="Descripción opcional..."
+            style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Archivo * (máx 20MB)</label>
+          <input type="file" onChange={e => setFile(e.target.files[0])}
+            style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} />
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose} style={{ padding: '8px 20px', fontSize: 13, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+            Cancelar
+          </button>
+          <button type="submit" disabled={submitting} style={{ padding: '8px 20px', fontSize: 13, background: '#065f46', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, opacity: submitting ? 0.6 : 1 }}>
+            {submitting ? 'Subiendo...' : 'Subir Documento Oficial'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
 }

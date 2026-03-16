@@ -33,7 +33,7 @@ const ORG_MENU_ITEMS = [
   { key: 'comunicaciones', label: 'Comunicaciones', icon: '💬' },
   { key: 'finanzas', label: 'Finanzas', icon: '💰' },
   { key: 'proyectos', label: 'Proyectos', icon: '📁' },
-  { key: 'documentos', label: 'Documentos', icon: '📄' },
+  { key: 'documentos', label: 'Archivo Histórico', icon: '📄' },
   { key: 'actividades', label: 'Actividades', icon: '📅' },
 ];
 

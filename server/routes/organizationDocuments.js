@@ -56,6 +56,15 @@ const orgDocumentSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  uploadedByRole: {
+    type: String,
+    enum: ['ORGANIZADOR', 'MUNICIPALIDAD', 'MIEMBRO', ''],
+    default: ''
+  },
+  isOfficial: {
+    type: Boolean,
+    default: false
+  },
   isPublished: {
     type: Boolean,
     default: true
@@ -184,12 +193,14 @@ router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file')
       return res.status(400).json({ error: 'No se proporcionó ningún archivo' });
     }
 
-    const { name, description, category, isPublished } = req.body;
+    const { name, description, category, isPublished, isOfficial } = req.body;
 
     if (!name) {
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'El nombre del documento es requerido' });
     }
+
+    const officialFlag = (isOfficial === 'true' || isOfficial === true) && req.user.role === 'MUNICIPALIDAD';
 
     const document = new OrgDocument({
       organizationId: req.params.orgId,
@@ -202,6 +213,8 @@ router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file')
       fileSize: req.file.size,
       filePath: req.file.path,
       uploadedBy: req.user._id,
+      uploadedByRole: req.user.role || '',
+      isOfficial: officialFlag,
       isPublished: isPublished === 'true' || isPublished === true
     });
 
