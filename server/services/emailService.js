@@ -524,6 +524,149 @@ const emailService = {
     await this.sendEmail({ to: email, subject, html });
   },
 
+  // -----------------------------------------------------------------------
+  // Notificación de incidente de seguridad (Ley 21.719)
+  // -----------------------------------------------------------------------
+
+  async sendSecurityIncidentAlert({ supportEmail, incident }) {
+    const severityColors = {
+      low: '#3b82f6',
+      medium: '#f59e0b',
+      high: '#f97316',
+      critical: '#dc2626'
+    };
+    const severityLabels = {
+      low: 'Baja',
+      medium: 'Media',
+      high: 'Alta',
+      critical: 'Critica'
+    };
+    const typeLabels = {
+      unauthorized_access: 'Acceso no autorizado',
+      data_leak: 'Filtración de datos',
+      system_compromise: 'Compromiso de sistema',
+      phishing: 'Phishing',
+      malware: 'Malware',
+      denial_of_service: 'Denegación de servicio',
+      other: 'Otro'
+    };
+
+    const color = severityColors[incident.severity] || '#dc2626';
+    const severityLabel = severityLabels[incident.severity] || incident.severity;
+    const typeLabel = typeLabels[incident.type] || incident.type;
+
+    const bodyHtml = `
+      <h2 style="color: ${color};">Alerta de Seguridad — Severidad ${severityLabel}</h2>
+      <p>Se ha reportado un nuevo incidente de seguridad que requiere atencion inmediata:</p>
+
+      <table class="info-table">
+        <tr>
+          <td>Titulo</td>
+          <td><strong>${incident.title}</strong></td>
+        </tr>
+        <tr>
+          <td>Tipo</td>
+          <td>${typeLabel}</td>
+        </tr>
+        <tr>
+          <td>Severidad</td>
+          <td><span class="status-badge" style="background-color: ${color}; color: #fff;">${severityLabel}</span></td>
+        </tr>
+        <tr>
+          <td>Reportado por</td>
+          <td>${incident.reportedByName}</td>
+        </tr>
+        <tr>
+          <td>Usuarios afectados</td>
+          <td>${incident.usersAffectedCount || 0}</td>
+        </tr>
+      </table>
+
+      <div class="divider"></div>
+      <p><strong>Descripcion:</strong></p>
+      <p>${incident.description}</p>
+
+      ${incident.measuresTaken ? `
+      <div class="divider"></div>
+      <p><strong>Medidas tomadas:</strong></p>
+      <p>${incident.measuresTaken}</p>
+      ` : ''}
+
+      <div class="divider"></div>
+      <p style="color: #dc2626; font-weight: 600;">
+        Ley 21.719: Las brechas de seguridad deben notificarse a la Agencia de Proteccion de Datos dentro de 72 horas.
+      </p>
+    `;
+
+    const subject = `[ALERTA SEGURIDAD] ${severityLabel.toUpperCase()}: ${incident.title}`;
+    const html = buildEmailTemplate('Incidente de Seguridad', bodyHtml);
+
+    await this.sendEmail({ to: supportEmail, subject, html });
+  },
+
+  // -----------------------------------------------------------------------
+  // Notificación de ticket de soporte
+  // -----------------------------------------------------------------------
+
+  async sendSupportTicketNotification({ supportEmail, ticketId, name, rut, email, role, description, createdAt }) {
+    const roleLabels = {
+      ORGANIZADOR: 'Dirigente Social',
+      MUNICIPALIDAD: 'Secretario Municipal',
+      MINISTRO_FE: 'Ministro de Fe',
+      MIEMBRO: 'Miembro',
+      MIEMBRO_DIRECTIVO: 'Miembro Directivo'
+    };
+
+    const roleLabel = roleLabels[role] || role || 'No autenticado';
+    const dateStr = createdAt ? new Date(createdAt).toLocaleString('es-CL') : new Date().toLocaleString('es-CL');
+
+    const bodyHtml = `
+      <h2>Nuevo Ticket de Soporte</h2>
+      <p>Se ha recibido una nueva solicitud de soporte:</p>
+
+      <table class="info-table">
+        <tr>
+          <td>Ticket ID</td>
+          <td><strong>${ticketId}</strong></td>
+        </tr>
+        <tr>
+          <td>Nombre</td>
+          <td>${name}</td>
+        </tr>
+        <tr>
+          <td>RUT</td>
+          <td>${rut || 'No proporcionado'}</td>
+        </tr>
+        <tr>
+          <td>Correo</td>
+          <td><a href="mailto:${email}">${email}</a></td>
+        </tr>
+        <tr>
+          <td>Rol</td>
+          <td>${roleLabel}</td>
+        </tr>
+        <tr>
+          <td>Fecha</td>
+          <td>${dateStr}</td>
+        </tr>
+      </table>
+
+      <div class="divider"></div>
+      <p><strong>Descripcion del problema:</strong></p>
+      <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 8px 0;">
+        <p style="margin: 0; white-space: pre-wrap;">${description}</p>
+      </div>
+
+      <div class="divider"></div>
+      <p>Responder directamente a <a href="mailto:${email}">${email}</a> para contactar al usuario.</p>
+    `;
+
+    const subject = `[SOPORTE] Nuevo ticket de ${name} — ${tenant.platformShortName}`;
+    const html = buildEmailTemplate('Ticket de Soporte', bodyHtml);
+
+    await this.sendEmail({ to: supportEmail, subject, html });
+  },
+
   async sendVerificationReminder({ email, userName, verifyUrl }) {
     const bodyHtml = `
       <h2>Recordatorio: Verifica tu email</h2>

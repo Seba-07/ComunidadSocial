@@ -7,6 +7,7 @@ import MemberDashboardPage from './pages/MemberDashboard/MemberDashboardPage';
 import OrgDashboardPage from './pages/OrganizationDashboard/OrgDashboardPage';
 import ToastContainer from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import SupportModal from './components/ui/SupportModal';
 
 // Lazy-loaded pages for code splitting
 const AdminDashboardPage = lazy(() => import('./pages/Admin/AdminDashboardPage'));
@@ -120,6 +121,56 @@ function SessionWarningModal({ secondsLeft, onKeepAlive }) {
         </button>
       </div>
     </div>
+  );
+}
+
+/** Floating support button — visible for all authenticated users */
+function SupportFAB() {
+  const [supportOpen, setSupportOpen] = useState(false);
+
+  const fabStyle = {
+    position: 'fixed',
+    bottom: 24,
+    right: 24,
+    width: 52,
+    height: 52,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+    color: '#fff',
+    border: 'none',
+    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9990,
+    transition: 'transform 0.2s, box-shadow 0.2s'
+  };
+
+  return (
+    <>
+      <button
+        style={fabStyle}
+        onClick={() => setSupportOpen(true)}
+        title="Ayuda / Soporte"
+        aria-label="Abrir soporte"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.boxShadow = '0 6px 24px rgba(37, 99, 235, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.4)';
+        }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </button>
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
+    </>
   );
 }
 
@@ -280,6 +331,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <ToastContainer />
+      {isAuthenticated && <SupportFAB />}
       <SessionWarningModal secondsLeft={warningSeconds} onKeepAlive={handleKeepAlive} />
     </>
   );

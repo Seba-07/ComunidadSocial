@@ -1195,6 +1195,12 @@ class ApiService {
     window.URL.revokeObjectURL(downloadUrl);
   }
 
+  // ==================== SUPPORT TICKETS ====================
+
+  async createSupportTicket(data) {
+    return this.post('/support/ticket', data);
+  }
+
   // ==================== HEALTH CHECK ====================
 
   async healthCheck() {

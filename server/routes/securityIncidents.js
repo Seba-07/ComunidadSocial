@@ -3,8 +3,11 @@ import SecurityIncident from '../models/SecurityIncident.js';
 import AuditLog from '../models/AuditLog.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createSecurityIncidentSchema, updateSecurityIncidentSchema } from '../middleware/validation.js';
+import { emailService } from '../services/emailService.js';
 
 const router = express.Router();
+
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL_DESTINATION || process.env.TENANT_ADMIN_EMAIL || '';
 
 // List all incidents (Admin only)
 router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
@@ -57,6 +60,14 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createSecu
       ipAddress: req.ip
     });
 
+    // Send email alert for high/critical incidents
+    if (SUPPORT_EMAIL && (severity === 'high' || severity === 'critical')) {
+      emailService.sendSecurityIncidentAlert({
+        supportEmail: SUPPORT_EMAIL,
+        incident
+      }).catch(err => console.error('Error sending security incident email:', err));
+    }
+
     res.status(201).json({ message: 'Incidente reportado', incident });
   } catch (error) {
     console.error('Report incident error:', error);
@@ -72,8 +83,10 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateSe
       return res.status(404).json({ error: 'Incidente no encontrado' });
     }
 
+    const previousSeverity = incident.severity;
+
     const allowedFields = [
-      'status', 'measuresTaken', 'notifiedAgency',
+      'status', 'severity', 'measuresTaken', 'notifiedAgency',
       'notifiedAgencyAt', 'notifiedUsers', 'notifiedUsersAt', 'resolvedAt'
     ];
 
@@ -88,6 +101,17 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateSe
     }
 
     await incident.save();
+
+    // Send email alert when severity is escalated to high/critical
+    const escalated = req.body.severity &&
+      (req.body.severity === 'high' || req.body.severity === 'critical') &&
+      previousSeverity !== req.body.severity;
+    if (SUPPORT_EMAIL && escalated) {
+      emailService.sendSecurityIncidentAlert({
+        supportEmail: SUPPORT_EMAIL,
+        incident
+      }).catch(err => console.error('Error sending severity escalation email:', err));
+    }
 
     await AuditLog.logAction({
       userId: req.userId,

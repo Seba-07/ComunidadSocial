@@ -479,6 +479,7 @@ export const createSecurityIncidentSchema = z.object({
 
 export const updateSecurityIncidentSchema = z.object({
   status: z.enum(['reported', 'investigating', 'contained', 'resolved', 'closed']).optional(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   measuresTaken: z.string().max(5000).optional().or(z.literal('')),
   notifiedAgency: z.boolean().optional(),
   notifiedAgencyAt: z.string().optional().nullable(),
@@ -542,6 +543,17 @@ export const libraryDocumentSchema = z.object({
   isPublished: z.union([z.boolean(), z.string()]).optional()
 });
 
+/**
+ * Esquema para tickets de soporte
+ */
+export const createSupportTicketSchema = z.object({
+  description: z.string().min(1, 'Descripcion requerida').max(5000),
+  // Optional fields for anonymous users
+  name: z.string().max(200).trim().optional(),
+  rut: z.string().max(20).optional().or(z.literal('')),
+  email: z.string().max(200).email().optional().or(z.literal(''))
+}).passthrough();
+
 export default {
   // Esquemas
   registerSchema,
@@ -567,6 +579,7 @@ export default {
   updateDocumentTemplateSchema,
   searchQuerySchema,
   libraryDocumentSchema,
+  createSupportTicketSchema,
   // Middleware
   validate,
   validateMongoId
