@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '../../../services/ApiService';
+import { localeDateString } from '../../utils/formatters';
 
 const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 const MORNING_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00'];
@@ -283,7 +284,7 @@ export default function MiHorario() {
               }}>
                 <div>
                   <span style={{ fontWeight: 600, color: '#111827' }}>
-                    {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {localeDateString(b.date, { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
                   {b.blockType === 'full_day' ? (
                     <span style={{ color: '#dc2626', marginLeft: 8 }}>Día completo</span>
@@ -319,7 +320,7 @@ export default function MiHorario() {
                 : 'Bloquear día completo'}
             </h3>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
-              {new Date(showBlockModal.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              {localeDateString(showBlockModal.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Motivo (opcional)</label>

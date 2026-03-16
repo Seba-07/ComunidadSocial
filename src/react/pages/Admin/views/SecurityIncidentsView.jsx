@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '@services/ApiService';
 import { useUiStore } from '../../../stores/uiStore';
+import { localeString } from '../../../utils/formatters';
 
 const SEVERITY_COLORS = {
   low: '#10b981', medium: '#f59e0b', high: '#f97316', critical: '#dc2626'
@@ -24,7 +25,7 @@ const STATUS_LABELS = {
 
 function formatDate(d) {
   if (!d) return '-';
-  return new Date(d).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return localeString(d, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function SecurityIncidentsView() {

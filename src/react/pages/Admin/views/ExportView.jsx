@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAdminStore } from '../../../stores/adminStore';
 import { useUiStore } from '../../../stores/uiStore';
-import { ORG_STATUS_LABELS } from '../../../utils/formatters';
+import { ORG_STATUS_LABELS, localeDateString } from '../../../utils/formatters';
 import { apiService } from '../../../../services/ApiService';
 
 function generateCSV(headers, rows) {
@@ -44,7 +44,7 @@ export default function ExportView() {
       o.type || '',
       ORG_STATUS_LABELS[o.status] || o.status || '',
       o.commune || '',
-      o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CL') : '',
+      o.createdAt ? localeDateString(o.createdAt) : '',
       (o.members || []).length,
       getPresidentName(o),
       o.email || ''
@@ -62,7 +62,7 @@ export default function ExportView() {
       o.type || '',
       ORG_STATUS_LABELS[o.status] || o.status || '',
       o.commune || '',
-      o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CL') : '',
+      o.createdAt ? localeDateString(o.createdAt) : '',
       (o.members || []).length,
       getPresidentName(o),
       o.email || ''

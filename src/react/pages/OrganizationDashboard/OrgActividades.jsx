@@ -1,3 +1,5 @@
+import { localeString } from '../../utils/formatters';
+
 export default function OrgActividades({ org }) {
   const actividades = org?.activities || [];
 
@@ -16,7 +18,7 @@ export default function OrgActividades({ org }) {
                   {new Date(a.date).getDate()}
                 </div>
                 <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase' }}>
-                  {new Date(a.date).toLocaleString('es-CL', { month: 'short' })}
+                  {localeString(a.date, { month: 'short' })}
                 </div>
               </div>
               <div>

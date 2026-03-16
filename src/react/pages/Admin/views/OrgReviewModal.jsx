@@ -6,7 +6,7 @@ import { apiService } from '@services/ApiService.js';
 import Modal from '../../../components/ui/Modal';
 import Tabs from '../../../components/ui/Tabs';
 import StatusBadge from '../../../components/ui/StatusBadge';
-import { formatDate } from '../../../utils/formatters';
+import { formatDate, localeDateString } from '../../../utils/formatters';
 
 const REVIEW_TABS = [
   { key: 'datos', label: 'Datos' },
@@ -301,7 +301,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                     {org.electionDate && (
                       <div style={{ display: 'flex', gap: 10 }}>
                         <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Fecha solicitada:</span>
-                        <span style={{ fontSize: 13, color: '#111827' }}>{new Date(org.electionDate).toLocaleDateString('es-CL')}</span>
+                        <span style={{ fontSize: 13, color: '#111827' }}>{localeDateString(org.electionDate)}</span>
                       </div>
                     )}
                     {org.electionTime && (
@@ -348,7 +348,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                     <div style={{ display: 'flex', gap: 10 }}>
                       <span style={{ fontWeight: 600, color: '#374151', minWidth: 120, fontSize: 13 }}>Fecha:</span>
                       <span style={{ fontSize: 13, color: '#111827' }}>
-                        {new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL')}
+                        {localeDateString(org.ministroData.scheduledDate)}
                         {(() => {
                           const reqDate = org.electionDate ? new Date(org.electionDate).toISOString().split('T')[0] : null;
                           const confDate = new Date(org.ministroData.scheduledDate).toISOString().split('T')[0];
@@ -402,10 +402,10 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                       </div>
                       <div style={{ fontSize: 12, color: '#374151' }}>
                         {change.previousData?.scheduledDate && (
-                          <div>Fecha anterior: {new Date(change.previousData.scheduledDate).toLocaleDateString('es-CL')} {change.previousData.scheduledTime || ''}</div>
+                          <div>Fecha anterior: {localeDateString(change.previousData.scheduledDate)} {change.previousData.scheduledTime || ''}</div>
                         )}
                         {change.newData?.scheduledDate && (
-                          <div>Nueva fecha: {new Date(change.newData.scheduledDate).toLocaleDateString('es-CL')} {change.newData.scheduledTime || ''}</div>
+                          <div>Nueva fecha: {localeDateString(change.newData.scheduledDate)} {change.newData.scheduledTime || ''}</div>
                         )}
                         {change.previousData?.location !== change.newData?.location && change.newData?.location && (
                           <div>Nuevo lugar: {change.newData.location}</div>
@@ -945,7 +945,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 Solicitado por dirigente social:
               </span>
               <div style={{ fontSize: 13, color: '#374151' }}>
-                {org.electionDate && <div>Fecha: {new Date(org.electionDate).toLocaleDateString('es-CL')}</div>}
+                {org.electionDate && <div>Fecha: {localeDateString(org.electionDate)}</div>}
                 {org.electionTime && <div>Hora: {org.electionTime}</div>}
                 {org.assemblyAddress && <div>Lugar: {org.assemblyAddress}</div>}
               </div>

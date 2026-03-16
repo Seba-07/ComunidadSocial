@@ -23,6 +23,21 @@ import { storeFile } from '../services/storageService.js';
 
 const router = express.Router();
 
+/**
+ * Format date for Chile timezone. Handles date-only strings "YYYY-MM-DD"
+ * without UTC shift, and full timestamps using Chile timezone.
+ */
+function formatDateCL(date) {
+  if (!date) return '—';
+  try {
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [y, m, d] = date.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return new Date(date).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
+  } catch { return '—'; }
+}
+
 // Multer config for PDF uploads (max 10MB, memory storage)
 const pdfUpload = multer({
   storage: multer.memoryStorage(),
@@ -3040,14 +3055,14 @@ router.get('/:id/export/members', authenticate, requireRole('MUNICIPALIDAD'), va
     const lines = [
       `"Nómina de Socios - ${org.organizationName}"`,
       `"Tipo: ${org.organizationType}"`,
-      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      `"Fecha de exportación: ${formatDateCL(new Date())}"`,
       '',
       '"N°","RUT","Nombre","Apellido","Cargo","Email","Teléfono","Dirección","Fecha Nacimiento"'
     ];
 
     (org.members || []).forEach((m, i) => {
       lines.push(
-        `${i + 1},"${m.rut || ''}","${m.firstName || ''}","${m.lastName || ''}","${m.role || 'member'}","${m.email || ''}","${m.phone || ''}","${m.address || ''}","${m.birthDate ? new Date(m.birthDate).toLocaleDateString('es-CL') : ''}"`
+        `${i + 1},"${m.rut || ''}","${m.firstName || ''}","${m.lastName || ''}","${m.role || 'member'}","${m.email || ''}","${m.phone || ''}","${m.address || ''}","${m.birthDate ? formatDateCL(m.birthDate) : ''}"`
       );
     });
 
@@ -3102,13 +3117,13 @@ router.get('/:id/export/changes', authenticate, requireRole('MUNICIPALIDAD'), va
     const lines = [
       `"Reporte de Cambios - ${org.organizationName}"`,
       `"Período: ${from} a ${to}"`,
-      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      `"Fecha de exportación: ${formatDateCL(new Date())}"`,
       '',
       '"Fecha","Acción","Usuario","Detalle"'
     ];
 
     changes.forEach(c => {
-      const date = new Date(c.timestamp).toLocaleDateString('es-CL');
+      const date = formatDateCL(c.timestamp);
       const action = c.action;
       const user = c.userName || 'Sistema';
       const detail = JSON.stringify(c.details || {}).replace(/"/g, "'");
@@ -3170,7 +3185,7 @@ router.get('/:id/export/election-results/:assemblyId', authenticate, requireRole
       `"Requeridos: ${quorumInfo.required}"`,
       `"Quórum cumplido: ${quorumInfo.met ? 'SÍ' : 'NO'}"`,
       '',
-      `"Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}"`,
+      `"Fecha de exportación: ${formatDateCL(new Date())}"`,
       ''
     ];
 

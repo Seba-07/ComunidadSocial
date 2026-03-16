@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
+import { localeDateString } from '../../../utils/formatters';
 import Calendar from '../../../components/ui/Calendar';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
@@ -123,7 +124,7 @@ export default function ScheduleManagerView() {
           {selectedDate && (
             <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
               <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {localeDateString(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })}
               </h3>
               <p style={{ margin: '0 0 16px', fontSize: 12, color: '#6b7280' }}>
                 {monthData.totalMinistros} MF total &middot; Haz clic en una hora para ver detalle

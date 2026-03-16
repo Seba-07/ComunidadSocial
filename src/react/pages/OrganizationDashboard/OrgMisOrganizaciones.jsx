@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
+import { localeDateString } from '../../utils/formatters';
 import OrgSolicitudDetail from './OrgSolicitudDetail';
 
 const STATUS_CONFIG = {
@@ -279,7 +280,7 @@ export default function OrgMisOrganizaciones({ onNavigateTab }) {
                   <span>{draft.formData.members.length} miembros</span>
                 )}
                 {draft.savedAt && (
-                  <span>Guardado: {new Date(draft.savedAt).toLocaleDateString('es-CL')}</span>
+                  <span>Guardado: {localeDateString(draft.savedAt)}</span>
                 )}
               </div>
             </div>
@@ -334,8 +335,8 @@ export default function OrgMisOrganizaciones({ onNavigateTab }) {
                         </div>
                         <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280', flexWrap: 'wrap' }}>
                           {org.organizationType && <span>{org.organizationType.replace(/_/g, ' ')}</span>}
-                          {org.createdAt && <span>Creada: {new Date(org.createdAt).toLocaleDateString('es-CL')}</span>}
-                          {org.electionDate && <span>Asamblea: {new Date(org.electionDate).toLocaleDateString('es-CL')}</span>}
+                          {org.createdAt && <span>Creada: {localeDateString(org.createdAt)}</span>}
+                          {org.electionDate && <span>Asamblea: {localeDateString(org.electionDate)}</span>}
                           {(org.members || []).length > 0 && <span>{org.members.length} miembros</span>}
                         </div>
                       </div>

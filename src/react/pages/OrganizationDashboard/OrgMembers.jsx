@@ -5,6 +5,7 @@ import FormField from '../../components/ui/FormField';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 import { validateRut, formatRut } from '../../utils/validators';
+import { localeDateString } from '../../utils/formatters';
 
 function calcAge(birthDate) {
   if (!birthDate) return null;
@@ -303,12 +304,12 @@ function MemberProfileModal({ open, onClose, member, org }) {
       <div className="r-grid-2">
         <ProfileField label="RUT" value={member.rut} />
         <ProfileField label="Edad" value={age !== null ? `${age} años${age < 18 ? ' (Menor de edad)' : ''}` : '—'} />
-        <ProfileField label="Fecha de Nacimiento" value={member.birthDate ? new Date(member.birthDate).toLocaleDateString('es-CL') : '—'} />
+        <ProfileField label="Fecha de Nacimiento" value={member.birthDate ? localeDateString(member.birthDate) : '—'} />
         <ProfileField label="Teléfono" value={member.phone || '—'} />
         <ProfileField label="Email" value={member.email || '—'} />
         <ProfileField label="Dirección" value={member.address || '—'} />
         <ProfileField label="Estado" value={member.status === 'inactive' ? 'Inactivo' : 'Activo'} />
-        <ProfileField label="Fecha de Ingreso" value={member.joinDate ? new Date(member.joinDate).toLocaleDateString('es-CL') : '—'} />
+        <ProfileField label="Fecha de Ingreso" value={member.joinDate ? localeDateString(member.joinDate) : '—'} />
       </div>
     </Modal>
   );

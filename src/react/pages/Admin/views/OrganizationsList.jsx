@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAdminStore } from '../../../stores/adminStore';
 import { useUiStore } from '../../../stores/uiStore';
-import { ORG_STATUS_LABELS, ORG_STATUS_COLORS } from '../../../utils/formatters';
+import { ORG_STATUS_LABELS, ORG_STATUS_COLORS, localeDateString } from '../../../utils/formatters';
 import FilterChips from '../../../components/ui/FilterChips';
 import SearchBar from '../../../components/ui/SearchBar';
 import StatsGrid from '../../../components/ui/StatsGrid';
@@ -144,7 +144,7 @@ export default function OrganizationsList() {
                 {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
                 {org.memberCount != null && <span>{org.memberCount} miembros</span>}
                 {org.createdAt && (
-                  <span>{new Date(org.createdAt).toLocaleDateString('es-CL')}</span>
+                  <span>{localeDateString(org.createdAt)}</span>
                 )}
               </div>
             </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { ORG_STATUS_LABELS, ORG_STATUS_COLORS } from '../../../utils/formatters';
+import { ORG_STATUS_LABELS, ORG_STATUS_COLORS, localeDateString } from '../../../utils/formatters';
 
 const card = {
   background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: 20
@@ -392,7 +392,7 @@ export default function MetricsDashboardView() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 600, color: '#111827' }}>{a.orgName}</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>
-                      {new Date(a.date).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })} {a.time}
+                      {localeDateString(a.date, { weekday: 'short', day: 'numeric', month: 'short' })} {a.time}
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>

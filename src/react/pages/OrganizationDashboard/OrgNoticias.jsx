@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../../../services/ApiService';
 import { sanitizeRichText } from '@shared/utils/sanitize';
+import { localeDateString } from '../../utils/formatters';
 
 const CATEGORIES = [
   { key: 'TODAS', label: 'Todas' },
@@ -38,12 +39,12 @@ function getRelativeTime(dateStr) {
   if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
   if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} horas`;
   if (diff < 604800) return `Hace ${Math.floor(diff / 86400)} días`;
-  return date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+  return localeDateString(dateStr, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function formatFullDate(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+  return localeDateString(dateStr, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export default function OrgNoticias() {

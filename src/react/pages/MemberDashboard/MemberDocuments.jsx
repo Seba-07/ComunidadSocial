@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '@services/ApiService.js';
+import { localeDateString } from '../../utils/formatters';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const CATEGORY_LABELS = {
@@ -71,7 +72,7 @@ export default function MemberDocuments({ org }) {
                 name={doc.name}
                 category={CATEGORY_LABELS[doc.category] || doc.category}
                 size={formatFileSize(doc.fileSize)}
-                date={doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('es-CL') : ''}
+                date={doc.createdAt ? localeDateString(doc.createdAt) : ''}
                 docId={doc._id}
                 orgId={org._id}
                 canDownload={true}

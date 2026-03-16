@@ -618,7 +618,7 @@ const emailService = {
     };
 
     const roleLabel = roleLabels[role] || role || 'No autenticado';
-    const dateStr = createdAt ? new Date(createdAt).toLocaleString('es-CL') : new Date().toLocaleString('es-CL');
+    const dateStr = createdAt ? new Date(createdAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
 
     const bodyHtml = `
       <h2>Nuevo Ticket de Soporte</h2>

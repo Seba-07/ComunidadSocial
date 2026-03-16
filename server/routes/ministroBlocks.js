@@ -257,8 +257,10 @@ router.get('/availability/date/:date', async (req, res) => {
     const blocks = await MinistroBlock.find({ date, active: true, status: { $ne: 'pending' } }).lean();
 
     // 3. Obtener assignments activos para la fecha
-    const dateStart = new Date(date + 'T00:00:00.000Z');
-    const dateEnd = new Date(date + 'T23:59:59.999Z');
+    // Date string "YYYY-MM-DD" is a local date in Chile (UTC-3/UTC-4).
+    // Use a wide UTC window to cover all possible timezone offsets for the day.
+    const dateStart = new Date(date + 'T00:00:00.000-04:00'); // earliest possible start (CLST)
+    const dateEnd = new Date(date + 'T23:59:59.999-03:00');   // latest possible end (CLT)
     const assignments = await Assignment.find({
       scheduledDate: { $gte: dateStart, $lte: dateEnd },
       status: { $ne: 'cancelled' }
@@ -326,10 +328,10 @@ router.get('/availability/month/:year/:month', async (req, res) => {
       status: 'approved'
     }).lean();
 
-    // Assignments del mes
-    const monthStart = new Date(`${year}-${paddedMonth}-01T00:00:00.000Z`);
+    // Assignments del mes (use Chile timezone offset to cover full local days)
+    const monthStart = new Date(`${year}-${paddedMonth}-01T00:00:00.000-04:00`);
     const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-    const monthEnd = new Date(`${year}-${paddedMonth}-${String(daysInMonth).padStart(2, '0')}T23:59:59.999Z`);
+    const monthEnd = new Date(`${year}-${paddedMonth}-${String(daysInMonth).padStart(2, '0')}T23:59:59.999-03:00`);
 
     const assignments = await Assignment.find({
       scheduledDate: { $gte: monthStart, $lte: monthEnd },
@@ -345,11 +347,14 @@ router.get('/availability/month/:year/:month', async (req, res) => {
       blocksByDay[b.date].push(b);
     });
 
-    // Agrupar assignments por día
+    // Agrupar assignments por día (usando fecha local Chile, no UTC)
     const assignmentsByDay = {};
     assignments.forEach(a => {
+      // scheduledDate stores a local date - extract YYYY-MM-DD in local time
       const d = new Date(a.scheduledDate);
-      const dayKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      // Offset to Chile time: use toLocaleDateString to get correct local date
+      const parts = d.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }).split('-');
+      const dayKey = parts.join('-');
       if (!assignmentsByDay[dayKey]) assignmentsByDay[dayKey] = [];
       assignmentsByDay[dayKey].push(a);
     });

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
+import { localeDateString, localeString } from '../../utils/formatters';
 
 const STATUS_LABELS = {
   draft: 'Borrador',
@@ -294,7 +295,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <h3 style={sectionTitle}>Datos Generales</h3>
         <div className="r-grid-2" style={{ gap: '12px 24px' }}>
           <div><span style={labelStyle}>Tipo de Organización</span><div style={valueStyle}>{(org.organizationType || '').replace(/_/g, ' ')}</div></div>
-          <div><span style={labelStyle}>Fecha de Solicitud</span><div style={valueStyle}>{org.createdAt ? new Date(org.createdAt).toLocaleDateString('es-CL') : '—'}</div></div>
+          <div><span style={labelStyle}>Fecha de Solicitud</span><div style={valueStyle}>{localeDateString(org.createdAt)}</div></div>
           <div><span style={labelStyle}>Dirección</span><div style={valueStyle}>{[org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '—'}</div></div>
           <div><span style={labelStyle}>Comuna / Región</span><div style={valueStyle}>{[org.comuna, org.region].filter(Boolean).join(', ') || '—'}</div></div>
           <div><span style={labelStyle}>Email de Contacto</span><div style={valueStyle}>{org.contactEmail || '—'}</div></div>
@@ -336,7 +337,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <div style={{ ...sectionStyle, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
           <h3 style={{ ...sectionTitle, color: '#166534' }}>Asamblea Confirmada</h3>
           <div className="r-grid-2" style={{ gap: '12px 24px' }}>
-            <div><span style={labelStyle}>Fecha Confirmada</span><div style={valueStyle}>{new Date(org.ministroData.scheduledDate).toLocaleDateString('es-CL')}</div></div>
+            <div><span style={labelStyle}>Fecha Confirmada</span><div style={valueStyle}>{localeDateString(org.ministroData.scheduledDate)}</div></div>
             <div><span style={labelStyle}>Hora Confirmada</span><div style={valueStyle}>{org.ministroData.scheduledTime || '—'}</div></div>
             <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.ministroData.location || org.assemblyAddress || '—'}</div></div>
             <div><span style={labelStyle}>Ministro de Fe</span><div style={valueStyle}>{org.ministroData.name || '—'}</div></div>
@@ -346,7 +347,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <div style={sectionStyle}>
           <h3 style={sectionTitle}>Asamblea Solicitada</h3>
           <div className="r-grid-3" style={{ gap: '12px 24px' }}>
-            {org.electionDate && <div><span style={labelStyle}>Fecha</span><div style={valueStyle}>{new Date(org.electionDate).toLocaleDateString('es-CL')}</div></div>}
+            {org.electionDate && <div><span style={labelStyle}>Fecha</span><div style={valueStyle}>{localeDateString(org.electionDate)}</div></div>}
             {org.electionTime && <div><span style={labelStyle}>Hora</span><div style={valueStyle}>{org.electionTime}</div></div>}
             {org.assemblyAddress && <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.assemblyAddress}</div></div>}
           </div>
@@ -575,7 +576,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                     {STATUS_LABELS[entry.status] || entry.status}
                   </div>
                   <div style={{ fontSize: 12, color: '#6b7280' }}>
-                    {entry.date ? new Date(entry.date).toLocaleString('es-CL') : ''}
+                    {entry.date ? localeString(entry.date) : ''}
                     {entry.comment && ` — ${entry.comment}`}
                   </div>
                 </div>

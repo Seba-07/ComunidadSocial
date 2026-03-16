@@ -3,6 +3,7 @@ import { apiService } from '@services/ApiService.js';
 import { useAdminStore } from '../../../stores/adminStore';
 import { useAssignmentsStore } from '../../../stores/assignmentsStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { localeDateString } from '../../../utils/formatters';
 import Calendar from '../../../components/ui/Calendar';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
@@ -96,7 +97,7 @@ export default function CalendarManagerView() {
         {selectedDate && (
           <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>
-              {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CL', {
+              {localeDateString(selectedDate, {
                 weekday: 'long', day: 'numeric', month: 'long'
               })}
               <span style={{

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../../../services/ApiService';
+import { localeDateString } from '../../utils/formatters';
 
 const CATEGORIES = [
   { key: 'TODOS', label: 'Todos' },
@@ -53,7 +54,7 @@ function formatFileSize(bytes) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+  return localeDateString(dateStr, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const categoryColors = {

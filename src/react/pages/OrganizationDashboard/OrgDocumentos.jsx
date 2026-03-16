@@ -4,7 +4,7 @@ import { useUiStore } from '../../stores/uiStore';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, localeDateString } from '../../utils/formatters';
 
 const DOC_CATEGORIES = [
   { value: 'ACTA_ASAMBLEA', label: 'Acta de Asamblea' },
@@ -175,7 +175,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
                         {CATEGORY_LABELS[doc.category] || doc.category}
                       </span>
                       {doc.fileSize && <span style={{ fontSize: 11, color: '#6b7280' }}>{formatFileSize(doc.fileSize)}</span>}
-                      {doc.createdAt && <span style={{ fontSize: 11, color: '#6b7280' }}>{new Date(doc.createdAt).toLocaleDateString('es-CL')}</span>}
+                      {doc.createdAt && <span style={{ fontSize: 11, color: '#6b7280' }}>{localeDateString(doc.createdAt)}</span>}
                     </div>
                   </div>
                 </div>

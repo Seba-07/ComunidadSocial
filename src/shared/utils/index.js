@@ -64,6 +64,23 @@ const MESES_CORTOS = [
 ];
 
 /**
+ * Parsea una fecha garantizando timezone local (no UTC).
+ * Strings "YYYY-MM-DD" se interpretan como medianoche LOCAL, no UTC.
+ * @param {Date|string|number} date
+ * @returns {Date}
+ */
+export function parseLocalDate(date) {
+  if (!date) return null;
+  if (date instanceof Date) return date;
+  // Date-only strings "YYYY-MM-DD" → parse as local (not UTC)
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return new Date(date);
+}
+
+/**
  * Formatea una fecha en formato legible en español
  * @param {Date|string|number} date - Fecha a formatear
  * @param {Object} options - Opciones de formato
@@ -73,7 +90,7 @@ export function formatDate(date, options = {}) {
   if (!date) return options.fallback || '---';
 
   try {
-    const d = new Date(date);
+    const d = parseLocalDate(date);
     if (isNaN(d.getTime())) return options.fallback || '---';
 
     const day = d.getDate();
@@ -104,7 +121,7 @@ export function formatDateTime(date) {
   if (!date) return '---';
 
   try {
-    const d = new Date(date);
+    const d = parseLocalDate(date);
     if (isNaN(d.getTime())) return '---';
 
     const dateStr = formatDate(d);
@@ -126,7 +143,7 @@ export function formatTime(date) {
   if (!date) return '---';
 
   try {
-    const d = new Date(date);
+    const d = parseLocalDate(date);
     if (isNaN(d.getTime())) return '---';
 
     const hours = String(d.getHours()).padStart(2, '0');

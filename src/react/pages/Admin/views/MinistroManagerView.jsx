@@ -8,6 +8,7 @@ import SearchBar from '../../../components/ui/SearchBar';
 import FilterChips from '../../../components/ui/FilterChips';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { formatRut } from '../../../utils/validators';
+import { localeDateString } from '../../../utils/formatters';
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', rut: '', email: '', phone: '',
@@ -376,7 +377,7 @@ export default function MinistroManagerView() {
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 600, color: '#111827' }}>
-                          {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                          {localeDateString(b.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {b.status === 'pending' && (
@@ -428,7 +429,7 @@ export default function MinistroManagerView() {
                       {b.ministroName}
                     </div>
                     <div style={{ color: '#374151', marginTop: 2 }}>
-                      {new Date(b.date + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      {localeDateString(b.date, { weekday: 'long', day: 'numeric', month: 'long' })}
                       {b.blockType === 'full_day' ? ' — Día completo' : ` — ${b.time}`}
                     </div>
                     {b.reason && (

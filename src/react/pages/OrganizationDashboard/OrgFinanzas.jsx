@@ -4,6 +4,7 @@ import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
+import { localeDateString } from '../../utils/formatters';
 
 const CATEGORY_LABELS = {
   ingreso: 'Ingreso', egreso: 'Egreso', cuota: 'Cuota',
@@ -51,7 +52,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
   function exportCSV() {
     const header = 'Fecha,Concepto,Categoría,Monto\n';
     const rows = transactions.map((t) =>
-      `${t.date ? new Date(t.date).toLocaleDateString('es-CL') : ''},${(t.concept || '').replace(/,/g, ';')},${CATEGORY_LABELS[t.category] || t.category || ''},${t.amount || 0}`
+      `${t.date ? localeDateString(t.date) : ''},${(t.concept || '').replace(/,/g, ';')},${CATEGORY_LABELS[t.category] || t.category || ''},${t.amount || 0}`
     ).join('\n');
     const csv = header + rows;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -67,7 +68,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
   const columns = [
     {
       key: 'date', label: 'Fecha',
-      render: (val) => val ? new Date(val).toLocaleDateString('es-CL') : '—'
+      render: (val) => val ? localeDateString(val) : '—'
     },
     { key: 'concept', label: 'Concepto' },
     {

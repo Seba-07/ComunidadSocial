@@ -65,7 +65,7 @@ function buildVerificationFooter(folio, qrDataUrl, verifyUrl) {
         Valide este documento escaneando el código QR o ingresando el folio
         <strong style="color: #1e40af; font-family: monospace; font-size: 10px;">${folio}</strong>
         en <span style="color: #1e40af;">${verifyUrl}</span><br>
-        <span style="color: #94a3b8;">Emitido: ${new Date().toLocaleDateString('es-CL')} · Sistema ComunidadSocial</span>
+        <span style="color: #94a3b8;">Emitido: ${new Date().toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })} · Sistema ComunidadSocial</span>
       </div>
     </div>`;
 }

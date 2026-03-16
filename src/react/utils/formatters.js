@@ -1,13 +1,35 @@
+import { parseLocalDate } from '@shared/utils/index.js';
+
+// Re-export parseLocalDate for convenience
+export { parseLocalDate };
+
+/**
+ * Safe toLocaleDateString that handles date-only strings without UTC shift.
+ * Drop-in replacement for: new Date(x).toLocaleDateString('es-CL', opts)
+ */
+export function localeDateString(dateStr, opts) {
+  if (!dateStr) return '—';
+  const d = parseLocalDate(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-CL', opts);
+}
+
+/**
+ * Safe toLocaleString (date + time) that handles date-only strings without UTC shift.
+ */
+export function localeString(dateStr, opts) {
+  if (!dateStr) return '—';
+  const d = parseLocalDate(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('es-CL', opts);
+}
+
 /**
  * Format a date string to locale format
  */
 export function formatDate(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('es-CL', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  return localeDateString(dateStr, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 /**
@@ -15,7 +37,7 @@ export function formatDate(dateStr) {
  */
 export function formatDateShort(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('es-CL');
+  return localeDateString(dateStr);
 }
 
 /**

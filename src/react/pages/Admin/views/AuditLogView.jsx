@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
+import { localeDateString, localeString } from '../../../utils/formatters';
 import DataTable from '../../../components/ui/DataTable';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
@@ -79,7 +80,7 @@ export default function AuditLogView() {
       const BOM = '\uFEFF';
       const headers = ['Fecha/Hora', 'Usuario', 'Rol', 'Acción', 'Recurso', 'Nombre Recurso', 'Detalle'];
       const rows = entries.map(e => [
-        new Date(e.timestamp || e.createdAt).toLocaleString('es-CL'),
+        localeString(e.timestamp || e.createdAt),
         e.userName || '', e.userRole || '',
         ACTION_LABELS[e.action] || e.action,
         RESOURCE_LABELS[e.resource] || e.resource,
@@ -107,8 +108,7 @@ export default function AuditLogView() {
     {
       key: 'timestamp', label: 'Fecha', sortable: true,
       render: (val, row) => {
-        const d = new Date(val || row.createdAt);
-        return <span style={{ fontSize: 12 }}>{d.toLocaleDateString('es-CL')} {d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>;
+        return <span style={{ fontSize: 12 }}>{localeString(val || row.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>;
       }
     },
     {
