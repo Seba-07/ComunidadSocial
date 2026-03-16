@@ -5,7 +5,7 @@ import { localeDateString } from '../../../utils/formatters';
 import Calendar from '../../../components/ui/Calendar';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
-const HOURS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
 export default function ScheduleManagerView() {
   const addToast = useUiStore(s => s.addToast);
