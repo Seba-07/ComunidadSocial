@@ -215,23 +215,42 @@ export default function Step6_Review({ onNext, onPrev }) {
 
       {/* Directorio */}
       <Section title="Directorio Provisorio">
-        {Object.entries(directorio).map(([cargo, data]) => (
-          <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || cargo}:</span>
-            <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{data.firstName} {data.lastName} - {data.rut}</span>
-            {certs[cargo]
-              ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
-              : <span style={{ fontSize: 11, color: '#d97706' }}>Pendiente</span>}
-          </div>
-        ))}
         {(() => {
-          const missing = Object.keys(directorio).filter(c => !certs[c]);
-          if (missing.length === 0) return null;
+          const PERSON_KEYS = ['president', 'presidente', 'vicePresident', 'vicepresidente', 'secretary', 'secretario', 'treasurer', 'tesorero'];
+          const SKIP_KEYS = new Set(['additionalMembers', 'designatedAt', 'type', '_id', '__v']);
+          const entries = Object.entries(directorio).filter(([key, val]) =>
+            !SKIP_KEYS.has(key) && val && typeof val === 'object' && !Array.isArray(val) && (val.firstName || val.rut)
+          );
+          const additional = directorio.additionalMembers || [];
           return (
-            <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400e' }}>
-              <strong>Documentación Pendiente</strong> — Faltan certificados para: {missing.map(c => directorio[c]?.cargo || c).join(', ')}.
-              Podrás subirlos desde el panel de tu organización.
-            </div>
+            <>
+              {entries.map(([cargo, data]) => (
+                <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || data.cargoNombre || cargo}:</span>
+                  <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{data.firstName || ''} {data.lastName || ''} - {data.rut || '—'}</span>
+                  {certs[cargo]
+                    ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
+                    : <span style={{ fontSize: 11, color: '#d97706' }}>Pendiente</span>}
+                </div>
+              ))}
+              {additional.map((m, i) => (
+                <div key={`add_${i}`} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{m.cargoNombre || m.cargo || `Director/a ${i + 1}`}:</span>
+                  <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{m.firstName || ''} {m.lastName || ''} - {m.rut || '—'}</span>
+                </div>
+              ))}
+              {(() => {
+                const personKeys = entries.map(([k]) => k);
+                const missing = personKeys.filter(c => !certs[c]);
+                if (missing.length === 0) return null;
+                return (
+                  <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400e' }}>
+                    <strong>Documentación Pendiente</strong> — Faltan certificados para: {missing.map(c => directorio[c]?.cargo || directorio[c]?.cargoNombre || c).join(', ')}.
+                    Podrás subirlos desde el panel de tu organización.
+                  </div>
+                );
+              })()}
+            </>
           );
         })()}
       </Section>
