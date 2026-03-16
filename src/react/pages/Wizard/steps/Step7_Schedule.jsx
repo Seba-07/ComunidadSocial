@@ -4,6 +4,7 @@ import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import Calendar from '../../../components/ui/Calendar';
+import tenant from '../../../../config/tenant.js';
 
 const AVAILABLE_HOURS = [
   '09:00', '10:00', '11:00', '12:00', '13:00',
@@ -246,14 +247,62 @@ export default function Step7_Schedule({ onPrev }) {
           <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
             Lugar de la Asamblea
           </h3>
-          <input
-            type="text"
-            placeholder="Ej: Sede Junta de Vecinos, Av. Uno Norte 1234, Renca"
-            value={schedule.address || ''}
-            onChange={e => setFormDataField('assemblySchedule', { ...schedule, address: e.target.value })}
-            style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
-          />
-          <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6, margin: '6px 0 0' }}>
+
+          <div style={{ display: 'grid', gap: 8 }}>
+            {/* Option: Municipality */}
+            {tenant.address && (
+              <LocationOption
+                selected={schedule.addressType === 'municipality'}
+                label="Dependencias Municipales"
+                detail={tenant.address}
+                onSelect={() => setFormDataField('assemblySchedule', {
+                  ...schedule, addressType: 'municipality', address: tenant.address
+                })}
+              />
+            )}
+
+            {/* Option: Organization address */}
+            {(() => {
+              const org = formData.organization || {};
+              const orgAddr = [org.street, org.streetNumber].filter(Boolean).join(' ');
+              if (!orgAddr) return null;
+              const fullAddr = [orgAddr, org.neighborhood ? `UV ${org.neighborhood}` : '', tenant.communeName].filter(Boolean).join(', ');
+              return (
+                <LocationOption
+                  selected={schedule.addressType === 'organization'}
+                  label="Dirección de la Organización"
+                  detail={fullAddr}
+                  onSelect={() => setFormDataField('assemblySchedule', {
+                    ...schedule, addressType: 'organization', address: fullAddr
+                  })}
+                />
+              );
+            })()}
+
+            {/* Option: Custom */}
+            <LocationOption
+              selected={schedule.addressType === 'custom'}
+              label="Otra dirección"
+              onSelect={() => setFormDataField('assemblySchedule', {
+                ...schedule, addressType: 'custom', address: ''
+              })}
+            />
+
+            {schedule.addressType === 'custom' && (
+              <input
+                type="text"
+                placeholder="Ej: Sede Junta de Vecinos, Av. Uno Norte 1234"
+                value={schedule.address || ''}
+                onChange={e => setFormDataField('assemblySchedule', { ...schedule, address: e.target.value })}
+                style={{
+                  width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8,
+                  fontSize: 14, boxSizing: 'border-box', marginTop: 4
+                }}
+              />
+            )}
+          </div>
+
+          <p style={{ fontSize: 12, color: '#6b7280', margin: '10px 0 0' }}>
             Dirección donde se realizará la asamblea constitutiva
           </p>
         </div>
@@ -288,6 +337,30 @@ export default function Step7_Schedule({ onPrev }) {
         >
           {isSubmitting ? 'Enviando...' : 'Enviar Organización'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function LocationOption({ selected, label, detail, onSelect }) {
+  return (
+    <div
+      onClick={onSelect}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px',
+        borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s',
+        border: selected ? '2px solid #2563eb' : '1px solid #d1d5db',
+        background: selected ? '#eff6ff' : 'white'
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+        border: selected ? '5px solid #2563eb' : '2px solid #d1d5db',
+        background: 'white', boxSizing: 'border-box'
+      }} />
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{label}</div>
+        {detail && <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{detail}</div>}
       </div>
     </div>
   );
