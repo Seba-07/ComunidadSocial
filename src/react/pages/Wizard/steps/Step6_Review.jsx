@@ -3,7 +3,13 @@ import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { pdfService } from '@services/PDFService.js';
 import { apiService } from '@services/ApiService.js';
+import { jsPDF } from 'jspdf';
 import tenant from '../../../../config/tenant.js';
+
+function capitalize(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 export default function Step6_Review({ onNext, onPrev }) {
   const { formData, templateConfig } = useWizardStore();
@@ -17,7 +23,9 @@ export default function Step6_Review({ onNext, onPrev }) {
   const config = formData.config || {};
   const estatutos = formData.estatutos || {};
   const certs = formData.certificates || {};
+  const inhCerts = formData.inhabilityCertificates || {};
   const comisionSize = templateConfig?.comisionElectoral?.cantidad || 3;
+  const snapshot = estatutos.snapshot || {};
 
   // Load assigned document templates (content + header/footer config)
   useEffect(() => {
@@ -177,6 +185,130 @@ export default function Step6_Review({ onNext, onPrev }) {
     }
   }
 
+  const CITACION_LABELS = {
+    carta_certificada: 'carta certificada al domicilio registrado',
+    correo_electronico: 'correo electrónico al correo registrado',
+    mensajeria_instantanea: 'mensajería instantánea (ej: WhatsApp) al número registrado',
+    entrega_personal: 'entrega personal por escrito a cada socio',
+    aviso_sede: 'aviso publicado en la sede de la organización',
+    comunicacion_directa: 'comunicación directa a cada socio'
+  };
+
+  function replacePlaceholders(text) {
+    if (!text) return text;
+    const addrParts = [
+      [org.street, org.streetNumber].filter(Boolean).join(' N° ') || org.address || '___'
+    ];
+    if (org.neighborhood) addrParts.push(`Unidad Vecinal ${org.neighborhood}`);
+    const fullAddress = addrParts.filter(Boolean).join(', ');
+    const moneda = config.monedaCuota || 'UTM';
+    const prefix = moneda === 'CLP' ? '$' : '';
+    const suffix = moneda !== 'CLP' ? ` ${moneda}` : '';
+    const cuotaStr = config.cuotaMin != null && config.cuotaMax != null
+      ? `entre ${prefix}${config.cuotaMin}${suffix} y ${prefix}${config.cuotaMax}${suffix}`
+      : '___';
+    const dur = config.duracionMandato || 3;
+    const values = {
+      '{{NOMBRE_ORGANIZACION}}': org.name || '___',
+      '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || org.type || '___',
+      '{{DESCRIPCION}}': org.description || '___',
+      '{{OBJETIVOS}}': org.objectives || '___',
+      '{{COMUNA}}': org.commune || tenant.communeName,
+      '{{REGION}}': org.region || 'Región Metropolitana',
+      '{{DIRECCION}}': fullAddress,
+      '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
+      '{{NUM_MIEMBROS}}': String(members.length),
+      '{{EDAD_MINIMA}}': String(templateConfig?.edadConfig?.edadMinima || 14),
+      '{{N_MIEMBROS}}': String(templateConfig?.directorio?.totalRequerido || 5),
+      '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateConfig?.comisionElectoral?.cantidad || 3),
+      '{{CUOTA_MENSUAL}}': cuotaStr,
+      '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${moneda}` : '___',
+      '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${moneda}` : '___',
+      '{{DURACION_MANDATO}}': `${dur} ${dur === 1 ? 'año' : 'años'}`,
+      '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '___',
+      '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
+      '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
+      '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || tenant.dissolutionEntity || '___',
+      '{{RUT_DISOLUCION}}': config.rutDisolucion || '___',
+      '{{MES_INFORME}}': config.accountReviewMonth || 'Marzo',
+      '{{FECHA_DIA}}': '___', '{{FECHA_MES}}': '___', '{{FECHA_ANIO}}': '___',
+    };
+    let result = text;
+    for (const [key, val] of Object.entries(values)) {
+      result = result.replaceAll(key, val);
+      result = result.replaceAll(key.replace('{{', '{').replace('}}', '}'), val);
+    }
+    return result;
+  }
+
+  function previewDraftEstatuto() {
+    const articles = snapshot?.articulos || [];
+    if (!articles.length) { addToast('No hay artículos de estatuto para previsualizar', 'error'); return; }
+    const doc = new jsPDF();
+    const orgName = org.name || 'Organización';
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+
+    function addWatermark(d) {
+      const pages = d.internal.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        d.setPage(i);
+        d.saveGraphicsState();
+        d.setGState(new d.GState({ opacity: 0.08 }));
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(72);
+        d.setTextColor(220, 38, 38);
+        d.text('BORRADOR', pw / 2, ph / 2, { align: 'center', angle: 45 });
+        d.restoreGraphicsState();
+        d.setFillColor(254, 242, 242);
+        d.rect(0, 0, pw, 14, 'F');
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(9);
+        d.setTextColor(185, 28, 28);
+        d.text('DOCUMENTO PROVISORIO \u2013 SIN VALIDEZ LEGAL', pw / 2, 9, { align: 'center' });
+        d.setTextColor(0, 0, 0);
+      }
+    }
+
+    let y = 24;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ESTATUTOS (BORRADOR)', pw / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(11);
+    doc.text(orgName, pw / 2, y, { align: 'center' });
+    y += 12;
+
+    const sorted = [...articles].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
+    for (const art of sorted) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      for (const line of doc.splitTextToSize(`Artículo ${art.numero}: ${art.titulo}`, 170)) {
+        if (y > ph - 20) { doc.addPage(); y = 24; }
+        doc.text(line, 20, y); y += 6;
+      }
+      y += 2;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      for (const line of doc.splitTextToSize(replacePlaceholders(art.contenido || ''), 170)) {
+        if (y > ph - 20) { doc.addPage(); y = 24; }
+        doc.text(line, 20, y); y += 5;
+      }
+      y += 6;
+    }
+    addWatermark(doc);
+    const url = doc.output('bloburl');
+    window.open(url, '_blank');
+  }
+
+  // Build full address for display
+  const displayAddress = [
+    capitalize(org.street),
+    org.streetNumber ? `N° ${org.streetNumber}` : '',
+    org.neighborhood ? `UV ${org.neighborhood}` : '',
+    org.commune
+  ].filter(Boolean).join(', ');
+
   return (
     <div>
       <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
@@ -191,10 +323,20 @@ export default function Step6_Review({ onNext, onPrev }) {
         <Row label="Tipo" value={templateConfig?.nombreTipo || org.type} />
         <Row label="Nombre" value={org.name} />
         <Row label="Descripción" value={org.description} />
-        <Row label="Dirección" value={[org.street, org.streetNumber, org.commune].filter(Boolean).join(', ')} />
+        <Row label="Dirección" value={displayAddress} />
+        <Row label="Región" value={org.region} />
         <Row label="Email" value={org.email} />
         <Row label="Teléfono" value={org.phone} />
       </Section>
+
+      {/* Objetivos */}
+      {org.objectives && (
+        <Section title="Objetivos de la Organización">
+          <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {org.objectives}
+          </p>
+        </Section>
+      )}
 
       {/* Members */}
       <Section title={`Miembros (${members.length})`}>
@@ -264,9 +406,41 @@ export default function Step6_Review({ onNext, onPrev }) {
 
       {/* Config */}
       <Section title="Configuración">
-        <Row label="Asambleas" value={(config.asambleas || []).join(', ')} />
-        <Row label="Cuotas" value={`${config.cuotaMin || 0} - ${config.cuotaMax || 0} UTM`} />
-        <Row label="Estatutos" value={estatutos.type === 'template' ? 'Plantilla automática' : 'Personalizado'} />
+        <Row label="Asambleas ordinarias" value={(config.asambleas || []).join(', ')} />
+        <Row label="Cuotas" value={(() => {
+          const moneda = config.monedaCuota || 'UTM';
+          const prefix = moneda === 'CLP' ? '$' : '';
+          const suffix = moneda !== 'CLP' ? ` ${moneda}` : '';
+          return `${prefix}${config.cuotaMin || 0}${suffix} — ${prefix}${config.cuotaMax || 0}${suffix}`;
+        })()} />
+        <Row label="Duración mandato" value={`${config.duracionMandato || 3} ${(config.duracionMandato || 3) === 1 ? 'año' : 'años'}`} />
+        <Row label="Método de citación" value={CITACION_LABELS[config.metodoCitacion] || 'Carta certificada'} />
+        <Row label="Mes de balance" value={config.accountReviewMonth || 'Marzo'} />
+      </Section>
+
+      {/* Estatutos */}
+      <Section title="Estatutos">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontSize: 14, color: '#374151' }}>
+            {estatutos.type === 'template' ? 'Plantilla automática (Ley 19.418)' : 'Documento personalizado'}
+            {estatutos.type === 'custom' && estatutos.customFile?.name && (
+              <span style={{ color: '#6b7280', marginLeft: 8 }}>— {estatutos.customFile.name}</span>
+            )}
+          </span>
+          {estatutos.type === 'template' && snapshot?.articulos?.length > 0 && (
+            <button onClick={previewDraftEstatuto} style={{
+              padding: '4px 12px', border: '1px solid #2563eb', borderRadius: 6,
+              background: 'white', color: '#2563eb', fontSize: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Ver PDF Borrador
+            </button>
+          )}
+        </div>
       </Section>
 
       {/* Documents Preview */}
@@ -291,6 +465,46 @@ export default function Step6_Review({ onNext, onPrev }) {
           </div>
         ))}
       </Section>
+
+      {/* Documentos Adjuntos */}
+      {(() => {
+        const docs = [];
+        // Certificados de antecedentes
+        for (const [cargoId, cert] of Object.entries(certs)) {
+          const person = directorio[cargoId];
+          if (person && cert?.name) {
+            docs.push({ type: 'antecedentes', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name });
+          }
+        }
+        // Certificados de inhabilidades
+        for (const [cargoId, cert] of Object.entries(inhCerts)) {
+          const person = directorio[cargoId];
+          if (person && cert?.name) {
+            docs.push({ type: 'inhabilidades', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name });
+          }
+        }
+        if (docs.length === 0) return null;
+        return (
+          <Section title={`Documentos Adjuntos (${docs.length})`}>
+            {docs.map((d, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < docs.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div style={{ position: 'absolute', bottom: -1, right: -3, width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+                  </div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{d.name}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                    {d.type === 'inhabilidades' ? 'Cert. Inhabilidades' : 'Cert. Antecedentes'} — {d.file}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Section>
+        );
+      })()}
 
       {/* Warning */}
       <div style={{
