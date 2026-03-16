@@ -276,7 +276,13 @@ export const useWizardStore = create((set, get) => ({
 
       if (existingOrgId) {
         // Update existing draft org then resubmit
-        data = await apiService.updateOrganization(existingOrgId, orgData);
+        await apiService.updateOrganization(existingOrgId, orgData);
+        // Submit the draft to transition status to waiting_ministro
+        data = await apiService.submitDraftOrganization(existingOrgId, {
+          electionDate: formData.assemblySchedule?.date || null,
+          electionTime: formData.assemblySchedule?.time || null,
+          assemblyAddress: formData.assemblySchedule?.address || ''
+        });
         orgId = existingOrgId;
       } else {
         data = await apiService.createOrganization(orgData);

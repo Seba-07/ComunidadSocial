@@ -727,6 +727,23 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
     logger.debug('CREATE ORG - ID:', organization._id);
     logger.debug('CREATE ORG - Status:', organization.status);
 
+    // Notify all MUNICIPALIDAD admins about the new submission
+    try {
+      const admins = await User.find({ role: 'MUNICIPALIDAD', active: true });
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'new_organization',
+          title: 'Nueva solicitud de organización',
+          message: `"${organization.organizationName}" ha sido enviada para revisión.${electionDate ? ` Fecha solicitada: ${electionDate} a las ${electionTime || '—'}` : ''}`,
+          data: { organizationId: organization._id, organizationName: organization.organizationName },
+          organizationId: organization._id
+        });
+      }
+    } catch (notifErr) {
+      logger.error('Error creating notifications for new org:', notifErr.message);
+    }
+
     // Devolver respuesta simplificada para evitar problemas de serialización
     const response = {
       _id: organization._id,
@@ -1301,6 +1318,70 @@ router.post('/:id/retract', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Retract organization error:', error);
     res.status(500).json({ error: 'Error al retractar la solicitud' });
+  }
+});
+
+// Submit draft organization (re-submit after retraction/edit)
+router.post('/:id/submit', authenticate, requireVerifiedEmail, validateObjectId('id'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Only owner can submit
+    if (organization.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ error: 'No tienes permisos para enviar esta solicitud' });
+    }
+
+    // Only draft orgs can be submitted
+    if (organization.status !== 'draft') {
+      return res.status(400).json({ error: `No se puede enviar una organización en estado "${organization.status}"` });
+    }
+
+    // Update election date/time if provided
+    const { electionDate, electionTime, assemblyAddress } = req.body;
+    if (electionDate) organization.electionDate = electionDate;
+    if (electionTime) organization.electionTime = electionTime;
+    if (assemblyAddress) organization.assemblyAddress = assemblyAddress;
+
+    // Transition to waiting_ministro
+    organization.status = 'waiting_ministro';
+    organization.statusHistory.push({
+      status: 'waiting_ministro',
+      date: new Date(),
+      comment: electionDate
+        ? `Solicitud reenviada. Fecha solicitada: ${electionDate} a las ${electionTime || '—'}`
+        : 'Solicitud reenviada, pendiente asignación de Ministro de Fe'
+    });
+
+    await organization.save();
+
+    // Notify all MUNICIPALIDAD admins
+    try {
+      const admins = await User.find({ role: 'MUNICIPALIDAD', active: true });
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'new_organization',
+          title: 'Solicitud reenviada',
+          message: `"${organization.organizationName}" ha sido reenviada para revisión.${electionDate ? ` Fecha solicitada: ${electionDate} a las ${electionTime || '—'}` : ''}`,
+          data: { organizationId: organization._id, organizationName: organization.organizationName },
+          organizationId: organization._id
+        });
+      }
+    } catch (notifErr) {
+      logger.error('Error creating notifications for resubmit:', notifErr.message);
+    }
+
+    res.json({
+      message: 'Solicitud enviada exitosamente',
+      _id: organization._id,
+      status: organization.status
+    });
+  } catch (error) {
+    logger.error('Submit organization error:', error.message);
+    res.status(500).json({ error: 'Error al enviar la solicitud' });
   }
 });
 

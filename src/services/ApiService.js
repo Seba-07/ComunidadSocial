@@ -556,6 +556,10 @@ class ApiService {
     return this.post(`/organizations/${orgId}/retract`, { reason });
   }
 
+  async submitDraftOrganization(orgId, { electionDate, electionTime, assemblyAddress } = {}) {
+    return this.post(`/organizations/${orgId}/submit`, { electionDate, electionTime, assemblyAddress });
+  }
+
   async approveOrgWithDocument(orgId, pdfFile) {
     const formData = new FormData();
     formData.append('signedDocument', pdfFile);
