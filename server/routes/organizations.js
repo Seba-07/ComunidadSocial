@@ -20,6 +20,7 @@ import { maskOrganizationPii, maskPiiFields } from '../middleware/dataMasking.js
 import AuditLog from '../models/AuditLog.js';
 import EstatutoTemplate from '../models/EstatutoTemplate.js';
 import { storeFile } from '../services/storageService.js';
+import tenant from '../config/tenant.js';
 
 const router = express.Router();
 
@@ -40,6 +41,103 @@ function formatDateCL(date) {
     }
     return new Date(date).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
   } catch { return '—'; }
+}
+
+/**
+ * Replace {{PLACEHOLDER}} tokens in estatuto snapshot articles using org data.
+ * Mirrors the logic in Step4_Estatutos.jsx replacePlaceholders().
+ */
+const CITACION_LABELS = {
+  carta_certificada: 'carta certificada al domicilio registrado',
+  correo_electronico: 'correo electrónico al correo registrado',
+  mensajeria_instantanea: 'mensajería instantánea (ej: WhatsApp) al número registrado',
+  entrega_personal: 'entrega personal por escrito a cada socio',
+  aviso_sede: 'aviso publicado en la sede de la organización',
+  comunicacion_directa: 'comunicación directa a cada socio'
+};
+
+function replaceEstatutoPlaceholders(snapshot, orgData) {
+  if (!snapshot?.articulos?.length) return snapshot;
+
+  const config = orgData.config || {};
+  const templateCfg = snapshot;
+
+  // Build full address: street + number + UV
+  const addressParts = [orgData.address || orgData.street || ''];
+  if (orgData.streetNumber && !(orgData.address || '').includes(orgData.streetNumber)) {
+    addressParts[0] = [orgData.street || orgData.address, orgData.streetNumber].filter(Boolean).join(' N° ');
+  }
+  if (orgData.unidadVecinal) {
+    addressParts.push(`Unidad Vecinal ${orgData.unidadVecinal}`);
+  }
+  const fullAddress = addressParts.filter(Boolean).join(', ');
+
+  // Build cuota string
+  let cuotaStr = '_______________';
+  if (config.cuotaMin != null && config.cuotaMax != null) {
+    const moneda = config.monedaCuota || 'UTM';
+    const prefix = moneda === 'CLP' ? '$' : '';
+    const suffix = moneda !== 'CLP' ? ` ${moneda}` : '';
+    cuotaStr = `entre ${prefix}${config.cuotaMin}${suffix} y ${prefix}${config.cuotaMax}${suffix}`;
+  }
+
+  // Duración with año/años
+  const duracion = config.duracionMandato || templateCfg.directorio?.duracionMandato || 3;
+  const duracionStr = `${duracion} ${duracion === 1 ? 'año' : 'años'}`;
+
+  const values = {
+    '{{NOMBRE_ORGANIZACION}}': orgData.organizationName || '_______________',
+    '{{TIPO_ORGANIZACION}}': templateCfg.nombreTipo || orgData.organizationType || '_______________',
+    '{{DESCRIPCION}}': orgData.description || '_______________',
+    '{{OBJETIVOS}}': orgData.objectives || 'promover la integración, participación y desarrollo de la comunidad',
+    '{{COMUNA}}': orgData.comuna || tenant.communeName || '_______________',
+    '{{REGION}}': orgData.region || 'Región Metropolitana',
+    '{{DIRECCION}}': fullAddress || '_______________',
+    '{{MIEMBROS_MINIMOS}}': String(templateCfg.miembrosMinimos || 15),
+    '{{NUM_MIEMBROS}}': String(orgData.members?.length || 0),
+    '{{EDAD_MINIMA}}': String(templateCfg.edadConfig?.edadMinima || 14),
+    '{{N_MIEMBROS}}': String(templateCfg.directorio?.totalRequerido || 5),
+    '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateCfg.comisionElectoral?.cantidad || 3),
+    '{{CUOTA_MENSUAL}}': cuotaStr,
+    '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
+    '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
+    '{{DURACION_MANDATO}}': duracionStr,
+    '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
+    '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
+    '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
+    '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || tenant.dissolutionEntity || '_______________',
+    '{{RUT_DISOLUCION}}': config.rutDisolucion || '_______________',
+    '{{MES_INFORME}}': config.accountReviewMonth || 'Marzo',
+    '{{FECHA_DIA}}': '_______________',
+    '{{FECHA_MES}}': '_______________',
+    '{{FECHA_ANIO}}': '_______________',
+  };
+
+  // Deep clone and replace in each article
+  const replaced = JSON.parse(JSON.stringify(snapshot));
+  for (const art of replaced.articulos) {
+    if (!art.contenido) continue;
+    for (const [key, val] of Object.entries(values)) {
+      art.contenido = art.contenido.replaceAll(key, val);
+      // Backward compat: single-brace format
+      art.contenido = art.contenido.replaceAll(key.replace('{{', '{').replace('}}', '}'), val);
+    }
+    if (art.titulo) {
+      for (const [key, val] of Object.entries(values)) {
+        art.titulo = art.titulo.replaceAll(key, val);
+      }
+    }
+  }
+
+  // Also generate full document text with replacements
+  let docCompleto = `ESTATUTOS\n${replaced.nombreTipo || orgData.organizationType || ''}\n\n`;
+  const sorted = [...replaced.articulos].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
+  for (const art of sorted) {
+    docCompleto += `Artículo ${art.numero}: ${art.titulo}\n\n${art.contenido}\n\n`;
+  }
+  replaced.documentoCompleto = docCompleto;
+
+  return replaced;
 }
 
 // Multer config for PDF uploads (max 10MB, memory storage)
@@ -507,10 +605,28 @@ router.get('/:id', authenticate, validateObjectId(), async (req, res) => {
           publicado: true
         });
         if (template) {
-          const snapshot = template.obtenerSnapshot();
+          const rawSnapshot = template.obtenerSnapshot();
+          // Replace placeholders with actual org data
+          const snapshot = replaceEstatutoPlaceholders(rawSnapshot, {
+            organizationName: organization.organizationName,
+            organizationType: organization.organizationType,
+            address: organization.address,
+            street: organization.street,
+            streetNumber: organization.streetNumber,
+            comuna: organization.comuna,
+            region: organization.region,
+            unidadVecinal: organization.unidadVecinal,
+            description: organization.description,
+            objectives: organization.objectives,
+            members: organization.members,
+            config: organization.config
+          });
           organization.estatutosSnapshot = snapshot;
-          // Persist so we don't have to look it up every time
-          await Organization.updateOne({ _id: organization._id }, { $set: { estatutosSnapshot: snapshot } });
+          const updateData = { estatutosSnapshot: snapshot };
+          if (!organization.estatutos || organization.estatutos === 'template') {
+            updateData.estatutos = snapshot.documentoCompleto || '';
+          }
+          await Organization.updateOne({ _id: organization._id }, { $set: updateData });
         }
       } catch (e) {
         logger.warn('Backfill estatutosSnapshot failed:', e.message);
@@ -716,21 +832,25 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       }
     }
 
-    // Fetch and save estatutos snapshot from template
+    // Fetch and save estatutos snapshot from template, with placeholder replacement
     try {
       const template = await EstatutoTemplate.findOne({
         tipoOrganizacion: organizationType,
         activo: true,
         publicado: true
       });
+      let rawSnapshot;
       if (template) {
-        orgData.estatutosSnapshot = template.obtenerSnapshot();
-        logger.debug('CREATE ORG - estatutosSnapshot guardado:', orgData.estatutosSnapshot.articulos?.length, 'artículos');
+        rawSnapshot = template.obtenerSnapshot();
       } else {
         const defaultConfig = EstatutoTemplate.getDefaultConfig(organizationType);
-        orgData.estatutosSnapshot = { ...defaultConfig, templateId: null, version: 0, fechaSnapshot: new Date() };
-        logger.debug('CREATE ORG - estatutosSnapshot default guardado');
+        rawSnapshot = { ...defaultConfig, templateId: null, version: 0, fechaSnapshot: new Date() };
       }
+      // Replace placeholders with actual org data before saving
+      orgData.estatutosSnapshot = replaceEstatutoPlaceholders(rawSnapshot, orgData);
+      // Also save the full generated text for PDF
+      orgData.estatutos = orgData.estatutosSnapshot.documentoCompleto || '';
+      logger.debug('CREATE ORG - estatutosSnapshot guardado con placeholders reemplazados:', orgData.estatutosSnapshot.articulos?.length, 'artículos');
     } catch (snapshotErr) {
       logger.warn('CREATE ORG - No se pudo obtener snapshot de estatutos:', snapshotErr.message);
     }

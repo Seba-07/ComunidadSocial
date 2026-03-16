@@ -60,24 +60,45 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
   function replacePlaceholders(text) {
     if (!text) return text;
     const config = formData.config || {};
+    const org = formData.organization || {};
+
+    // Build full address: street + number + UV
+    const addrParts = [
+      [org.street, org.streetNumber].filter(Boolean).join(' N° ') || org.address || '_______________'
+    ];
+    if (org.neighborhood) addrParts.push(`Unidad Vecinal ${org.neighborhood}`);
+    const fullAddress = addrParts.filter(Boolean).join(', ');
+
+    // Cuota: "entre Min y Max Moneda" (sin $ si UTM/UF)
+    let cuotaStr = '_______________';
+    if (config.cuotaMin != null && config.cuotaMax != null) {
+      const moneda = config.monedaCuota || 'UTM';
+      const prefix = moneda === 'CLP' ? '$' : '';
+      const suffix = moneda !== 'CLP' ? ` ${moneda}` : '';
+      cuotaStr = `entre ${prefix}${config.cuotaMin}${suffix} y ${prefix}${config.cuotaMax}${suffix}`;
+    }
+
+    // Duración with año/años
+    const duracion = config.duracionMandato || 3;
+    const duracionStr = `${duracion} ${duracion === 1 ? 'año' : 'años'}`;
+
     const values = {
-      '{{NOMBRE_ORGANIZACION}}': formData.organization?.name || '_______________',
-      '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
-      '{{DESCRIPCION}}': formData.organization?.description || '_______________',
-      '{{OBJETIVOS}}': formData.organization?.objectives || 'promover la integración, participación y desarrollo de la comunidad',
-      '{{COMUNA}}': formData.organization?.commune || tenant.communeName,
-      '{{REGION}}': formData.organization?.region || 'Región Metropolitana',
-      '{{DIRECCION}}': formData.organization?.street || '_______________',
+      '{{NOMBRE_ORGANIZACION}}': org.name || '_______________',
+      '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || org.type || '_______________',
+      '{{DESCRIPCION}}': org.description || '_______________',
+      '{{OBJETIVOS}}': org.objectives || 'promover la integración, participación y desarrollo de la comunidad',
+      '{{COMUNA}}': org.commune || tenant.communeName,
+      '{{REGION}}': org.region || 'Región Metropolitana',
+      '{{DIRECCION}}': fullAddress,
       '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
       '{{NUM_MIEMBROS}}': String(formData.members?.length || 0),
       '{{EDAD_MINIMA}}': String(templateConfig?.edadConfig?.edadMinima || 14),
       '{{N_MIEMBROS}}': String(templateConfig?.directorio?.totalRequerido || 5),
       '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateConfig?.comisionElectoral?.cantidad || 3),
-      '{{CUOTA_MENSUAL}}': config.cuotaMin && config.cuotaMax
-        ? `mínima de ${config.cuotaMin} ${config.monedaCuota || 'UTM'} y máxima de ${config.cuotaMax} ${config.monedaCuota || 'UTM'}`
-        : '_______________',
+      '{{CUOTA_MENSUAL}}': cuotaStr,
       '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
-      '{{DURACION_MANDATO}}': String(config.duracionMandato || 3),
+      '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
+      '{{DURACION_MANDATO}}': duracionStr,
       '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
       '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
       '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),

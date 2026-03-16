@@ -4913,8 +4913,7 @@ ${comm.message || 'Sin contenido'}
 
       let doc, title;
       if (docType === 'estatutos') {
-        // Si hay contenido de estatutos, generar PDF desde texto
-        if (org.estatutos) {
+        if (org.estatutosSnapshot?.articulos?.length || (org.estatutos && org.estatutos !== 'template')) {
           doc = this._generateEstatutosPDF(org);
           title = 'Estatutos';
         } else {
@@ -4951,7 +4950,7 @@ ${comm.message || 'Sin contenido'}
 
       let doc, filename;
       if (docType === 'estatutos') {
-        if (org.estatutos) {
+        if (org.estatutosSnapshot?.articulos?.length || (org.estatutos && org.estatutos !== 'template')) {
           doc = this._generateEstatutosPDF(org);
           filename = `Estatutos_${orgName}.pdf`;
         } else {
@@ -5129,12 +5128,11 @@ ${comm.message || 'Sin contenido'}
   }
 
   /**
-   * Genera un PDF a partir del contenido de estatutos (texto plano)
+   * Genera un PDF a partir de estatutosSnapshot (artículos) o estatutos (texto plano fallback)
    */
   _generateEstatutosPDF(org) {
     const doc = new jsPDF();
     const orgName = org.organizationName || org.organization?.name || 'Organización';
-    const content = org.estatutos || '';
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -5142,20 +5140,50 @@ ${comm.message || 'Sin contenido'}
     doc.setFontSize(11);
     doc.text(orgName, 105, 28, { align: 'center' });
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-
-    const lines = doc.splitTextToSize(content, 170);
     let y = 40;
     const pageHeight = 280;
+    const marginLeft = 20;
+    const contentWidth = 170;
 
-    for (const line of lines) {
-      if (y > pageHeight) {
-        doc.addPage();
-        y = 20;
+    // Prefer structured articles from snapshot
+    const articulos = org.estatutosSnapshot?.articulos;
+    if (articulos && articulos.length > 0) {
+      const sorted = [...articulos].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
+      for (const art of sorted) {
+        // Article title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        const titleText = `Artículo ${art.numero}: ${art.titulo}`;
+        const titleLines = doc.splitTextToSize(titleText, contentWidth);
+        for (const line of titleLines) {
+          if (y > pageHeight) { doc.addPage(); y = 20; }
+          doc.text(line, marginLeft, y);
+          y += 6;
+        }
+        y += 2;
+
+        // Article content
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        const contentLines = doc.splitTextToSize(art.contenido || '', contentWidth);
+        for (const line of contentLines) {
+          if (y > pageHeight) { doc.addPage(); y = 20; }
+          doc.text(line, marginLeft, y);
+          y += 5;
+        }
+        y += 6;
       }
-      doc.text(line, 20, y);
-      y += 5;
+    } else {
+      // Fallback: plain text from estatutos field
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const content = org.estatutos || '';
+      const lines = doc.splitTextToSize(content, contentWidth);
+      for (const line of lines) {
+        if (y > pageHeight) { doc.addPage(); y = 20; }
+        doc.text(line, marginLeft, y);
+        y += 5;
+      }
     }
 
     return doc;
