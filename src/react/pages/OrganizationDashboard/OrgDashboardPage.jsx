@@ -145,7 +145,7 @@ export default function OrgDashboardPage() {
           {effectiveTab === 'noticias' && <OrgNoticias />}
           {effectiveTab === 'privacidad' && <OrgPrivacy />}
           {effectiveTab === 'configuracion' && <SettingsPage />}
-          {effectiveTab === 'overview' && activeOrg && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} />}
+          {effectiveTab === 'overview' && activeOrg && <OrgOverview org={activeOrg} onNavigateTab={setActiveTab} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'members' && activeOrg && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'directorio' && activeOrg && <OrgDirectorio org={activeOrg} />}
           {effectiveTab === 'asambleas' && activeOrg && <OrgAsambleas org={activeOrg} onRefresh={refreshActiveOrg} />}

@@ -183,6 +183,9 @@ const organizationSchema = new mongoose.Schema({
   description: { type: String, trim: true },
   objectives: { type: String, trim: true },
 
+  // Enlace a carpeta histórica externa (Google Drive, SharePoint, etc.)
+  legacyDriveLink: { type: String, trim: true, default: '' },
+
   // Números de certificación y depósito (se generan al aprobar)
   certNumber: String,
   depositNumber: String,

@@ -48,7 +48,7 @@ export default function Step2_Members({ onNext, onPrev }) {
 
   const members = formData.members || [];
   const minMembers = templateConfig?.miembrosMinimos
-    || (formData.organization?.type === 'JUNTA_VECINOS' ? 200 : 15);
+    || (formData.organization?.type === 'JUNTA_VECINOS' ? 50 : 15);
 
   function openAdd() {
     setForm({ ...EMPTY_MEMBER });

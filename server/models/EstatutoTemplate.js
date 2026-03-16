@@ -155,7 +155,9 @@ const TIPOS_ORGANIZACION = [
   // Educacionales
   'CONSEJO_ESCOLAR', 'CENTRO_ESTUDIANTES',
   // Seguridad y nuevas
-  'COMITE_SEGURIDAD', 'UNION_COMUNAL_JV', 'AGRUPACION_INCLUSION'
+  'COMITE_SEGURIDAD', 'UNION_COMUNAL_JV', 'AGRUPACION_INCLUSION',
+  // Registro extralegal (no Ley 19.418)
+  'CONDOMINIO', 'FUNDACION', 'CORPORACION'
 ];
 
 // Esquema principal de EstatutoTemplate
@@ -267,6 +269,13 @@ const estatutoTemplateSchema = new mongoose.Schema({
   mandatoOpciones: {
     type: [Number],
     default: [3]
+  },
+
+  // Marco legal: true = organización regida por Ley 19.418 (plazos, quórum estricto)
+  // false = registro pasivo (Condominios, Fundaciones, Corporaciones)
+  isLey19418: {
+    type: Boolean,
+    default: true
   },
 
   // Directorio provisorio vs definitivo

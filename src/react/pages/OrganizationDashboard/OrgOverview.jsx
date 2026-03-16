@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { useAuthStore } from '../../stores/authStore';
+import { apiService } from '@services/ApiService.js';
 import { formatDate } from '../../utils/formatters';
 
 const TYPE_LABELS = {
@@ -41,7 +44,11 @@ const TYPE_LABELS = {
   // Genéricos
   ORG_COMUNITARIA: 'Organización Comunitaria',
   ORG_FUNCIONAL: 'Organización Funcional',
-  OTRA_FUNCIONAL: 'Otra Funcional'
+  OTRA_FUNCIONAL: 'Otra Funcional',
+  // Registro extralegal
+  CONDOMINIO: 'Condominio',
+  FUNDACION: 'Fundación',
+  CORPORACION: 'Corporación'
 };
 
 function prettifyType(type) {
@@ -49,9 +56,11 @@ function prettifyType(type) {
   return TYPE_LABELS[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bOrg\b/i, 'Organización').replace(/\bApr\b/i, 'APR');
 }
 
-export default function OrgOverview({ org, onNavigateTab }) {
+export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
   if (!org) return null;
 
+  const { user } = useAuthStore();
+  const canEdit = user?.role === 'MUNICIPALIDAD' || org.userId === user?._id;
   const memberCount = org.members?.length || 0;
   const assemblyCount = org.assemblies?.length || 0;
 
@@ -124,6 +133,9 @@ export default function OrgOverview({ org, onNavigateTab }) {
         </div>
       </div>
 
+      {/* Legacy Drive Link */}
+      <LegacyDriveSection orgId={org._id} link={org.legacyDriveLink} canEdit={canEdit} onRefresh={onRefresh} />
+
       {/* Directorio Summary */}
       {org.provisionalDirectorio && (
         <div className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
@@ -170,6 +182,119 @@ function InfoRow({ label, value, children }) {
       {children || <span style={{ fontSize: 14, fontWeight: 500, color: '#374151' }}>{value || '—'}</span>}
     </div>
   );
+}
+
+function LegacyDriveSection({ orgId, link, canEdit, onRefresh }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(link || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiService.updateOrganization(orgId, { legacyDriveLink: value.trim() });
+      setEditing(false);
+      if (onRefresh) onRefresh();
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Show link button if link exists and not editing
+  if (link && !editing) {
+    return (
+      <div className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Carpeta Historica</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                borderRadius: 8, color: '#1d4ed8', fontSize: 13, fontWeight: 600, textDecoration: 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              Abrir Carpeta
+            </a>
+            {canEdit && (
+              <button
+                onClick={() => { setValue(link); setEditing(true); }}
+                style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', fontSize: 13, color: '#6b7280', cursor: 'pointer' }}
+              >
+                Editar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show add/edit form
+  if (canEdit && (editing || !link)) {
+    return (
+      <div className="r-card" style={{ background: 'white', border: '1px solid #e5e7eb', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Carpeta Historica</span>
+        </div>
+        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>
+          Enlace a Google Drive, SharePoint u otra carpeta externa con documentos historicos.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="url"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="https://drive.google.com/drive/folders/..."
+            style={{
+              flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8,
+              fontSize: 14, outline: 'none', boxSizing: 'border-box'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+            onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none',
+              borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+            }}
+          >
+            {saving ? '...' : 'Guardar'}
+          </button>
+          {editing && (
+            <button
+              onClick={() => setEditing(false)}
+              style={{ padding: '8px 12px', background: '#f3f4f6', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function DirMember({ label, member }) {
