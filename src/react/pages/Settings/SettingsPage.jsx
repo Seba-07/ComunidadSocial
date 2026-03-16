@@ -151,7 +151,11 @@ export default function SettingsPage() {
     e.preventDefault();
     setSavingMuni(true);
     try {
-      await apiService.updateMunicipalityConfig(muniConfig);
+      await apiService.updateMunicipalityConfig({
+        ...muniConfig,
+        region: 'Región Metropolitana',
+        comuna: tenant.communeName,
+      });
       addToast('Datos institucionales actualizados', 'success');
     } catch (err) {
       addToast(err.message || 'Error al guardar datos institucionales', 'error');
@@ -226,14 +230,17 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label style={labelStyle}>Región</label>
-                <input value={muniConfig.region} onChange={e => setMuniConfig(c => ({ ...c, region: e.target.value }))} style={inputStyle} />
+                <input value="Región Metropolitana" disabled style={{ ...inputStyle, background: '#f3f4f6', color: '#6b7280' }} />
               </div>
               <div>
                 <label style={labelStyle}>Comuna</label>
-                <input value={muniConfig.comuna} onChange={e => setMuniConfig(c => ({ ...c, comuna: e.target.value }))} style={inputStyle} />
+                <input value={tenant.communeName} disabled style={{ ...inputStyle, background: '#f3f4f6', color: '#6b7280' }} />
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+              <p style={{ flex: 1, fontSize: 12, color: '#9ca3af', margin: 0 }}>
+                Región y comuna se configuran por deploy y no se pueden modificar.
+              </p>
               <button type="submit" disabled={savingMuni} style={{ ...btnPrimary, opacity: savingMuni ? 0.6 : 1 }}>
                 {savingMuni ? 'Guardando...' : 'Guardar Datos Institucionales'}
               </button>
