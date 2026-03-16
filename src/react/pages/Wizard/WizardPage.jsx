@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useWizardStore } from '../../stores/wizardStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
@@ -36,10 +36,12 @@ const WIZARD_MENU_ITEMS = [
 
 export default function WizardPage() {
   const { orgId } = useParams();
+  const [searchParams] = useSearchParams();
+  const editOrgId = searchParams.get('edit');
   const navigate = useNavigate();
   const {
     currentStep, setStep, formData, loadProgress, clearProgress,
-    saveProgress, fetchOrganizationTypes, isSubmitting
+    saveProgress, fetchOrganizationTypes, loadFromOrganization, isSubmitting
   } = useWizardStore();
   const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
@@ -57,6 +59,18 @@ export default function WizardPage() {
     }
 
     fetchOrganizationTypes().catch(() => {});
+
+    // If editing an existing org (draft), load its data into wizard
+    if (editOrgId) {
+      loadFromOrganization(editOrgId).then(ok => {
+        if (!ok) {
+          addToast('No se pudo cargar la organización para editar', 'error');
+          navigate('/org/auto');
+        }
+        setReady(true);
+      });
+      return;
+    }
 
     // Check for saved progress
     const hasProgress = loadProgress();
@@ -125,14 +139,16 @@ export default function WizardPage() {
 
   if (!ready) return <LoadingSpinner text="Cargando wizard..." />;
 
+  const isEditing = !!editOrgId;
   const StepComponent = STEP_COMPONENTS[currentStep];
+  const wizardTitle = isEditing ? 'Editar Organización' : 'Crear Organización';
 
   return (
     <>
       <SharedHeader />
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
-          title="Crear Organización"
+          title={wizardTitle}
           menuItems={WIZARD_MENU_ITEMS}
           activeKey="mis-org"
           onItemClick={handleSidebarClick}
@@ -148,7 +164,7 @@ export default function WizardPage() {
             alignItems: 'center',
           }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>
-              Crear Organización
+              {wizardTitle}
             </h2>
             <button onClick={handleExit} style={{
               padding: '8px 16px', border: '1px solid #d1d5db',

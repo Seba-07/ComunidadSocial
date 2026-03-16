@@ -1245,9 +1245,15 @@ router.post('/:id/retract', authenticate, async (req, res) => {
       });
     }
 
+    const { reason } = req.body || {};
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Debe indicar el motivo de la retractación' });
+    }
+
     const previousStatus = organization.status;
     const orgName = organization.organizationName;
     const ministroId = organization.ministroData?.ministroId || null;
+    const trimmedReason = reason.trim();
 
     // Change to draft and clear scheduling data
     organization.status = 'draft';
@@ -1256,12 +1262,12 @@ router.post('/:id/retract', authenticate, async (req, res) => {
     organization.assemblyAddress = null;
     organization.ministroData = null;
 
-    // Add to status history
+    // Add to status history with reason
     if (!organization.statusHistory) organization.statusHistory = [];
     organization.statusHistory.push({
       status: 'draft',
       date: new Date(),
-      comment: `El dirigente social ha retractado la solicitud de constitución (estado anterior: ${previousStatus})`
+      comment: `Solicitud retractada (estado anterior: ${previousStatus}). Motivo: ${trimmedReason}`
     });
 
     await organization.save();
@@ -1273,8 +1279,8 @@ router.post('/:id/retract', authenticate, async (req, res) => {
         userId: admin._id,
         type: 'status_change',
         title: 'Solicitud retractada',
-        message: `El dirigente social ha cancelado la solicitud de constitución de "${orgName}"`,
-        data: { organizationId: organization._id, organizationName: orgName, previousStatus, action: 'retract' },
+        message: `El dirigente social ha retractado la solicitud de "${orgName}". Motivo: ${trimmedReason}`,
+        data: { organizationId: organization._id, organizationName: orgName, previousStatus, action: 'retract', reason: trimmedReason },
         organizationId: organization._id
       });
     }
@@ -1285,8 +1291,8 @@ router.post('/:id/retract', authenticate, async (req, res) => {
         ministroId: ministroId,
         type: 'status_change',
         title: 'Asamblea cancelada',
-        message: `La asamblea constitutiva de "${orgName}" ha sido cancelada por el dirigente social`,
-        data: { organizationId: organization._id, organizationName: orgName, action: 'retract' },
+        message: `La asamblea constitutiva de "${orgName}" ha sido cancelada por el dirigente social. Motivo: ${trimmedReason}`,
+        data: { organizationId: organization._id, organizationName: orgName, action: 'retract', reason: trimmedReason },
         organizationId: organization._id
       });
     }

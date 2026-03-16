@@ -549,8 +549,8 @@ class ApiService {
     return this.post(`/organizations/${orgId}/resubmit`, { userComment, fieldResponses });
   }
 
-  async retractOrganization(orgId) {
-    return this.post(`/organizations/${orgId}/retract`);
+  async retractOrganization(orgId, reason) {
+    return this.post(`/organizations/${orgId}/retract`, { reason });
   }
 
   async approveOrgWithDocument(orgId, pdfFile) {

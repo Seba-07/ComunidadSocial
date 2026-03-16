@@ -149,6 +149,79 @@ export const useWizardStore = create((set, get) => ({
     set({ currentStep: 0, formData: { ...initialFormData }, existingOrgId: null, templateConfig: null });
   },
 
+  async loadFromOrganization(orgId) {
+    try {
+      const data = await apiService.getOrganization(orgId);
+      const org = data.organization || data;
+      const dir = org.provisionalDirectorio || {};
+      const config = org.config || {};
+      const ce = org.electoralCommission || org.comisionElectoral || [];
+
+      set({
+        currentStep: 0,
+        existingOrgId: orgId,
+        formData: {
+          ...initialFormData,
+          organization: {
+            type: org.organizationType || '',
+            name: org.organizationName || '',
+            description: org.description || '',
+            objectives: org.objectives || '',
+            address: org.address || '',
+            street: org.street || '',
+            streetNumber: org.streetNumber || '',
+            postalCode: org.postalCode || '',
+            region: org.region || initialFormData.organization.region,
+            commune: org.comuna || initialFormData.organization.commune,
+            neighborhood: org.unidadVecinal || '',
+            email: org.contactEmail || '',
+            phone: org.contactPhone || '',
+            contactPreference: org.contactPreference || 'email',
+          },
+          members: (org.members || []).map(m => ({
+            firstName: m.firstName || '',
+            segundoNombre: m.segundoNombre || '',
+            lastName: m.lastName || '',
+            apellidoMaterno: m.apellidoMaterno || '',
+            rut: m.rut || '',
+            birthDate: m.birthDate || '',
+            address: m.address || '',
+            email: m.email || '',
+            phone: m.phone || '',
+          })),
+          config: {
+            ...initialFormData.config,
+            ...config,
+          },
+          estatutos: org.estatutos
+            ? { type: typeof org.estatutos === 'string' ? org.estatutos : 'template', content: null, customFile: null }
+            : { type: 'template', content: null, customFile: null },
+          directorioProvisorio: dir,
+          comisionElectoral: { members: ce, electionDate: null },
+          certificates: {},
+          inhabilityCertificates: {},
+          documents: {},
+          assemblySchedule: {
+            date: org.electionDate || null,
+            time: org.electionTime || null,
+            address: org.assemblyAddress || '',
+          },
+        },
+      });
+
+      // Also fetch template config if org type is set
+      if (org.organizationType) {
+        get().fetchTemplateConfig(org.organizationType).catch(() => {});
+      }
+
+      get().saveProgress();
+      return true;
+    } catch (error) {
+      console.error('Error loading org into wizard:', error);
+      return false;
+    }
+  },
+
   async fetchOrganizationTypes() {
     try {
       const data = await apiService.getOrganizationTypesGrouped();
@@ -174,7 +247,7 @@ export const useWizardStore = create((set, get) => ({
   async submitOrganization() {
     set({ isSubmitting: true, error: null });
     try {
-      const { formData } = get();
+      const { formData, existingOrgId } = get();
       const org = formData.organization;
       const orgData = {
         organizationName: org.name,
@@ -198,8 +271,17 @@ export const useWizardStore = create((set, get) => ({
         assemblyAddress: formData.assemblySchedule?.address || ''
       };
 
-      const data = await apiService.createOrganization(orgData);
-      const orgId = data.organization?._id || data._id;
+      let data;
+      let orgId;
+
+      if (existingOrgId) {
+        // Update existing draft org then resubmit
+        data = await apiService.updateOrganization(existingOrgId, orgData);
+        orgId = existingOrgId;
+      } else {
+        data = await apiService.createOrganization(orgData);
+        orgId = data.organization?._id || data._id;
+      }
 
       // Sync certificates if any
       if (Object.keys(formData.certificates).length > 0) {

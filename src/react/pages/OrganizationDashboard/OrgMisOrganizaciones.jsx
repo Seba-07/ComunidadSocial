@@ -341,6 +341,18 @@ export default function OrgMisOrganizaciones({ onNavigateTab }) {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {org.status === 'draft' && (
+                        <button
+                          onClick={e => { e.stopPropagation(); navigate(`/wizard?edit=${org._id}`); }}
+                          style={{
+                            padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                            border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Editar en Wizard
+                        </button>
+                      )}
                       {loadingDetail ? (
                         <span style={{ fontSize: 12, color: '#6b7280' }}>Cargando...</span>
                       ) : (

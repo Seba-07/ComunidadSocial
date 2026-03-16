@@ -269,7 +269,7 @@ export const ALLOWED_FIELDS = {
     'contactPreference', 'members', 'minMembers', 'electoralCommission',
     'provisionalDirectorio', 'electionDate', 'electionTime', 'assemblyAddress',
     'comments', 'estatutos', 'corrections',
-    'description', 'objectives', 'userCorrectedFields',
+    'description', 'objectives', 'config', 'userCorrectedFields',
     'assemblies', 'lastDirectorioElection',
     'finances', 'communications',
     'addMember', 'updateMember', 'removeMemberRut',

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 
@@ -32,10 +33,12 @@ function formatName(person) {
 const RETRACTABLE_STATUSES = new Set(['waiting_ministro', 'ministro_scheduled', 'pending_review', 'in_review']);
 
 export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
+  const navigate = useNavigate();
   const addToast = useUiStore(s => s.addToast);
   const [saving, setSaving] = useState(false);
   const [editingCargo, setEditingCargo] = useState(null);
   const [showRetractModal, setShowRetractModal] = useState(false);
+  const [retractReason, setRetractReason] = useState('');
   const [retracting, setRetracting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -171,11 +174,16 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
   }
 
   async function handleRetract() {
+    if (!retractReason.trim()) {
+      addToast('Debes indicar el motivo de la retractación', 'error');
+      return;
+    }
     setRetracting(true);
     try {
-      await apiService.retractOrganization(org._id);
+      await apiService.retractOrganization(org._id, retractReason.trim());
       addToast('Solicitud retractada exitosamente. La organización volvió a estado Borrador.', 'success');
       setShowRetractModal(false);
+      setRetractReason('');
       onBack();
       onRefresh();
     } catch (err) {
@@ -235,7 +243,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           </div>
           {canRetract && (
             <button
-              onClick={() => setShowRetractModal(true)}
+              onClick={() => { setRetractReason(''); setShowRetractModal(true); }}
               style={{
                 padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
                 border: '1px solid #dc2626', background: '#fef2f2', color: '#dc2626',
@@ -248,18 +256,32 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             </button>
           )}
           {canDelete && (
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              style={{
-                padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
-                border: '1px solid #dc2626', background: '#fef2f2', color: '#dc2626',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.target.style.background = '#dc2626'; e.target.style.color = 'white'; }}
-              onMouseLeave={e => { e.target.style.background = '#fef2f2'; e.target.style.color = '#dc2626'; }}
-            >
-              Eliminar Organización
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => navigate(`/wizard?edit=${org._id}`)}
+                style={{
+                  padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
+                  border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.target.style.background = '#2563eb'; e.target.style.color = 'white'; }}
+                onMouseLeave={e => { e.target.style.background = '#eff6ff'; e.target.style.color = '#2563eb'; }}
+              >
+                Editar en Wizard
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                style={{
+                  padding: '8px 18px', fontSize: 13, fontWeight: 600, borderRadius: 8,
+                  border: '1px solid #dc2626', background: '#fef2f2', color: '#dc2626',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.target.style.background = '#dc2626'; e.target.style.color = 'white'; }}
+                onMouseLeave={e => { e.target.style.background = '#fef2f2'; e.target.style.color = '#dc2626'; }}
+              >
+                Eliminar Organización
+              </button>
+            </div>
           )}
         </div>
         <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
@@ -631,12 +653,30 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 Retractar Solicitud
               </h3>
             </div>
-            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 20px' }}>
+            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 16px' }}>
               ¿Estás seguro de que deseas retractar esta solicitud? La organización volverá a estado <strong>Borrador</strong>,
               se cancelará la revisión del Secretario Municipal y se anulará cualquier fecha agendada con el Ministro de Fe.
             </p>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                Motivo de la retractación <span style={{ color: '#dc2626' }}>*</span>
+              </label>
+              <textarea
+                value={retractReason}
+                onChange={e => setRetractReason(e.target.value)}
+                placeholder="Explica por qué retractas la solicitud (ej: error en datos de miembros, cambio de directorio, etc.)"
+                rows={3}
+                style={{
+                  width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8,
+                  fontSize: 14, resize: 'vertical', boxSizing: 'border-box',
+                }}
+              />
+              <p style={{ fontSize: 12, color: '#6b7280', margin: '4px 0 0' }}>
+                Este motivo será visible para el Secretario Municipal.
+              </p>
+            </div>
             <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px', fontStyle: 'italic' }}>
-              Podrás volver a enviar la solicitud posteriormente desde el wizard.
+              Podrás editar la organización y volver a enviar la solicitud desde el wizard.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button
