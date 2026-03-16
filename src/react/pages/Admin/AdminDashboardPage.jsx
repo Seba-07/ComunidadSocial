@@ -17,6 +17,7 @@ const AuditLogView = lazy(() => import('./views/AuditLogView'));
 const ExportView = lazy(() => import('./views/ExportView'));
 const OrgPrivacy = lazy(() => import('../OrganizationDashboard/OrgPrivacy'));
 const SecurityIncidentsView = lazy(() => import('./views/SecurityIncidentsView'));
+const SupportTicketsView = lazy(() => import('./views/SupportTicketsView'));
 const DataRegistryView = lazy(() => import('./views/DataRegistryView'));
 const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
 const DocumentTemplatesView = lazy(() => import('./views/DocumentTemplatesView'));
@@ -35,12 +36,14 @@ const VIEW_MAP = {
 export: ExportView,
   privacidad: OrgPrivacy,
   seguridad: SecurityIncidentsView,
+  soporte: SupportTicketsView,
   'reg-datos': DataRegistryView,
   configuracion: SettingsPage
 };
 
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('organizations');
+  const [incidentPrefill, setIncidentPrefill] = useState(null);
   const { organizations, fetchAllOrganizations, fetchStats, stats } = useAdminStore();
   const addToast = useUiStore(s => s.addToast);
 
@@ -48,6 +51,16 @@ export default function AdminDashboardPage() {
     fetchAllOrganizations().catch(err => addToast(err.message, 'error'));
     fetchStats().catch(() => {});
   }, []);
+
+  function handleEscalateToIncident(data) {
+    setIncidentPrefill(data);
+    setActiveView('seguridad');
+  }
+
+  function handleViewChange(view) {
+    if (view !== 'seguridad') setIncidentPrefill(null);
+    setActiveView(view);
+  }
 
   const orgCounts = {
     total: organizations.length,
@@ -60,18 +73,22 @@ export default function AdminDashboardPage() {
   const ViewComponent = VIEW_MAP[activeView] || OrganizationsList;
   const isLazy = activeView !== 'organizations';
 
+  const viewProps = {};
+  if (activeView === 'seguridad') viewProps.prefillData = incidentPrefill;
+  if (activeView === 'soporte') viewProps.onEscalateToIncident = handleEscalateToIncident;
+
   return (
     <AdminLayout
       activeView={activeView}
-      onViewChange={setActiveView}
+      onViewChange={handleViewChange}
       orgCounts={orgCounts}
     >
       {isLazy ? (
         <Suspense fallback={<LoadingSpinner text="Cargando vista..." />}>
-          <ViewComponent />
+          <ViewComponent {...viewProps} />
         </Suspense>
       ) : (
-        <ViewComponent />
+        <ViewComponent {...viewProps} />
       )}
     </AdminLayout>
   );

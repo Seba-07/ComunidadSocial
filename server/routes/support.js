@@ -1,7 +1,7 @@
 import express from 'express';
 import SupportTicket from '../models/SupportTicket.js';
 import { emailService } from '../services/emailService.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createSupportTicketSchema } from '../middleware/validation.js';
 import tenant from '../config/tenant.js';
 
@@ -64,6 +64,46 @@ router.post('/ticket', optionalAuth, validate(createSupportTicketSchema), async 
   } catch (error) {
     console.error('Create support ticket error:', error);
     res.status(500).json({ error: 'Error al crear ticket de soporte' });
+  }
+});
+
+/**
+ * GET /api/support/tickets
+ * Lists all support tickets (Admin only)
+ */
+router.get('/tickets', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(tickets);
+  } catch (error) {
+    console.error('List support tickets error:', error);
+    res.status(500).json({ error: 'Error al obtener tickets' });
+  }
+});
+
+/**
+ * PUT /api/support/tickets/:id/status
+ * Update ticket status (Admin only)
+ */
+router.put('/tickets/:id/status', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['open', 'in_progress', 'resolved', 'closed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+    const ticket = await SupportTicket.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+    res.json({ message: 'Estado actualizado', ticket });
+  } catch (error) {
+    console.error('Update ticket status error:', error);
+    res.status(500).json({ error: 'Error al actualizar ticket' });
   }
 });
 

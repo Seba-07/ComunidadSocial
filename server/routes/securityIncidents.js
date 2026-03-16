@@ -60,8 +60,8 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createSecu
       ipAddress: req.ip
     });
 
-    // Send email alert for high/critical incidents
-    if (SUPPORT_EMAIL && (severity === 'high' || severity === 'critical')) {
+    // Send email alert for ALL new incidents
+    if (SUPPORT_EMAIL) {
       emailService.sendSecurityIncidentAlert({
         supportEmail: SUPPORT_EMAIL,
         incident

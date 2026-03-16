@@ -14,6 +14,7 @@ const MENU_ITEMS = [
   { key: 'audit', label: 'Historial', icon: '📋' },
 { key: 'export', label: 'Exportar', icon: '📥' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  { key: 'soporte', label: 'Soporte', icon: '🎧' },
   { key: 'seguridad', label: 'Incidentes', icon: '🛡️' },
   { key: 'reg-datos', label: 'Reg. Datos', icon: '📋' },
   { key: 'configuracion', label: 'Configuración', icon: '⚙️' }

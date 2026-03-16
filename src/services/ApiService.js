@@ -1218,6 +1218,14 @@ class ApiService {
     return this.post('/support/ticket', data);
   }
 
+  async getSupportTickets() {
+    return this.get('/support/tickets');
+  }
+
+  async updateSupportTicketStatus(ticketId, status) {
+    return this.put(`/support/tickets/${ticketId}/status`, { status });
+  }
+
   // ==================== DIRECTORIO ====================
 
   async registerDirectorioResignation(orgId, data) {

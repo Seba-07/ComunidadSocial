@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import { apiService } from '@services/ApiService';
 import { useUiStore } from '../../../stores/uiStore';
 import { localeString } from '../../../utils/formatters';
+import tenant from '../../../../config/tenant';
 
 const SEVERITY_COLORS = {
   low: '#10b981', medium: '#f59e0b', high: '#f97316', critical: '#dc2626'
@@ -28,17 +30,30 @@ function formatDate(d) {
   return localeString(d, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export default function SecurityIncidentsView() {
+export default function SecurityIncidentsView({ prefillData }) {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const addToast = useUiStore(s => s.addToast);
 
-  const [form, setForm] = useState({
+  const defaultForm = {
     type: 'other', severity: 'medium', title: '', description: '',
     dataAffected: '', usersAffectedCount: 0, measuresTaken: ''
-  });
+  };
+  const [form, setForm] = useState(defaultForm);
+
+  // Handle prefill from escalated ticket
+  useEffect(() => {
+    if (prefillData) {
+      setForm(f => ({
+        ...f,
+        title: prefillData.title || '',
+        description: prefillData.description || ''
+      }));
+      setShowForm(true);
+    }
+  }, [prefillData]);
 
   useEffect(() => { loadIncidents(); }, []);
 
@@ -68,7 +83,7 @@ export default function SecurityIncidentsView() {
       });
       addToast('Incidente reportado', 'success');
       setShowForm(false);
-      setForm({ type: 'other', severity: 'medium', title: '', description: '', dataAffected: '', usersAffectedCount: 0, measuresTaken: '' });
+      setForm(defaultForm);
       loadIncidents();
     } catch (err) {
       addToast(err.message || 'Error al reportar', 'error');
@@ -99,6 +114,16 @@ export default function SecurityIncidentsView() {
       loadIncidents();
     } catch (err) {
       addToast('Error al actualizar', 'error');
+    }
+  }
+
+  function exportIncidentPDF(inc) {
+    try {
+      const doc = generateIncidentPDF(inc);
+      doc.save(`incidente_${inc._id.slice(-8)}_${inc.severity}.pdf`);
+      addToast('PDF descargado', 'success');
+    } catch (err) {
+      addToast('Error al generar PDF', 'error');
     }
   }
 
@@ -252,6 +277,10 @@ export default function SecurityIncidentsView() {
                     Marcar: Usuarios Notificados
                   </button>
                 )}
+                <button onClick={() => exportIncidentPDF(inc)}
+                  style={{ padding: '6px 14px', fontSize: 12, background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', marginLeft: 'auto' }}>
+                  Exportar PDF
+                </button>
               </div>
               {(inc.notifiedAgency || inc.notifiedUsers) && (
                 <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280' }}>
@@ -265,4 +294,134 @@ export default function SecurityIncidentsView() {
       )}
     </div>
   );
+}
+
+function generateIncidentPDF(inc) {
+  const doc = new jsPDF();
+  const ML = 20;
+  const CW = 176;
+  let y = 15;
+
+  // Header bar
+  const barColors = ['#dc2626', '#f59e0b', '#2563eb', '#10b981'];
+  barColors.forEach((c, i) => { doc.setFillColor(c); doc.rect(i * 54, 0, 55, 8, 'F'); });
+  y = 18;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor('#6b7280');
+  doc.text(tenant.pdfHeaderText || 'REPORTE DE INCIDENTE DE SEGURIDAD', ML, y);
+  y += 5;
+  doc.text('REPORTE DE INCIDENTE — LEY 21.719', ML, y);
+  y += 10;
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#111827');
+  doc.text('Reporte de Incidente de Seguridad', ML, y);
+  y += 10;
+
+  doc.setDrawColor('#e5e7eb');
+  doc.line(ML, y, ML + CW, y);
+  y += 8;
+
+  // Info rows
+  const addRow = (label, value) => {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#374151');
+    doc.text(label, ML, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(value || '—', ML + 50, y);
+    y += 7;
+  };
+
+  addRow('ID:', inc._id || '—');
+  addRow('Título:', inc.title || '—');
+  addRow('Tipo:', TYPE_LABELS[inc.type] || inc.type || '—');
+  addRow('Severidad:', SEVERITY_LABELS[inc.severity] || inc.severity || '—');
+  addRow('Estado:', STATUS_LABELS[inc.status] || inc.status || '—');
+  addRow('Fecha reporte:', formatDate(inc.createdAt));
+  addRow('Reportado por:', inc.reportedByName || '—');
+
+  if (inc.usersAffectedCount > 0) addRow('Usuarios afectados:', String(inc.usersAffectedCount));
+  if (inc.notifiedAgency) addRow('Agencia notificada:', formatDate(inc.notifiedAgencyAt));
+  if (inc.notifiedUsers) addRow('Usuarios notificados:', formatDate(inc.notifiedUsersAt));
+  if (inc.resolvedAt) addRow('Fecha resolución:', formatDate(inc.resolvedAt));
+
+  y += 5;
+  doc.line(ML, y, ML + CW, y);
+  y += 8;
+
+  // Description
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#111827');
+  doc.text('Descripción del Incidente', ML, y);
+  y += 7;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor('#374151');
+  const descLines = doc.splitTextToSize(inc.description || 'Sin descripción', CW);
+  descLines.forEach(line => {
+    if (y > 265) { doc.addPage(); y = 20; }
+    doc.text(line, ML, y);
+    y += 5;
+  });
+
+  // Data affected
+  if (inc.dataAffected?.length > 0) {
+    y += 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#111827');
+    doc.text('Datos Afectados', ML, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#374151');
+    inc.dataAffected.forEach(d => {
+      doc.text(`• ${d}`, ML + 4, y);
+      y += 5;
+    });
+  }
+
+  // Measures taken
+  if (inc.measuresTaken) {
+    y += 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#111827');
+    doc.text('Medidas Tomadas', ML, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#374151');
+    const measLines = doc.splitTextToSize(inc.measuresTaken, CW);
+    measLines.forEach(line => {
+      if (y > 265) { doc.addPage(); y = 20; }
+      doc.text(line, ML, y);
+      y += 5;
+    });
+  }
+
+  // Footer
+  y += 15;
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.line(ML, y, ML + CW, y);
+  y += 8;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor('#6b7280');
+  doc.text('Este documento fue generado como respaldo de cumplimiento de la Ley 21.719', ML, y);
+  y += 5;
+  doc.text('sobre Protección de Datos Personales.', ML, y);
+  y += 5;
+  const now = new Date();
+  doc.text(`Generado el ${now.toLocaleDateString('es-CL')} a las ${now.toLocaleTimeString('es-CL')} — ${tenant.platformName}`, ML, y);
+
+  return doc;
 }
