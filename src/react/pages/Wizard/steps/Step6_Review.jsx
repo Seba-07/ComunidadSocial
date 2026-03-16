@@ -469,28 +469,38 @@ export default function Step6_Review({ onNext, onPrev }) {
       {/* Documentos Adjuntos */}
       {(() => {
         const docs = [];
-        // Certificados de antecedentes
         for (const [cargoId, cert] of Object.entries(certs)) {
           const person = directorio[cargoId];
           if (person && cert?.name) {
-            docs.push({ type: 'antecedentes', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name });
+            docs.push({ type: 'antecedentes', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name, data: cert.data });
           }
         }
-        // Certificados de inhabilidades
         for (const [cargoId, cert] of Object.entries(inhCerts)) {
           const person = directorio[cargoId];
           if (person && cert?.name) {
-            docs.push({ type: 'inhabilidades', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name });
+            docs.push({ type: 'inhabilidades', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name, data: cert.data });
           }
         }
         if (docs.length === 0) return null;
+
+        function viewDoc(d) {
+          if (!d.data) return;
+          const w = window.open('');
+          if (!w) return;
+          if (d.data.startsWith('data:application/pdf') || d.file?.endsWith('.pdf')) {
+            w.document.write(`<iframe src="${d.data}" style="width:100%;height:100%;border:none;position:fixed;top:0;left:0;"></iframe>`);
+          } else {
+            w.document.write(`<div style="display:flex;justify-content:center;padding:20px;background:#f1f5f9;min-height:100vh;"><img src="${d.data}" style="max-width:100%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);"/></div>`);
+          }
+        }
+
         return (
           <Section title={`Documentos Adjuntos (${docs.length})`}>
             {docs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < docs.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < docs.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <div style={{ position: 'absolute', bottom: -1, right: -3, width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
                   </div>
                 </div>
@@ -500,6 +510,19 @@ export default function Step6_Review({ onNext, onPrev }) {
                     {d.type === 'inhabilidades' ? 'Cert. Inhabilidades' : 'Cert. Antecedentes'} — {d.file}
                   </div>
                 </div>
+                {d.data && (
+                  <button onClick={() => viewDoc(d)} style={{
+                    padding: '4px 10px', border: '1px solid #e5e7eb', borderRadius: 6,
+                    background: 'white', color: '#6b7280', fontSize: 12, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Ver
+                  </button>
+                )}
               </div>
             ))}
           </Section>
