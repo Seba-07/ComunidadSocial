@@ -294,6 +294,9 @@ class ApiService {
         if (data.detail) {
           err.detail = data.detail;
         }
+        if (data.code) {
+          err.code = data.code;
+        }
         throw err;
       }
 

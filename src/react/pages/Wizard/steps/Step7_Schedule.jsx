@@ -89,7 +89,9 @@ export default function Step7_Schedule({ onPrev }) {
       setSubmitted(true);
     } catch (err) {
       let msg = err.message || 'Error al crear organización';
-      if (err.details?.length) {
+      if (err.code === 'PAYLOAD_TOO_LARGE' || msg.includes('tamaño') || msg.includes('límite')) {
+        msg = 'Los archivos adjuntos son demasiado grandes. Vuelve al paso 5 y reduce el tamaño de los certificados (máx. 5MB cada uno).';
+      } else if (err.details?.length) {
         msg += ': ' + err.details.map(d => d.message || d).join(', ');
       }
       addToast(msg, 'error');

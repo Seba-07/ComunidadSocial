@@ -170,6 +170,42 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         }
       }
     }
+
+    // Validar tamaño total de archivos adjuntos (~40MB max para dejar margen)
+    const MAX_TOTAL_MB = 40;
+    let totalBytes = 0;
+    const oversizedFiles = [];
+
+    for (const [cargoId, cert] of Object.entries(certs)) {
+      if (cert?.data) {
+        const size = cert.data.length * 0.75; // base64 → bytes approx
+        if (size > 5 * 1024 * 1024) {
+          const cargoInfo = cargos.find(c => c.id === cargoId);
+          oversizedFiles.push(`Certificado de ${cargoInfo?.nombre || cargoId} (${(size / 1024 / 1024).toFixed(1)}MB)`);
+        }
+        totalBytes += size;
+      }
+    }
+    for (const [cargoId, cert] of Object.entries(inhCerts)) {
+      if (cert?.data) {
+        const size = cert.data.length * 0.75;
+        if (size > 5 * 1024 * 1024) {
+          const cargoInfo = cargos.find(c => c.id === cargoId);
+          oversizedFiles.push(`Cert. Inhabilidades de ${cargoInfo?.nombre || cargoId} (${(size / 1024 / 1024).toFixed(1)}MB)`);
+        }
+        totalBytes += size;
+      }
+    }
+
+    if (oversizedFiles.length > 0) {
+      return `Archivos demasiado grandes (máx. 5MB c/u): ${oversizedFiles.join(', ')}`;
+    }
+
+    const totalMB = totalBytes / 1024 / 1024;
+    if (totalMB > MAX_TOTAL_MB) {
+      return `El peso total de los archivos (${totalMB.toFixed(1)}MB) excede el límite de ${MAX_TOTAL_MB}MB. Reduce el tamaño de los certificados.`;
+    }
+
     return null;
   }
 

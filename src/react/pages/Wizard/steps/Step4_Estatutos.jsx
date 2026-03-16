@@ -222,7 +222,20 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
 
       <div className="r-toolbar" style={{ marginTop: 32 }}>
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={onNext} style={nextBtnS}>Siguiente</button>
+        <button onClick={() => {
+          if (estatutos.type === 'custom' && !estatutos.customFile) {
+            addToast('Sube tu archivo de estatutos personalizados antes de continuar', 'error');
+            return;
+          }
+          if (estatutos.customFile?.data) {
+            const sizeMB = (estatutos.customFile.data.length * 0.75) / 1024 / 1024;
+            if (sizeMB > 10) {
+              addToast(`El archivo de estatutos pesa ${sizeMB.toFixed(1)}MB (máx. 10MB). Reduce su tamaño.`, 'error');
+              return;
+            }
+          }
+          onNext();
+        }} style={nextBtnS}>Siguiente</button>
       </div>
     </div>
   );

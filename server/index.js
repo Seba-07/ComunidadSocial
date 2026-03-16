@@ -117,7 +117,9 @@ app.use(securityHeaders);
 // Rate limiting global
 app.use('/api/', generalLimiter);
 
-// Body parsing — 5MB default, rutas específicas usan largeBodyParser para 50MB
+// Body parsing — 50MB para rutas de organizations (certificados base64), 5MB para el resto
+// IMPORTANTE: el large parser debe ir ANTES del global para que no falle con entity.too.large
+app.use('/api/organizations', largeBodyParser);
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
@@ -162,10 +164,6 @@ if (process.env.NODE_ENV !== 'test') {
       console.error('MongoDB connection error:', err);
     });
 }
-
-// Large body parser para rutas que reciben certificados/documentos base64
-// Estas rutas necesitan hasta 50MB (certificados base64 del wizard)
-app.use('/api/organizations', largeBodyParser);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -251,8 +249,14 @@ app.use((err, req, res, next) => {
 
   // Payload too large (body exceeds express.json limit)
   if (err.type === 'entity.too.large') {
+    const limitMB = err.limit ? Math.round(err.limit / 1024 / 1024) : null;
+    const lengthMB = err.length ? (err.length / 1024 / 1024).toFixed(1) : null;
+    const detail = lengthMB && limitMB
+      ? ` Los datos enviados pesan ${lengthMB}MB y el límite es ${limitMB}MB.`
+      : '';
     return res.status(413).json({
-      error: 'El tamaño de los datos excede el límite permitido. Intente con archivos más pequeños.'
+      error: `El tamaño de los datos excede el límite permitido.${detail} Reduzca el peso de los archivos adjuntos (certificados, estatutos).`,
+      code: 'PAYLOAD_TOO_LARGE'
     });
   }
 
