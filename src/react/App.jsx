@@ -192,6 +192,11 @@ export default function App() {
     navigate('/login', { replace: true });
   }, [logout, navigate]);
 
+  // Rutas públicas que no deben redirigir a login
+  const publicPaths = ['/login', '/privacy', '/terms', '/verify-email', '/reset-password', '/validar'];
+  const currentPath = window.location.pathname.replace(/^\/app/, '') || '/';
+  const isPublicRoute = publicPaths.some(p => currentPath.startsWith(p));
+
   // Inicialización: hydrate + verificar sesión contra servidor
   useEffect(() => {
     let cancelled = false;
@@ -205,8 +210,8 @@ export default function App() {
       if (userJson && isAuth) {
         // Verificar token contra el servidor
         const valid = await verifySession();
-        if (!cancelled && !valid) {
-          // Token inválido → redirigir a login sin error crudo
+        if (!cancelled && !valid && !isPublicRoute) {
+          // Token inválido y no estamos en ruta pública → redirigir a login
           navigate('/login', { replace: true });
         }
       }
@@ -216,7 +221,7 @@ export default function App() {
 
     init();
     return () => { cancelled = true; };
-  }, [hydrate, verifySession, navigate]);
+  }, [hydrate, verifySession, navigate, isPublicRoute]);
 
   // Iniciar/detener SessionManager según estado de auth
   useEffect(() => {
