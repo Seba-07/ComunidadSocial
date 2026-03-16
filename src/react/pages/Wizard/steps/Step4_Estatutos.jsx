@@ -94,7 +94,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       '{{MIEMBROS_MINIMOS}}': String(templateConfig?.miembrosMinimos || 15),
       '{{NUM_MIEMBROS}}': String(formData.members?.length || 0),
       '{{EDAD_MINIMA}}': String(templateConfig?.edadConfig?.edadMinima || 14),
-      '{{N_MIEMBROS}}': String(templateConfig?.directorio?.totalRequerido || 5),
+      '{{N_MIEMBROS}}': String(templateConfig?.directorio?.cargos?.length || templateConfig?.directorio?.totalRequerido || 5),
       '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateConfig?.comisionElectoral?.cantidad || 3),
       '{{CUOTA_MENSUAL}}': cuotaStr,
       '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',

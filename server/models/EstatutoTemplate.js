@@ -396,7 +396,10 @@ estatutoTemplateSchema.methods.obtenerSnapshot = function() {
     tipoOrganizacion: this.tipoOrganizacion,
     nombreTipo: this.nombreTipo,
     articulos: this.articulos,
-    directorio: this.directorio,
+    directorio: {
+      ...this.directorio?.toObject?.() || this.directorio,
+      totalRequerido: this.directorio?.cargos?.length || this.directorio?.totalRequerido || 5
+    },
     miembrosMinimos: this.miembrosMinimos,
     comisionElectoral: this.comisionElectoral,
     placeholders: this.placeholders,

@@ -96,7 +96,7 @@ function replaceEstatutoPlaceholders(snapshot, orgData) {
     '{{MIEMBROS_MINIMOS}}': String(templateCfg.miembrosMinimos || 15),
     '{{NUM_MIEMBROS}}': String(orgData.members?.length || 0),
     '{{EDAD_MINIMA}}': String(templateCfg.edadConfig?.edadMinima || 14),
-    '{{N_MIEMBROS}}': String(templateCfg.directorio?.totalRequerido || 5),
+    '{{N_MIEMBROS}}': String(templateCfg.directorio?.cargos?.length || templateCfg.directorio?.totalRequerido || 5),
     '{{MIEMBROS_COMISION_ELECTORAL}}': String(templateCfg.comisionElectoral?.cantidad || 3),
     '{{CUOTA_MENSUAL}}': cuotaStr,
     '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',

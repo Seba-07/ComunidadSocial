@@ -103,9 +103,20 @@ const SAMPLE_ESTATUTO_DATA = {
   '{{FECHA_ANIO}}': new Date().getFullYear().toString(),
 };
 
-function replaceEstatutoPlaceholders(text) {
+function replaceEstatutoPlaceholders(text, template) {
   if (!text) return '';
-  return text.replace(/\{\{[A-Z_]+\}\}/g, match => SAMPLE_ESTATUTO_DATA[match] || match);
+  const overrides = {};
+  if (template?.directorio) {
+    const dir = template.directorio;
+    overrides['{{N_MIEMBROS}}'] = String(dir.cargos?.length || dir.totalRequerido || 5);
+    if (dir.duracionMandato) {
+      const d = dir.duracionMandato;
+      overrides['{{DURACION_MANDATO}}'] = `${d} ${d === 1 ? 'año' : 'años'}`;
+    }
+  }
+  if (template?.miembrosMinimos) overrides['{{MIEMBROS_MINIMOS}}'] = String(template.miembrosMinimos);
+  if (template?.comisionElectoral?.cantidad) overrides['{{MIEMBROS_COMISION_ELECTORAL}}'] = String(template.comisionElectoral.cantidad);
+  return text.replace(/\{\{[A-Z_]+\}\}/g, match => overrides[match] || SAMPLE_ESTATUTO_DATA[match] || match);
 }
 
 export default function EstatutosManagerView() {
@@ -309,12 +320,10 @@ export default function EstatutosManagerView() {
       const dir = t.directorio || { cargos: [], totalRequerido: 5 };
       const cargos = dir.cargos || [];
       const newOrden = cargos.length + 1;
+      const newCargos = [...cargos, { id: `director_${newOrden}`, nombre: 'Director/a', required: false, color: '#6366f1', orden: newOrden }];
       return {
         ...t,
-        directorio: {
-          ...dir,
-          cargos: [...cargos, { id: `director_${newOrden}`, nombre: 'Director/a', required: false, color: '#6366f1', orden: newOrden }]
-        }
+        directorio: { ...dir, cargos: newCargos, totalRequerido: newCargos.length }
       };
     });
   }
@@ -322,7 +331,8 @@ export default function EstatutosManagerView() {
   function deleteCargo(idx) {
     setSelectedTemplate(t => {
       const dir = t.directorio || { cargos: [] };
-      return { ...t, directorio: { ...dir, cargos: dir.cargos.filter((_, i) => i !== idx) } };
+      const newCargos = dir.cargos.filter((_, i) => i !== idx);
+      return { ...t, directorio: { ...dir, cargos: newCargos, totalRequerido: newCargos.length } };
     });
   }
 
@@ -756,10 +766,10 @@ export default function EstatutosManagerView() {
                     ESTATUTO
                   </div>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1e293b' }}>
-                    {replaceEstatutoPlaceholders('{{NOMBRE_ORGANIZACION}}')}
+                    {replaceEstatutoPlaceholders('{{NOMBRE_ORGANIZACION}}', selectedTemplate)}
                   </h2>
                   <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                    {replaceEstatutoPlaceholders('{{TIPO_ORGANIZACION}}')} — {replaceEstatutoPlaceholders('{{COMUNA}}')}
+                    {replaceEstatutoPlaceholders('{{TIPO_ORGANIZACION}}', selectedTemplate)} — {replaceEstatutoPlaceholders('{{COMUNA}}', selectedTemplate)}
                   </div>
                 </div>
 
@@ -783,7 +793,7 @@ export default function EstatutosManagerView() {
                         fontSize: 13, color: '#374151', lineHeight: 1.8,
                         whiteSpace: 'pre-wrap', textAlign: 'justify',
                       }}>
-                        {replaceEstatutoPlaceholders(art.contenido)}
+                        {replaceEstatutoPlaceholders(art.contenido, selectedTemplate)}
                       </div>
                     </div>
                   ))
@@ -792,7 +802,7 @@ export default function EstatutosManagerView() {
                 {/* Footer */}
                 <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
                   <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                    {replaceEstatutoPlaceholders('{{COMUNA}}')}, {replaceEstatutoPlaceholders('{{FECHA_DIA}}')} de {replaceEstatutoPlaceholders('{{FECHA_MES}}')} del {replaceEstatutoPlaceholders('{{FECHA_ANIO}}')}
+                    {replaceEstatutoPlaceholders('{{COMUNA}}', selectedTemplate)}, {replaceEstatutoPlaceholders('{{FECHA_DIA}}', selectedTemplate)} de {replaceEstatutoPlaceholders('{{FECHA_MES}}', selectedTemplate)} del {replaceEstatutoPlaceholders('{{FECHA_ANIO}}', selectedTemplate)}
                   </div>
                 </div>
               </div>
