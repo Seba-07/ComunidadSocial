@@ -35,6 +35,7 @@ export default function SecurityIncidentsView({ prefillData }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmNotifyUsers, setConfirmNotifyUsers] = useState(null); // incident id
   const addToast = useUiStore(s => s.addToast);
 
   const defaultForm = {
@@ -272,9 +273,9 @@ export default function SecurityIncidentsView({ prefillData }) {
                   </button>
                 )}
                 {!inc.notifiedUsers && inc.usersAffectedCount > 0 && (
-                  <button onClick={() => markNotified(inc._id, 'notifiedUsers')}
+                  <button onClick={() => setConfirmNotifyUsers(inc._id)}
                     style={{ padding: '6px 14px', fontSize: 12, background: '#fff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 6, cursor: 'pointer' }}>
-                    Marcar: Usuarios Notificados
+                    Marcar usuarios como notificados
                   </button>
                 )}
                 <button onClick={() => exportIncidentPDF(inc)}
@@ -282,6 +283,26 @@ export default function SecurityIncidentsView({ prefillData }) {
                   Exportar PDF
                 </button>
               </div>
+
+              {/* ANCI portal info box */}
+              <div style={{
+                marginTop: 12, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'
+              }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <p style={{ margin: 0, fontSize: 12, color: '#1e40af', lineHeight: 1.5 }}>
+                    Para cumplir con la normativa legal, descargue este reporte en PDF y súbalo al portal oficial de incidentes del Estado:
+                  </p>
+                </div>
+                <a href="https://portal.anci.gob.cl" target="_blank" rel="noopener noreferrer"
+                  style={{
+                    padding: '8px 16px', background: '#1d4ed8', color: '#fff', borderRadius: 6,
+                    fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap'
+                  }}>
+                  Ir al Portal ANCI
+                </a>
+              </div>
+
               {(inc.notifiedAgency || inc.notifiedUsers) && (
                 <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280' }}>
                   {inc.notifiedAgency && <span>Agencia notificada: {formatDate(inc.notifiedAgencyAt)} | </span>}
@@ -290,6 +311,43 @@ export default function SecurityIncidentsView({ prefillData }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Confirmation modal for marking users as notified */}
+      {confirmNotifyUsers && (
+        <div onClick={e => { if (e.target === e.currentTarget) setConfirmNotifyUsers(null); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+          }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: 28, maxWidth: 480, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#111827' }}>
+              Confirmar notificación a usuarios
+            </h3>
+            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: '0 0 24px' }}>
+              ¿Confirma que la Municipalidad ya notificó a los usuarios afectados a través de los canales oficiales e institucionales correspondientes?
+            </p>
+            <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 20px', fontStyle: 'italic' }}>
+              Esta acción registrará la fecha y hora actual como constancia de cumplimiento. No se enviarán correos automáticos a los usuarios.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmNotifyUsers(null)}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={() => {
+                markNotified(confirmNotifyUsers, 'notifiedUsers');
+                setConfirmNotifyUsers(null);
+              }}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                Sí, confirmar notificación
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -413,13 +471,17 @@ function generateIncidentPDF(inc) {
   if (y > 250) { doc.addPage(); y = 20; }
   doc.line(ML, y, ML + CW, y);
   y += 8;
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
-  doc.setTextColor('#6b7280');
-  doc.text('Este documento fue generado como respaldo de cumplimiento de la Ley 21.719', ML, y);
-  y += 5;
-  doc.text('sobre Protección de Datos Personales.', ML, y);
-  y += 5;
+  doc.setTextColor('#dc2626');
+  const disclaimerText = 'Aviso Legal (Ley 21.719): Este sistema provee únicamente el reporte técnico. Como Responsable de Datos, es obligación exclusiva de la Municipalidad notificar esta brecha a la Agencia de Protección de Datos Personales / ANCI dentro de las 72 horas legales, así como gestionar la comunicación con los usuarios afectados.';
+  const disclaimerLines = doc.splitTextToSize(disclaimerText, CW);
+  disclaimerLines.forEach(line => {
+    if (y > 280) { doc.addPage(); y = 20; }
+    doc.text(line, ML, y);
+    y += 4;
+  });
+  y += 3;
   const now = new Date();
   doc.text(`Generado el ${now.toLocaleDateString('es-CL')} a las ${now.toLocaleTimeString('es-CL')} — ${tenant.platformName}`, ML, y);
 

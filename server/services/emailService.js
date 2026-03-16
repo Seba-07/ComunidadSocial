@@ -596,7 +596,7 @@ const emailService = {
 
       <div class="divider"></div>
       <p style="color: #dc2626; font-weight: 600;">
-        Ley 21.719: Las brechas de seguridad deben notificarse a la Agencia de Proteccion de Datos dentro de 72 horas.
+        Aviso Legal (Ley 21.719): Este sistema provee únicamente el reporte técnico. Como Responsable de Datos, es obligación exclusiva de la Municipalidad notificar esta brecha a la Agencia de Protección de Datos Personales / ANCI dentro de las 72 horas legales, así como gestionar la comunicación con los usuarios afectados.
       </p>
     `;
 
