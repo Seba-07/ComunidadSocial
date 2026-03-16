@@ -82,6 +82,7 @@ export default function Step6_Review({ onNext, onPrev }) {
     return {
       NOMBRE_ORG: org.name || '',
       TIPO_ORG: templateConfig?.nombreTipo || org.type || '',
+      DESCRIPCION: org.description || '',
       DIRECCION: org.address || [org.street, org.streetNumber].filter(Boolean).join(' ') || '',
       COMUNA: org.commune || tenant.communeName,
       REGION: org.region || 'Metropolitana',
@@ -189,6 +190,7 @@ export default function Step6_Review({ onNext, onPrev }) {
       <Section title="Datos de la Organización">
         <Row label="Tipo" value={templateConfig?.nombreTipo || org.type} />
         <Row label="Nombre" value={org.name} />
+        <Row label="Descripción" value={org.description} />
         <Row label="Dirección" value={[org.street, org.streetNumber, org.commune].filter(Boolean).join(', ')} />
         <Row label="Email" value={org.email} />
         <Row label="Teléfono" value={org.phone} />

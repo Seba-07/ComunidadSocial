@@ -32,6 +32,7 @@ const AVAILABLE_PLACEHOLDERS = [
   { key: 'UNIDAD_VECINAL', label: 'Unidad Vecinal', description: 'Unidad vecinal', requiredFor: [] },
   { key: 'EMAIL', label: 'Email contacto', description: 'Email de contacto', requiredFor: [] },
   { key: 'TELEFONO', label: 'Teléfono', description: 'Teléfono de contacto', requiredFor: [] },
+  { key: 'DESCRIPCION', label: 'Descripción', description: 'Descripción de la organización', requiredFor: [] },
   { key: 'OBJETIVOS', label: 'Objetivos', description: 'Objetivos de la organización', requiredFor: ['acta_constitutiva'] },
   // --- Miembros ---
   { key: 'TOTAL_SOCIOS', label: 'Total socios', description: 'Cantidad total de miembros', requiredFor: ['acta_constitutiva', 'lista_socios'] },

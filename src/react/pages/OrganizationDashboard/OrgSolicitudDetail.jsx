@@ -302,6 +302,12 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           {org.unidadVecinal && <div><span style={labelStyle}>Unidad Vecinal</span><div style={valueStyle}>{org.unidadVecinal}</div></div>}
           {org.territory && <div><span style={labelStyle}>Territorio</span><div style={valueStyle}>{org.territory}</div></div>}
         </div>
+        {org.description && (
+          <div style={{ marginTop: 12 }}>
+            <span style={labelStyle}>Descripción</span>
+            <div style={{ ...valueStyle, fontSize: 13, whiteSpace: 'pre-line', marginTop: 4 }}>{org.description}</div>
+          </div>
+        )}
         {org.objectives && (
           <div style={{ marginTop: 12 }}>
             <span style={labelStyle}>Objetivos</span>

@@ -63,6 +63,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     const values = {
       '{{NOMBRE_ORGANIZACION}}': formData.organization?.name || '_______________',
       '{{TIPO_ORGANIZACION}}': templateConfig?.nombreTipo || formData.organization?.type || '_______________',
+      '{{DESCRIPCION}}': formData.organization?.description || '_______________',
       '{{OBJETIVOS}}': formData.organization?.objectives || 'promover la integración, participación y desarrollo de la comunidad',
       '{{COMUNA}}': formData.organization?.commune || tenant.communeName,
       '{{REGION}}': formData.organization?.region || 'Región Metropolitana',

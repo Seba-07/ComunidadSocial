@@ -46,6 +46,7 @@ const TYPE_COLORS = {
 const SAMPLE_DATA = {
   NOMBRE_ORG: 'Club Deportivo Los Cóndores',
   TIPO_ORG: 'Club Deportivo',
+  DESCRIPCION: 'Organización dedicada al fomento del deporte y la recreación comunitaria',
   DIRECCION: 'Av. Principal 1234',
   COMUNA: tenant.communeName,
   REGION: 'Metropolitana',
