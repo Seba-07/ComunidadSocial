@@ -17,24 +17,38 @@ function calcAge(birthDate) {
   return age;
 }
 
+const QUORUM_MINIMUMS = { JUNTA_VECINOS: 50 };
+const DEFAULT_MINIMUM = 15;
+
+function getMinMembers(orgType) {
+  return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM;
+}
+
 export default function OrgMembers({ org, onRefresh }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [viewMember, setViewMember] = useState(null);
   const [payMember, setPayMember] = useState(null);
   const [search, setSearch] = useState('');
+  const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [deactivateReason, setDeactivateReason] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
 
   const members = org?.members || [];
   const activeCount = members.filter((m) => m.status !== 'inactive').length;
+  const inactiveCount = members.length - activeCount;
+  const minRequired = getMinMembers(org?.organizationType);
+  const quorumMet = activeCount >= minRequired;
+  const visibleMembers = showInactive ? members : members.filter(m => m.status !== 'inactive');
   const filtered = search
-    ? members.filter((m) => {
+    ? visibleMembers.filter((m) => {
         const q = search.toLowerCase();
         return (m.firstName || '').toLowerCase().includes(q) ||
           (m.lastName || '').toLowerCase().includes(q) ||
           (m.rut || '').includes(q);
       })
-    : members;
+    : visibleMembers;
 
   async function handleDelete(member) {
     const name = `${member.firstName} ${member.lastName}`;
@@ -45,6 +59,29 @@ export default function OrgMembers({ org, onRefresh }) {
       onRefresh();
     } catch (error) {
       addToast(error.message || 'Error al eliminar', 'error');
+    }
+  }
+
+  async function handleDeactivate() {
+    if (!deactivateTarget) return;
+    try {
+      await apiService.deactivateMember(org._id, deactivateTarget.rut, deactivateReason || 'Baja voluntaria');
+      addToast(`${deactivateTarget.firstName} ${deactivateTarget.lastName} dado/a de baja`, 'success');
+      setDeactivateTarget(null);
+      setDeactivateReason('');
+      onRefresh();
+    } catch (error) {
+      addToast(error.message || 'Error al dar de baja', 'error');
+    }
+  }
+
+  async function handleReactivate(member) {
+    try {
+      await apiService.reactivateMember(org._id, member.rut);
+      addToast(`${member.firstName} ${member.lastName} reactivado/a`, 'success');
+      onRefresh();
+    } catch (error) {
+      addToast(error.message || 'Error al reactivar', 'error');
     }
   }
 
@@ -88,17 +125,34 @@ export default function OrgMembers({ org, onRefresh }) {
       }
     },
     {
+      key: 'status',
+      label: 'Estado',
+      hideOnMobile: true,
+      render: (val) => {
+        const isInactive = val === 'inactive';
+        return <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: isInactive ? '#fef2f2' : '#f0fdf4', color: isInactive ? '#dc2626' : '#059669' }}>{isInactive ? 'Baja' : 'Activo'}</span>;
+      }
+    },
+    {
       key: 'actions',
       label: '',
       sortable: false,
-      render: (_, row) => (
-        <div className="r-btn-row" style={{ gap: 6 }}>
-          <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
-          <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>
-          <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>
-          <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
-        </div>
-      )
+      render: (_, row) => {
+        const isInactive = row.status === 'inactive';
+        return (
+          <div className="r-btn-row" style={{ gap: 6 }}>
+            <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
+            {!isInactive && <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>}
+            {!isInactive && <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>}
+            {isInactive ? (
+              <button onClick={() => handleReactivate(row)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#bfdbfe' }}>Reactivar</button>
+            ) : (
+              <button onClick={() => setDeactivateTarget(row)} style={{ ...actionBtnStyle, color: '#f59e0b', borderColor: '#fde68a' }}>Dar de Baja</button>
+            )}
+            <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
+          </div>
+        );
+      }
     }
   ];
 
@@ -116,7 +170,24 @@ export default function OrgMembers({ org, onRefresh }) {
           <span style={{ fontSize: 12, color: '#6b7280' }}>Activos</span>
           <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: '#059669' }}>{activeCount}</span>
         </div>
+        <div style={{ background: quorumMet ? '#f0fdf4' : '#fef2f2', borderRadius: 12, padding: '12px 20px', flex: 1, minWidth: 120 }}>
+          <span style={{ fontSize: 12, color: '#6b7280' }}>Quórum mínimo</span>
+          <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: quorumMet ? '#059669' : '#dc2626' }}>{activeCount}/{minRequired}</span>
+        </div>
+        {inactiveCount > 0 && (
+          <div style={{ background: '#fef3c7', borderRadius: 12, padding: '12px 20px', flex: 1, minWidth: 120 }}>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>Dados de baja</span>
+            <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: '#92400e' }}>{inactiveCount}</span>
+          </div>
+        )}
       </div>
+
+      {/* Quorum alert */}
+      {!quorumMet && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#991b1b' }}>
+          <strong>Quórum Insuficiente:</strong> La organización necesita al menos {minRequired} socios activos para operar legalmente{org?.organizationType === 'JUNTA_VECINOS' ? ' (Art. 40, Ley 19.418)' : ''}. Actualmente tiene {activeCount}.
+        </div>
+      )}
 
       {/* Info */}
       <div className="r-info-card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
@@ -126,9 +197,15 @@ export default function OrgMembers({ org, onRefresh }) {
       {/* Toolbar */}
       <div className="r-toolbar" style={{ marginBottom: 16 }}>
         <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>
-          Miembros
+          Nómina de Socios
         </h3>
         <div className="r-toolbar__actions">
+          {inactiveCount > 0 && (
+            <label style={{ fontSize: 13, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
+              Mostrar dados de baja
+            </label>
+          )}
           <input type="text" placeholder="Buscar por nombre o RUT..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="r-search" />
           <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowAdd(true)}>
@@ -153,6 +230,38 @@ export default function OrgMembers({ org, onRefresh }) {
       {/* Payment Modal */}
       <MemberPaymentModal open={!!payMember} onClose={() => setPayMember(null)} orgId={org._id}
         member={payMember} onSaved={() => { setPayMember(null); onRefresh(); }} addToast={addToast} />
+
+      {/* Deactivation Modal */}
+      {deactivateTarget && (
+        <div onClick={e => { if (e.target === e.currentTarget) { setDeactivateTarget(null); setDeactivateReason(''); } }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#111827' }}>Dar de Baja a Socio</h3>
+            <p style={{ fontSize: 14, color: '#374151', margin: '0 0 16px' }}>
+              ¿Confirma la baja de <strong>{deactivateTarget.firstName} {deactivateTarget.lastName}</strong> ({deactivateTarget.rut})?
+            </p>
+            {!quorumMet || activeCount <= minRequired ? (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, color: '#991b1b' }}>
+                La organización quedará con quórum insuficiente tras esta baja.
+              </div>
+            ) : null}
+            <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Motivo (opcional)</label>
+            <input type="text" value={deactivateReason} onChange={e => setDeactivateReason(e.target.value)}
+              placeholder="Ej: Renuncia voluntaria, cambio de domicilio..."
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setDeactivateTarget(null); setDeactivateReason(''); }}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={handleDeactivate}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                Confirmar Baja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -85,6 +85,8 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [isActioning, setIsActioning] = useState(false);
   const [signedPdf, setSignedPdf] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showDissolve, setShowDissolve] = useState(false);
+  const [dissolveReason, setDissolveReason] = useState('');
 
   const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
@@ -162,6 +164,25 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
       if (updated) setOrg(updated);
     } catch (err) {
       addToast(err.message, 'error');
+    } finally {
+      setIsActioning(false);
+    }
+  }
+
+  async function handleDissolve() {
+    if (!dissolveReason.trim() || dissolveReason.trim().length < 10) {
+      addToast('Debe proporcionar una razón de disolución (mínimo 10 caracteres)', 'error');
+      return;
+    }
+    setIsActioning(true);
+    try {
+      await apiService.dissolveOrganization(org._id, dissolveReason);
+      addToast('Organización disuelta', 'success');
+      setShowDissolve(false);
+      const updated = await refreshOrganization(org._id);
+      if (updated) setOrg(updated);
+    } catch (err) {
+      addToast(err.message || 'Error al disolver', 'error');
     } finally {
       setIsActioning(false);
     }
@@ -903,6 +924,10 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               Aprobar con Certificado FEA
             </button>
           )}
+          {org.status === 'approved' && (
+            <button onClick={() => setShowDissolve(true)} disabled={isActioning}
+              style={actionBtn('#dc2626')}>Disolver Organización</button>
+          )}
         </div>
       </div>
 
@@ -928,6 +953,35 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             <button onClick={() => setShowReject(false)} style={actionBtn('#6b7280')}>Cancelar</button>
             <button onClick={handleReject} disabled={isActioning} style={actionBtn('#ef4444')}>
               {isActioning ? 'Rechazando...' : 'Confirmar Rechazo'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Dissolution sub-modal */}
+      {showDissolve && (
+        <Modal open onClose={() => setShowDissolve(false)} title="Disolver Organización">
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#991b1b' }}>
+            <strong>Atención:</strong> Esta acción es irreversible. La organización pasará a estado "Disuelta" y no podrá reactivarse.
+          </div>
+          {org.config?.beneficiarioDisolucion && (
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+              <strong>Beneficiario de bienes:</strong> {org.config.beneficiarioDisolucion}
+              {org.config.rutDisolucion && ` (RUT: ${org.config.rutDisolucion})`}
+            </div>
+          )}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6, color: '#374151' }}>
+              Razón de disolución *
+            </label>
+            <textarea value={dissolveReason} onChange={e => setDissolveReason(e.target.value)} rows={4}
+              style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
+              placeholder="Ej: Quórum insuficiente, inactividad prolongada, solicitud de la directiva..." />
+          </div>
+          <div className="r-btn-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <button onClick={() => setShowDissolve(false)} style={actionBtn('#6b7280')}>Cancelar</button>
+            <button onClick={handleDissolve} disabled={isActioning} style={actionBtn('#dc2626')}>
+              {isActioning ? 'Disolviendo...' : 'Confirmar Disolución'}
             </button>
           </div>
         </Modal>

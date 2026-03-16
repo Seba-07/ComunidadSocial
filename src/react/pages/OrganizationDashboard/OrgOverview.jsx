@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../stores/authStore';
+import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import { formatDate } from '../../utils/formatters';
 
@@ -56,13 +57,24 @@ function prettifyType(type) {
   return TYPE_LABELS[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bOrg\b/i, 'Organización').replace(/\bApr\b/i, 'APR');
 }
 
+const QUORUM_MINIMUMS = { JUNTA_VECINOS: 50 };
+const DEFAULT_MINIMUM = 15;
+function getMinMembers(orgType) { return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM; }
+
 export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
   if (!org) return null;
 
   const { user } = useAuthStore();
+  const addToast = useUiStore(s => s.addToast);
   const canEdit = user?.role === 'MUNICIPALIDAD' || org.userId === user?._id;
   const memberCount = org.members?.length || 0;
+  const activeCount = (org.members || []).filter(m => m.status !== 'inactive').length;
   const assemblyCount = org.assemblies?.length || 0;
+  const minRequired = getMinMembers(org.organizationType);
+  const quorumMet = activeCount >= minRequired;
+  const [showDissolve, setShowDissolve] = useState(false);
+  const [dissolveReason, setDissolveReason] = useState('');
+  const [dissolving, setDissolving] = useState(false);
 
   // Active assemblies alert
   const activeAssemblies = (org.assemblies || []).filter(
@@ -147,6 +159,88 @@ export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
             <DirMember label="Vicepresidente" member={org.provisionalDirectorio.vicePresident} />
             <DirMember label="Secretario" member={org.provisionalDirectorio.secretary} />
             <DirMember label="Tesorero" member={org.provisionalDirectorio.treasurer} />
+          </div>
+        </div>
+      )}
+
+      {/* Quorum Alert */}
+      {org.status === 'approved' && !quorumMet && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginTop: 24 }}>
+          <div style={{ fontWeight: 700, color: '#991b1b', fontSize: 15, marginBottom: 6 }}>
+            Quórum Insuficiente
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: '#991b1b', lineHeight: 1.5 }}>
+            La organización tiene <strong>{activeCount}</strong> socios activos pero necesita al menos <strong>{minRequired}</strong> para operar legalmente{org.organizationType === 'JUNTA_VECINOS' ? ' (Art. 40, Ley 19.418)' : ''}.
+            Si esta situación persiste, la organización podría ser disuelta.
+          </p>
+        </div>
+      )}
+
+      {/* Dissolution (only for org owner/admin, only for approved orgs) */}
+      {canEdit && org.status === 'approved' && (
+        <div style={{ marginTop: 32, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+          <details style={{ cursor: 'pointer' }}>
+            <summary style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', userSelect: 'none' }}>
+              Disolver Organización
+            </summary>
+            <div style={{ marginTop: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 20 }}>
+              <p style={{ fontSize: 13, color: '#991b1b', margin: '0 0 12px', lineHeight: 1.5 }}>
+                La disolución es <strong>irreversible</strong>. Los bienes se transferirán a: <strong>{org.config?.beneficiarioDisolucion || 'No configurado'}</strong>.
+              </p>
+              <button onClick={() => setShowDissolve(true)}
+                style={{ padding: '8px 20px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                Iniciar Disolución
+              </button>
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* Dissolution confirmation modal */}
+      {showDissolve && (
+        <div onClick={e => { if (e.target === e.currentTarget) setShowDissolve(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 480, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#dc2626' }}>Confirmar Disolución</h3>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 10, marginBottom: 16, fontSize: 13, color: '#991b1b' }}>
+              Esta acción es irreversible. La organización será disuelta y no podrá reactivarse.
+            </div>
+            {org.config?.beneficiarioDisolucion && (
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 10, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
+                <strong>Beneficiario de bienes:</strong> {org.config.beneficiarioDisolucion}
+                {org.config.rutDisolucion && ` (RUT: ${org.config.rutDisolucion})`}
+              </div>
+            )}
+            <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Razón de disolución *</label>
+            <textarea value={dissolveReason} onChange={e => setDissolveReason(e.target.value)} rows={3}
+              placeholder="Ej: Decisión de la asamblea, inactividad prolongada..."
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical', marginBottom: 16, boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setShowDissolve(false); setDissolveReason(''); }}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={async () => {
+                if (!dissolveReason.trim() || dissolveReason.trim().length < 10) {
+                  addToast('Razón debe tener al menos 10 caracteres', 'error');
+                  return;
+                }
+                setDissolving(true);
+                try {
+                  await apiService.dissolveOrganization(org._id, dissolveReason);
+                  addToast('Organización disuelta', 'success');
+                  setShowDissolve(false);
+                  onRefresh();
+                } catch (err) {
+                  addToast(err.message || 'Error al disolver', 'error');
+                } finally {
+                  setDissolving(false);
+                }
+              }} disabled={dissolving}
+                style={{ padding: '8px 20px', fontSize: 13, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, cursor: dissolving ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: dissolving ? 0.6 : 1 }}>
+                {dissolving ? 'Disolviendo...' : 'Confirmar Disolución'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -478,14 +478,27 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
       Organization.countDocuments(statusFilter)
     ]);
 
-    // Add memberCount from a lightweight aggregation
+    // Add memberCount + activeMemberCount from a lightweight aggregation
     const orgIds = organizations.map(o => o._id);
     const memberCounts = await Organization.aggregate([
       { $match: { _id: { $in: orgIds } } },
-      { $project: { memberCount: { $size: { $ifNull: ['$members', []] } } } }
+      { $project: {
+        memberCount: { $size: { $ifNull: ['$members', []] } },
+        activeMemberCount: {
+          $size: {
+            $filter: {
+              input: { $ifNull: ['$members', []] },
+              cond: { $ne: ['$$this.status', 'inactive'] }
+            }
+          }
+        }
+      }}
     ]);
-    const countMap = Object.fromEntries(memberCounts.map(c => [c._id.toString(), c.memberCount]));
-    const orgsWithCount = organizations.map(o => ({ ...o, memberCount: countMap[o._id.toString()] || 0 }));
+    const countMap = Object.fromEntries(memberCounts.map(c => [c._id.toString(), { total: c.memberCount, active: c.activeMemberCount }]));
+    const orgsWithCount = organizations.map(o => {
+      const counts = countMap[o._id.toString()] || { total: 0, active: 0 };
+      return { ...o, memberCount: counts.total, activeMemberCount: counts.active };
+    });
 
     res.json({ organizations: orgsWithCount, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (error) {
@@ -3616,5 +3629,143 @@ router.post('/:id/directorio/renuncia',
     }
   }
 );
+
+// ============ MEMBER DEACTIVATION (dar de baja) ============
+router.post('/:id/members/:rut/deactivate', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    // Owner or MUNICIPALIDAD can deactivate
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+
+    const memberRut = decodeURIComponent(req.params.rut);
+    const member = organization.members.find(m => m.rut === memberRut);
+    if (!member) return res.status(404).json({ error: 'Miembro no encontrado' });
+
+    if (member.status === 'inactive') {
+      return res.status(400).json({ error: 'El miembro ya está dado de baja' });
+    }
+
+    member.status = 'inactive';
+    member.deactivatedAt = new Date();
+    member.deactivationReason = req.body.reason || 'Baja voluntaria';
+
+    await organization.save();
+
+    await AuditLog.create({
+      action: 'MEMBER_DEACTIVATED',
+      userId: req.userId,
+      organizationId: organization._id,
+      details: {
+        memberRut: memberRut,
+        memberName: `${member.firstName} ${member.lastName}`,
+        reason: member.deactivationReason
+      }
+    });
+
+    res.json({ message: 'Miembro dado de baja', data: organization });
+  } catch (error) {
+    console.error('Member deactivation error:', error);
+    res.status(500).json({ error: 'Error al dar de baja al miembro' });
+  }
+});
+
+// Reactivate member
+router.post('/:id/members/:rut/reactivate', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+
+    const memberRut = decodeURIComponent(req.params.rut);
+    const member = organization.members.find(m => m.rut === memberRut);
+    if (!member) return res.status(404).json({ error: 'Miembro no encontrado' });
+
+    member.status = 'active';
+    member.deactivatedAt = undefined;
+    member.deactivationReason = undefined;
+
+    await organization.save();
+
+    res.json({ message: 'Miembro reactivado', data: organization });
+  } catch (error) {
+    console.error('Member reactivation error:', error);
+    res.status(500).json({ error: 'Error al reactivar al miembro' });
+  }
+});
+
+// ============ DISSOLUTION ============
+router.post('/:id/dissolve', authenticate, async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    // Owner or MUNICIPALIDAD can dissolve
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'No autorizado para disolver esta organización' });
+    }
+
+    if (organization.status !== 'approved') {
+      return res.status(400).json({ error: 'Solo se pueden disolver organizaciones aprobadas' });
+    }
+
+    const { reason } = req.body;
+    if (!reason || reason.length < 10) {
+      return res.status(400).json({ error: 'Debe proporcionar una razón de disolución (mínimo 10 caracteres)' });
+    }
+
+    organization.status = 'dissolved';
+    organization.dissolvedAt = new Date();
+    organization.dissolutionReason = reason;
+    organization.dissolvedBy = req.userId;
+    organization.statusHistory.push({
+      status: 'dissolved',
+      date: new Date(),
+      comment: `Disolución: ${reason}`
+    });
+
+    await organization.save();
+
+    await AuditLog.create({
+      action: 'ORGANIZATION_DISSOLVED',
+      userId: req.userId,
+      organizationId: organization._id,
+      details: {
+        organizationName: organization.organizationName,
+        reason,
+        initiatedBy: isAdmin ? 'MUNICIPALIDAD' : 'DIRECTIVA',
+        beneficiario: organization.config?.beneficiarioDisolucion || 'No configurado'
+      }
+    });
+
+    const user = await User.findById(req.userId).select('firstName lastName').lean();
+    const actorName = user ? `${user.firstName} ${user.lastName}` : 'Sistema';
+
+    res.json({
+      message: 'Organización disuelta exitosamente',
+      data: {
+        organizationName: organization.organizationName,
+        dissolvedAt: organization.dissolvedAt,
+        dissolvedBy: actorName,
+        beneficiario: organization.config?.beneficiarioDisolucion
+      }
+    });
+  } catch (error) {
+    console.error('Dissolution error:', error);
+    res.status(500).json({ error: 'Error al disolver la organización' });
+  }
+});
 
 export default router;

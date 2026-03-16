@@ -21,6 +21,14 @@ const memberSchema = new mongoose.Schema({
     enum: ['president', 'secretary', 'treasurer', 'director', 'member', 'electoral_commission'],
     default: 'member'
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  joinDate: { type: Date, default: Date.now },
+  deactivatedAt: Date,
+  deactivationReason: String,
   signature: String, // Base64
   certificate: String // Base64 or URL
 });

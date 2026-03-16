@@ -9,6 +9,18 @@ import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import OrgReviewModal from './OrgReviewModal';
 
+const QUORUM_MINIMUMS = { JUNTA_VECINOS: 50 };
+const DEFAULT_MINIMUM = 15;
+function getMinMembers(orgType) {
+  return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM;
+}
+function isGhostOrg(org) {
+  if (org.status !== 'approved') return false;
+  const activeMembers = org.activeMemberCount ?? org.memberCount ?? 0;
+  const min = getMinMembers(org.organizationType || org.type);
+  return activeMembers < min;
+}
+
 const STATUS_FILTERS = [
   { key: 'all', label: 'Todas' },
   { key: 'pending_review', label: 'Pendientes', color: '#f59e0b' },
@@ -18,6 +30,8 @@ const STATUS_FILTERS = [
   { key: 'ministro_approved', label: 'Aprobada Ministro', color: '#06b6d4' },
   { key: 'approved', label: 'Aprobadas', color: '#10b981' },
   { key: 'rejected', label: 'Rechazadas', color: '#ef4444' },
+  { key: 'dissolved', label: 'Disueltas', color: '#6b7280' },
+  { key: 'fantasma', label: 'Fantasmas', color: '#dc2626' },
   { key: 'draft', label: 'Borradores', color: '#6b7280' }
 ];
 
@@ -29,19 +43,24 @@ export default function OrganizationsList() {
   const addToast = useUiStore(s => s.addToast);
   const [showReview, setShowReview] = useState(false);
 
+  const ghostCount = useMemo(() => organizations.filter(isGhostOrg).length, [organizations]);
+
   const filtersWithCounts = useMemo(() =>
     STATUS_FILTERS.map(f => ({
       ...f,
       count: f.key === 'all'
         ? organizations.filter(o => o.status !== 'draft').length
+        : f.key === 'fantasma'
+        ? ghostCount
         : organizations.filter(o => o.status === f.key).length
-    })), [organizations]);
+    })), [organizations, ghostCount]);
 
   const filtered = useMemo(() => {
     let result = organizations;
     if (currentFilter === 'all') {
-      // Exclude drafts from default view — drafts are private to the user
       result = result.filter(o => o.status !== 'draft');
+    } else if (currentFilter === 'fantasma') {
+      result = result.filter(isGhostOrg);
     } else {
       result = result.filter(o => o.status === currentFilter);
     }
@@ -60,8 +79,9 @@ export default function OrganizationsList() {
     { icon: '\uD83C\uDFE2', label: 'Total', value: organizations.filter(o => o.status !== 'draft').length, color: '#2563eb' },
     { icon: '\u23F3', label: 'Pendientes', value: organizations.filter(o => o.status === 'pending_review').length, color: '#f59e0b' },
     { icon: '\u2705', label: 'Aprobadas', value: organizations.filter(o => o.status === 'approved').length, color: '#10b981' },
-    { icon: '\u274C', label: 'Rechazadas', value: organizations.filter(o => o.status === 'rejected').length, color: '#ef4444' }
-  ], [organizations]);
+    { icon: '\u274C', label: 'Rechazadas', value: organizations.filter(o => o.status === 'rejected').length, color: '#ef4444' },
+    { icon: '\uD83D\uDC7B', label: 'Fantasmas', value: ghostCount, color: '#dc2626' }
+  ], [organizations, ghostCount]);
 
   function openReview(org) {
     setSelectedOrg(org);
@@ -138,11 +158,20 @@ export default function OrganizationsList() {
                   {org.organizationName || org.name || 'Sin nombre'}
                 </span>
                 <StatusBadge status={org.status} />
+                {isGhostOrg(org) && (
+                  <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 10, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                    Quórum Insuficiente
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <span>{(org.organizationType || org.type || 'Sin tipo').replace(/_/g, ' ')}</span>
                 {(org.comuna || org.commune) && <span>{org.comuna || org.commune}</span>}
-                {org.memberCount != null && <span>{org.memberCount} miembros</span>}
+                {org.memberCount != null && (
+                  <span style={{ color: isGhostOrg(org) ? '#dc2626' : undefined, fontWeight: isGhostOrg(org) ? 600 : undefined }}>
+                    {org.activeMemberCount ?? org.memberCount}/{getMinMembers(org.organizationType || org.type)} socios
+                  </span>
+                )}
                 {org.createdAt && (
                   <span>{localeDateString(org.createdAt)}</span>
                 )}

@@ -1232,6 +1232,22 @@ class ApiService {
     return this.post(`/organizations/${orgId}/directorio/renuncia`, data);
   }
 
+  // ==================== MEMBER STATUS ====================
+
+  async deactivateMember(orgId, rut, reason) {
+    return this.post(`/organizations/${orgId}/members/${encodeURIComponent(rut)}/deactivate`, { reason });
+  }
+
+  async reactivateMember(orgId, rut) {
+    return this.post(`/organizations/${orgId}/members/${encodeURIComponent(rut)}/reactivate`);
+  }
+
+  // ==================== DISSOLUTION ====================
+
+  async dissolveOrganization(orgId, reason) {
+    return this.post(`/organizations/${orgId}/dissolve`, { reason });
+  }
+
   // ==================== HEALTH CHECK ====================
 
   async healthCheck() {
