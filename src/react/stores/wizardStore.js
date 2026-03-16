@@ -130,8 +130,8 @@ export const useWizardStore = create((set, get) => ({
           organization: {
             ...initialFormData.organization,
             ...(saved.formData?.organization || {}),
-            commune: saved.formData?.organization?.commune || initialFormData.organization.commune,
-            region: saved.formData?.organization?.region || initialFormData.organization.region
+            commune: tenant.communeName || initialFormData.organization.commune,
+            region: initialFormData.organization.region
           },
           config: { ...initialFormData.config, ...(saved.formData?.config || {}) }
         },
@@ -171,8 +171,8 @@ export const useWizardStore = create((set, get) => ({
             street: org.street || '',
             streetNumber: org.streetNumber || '',
             postalCode: org.postalCode || '',
-            region: org.region || initialFormData.organization.region,
-            commune: org.comuna || initialFormData.organization.commune,
+            region: initialFormData.organization.region,
+            commune: tenant.communeName || initialFormData.organization.commune,
             neighborhood: org.unidadVecinal || '',
             email: org.contactEmail || '',
             phone: org.contactPhone || '',
