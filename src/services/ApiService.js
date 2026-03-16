@@ -1068,6 +1068,16 @@ class ApiService {
     return this.put(`/admin-preferences/${key}`, { value });
   }
 
+  // ==================== MUNICIPALITY CONFIG ====================
+
+  async getMunicipalityConfig() {
+    return this.get('/config/municipality');
+  }
+
+  async updateMunicipalityConfig(data) {
+    return this.put('/config/municipality', data);
+  }
+
   // ==================== PRIVACY & CONSENT (Ley 21.719) ====================
 
   async getMyConsents() {

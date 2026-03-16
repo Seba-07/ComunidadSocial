@@ -37,6 +37,7 @@ import securityIncidentsRoutes from './routes/securityIncidents.js';
 import documentTemplatesRoutes from './routes/documentTemplates.js';
 import documentRegistryRoutes from './routes/documentRegistry.js';
 import tenantRoutes from './routes/tenant.js';
+import municipalityConfigRoutes from './routes/municipalityConfig.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -189,6 +190,7 @@ app.use('/api/security-incidents', securityIncidentsRoutes);
 app.use('/api/document-templates', documentTemplatesRoutes);
 app.use('/api/document-registry', documentRegistryRoutes);
 app.use('/api/tenant', tenantRoutes);
+app.use('/api/config/municipality', municipalityConfigRoutes);
 
 // CSP violation report endpoint (no auth required)
 app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
