@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
+import { jsPDF } from 'jspdf';
 import FileUpload from '../../../components/ui/FileUpload';
 import tenant from '../../../../config/tenant.js';
 
@@ -118,6 +119,79 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     return result;
   }
 
+  function downloadDraftPDF() {
+    const doc = new jsPDF();
+    const orgName = formData.organization?.name || 'Organización';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginLeft = 20;
+    const contentWidth = 170;
+
+    function addWatermark(d) {
+      const pages = d.internal.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        d.setPage(i);
+        // Diagonal watermark
+        d.saveGraphicsState();
+        d.setGState(new d.GState({ opacity: 0.08 }));
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(72);
+        d.setTextColor(220, 38, 38);
+        d.text('BORRADOR', pageWidth / 2, pageHeight / 2, {
+          align: 'center', angle: 45
+        });
+        d.restoreGraphicsState();
+        // Top banner
+        d.setFillColor(254, 242, 242);
+        d.rect(0, 0, pageWidth, 14, 'F');
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(9);
+        d.setTextColor(185, 28, 28);
+        d.text('DOCUMENTO PROVISORIO \u2013 SIN VALIDEZ LEGAL', pageWidth / 2, 9, { align: 'center' });
+        d.setTextColor(0, 0, 0);
+      }
+    }
+
+    // Title
+    let y = 24;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ESTATUTOS (BORRADOR)', pageWidth / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(11);
+    doc.text(orgName, pageWidth / 2, y, { align: 'center' });
+    y += 12;
+
+    // Articles
+    const sorted = [...articles].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
+    for (const art of sorted) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      const titleText = `Art\u00edculo ${art.numero}: ${art.titulo}`;
+      const titleLines = doc.splitTextToSize(titleText, contentWidth);
+      for (const line of titleLines) {
+        if (y > pageHeight - 20) { doc.addPage(); y = 24; }
+        doc.text(line, marginLeft, y);
+        y += 6;
+      }
+      y += 2;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const content = replacePlaceholders(art.contenido || '');
+      const lines = doc.splitTextToSize(content, contentWidth);
+      for (const line of lines) {
+        if (y > pageHeight - 20) { doc.addPage(); y = 24; }
+        doc.text(line, marginLeft, y);
+        y += 5;
+      }
+      y += 6;
+    }
+
+    addWatermark(doc);
+    doc.save(`Estatutos_Borrador_${orgName.replace(/\s+/g, '_')}.pdf`);
+  }
+
   function handleCustomFile(file) {
     if (!file) {
       setFormDataField('estatutos', { type: 'custom', content: null, customFile: null });
@@ -216,6 +290,22 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
             </div>
           )}
 
+          {/* Download draft button */}
+          {hasArticles && (
+            <button
+              onClick={downloadDraftPDF}
+              style={{
+                marginTop: 16, width: '100%', padding: '12px 20px',
+                border: '1px solid #d1d5db', borderRadius: 10, background: 'white',
+                fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}
+            >
+              <span style={{ fontSize: 16 }}>&#8681;</span>
+              Descargar Borrador para Revisión
+            </button>
+          )}
+
           {/* Info banner */}
           <div style={{
             background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
@@ -223,7 +313,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
           }}>
             <span style={{ fontSize: 16 }}>&#9432;</span>
             <p style={{ margin: 0, fontSize: 13, color: '#1e40af' }}>
-              Este estatuto será validado en la asamblea constitutiva.
+              Este estatuto será validado en la asamblea constitutiva. El borrador descargado no tiene validez legal.
             </p>
           </div>
         </div>
