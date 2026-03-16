@@ -4,6 +4,7 @@ import AuthLayout from '../../components/layout/AuthLayout';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import ContactSupportModal from './ContactSupportModal';
 import { useAuthStore } from '../../stores/authStore';
 import './auth.css';
 
@@ -15,6 +16,7 @@ const TABS = [
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState('login');
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -67,7 +69,33 @@ export default function AuthPage() {
         {activeTab === 'register' && <RegisterForm />}
       </div>
 
+      {/* Contact support link */}
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <button
+          onClick={() => setContactOpen(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'color 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          ¿Necesitas ayuda? Escribenos
+        </button>
+      </div>
+
       <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
+      <ContactSupportModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </AuthLayout>
   );
 }
