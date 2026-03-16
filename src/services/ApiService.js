@@ -1195,6 +1195,16 @@ class ApiService {
     window.URL.revokeObjectURL(downloadUrl);
   }
 
+  // ==================== PASSWORD RECOVERY ====================
+
+  async forgotPassword(email) {
+    return this.post('/auth/forgot-password', { email });
+  }
+
+  async resetPassword(token, newPassword) {
+    return this.post('/auth/reset-password', { token, newPassword });
+  }
+
   // ==================== SUPPORT TICKETS ====================
 
   async createSupportTicket(data) {

@@ -667,6 +667,68 @@ const emailService = {
     await this.sendEmail({ to: supportEmail, subject, html });
   },
 
+  // -----------------------------------------------------------------------
+  // Recuperación de contraseña
+  // -----------------------------------------------------------------------
+
+  async sendPasswordResetEmail({ email, userName, resetUrl }) {
+    const bodyHtml = `
+      <h2>Recuperacion de Contraseña</h2>
+      <p>Hola <strong>${userName}</strong>,</p>
+      <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en ${tenant.platformName}.</p>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${resetUrl}" class="cta-button" style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+          Restablecer Contraseña
+        </a>
+      </div>
+
+      <p>Si no puedes hacer clic en el boton, copia y pega este enlace en tu navegador:</p>
+      <p style="word-break: break-all; color: #6b7280; font-size: 13px;">${resetUrl}</p>
+
+      <div class="divider"></div>
+
+      <p style="color: #dc2626; font-size: 13px; font-weight: 600;">
+        Este enlace expira en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo de forma segura.
+      </p>
+    `;
+
+    const subject = `Restablecer contraseña — ${tenant.platformShortName}`;
+    const html = buildEmailTemplate('Recuperacion de Contraseña', bodyHtml);
+
+    await this.sendEmail({ to: email, subject, html });
+  },
+
+  // -----------------------------------------------------------------------
+  // Notificación de reset de contraseña (Ministros - password temporal)
+  // -----------------------------------------------------------------------
+
+  async sendPasswordResetNotification({ email, userName, tempPassword }) {
+    const bodyHtml = `
+      <h2>Contraseña Restablecida</h2>
+      <p>Hola <strong>${userName}</strong>,</p>
+      <p>El administrador ha restablecido tu contraseña de acceso a ${tenant.platformName}.</p>
+
+      <table class="info-table">
+        <tr>
+          <td>Contraseña temporal</td>
+          <td><strong style="font-size: 16px; letter-spacing: 1px;">${tempPassword}</strong></td>
+        </tr>
+      </table>
+
+      <div class="divider"></div>
+
+      <p style="color: #f59e0b; font-weight: 600;">
+        Por seguridad, debes cambiar esta contraseña la primera vez que inicies sesion.
+      </p>
+    `;
+
+    const subject = `Contraseña restablecida — ${tenant.platformShortName}`;
+    const html = buildEmailTemplate('Contraseña Restablecida', bodyHtml);
+
+    await this.sendEmail({ to: email, subject, html });
+  },
+
   async sendVerificationReminder({ email, userName, verifyUrl }) {
     const bodyHtml = `
       <h2>Recordatorio: Verifica tu email</h2>

@@ -376,6 +376,87 @@ router.post('/change-password', authenticate, sensitiveLimiter, validate(changeP
   }
 });
 
+// Forgot password - solicitar enlace de recuperación
+// Rate limited: 3 por hora (sensitiveLimiter)
+router.post('/forgot-password', sensitiveLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'El email es requerido' });
+    }
+
+    // Always return success to prevent email enumeration
+    const successMessage = 'Si el correo existe en nuestro sistema, recibirás un enlace de recuperación.';
+
+    const user = await User.findOne({ email: email.toLowerCase(), active: true });
+    if (!user) {
+      return res.json({ message: successMessage });
+    }
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await user.save();
+
+    // Send email with reset link
+    const resetUrl = `${getFrontendUrl()}/app/reset-password/${resetToken}`;
+    emailService.sendPasswordResetEmail({
+      email: user.email,
+      userName: user.firstName,
+      resetUrl
+    }).catch(err => console.error('Password reset email error:', err.message));
+
+    res.json({ message: successMessage });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Error al procesar solicitud' });
+  }
+});
+
+// Reset password - usar token para establecer nueva contraseña
+router.post('/reset-password', sensitiveLimiter, async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe contener mayúscula, minúscula y número' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'El enlace de recuperación es inválido o ha expirado' });
+    }
+
+    // Update password and clear reset token
+    user.password = newPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    user.mustChangePassword = false;
+    // Invalidate all existing sessions
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
+
+    res.json({ message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Error al restablecer contraseña' });
+  }
+});
+
 // Login de socio (miembro) - con apellido + RUT
 router.post('/login-socio', authLimiter, validate(loginSocioSchema), async (req, res) => {
   try {
