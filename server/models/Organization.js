@@ -280,6 +280,28 @@ const organizationSchema = new mongoose.Schema({
     expiresAt: Date
   },
 
+  // Historial de salidas del directorio (renuncias, fallecimientos, exclusiones)
+  directorioHistorico: [{
+    rut: String,
+    firstName: String,
+    lastName: String,
+    cargo: String,
+    cargoKey: String,
+    reason: { type: String, enum: ['RENUNCIA', 'FALLECIMIENTO', 'EXCLUSION'] },
+    exitDate: Date,
+    documentUrl: String,
+    replacedBy: {
+      rut: String,
+      firstName: String,
+      lastName: String
+    },
+    registeredAt: { type: Date, default: Date.now },
+    registeredBy: {
+      userId: { type: mongoose.Schema.Types.ObjectId },
+      name: String
+    }
+  }],
+
   // Status
   status: {
     type: String,

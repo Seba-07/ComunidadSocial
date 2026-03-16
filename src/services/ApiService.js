@@ -1211,6 +1211,12 @@ class ApiService {
     return this.post('/support/ticket', data);
   }
 
+  // ==================== DIRECTORIO ====================
+
+  async registerDirectorioResignation(orgId, data) {
+    return this.post(`/organizations/${orgId}/directorio/renuncia`, data);
+  }
+
   // ==================== HEALTH CHECK ====================
 
   async healthCheck() {

@@ -554,6 +554,16 @@ export const createSupportTicketSchema = z.object({
   email: z.string().max(200).email().optional().or(z.literal(''))
 }).passthrough();
 
+export const directorioResignationSchema = z.object({
+  rutOut: z.string().min(1, 'RUT del miembro saliente es requerido').max(20),
+  reason: z.enum(['RENUNCIA', 'FALLECIMIENTO', 'EXCLUSION'], {
+    errorMap: () => ({ message: 'Motivo debe ser RENUNCIA, FALLECIMIENTO o EXCLUSION' })
+  }),
+  exitDate: z.string().optional(),
+  documentUrl: z.string().url('URL de documento no válida').max(2000).optional().or(z.literal('')),
+  rutIn: z.string().max(20).optional().or(z.literal(''))
+});
+
 export default {
   // Esquemas
   registerSchema,
@@ -580,6 +590,7 @@ export default {
   searchQuerySchema,
   libraryDocumentSchema,
   createSupportTicketSchema,
+  directorioResignationSchema,
   // Middleware
   validate,
   validateMongoId

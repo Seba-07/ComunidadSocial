@@ -8,7 +8,7 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole, requireVerifiedEmail } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId, qrCheckinLimiter } from '../middleware/security.js';
-import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema } from '../middleware/validation.js';
+import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema, directorioResignationSchema } from '../middleware/validation.js';
 import MinistroBlock from '../models/MinistroBlock.js';
 import Document from '../models/Document.js';
 import Member from '../models/Member.js';
@@ -3184,5 +3184,193 @@ router.get('/:id/export/election-results/:assemblyId', authenticate, requireRole
     res.status(500).json({ error: 'Error al exportar resultados' });
   }
 });
+
+// ============================================
+// DIRECTORIO: RENUNCIA / SALIDA
+// ============================================
+
+/**
+ * POST /:id/directorio/renuncia
+ * Registra la salida de un miembro del directorio (renuncia, fallecimiento, exclusión)
+ * y opcionalmente promueve a un suplente al cargo vacante.
+ */
+router.post('/:id/directorio/renuncia',
+  authenticate,
+  requireRole('MUNICIPALIDAD'),
+  validateObjectId('id'),
+  validate(directorioResignationSchema),
+  async (req, res) => {
+    try {
+      const { rutOut, reason, exitDate, documentUrl, rutIn } = req.body;
+      const organization = await Organization.findById(req.params.id);
+
+      if (!organization) {
+        return res.status(404).json({ error: 'Organización no encontrada' });
+      }
+
+      const dir = organization.provisionalDirectorio;
+      if (!dir) {
+        return res.status(400).json({ error: 'La organización no tiene directorio configurado' });
+      }
+
+      // Find the outgoing member in the directorio
+      const rutOutClean = normalizeRut(rutOut);
+      const fixedCargos = [
+        { key: 'president', cargo: 'Presidente/a' },
+        { key: 'vicePresident', cargo: 'Vicepresidente/a' },
+        { key: 'secretary', cargo: 'Secretario/a' },
+        { key: 'treasurer', cargo: 'Tesorero/a' }
+      ];
+
+      let outMember = null;
+      let outCargoKey = null;
+      let outCargoName = null;
+
+      // Check fixed positions
+      for (const { key, cargo } of fixedCargos) {
+        if (dir[key] && normalizeRut(dir[key].rut) === rutOutClean) {
+          outMember = dir[key];
+          outCargoKey = key;
+          outCargoName = cargo;
+          break;
+        }
+      }
+
+      // Check additionalMembers
+      let additionalIndex = -1;
+      if (!outMember && dir.additionalMembers) {
+        additionalIndex = dir.additionalMembers.findIndex(
+          m => m && normalizeRut(m.rut) === rutOutClean
+        );
+        if (additionalIndex >= 0) {
+          outMember = dir.additionalMembers[additionalIndex];
+          outCargoKey = 'additionalMember';
+          outCargoName = outMember.cargoNombre || outMember.cargo || 'Director/a';
+        }
+      }
+
+      if (!outMember) {
+        return res.status(404).json({ error: 'El RUT indicado no pertenece a ningún miembro del directorio actual' });
+      }
+
+      // Build historic record
+      const historicRecord = {
+        rut: outMember.rut,
+        firstName: outMember.firstName || '',
+        lastName: outMember.lastName || '',
+        cargo: outCargoName,
+        cargoKey: outCargoKey,
+        reason,
+        exitDate: exitDate ? new Date(exitDate) : new Date(),
+        documentUrl: documentUrl || '',
+        registeredAt: new Date(),
+        registeredBy: {
+          userId: req.userId,
+          name: `${req.user.firstName} ${req.user.lastName}`
+        }
+      };
+
+      // Handle succession if rutIn provided
+      let successor = null;
+      if (rutIn && rutIn.trim()) {
+        const rutInClean = normalizeRut(rutIn);
+
+        // Find successor in additionalMembers (suplentes/directors)
+        const succIdx = (dir.additionalMembers || []).findIndex(
+          m => m && normalizeRut(m.rut) === rutInClean
+        );
+
+        if (succIdx < 0) {
+          return res.status(400).json({ error: 'El RUT del sucesor no se encontró entre los miembros adicionales del directorio' });
+        }
+
+        successor = dir.additionalMembers[succIdx];
+        historicRecord.replacedBy = {
+          rut: successor.rut,
+          firstName: successor.firstName || '',
+          lastName: successor.lastName || ''
+        };
+
+        // Remove successor from additionalMembers
+        dir.additionalMembers.splice(succIdx, 1);
+      }
+
+      // Remove outgoing member and optionally promote successor
+      if (outCargoKey === 'additionalMember') {
+        // Remove from additionalMembers
+        if (additionalIndex >= 0) {
+          // Recalculate index since we may have spliced successor already
+          const newIdx = dir.additionalMembers.findIndex(
+            m => m && normalizeRut(m.rut) === rutOutClean
+          );
+          if (newIdx >= 0) {
+            dir.additionalMembers.splice(newIdx, 1);
+          }
+        }
+      } else {
+        // Fixed position (president, secretary, etc.)
+        if (successor) {
+          // Promote successor to the vacated fixed position
+          dir[outCargoKey] = {
+            rut: successor.rut,
+            firstName: successor.firstName || '',
+            segundoNombre: successor.segundoNombre || '',
+            lastName: successor.lastName || '',
+            apellidoMaterno: successor.apellidoMaterno || '',
+            signature: successor.signature || '',
+            inhabilityCertificate: successor.inhabilityCertificate || ''
+          };
+        } else {
+          // Leave position vacant
+          dir[outCargoKey] = null;
+        }
+      }
+
+      // Save historic record
+      if (!organization.directorioHistorico) {
+        organization.directorioHistorico = [];
+      }
+      organization.directorioHistorico.push(historicRecord);
+
+      // Mark modified paths for Mongoose
+      organization.markModified('provisionalDirectorio');
+      organization.markModified('directorioHistorico');
+
+      // Sync member roles
+      syncMemberRolesFromDirectorio(organization);
+
+      await organization.save();
+
+      // Audit log
+      AuditLog.logAction({
+        userId: req.userId,
+        userName: `${req.user.firstName} ${req.user.lastName}`,
+        userRole: req.user.role,
+        action: 'UPDATE',
+        resource: 'ORGANIZATION',
+        resourceId: organization._id,
+        resourceName: organization.organizationName,
+        details: {
+          type: 'directorio_resignation',
+          reason,
+          outMember: { rut: outMember.rut, name: `${outMember.firstName} ${outMember.lastName}`, cargo: outCargoName },
+          successor: successor ? { rut: successor.rut, name: `${successor.firstName} ${successor.lastName}` } : null
+        },
+        ipAddress: req.ip
+      });
+
+      res.json({
+        message: `Salida de ${outCargoName} registrada exitosamente`,
+        data: {
+          historicRecord,
+          currentDirectorio: organization.provisionalDirectorio
+        }
+      });
+    } catch (error) {
+      console.error('Directorio resignation error:', error);
+      res.status(500).json({ error: 'Error al registrar la salida del directorio' });
+    }
+  }
+);
 
 export default router;
