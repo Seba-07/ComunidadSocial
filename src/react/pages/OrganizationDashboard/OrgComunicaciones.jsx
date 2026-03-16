@@ -113,6 +113,9 @@ export default function OrgComunicaciones({ org, onRefresh }) {
                     </span>
                   )}
                   {comm.recipients && <span>{Array.isArray(comm.recipients) ? comm.recipients.length : comm.recipients} destinatarios</span>}
+                  {comm.emailsSentCount > 0 && (
+                    <span style={{ color: '#059669' }}>{comm.emailsSentCount} email{comm.emailsSentCount !== 1 ? 's' : ''} enviado{comm.emailsSentCount !== 1 ? 's' : ''}</span>
+                  )}
                 </div>
                 {comm.message && (
                   <p style={{ fontSize: 13, color: '#374151', marginTop: 8, whiteSpace: 'pre-line', lineHeight: 1.5 }}>
@@ -169,10 +172,17 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
 
     setSubmitting(true);
     try {
-      await apiService.updateOrganization(orgId, {
+      const result = await apiService.updateOrganization(orgId, {
         addCommunication: { subject, type, message, date: new Date().toISOString(), recipients: membersWithEmail }
       });
-      addToast('Comunicación registrada', 'success');
+      // Find the newly added communication to get emailsSentCount
+      const comms = result?.communications || [];
+      const lastComm = comms[comms.length - 1];
+      const sentCount = lastComm?.emailsSentCount || 0;
+      const toastMsg = sentCount > 0
+        ? `Comunicación guardada y notificada por correo a ${sentCount} socio${sentCount !== 1 ? 's' : ''}`
+        : 'Comunicación guardada (sin emails enviados)';
+      addToast(toastMsg, 'success');
       setSubject(''); setType('general'); setMessage('');
       onCreated();
     } catch (error) {

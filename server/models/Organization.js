@@ -537,6 +537,7 @@ const organizationSchema = new mongoose.Schema({
     message: String,
     date: Date,
     recipients: Number,
+    emailsSentCount: { type: Number, default: 0 },
     id: String
   }],
 

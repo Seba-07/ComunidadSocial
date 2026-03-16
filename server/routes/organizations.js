@@ -880,12 +880,36 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       }
     }
 
-    // Add a communication record
+    // Add a communication record + send emails to members
     if (req.body.addCommunication) {
       const newComm = {
         ...req.body.addCommunication,
-        id: new mongoose.Types.ObjectId().toString()
+        id: new mongoose.Types.ObjectId().toString(),
+        emailsSentCount: 0
       };
+
+      // Collect valid member emails
+      const memberEmails = (organization.members || [])
+        .filter(m => m.email && m.status !== 'inactive')
+        .map(m => m.email.trim())
+        .filter(e => e.includes('@'));
+
+      // Send emails via BCC
+      if (memberEmails.length > 0) {
+        try {
+          const sentCount = await emailService.sendCommunicationToMembers({
+            orgName: organization.organizationName,
+            commType: newComm.type || 'general',
+            subject: newComm.subject || '',
+            message: newComm.message || '',
+            emails: memberEmails
+          });
+          newComm.emailsSentCount = sentCount;
+        } catch (emailError) {
+          console.error('Error sending communication emails:', emailError.message);
+        }
+      }
+
       if (!organization.communications) organization.communications = [];
       organization.communications.push(newComm);
     }

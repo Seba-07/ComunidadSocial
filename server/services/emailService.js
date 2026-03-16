@@ -154,27 +154,29 @@ const emailService = {
    * @param {string}  params.subject - Asunto del correo.
    * @param {string}  params.html    - Cuerpo HTML del correo.
    */
-  async sendEmail({ to, subject, html }) {
+  async sendEmail({ to, bcc, subject, html }) {
     try {
       if (DRY_RUN) {
         console.log('[emailService] DRY RUN ─────────────────────────────');
-        console.log(`  Para:   ${to}`);
+        console.log(`  Para:   ${to || '(ninguno)'}`);
+        if (bcc) console.log(`  BCC:    ${Array.isArray(bcc) ? bcc.length + ' destinatarios' : bcc}`);
         console.log(`  Asunto: ${subject}`);
         console.log('  HTML:   (omitido en consola)');
         console.log('──────────────────────────────────────────────────');
         return;
       }
 
-      await transporter.sendMail({
-        from: SMTP_FROM,
-        to,
-        subject,
-        html,
-      });
+      const mailOptions = { from: SMTP_FROM, subject, html };
+      if (to) mailOptions.to = to;
+      if (bcc) mailOptions.bcc = bcc;
 
-      console.log(`[emailService] Correo enviado a ${to}: "${subject}"`);
+      await transporter.sendMail(mailOptions);
+
+      const dest = to || (Array.isArray(bcc) ? `${bcc.length} BCC` : bcc);
+      console.log(`[emailService] Correo enviado a ${dest}: "${subject}"`);
     } catch (error) {
-      console.error(`[emailService] Error al enviar correo a ${to}:`, error.message);
+      const dest = to || (Array.isArray(bcc) ? `${bcc.length} BCC` : bcc);
+      console.error(`[emailService] Error al enviar correo a ${dest}:`, error.message);
     }
   },
 
@@ -746,6 +748,70 @@ const emailService = {
     const html = buildEmailTemplate('Verificación de Email', bodyHtml);
 
     await this.sendEmail({ to: email, subject, html });
+  },
+
+  /**
+   * Envía una comunicación del dirigente a los miembros con email.
+   * Usa BCC para no exponer correos entre vecinos.
+   *
+   * @param {Object}  params
+   * @param {string}  params.orgName   - Nombre de la organización.
+   * @param {string}  params.commType  - Tipo: general, asamblea, actividad, informe, urgente.
+   * @param {string}  params.subject   - Asunto de la comunicación.
+   * @param {string}  params.message   - Cuerpo del mensaje (texto plano).
+   * @param {string[]} params.emails   - Lista de correos de los miembros.
+   * @returns {Promise<number>} Cantidad de emails enviados.
+   */
+  async sendCommunicationToMembers({ orgName, commType, subject, message, emails }) {
+    if (!emails || emails.length === 0) return 0;
+
+    const typeLabels = {
+      general: 'Comunicación General',
+      asamblea: 'Citación a Asamblea',
+      actividad: 'Invitación a Actividad',
+      informe: 'Informe de Gestión',
+      urgente: 'Aviso Urgente'
+    };
+    const typeLabel = typeLabels[commType] || 'Comunicación';
+
+    const escapedMessage = message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br/>');
+
+    const bodyHtml = `
+      <h2>${typeLabel}</h2>
+      <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px;">
+        Organización: <strong>${orgName}</strong>
+      </p>
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0; line-height: 1.6;">
+        ${escapedMessage}
+      </div>
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
+        Este mensaje fue enviado a través de ${tenant.platformName}. Si no desea recibir estos correos, contacte al directorio de su organización.
+      </p>
+    `;
+
+    const emailSubject = `${typeLabel}: ${subject} - ${orgName}`;
+    const html = buildEmailTemplate(typeLabel, bodyHtml);
+
+    // Send in BCC batches of 50 to avoid SMTP limits
+    const BATCH_SIZE = 50;
+    let sentCount = 0;
+
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE);
+      try {
+        await this.sendEmail({ to: SMTP_FROM, bcc: batch, subject: emailSubject, html });
+        sentCount += batch.length;
+      } catch (error) {
+        console.error(`[emailService] Error al enviar lote ${i / BATCH_SIZE + 1}:`, error.message);
+      }
+    }
+
+    console.log(`[emailService] Comunicación enviada a ${sentCount}/${emails.length} miembros de ${orgName}`);
+    return sentCount;
   },
 };
 

@@ -37,6 +37,42 @@ const ORG_MENU_ITEMS = [
   { key: 'actividades', label: 'Actividades', icon: '📅' },
 ];
 
+// Tabs visible per access level
+const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'comunicaciones', 'finanzas']);
+const SOCIO_TABS = new Set(['overview', 'directorio', 'comunicaciones']);
+
+/**
+ * Checks if user is a directivo member of the org (frontend mirror of backend logic).
+ */
+function isDirectivoOfOrg(org, user) {
+  if (!user?.rut || !org?.provisionalDirectorio) return false;
+  const clean = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  const userRut = clean(user.rut);
+  const prov = org.provisionalDirectorio;
+  if (prov.president && clean(prov.president.rut) === userRut) return true;
+  if (prov.vicePresident && clean(prov.vicePresident.rut) === userRut) return true;
+  if (prov.secretary && clean(prov.secretary.rut) === userRut) return true;
+  if (prov.treasurer && clean(prov.treasurer.rut) === userRut) return true;
+  if (prov.additionalMembers?.some(m => m && clean(m.rut) === userRut)) return true;
+  return false;
+}
+
+/**
+ * Returns the filtered org menu items based on user's access level.
+ */
+function getVisibleOrgTabs(org, user) {
+  // Admin or owner sees everything
+  if (user?.role === 'MUNICIPALIDAD' || org?.userId === user?._id) {
+    return ORG_MENU_ITEMS;
+  }
+  // Directivo member sees operational tabs
+  if (isDirectivoOfOrg(org, user)) {
+    return ORG_MENU_ITEMS.filter(item => DIRECTIVO_TABS.has(item.key));
+  }
+  // Regular socio sees read-only basics
+  return ORG_MENU_ITEMS.filter(item => SOCIO_TABS.has(item.key));
+}
+
 // Secondary items (always shown, below org section)
 const SECONDARY_MENU_ITEMS = [
   { key: 'mis-org', label: 'Mis Organizaciones', icon: '🏠' },
@@ -88,9 +124,18 @@ export default function OrgDashboardPage() {
   // If no active org or org not approved, force mis-org for org-specific tabs
   const SECONDARY_KEYS = new Set(['mis-org', 'guia', 'biblioteca', 'noticias', 'privacidad', 'configuracion']);
   const isOrgApproved = activeOrg && APPROVED_STATUSES.has(activeOrg.status);
-  const effectiveTab = (!activeOrg || !isOrgApproved) && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
+  let effectiveTab = (!activeOrg || !isOrgApproved) && !SECONDARY_KEYS.has(activeTab) ? 'mis-org' : activeTab;
+
+  // If user tries to access a tab they don't have permission to, fallback to overview or mis-org
+  const allowedOrgKeys = isOrgApproved ? new Set(getVisibleOrgTabs(activeOrg, user).map(t => t.key)) : new Set();
+  if (!SECONDARY_KEYS.has(effectiveTab) && isOrgApproved && !allowedOrgKeys.has(effectiveTab)) {
+    effectiveTab = allowedOrgKeys.has('overview') ? 'overview' : 'mis-org';
+  }
 
   const sidebarTitle = 'Mi Organización';
+  const sidebarSubtitle = user?.role === 'MUNICIPALIDAD' ? 'Secretario Municipal'
+    : (activeOrg && isDirectivoOfOrg(activeOrg, user)) ? 'Miembro Directivo'
+    : 'Dirigente Social';
   const hasMultipleOrgs = organizations.length > 1;
 
   function handleTabClick(key) {
@@ -115,10 +160,14 @@ export default function OrgDashboardPage() {
     </div>
   ) : null;
 
+  // Filter org tabs by user access level
+  const visibleOrgTabs = isOrgApproved ? getVisibleOrgTabs(activeOrg, user) : [];
+  const visibleOrgKeys = new Set(visibleOrgTabs.map(t => t.key));
+
   // Sidebar sections: only show org items when an approved org is active
   const sidebarSections = isOrgApproved
     ? [
-        { label: activeOrg.organizationName, items: ORG_MENU_ITEMS },
+        { label: activeOrg.organizationName, items: visibleOrgTabs },
         { items: SECONDARY_MENU_ITEMS },
       ]
     : [
@@ -131,7 +180,7 @@ export default function OrgDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title={sidebarTitle}
-          subtitle="Dirigente Social"
+          subtitle={sidebarSubtitle}
           sections={sidebarSections}
           activeKey={effectiveTab}
           onItemClick={handleTabClick}
