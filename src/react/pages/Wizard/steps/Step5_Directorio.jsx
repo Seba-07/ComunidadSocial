@@ -336,16 +336,38 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                         Obligatorio — la organización admite menores de edad
                       </span>
                     )}
-                    <div style={{ marginTop: 6, padding: '8px 10px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6 }}>
-                      <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-                        Obtén este certificado gratis <a
-                          href="https://inhabilidades.srcei.cl/ConsInhab/consultaInhabilidad.do"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
-                        >haciendo clic aquí</a>.
-                        Necesitarás tu ClaveUnica y el RUT del candidato.
+                    <div style={{ marginTop: 8, padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: '#334155', margin: '0 0 8px' }}>
+                        ¿Cómo obtener este certificado?
                       </p>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                        <span style={{ background: '#2563eb', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>1</span>
+                        <div>
+                          <a
+                            href="https://www.registrocivil.cl/principal/servicios-en-linea"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#2563eb', fontWeight: 600, fontSize: 12, textDecoration: 'underline' }}
+                          >Obtener certificado oficial con ClaveÚnica</a>
+                          <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600, marginLeft: 6 }}>Recomendado</span>
+                          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>Descarga un PDF listo para subir.</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{ background: '#64748b', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>2</span>
+                        <div>
+                          <a
+                            href="https://inhabilidades.srcei.cl/ConsInhab/consultaInhabilidad.do"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#2563eb', fontWeight: 600, fontSize: 12, textDecoration: 'underline' }}
+                          >Realizar consulta pública por RUT</a>
+                          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>No requiere ClaveÚnica.</p>
+                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0', fontStyle: 'italic' }}>
+                            Si usas esta opción, recuerda usar Imprimir en tu navegador (Ctrl+P) y seleccionar "Guardar como PDF" para poder subir el archivo aquí.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
