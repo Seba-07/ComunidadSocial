@@ -428,17 +428,7 @@ export default function Step6_Review({ onNext, onPrev }) {
             )}
           </span>
           {estatutos.type === 'template' && snapshot?.articulos?.length > 0 && (
-            <button onClick={previewDraftEstatuto} style={{
-              padding: '4px 12px', border: '1px solid #2563eb', borderRadius: 6,
-              background: 'white', color: '#2563eb', fontSize: 12, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              Ver PDF Borrador
-            </button>
+            <ViewButton onClick={previewDraftEstatuto} label="Ver Borrador" />
           )}
         </div>
       </Section>
@@ -458,10 +448,7 @@ export default function Step6_Review({ onNext, onPrev }) {
             padding: '8px 0', borderBottom: '1px solid #f3f4f6', flexWrap: 'wrap', gap: 8
           }}>
             <span style={{ fontSize: 14, color: '#374151' }}>{doc.label}</span>
-            <button onClick={() => previewDocument(doc.key)} style={{
-              padding: '4px 12px', border: '1px solid #2563eb', borderRadius: 6,
-              background: 'white', color: '#2563eb', fontSize: 12, cursor: 'pointer'
-            }}>Vista previa</button>
+            <ViewButton onClick={() => previewDocument(doc.key)} label="Ver" />
           </div>
         ))}
       </Section>
@@ -511,17 +498,7 @@ export default function Step6_Review({ onNext, onPrev }) {
                   </div>
                 </div>
                 {d.data && (
-                  <button onClick={() => viewDoc(d)} style={{
-                    padding: '4px 10px', border: '1px solid #e5e7eb', borderRadius: 6,
-                    background: 'white', color: '#6b7280', fontSize: 12, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    Ver
-                  </button>
+                  <ViewButton onClick={() => viewDoc(d)} label="Ver" />
                 )}
               </div>
             ))}
@@ -570,6 +547,40 @@ function Row({ label, value }) {
       <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{label}:</span>
       <span style={{ color: '#6b7280' }}>{value}</span>
     </div>
+  );
+}
+
+const eyeIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+function ViewButton({ onClick, label = 'Ver' }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '5px 14px',
+      border: 'none',
+      borderRadius: 8,
+      background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)',
+      color: '#2563eb',
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5,
+      flexShrink: 0,
+      transition: 'all 0.15s',
+      boxShadow: '0 1px 2px rgba(37,99,235,0.08)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+    >
+      {eyeIcon}
+      {label}
+    </button>
   );
 }
 
