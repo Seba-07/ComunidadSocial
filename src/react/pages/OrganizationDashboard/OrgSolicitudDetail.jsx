@@ -295,7 +295,10 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         <h3 style={sectionTitle}>Datos Generales</h3>
         <div className="r-grid-2" style={{ gap: '12px 24px' }}>
           <div><span style={labelStyle}>Tipo de Organización</span><div style={valueStyle}>{(org.organizationType || '').replace(/_/g, ' ')}</div></div>
-          <div><span style={labelStyle}>Fecha de Solicitud</span><div style={valueStyle}>{localeDateString(org.createdAt)}</div></div>
+          <div><span style={labelStyle}>Fecha de Solicitud</span><div style={valueStyle}>{(() => {
+            const submitEntry = [...(org.statusHistory || [])].reverse().find(h => h.status === 'waiting_ministro');
+            return localeDateString(submitEntry?.date || org.createdAt);
+          })()}</div></div>
           <div><span style={labelStyle}>Dirección</span><div style={valueStyle}>{[org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '—'}</div></div>
           <div><span style={labelStyle}>Comuna / Región</span><div style={valueStyle}>{[org.comuna, org.region].filter(Boolean).join(', ') || '—'}</div></div>
           <div><span style={labelStyle}>Email de Contacto</span><div style={valueStyle}>{org.contactEmail || '—'}</div></div>
