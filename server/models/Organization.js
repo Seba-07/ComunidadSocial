@@ -527,6 +527,8 @@ const organizationSchema = new mongoose.Schema({
     amount: Number,
     category: { type: String, enum: ['ingreso', 'egreso', 'cuota', 'donacion', 'proyecto', 'otro'] },
     date: Date,
+    memberRut: String,
+    feePeriod: String,
     id: String
   }],
 

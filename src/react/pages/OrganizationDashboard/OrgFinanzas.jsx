@@ -5,6 +5,7 @@ import FormField from '../../components/ui/FormField';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import { localeDateString } from '../../utils/formatters';
+import { pdfService } from '@services/PDFService.js';
 
 const CATEGORY_LABELS = {
   ingreso: 'Ingreso', egreso: 'Egreso', cuota: 'Cuota',
@@ -18,8 +19,21 @@ function formatCLP(val) {
 export default function OrgFinanzas({ org, onRefresh }) {
   const [filter, setFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [showBalanceSelector, setShowBalanceSelector] = useState(false);
+  const [balanceYear, setBalanceYear] = useState(new Date().getFullYear());
   const addToast = useUiStore((s) => s.addToast);
   const transactions = org?.finances || [];
+
+  function downloadBalancePDF() {
+    try {
+      const doc = pdfService.generateBalanceAnual(org, balanceYear);
+      doc.save(`balance_anual_${org.organizationName || 'org'}_${balanceYear}.pdf`);
+      addToast(`Balance ${balanceYear} descargado`, 'success');
+      setShowBalanceSelector(false);
+    } catch (error) {
+      addToast('Error al generar PDF: ' + (error.message || ''), 'error');
+    }
+  }
 
   const filtered = filter === 'all' ? transactions : transactions.filter((t) => t.category === filter);
 
@@ -103,6 +117,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
           <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setShowCreate(true)}>
             + Transacción
           </button>
+          <button onClick={() => setShowBalanceSelector(true)} style={{ ...outlineBtn, background: '#eff6ff', borderColor: '#3b82f6' }}>Balance PDF</button>
           <button onClick={exportCSV} style={outlineBtn}>Exportar CSV</button>
         </div>
       </div>
@@ -139,6 +154,35 @@ export default function OrgFinanzas({ org, onRefresh }) {
         onCreated={() => { setShowCreate(false); onRefresh(); }}
         addToast={addToast}
       />
+
+      {/* Balance Year Selector */}
+      {showBalanceSelector && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) setShowBalanceSelector(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 28, width: '100%', maxWidth: 360 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 16 }}>Descargar Balance Anual</h3>
+            <label style={{ display: 'block', marginBottom: 16 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Año</span>
+              <select value={balanceYear} onChange={(e) => setBalanceYear(parseInt(e.target.value))}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}>
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </label>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowBalanceSelector(false)}
+                style={{ padding: '10px 20px', background: '#f3f4f6', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={downloadBalancePDF}
+                style={{ padding: '10px 20px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Descargar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

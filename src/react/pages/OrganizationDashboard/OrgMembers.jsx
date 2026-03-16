@@ -21,6 +21,7 @@ export default function OrgMembers({ org, onRefresh }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [viewMember, setViewMember] = useState(null);
+  const [payMember, setPayMember] = useState(null);
   const [search, setSearch] = useState('');
   const addToast = useUiStore((s) => s.addToast);
 
@@ -93,6 +94,7 @@ export default function OrgMembers({ org, onRefresh }) {
       render: (_, row) => (
         <div className="r-btn-row" style={{ gap: 6 }}>
           <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
+          <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>
           <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>
           <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
         </div>
@@ -147,6 +149,10 @@ export default function OrgMembers({ org, onRefresh }) {
 
       {/* View Member Modal */}
       <MemberProfileModal open={!!viewMember} onClose={() => setViewMember(null)} member={viewMember} org={org} />
+
+      {/* Payment Modal */}
+      <MemberPaymentModal open={!!payMember} onClose={() => setPayMember(null)} orgId={org._id}
+        member={payMember} onSaved={() => { setPayMember(null); onRefresh(); }} addToast={addToast} />
     </div>
   );
 }
@@ -321,5 +327,106 @@ function ProfileField({ label, value }) {
       <span style={{ fontSize: 11, color: '#6b7280', display: 'block' }}>{label}</span>
       <span style={{ fontSize: 14, fontWeight: 500, color: '#374151', wordBreak: 'break-word' }}>{value}</span>
     </div>
+  );
+}
+
+// ========== Member Payment Modal ==========
+const FEE_CONCEPTS = [
+  { value: 'Cuota Mensual', label: 'Cuota Mensual' },
+  { value: 'Incorporación', label: 'Cuota de Incorporación' },
+  { value: 'Extraordinaria', label: 'Cuota Extraordinaria' }
+];
+
+function buildPeriodOptions() {
+  const options = [];
+  const now = new Date();
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  // Current year and previous year
+  for (let y = now.getFullYear(); y >= now.getFullYear() - 1; y--) {
+    months.forEach(m => options.push(`${m} ${y}`));
+  }
+  return options;
+}
+
+function MemberPaymentModal({ open, onClose, orgId, member, onSaved, addToast }) {
+  const [concept, setConcept] = useState('Cuota Mensual');
+  const [amount, setAmount] = useState('');
+  const [period, setPeriod] = useState(() => {
+    const now = new Date();
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${months[now.getMonth()]} ${now.getFullYear()}`;
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!member) return null;
+
+  const memberName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
+  const periodOptions = buildPeriodOptions();
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount <= 0) { addToast('Ingresa un monto válido', 'error'); return; }
+
+    setSubmitting(true);
+    try {
+      await apiService.updateOrganization(orgId, {
+        addFinance: {
+          concept: `${concept} — ${memberName}`,
+          amount: Math.abs(numAmount),
+          category: 'cuota',
+          date: new Date().toISOString(),
+          memberRut: member.rut,
+          feePeriod: concept === 'Incorporación' ? 'Incorporación' : period
+        }
+      });
+      addToast(`Pago de ${memberName} registrado`, 'success');
+      setAmount('');
+      setConcept('Cuota Mensual');
+      onSaved();
+    } catch (error) {
+      addToast(error.message || 'Error al registrar pago', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Registrar Pago">
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="r-grid-2" style={{ marginBottom: 16 }}>
+          <ProfileField label="Socio" value={memberName} />
+          <ProfileField label="RUT" value={member.rut || '—'} />
+        </div>
+
+        <FormField label="Concepto" id="pay-concept">
+          <select id="pay-concept" value={concept} onChange={(e) => setConcept(e.target.value)}
+            style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
+            {FEE_CONCEPTS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </FormField>
+
+        {concept !== 'Incorporación' && (
+          <FormField label="Período" id="pay-period">
+            <select id="pay-period" value={period} onChange={(e) => setPeriod(e.target.value)}
+              style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
+              {periodOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </FormField>
+        )}
+
+        <FormField label="Monto (CLP) *" id="pay-amount" type="number" placeholder="0" min="1" step="1"
+          value={amount} onChange={(e) => setAmount(e.target.value)} />
+
+        <div className="r-form-row" style={{ marginTop: 16 }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>
+            {submitting ? 'Guardando...' : 'Registrar Pago'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

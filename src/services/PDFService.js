@@ -1338,6 +1338,205 @@ class PDFService {
   }
 
   /**
+   * Genera Balance Anual de Tesorería en PDF
+   */
+  generateBalanceAnual(organization, year) {
+    const doc = new jsPDF();
+    const org = organization;
+    const finances = org.finances || [];
+    const config = org.config || {};
+    const dir = org.provisionalDirectorio || {};
+
+    // Filter transactions for the requested year
+    const yearTxs = finances.filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() === year;
+    });
+
+    // Group by category
+    const categories = {};
+    yearTxs.forEach(t => {
+      const cat = t.category || 'otro';
+      if (!categories[cat]) categories[cat] = { ingresos: 0, egresos: 0, count: 0 };
+      if (t.amount >= 0) categories[cat].ingresos += t.amount;
+      else categories[cat].egresos += Math.abs(t.amount);
+      categories[cat].count++;
+    });
+
+    const totalIngresos = yearTxs.filter(t => t.amount >= 0).reduce((s, t) => s + t.amount, 0);
+    const totalEgresos = yearTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const saldo = totalIngresos - totalEgresos;
+
+    const catLabels = {
+      ingreso: 'Ingresos Generales', egreso: 'Egresos Generales', cuota: 'Cuotas Sociales',
+      donacion: 'Donaciones', proyecto: 'Proyectos', otro: 'Otros'
+    };
+    const fmtCLP = (v) => (v || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
+
+    this.drawHeader(doc, `BALANCE ANUAL DE TESORERÍA — ${year}`);
+
+    this.currentY = 55;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+
+    // Organization info
+    doc.setFont('helvetica', 'bold');
+    doc.text('Organización:', MARGIN_LEFT, this.currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(org.organizationName || '—', MARGIN_LEFT + 35, this.currentY);
+    this.currentY += 7;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tipo:', MARGIN_LEFT, this.currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(getOrgTypeName(org.organizationType) || '—', MARGIN_LEFT + 35, this.currentY);
+    this.currentY += 7;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Comuna:', MARGIN_LEFT, this.currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(org.comuna || tenant.communeName || '—', MARGIN_LEFT + 35, this.currentY);
+    this.currentY += 7;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Período:', MARGIN_LEFT, this.currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`1 de enero al 31 de diciembre de ${year}`, MARGIN_LEFT + 35, this.currentY);
+    this.currentY += 12;
+
+    // Separator
+    doc.setDrawColor('#e5e7eb');
+    doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
+    this.currentY += 8;
+
+    // Detail by category table header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Detalle por Categoría', MARGIN_LEFT, this.currentY);
+    this.currentY += 8;
+
+    doc.setFontSize(10);
+    doc.setFillColor('#f3f4f6');
+    doc.rect(MARGIN_LEFT, this.currentY - 4, CONTENT_WIDTH, 7, 'F');
+    doc.text('Categoría', MARGIN_LEFT + 2, this.currentY);
+    doc.text('Ingresos', MARGIN_LEFT + 80, this.currentY);
+    doc.text('Egresos', MARGIN_LEFT + 115, this.currentY);
+    doc.text('Movimientos', MARGIN_LEFT + 147, this.currentY);
+    this.currentY += 8;
+
+    doc.setFont('helvetica', 'normal');
+    const catEntries = Object.entries(categories);
+    if (catEntries.length === 0) {
+      doc.setTextColor('#9ca3af');
+      doc.text('Sin movimientos registrados para este año', MARGIN_LEFT + 2, this.currentY);
+      doc.setTextColor('#000000');
+      this.currentY += 8;
+    } else {
+      catEntries.forEach(([cat, data]) => {
+        doc.text(catLabels[cat] || cat, MARGIN_LEFT + 2, this.currentY);
+        doc.text(fmtCLP(data.ingresos), MARGIN_LEFT + 80, this.currentY);
+        doc.text(fmtCLP(data.egresos), MARGIN_LEFT + 115, this.currentY);
+        doc.text(String(data.count), MARGIN_LEFT + 155, this.currentY);
+        this.currentY += 7;
+      });
+    }
+
+    this.currentY += 5;
+    doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
+    this.currentY += 8;
+
+    // Totals
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumen del Año', MARGIN_LEFT, this.currentY);
+    this.currentY += 10;
+
+    doc.setFontSize(11);
+    const col1 = MARGIN_LEFT + 5;
+    const col2 = MARGIN_LEFT + 100;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Total Ingresos:', col1, this.currentY);
+    doc.setTextColor('#059669');
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmtCLP(totalIngresos), col2, this.currentY);
+    doc.setTextColor('#000000');
+    this.currentY += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text('Total Egresos:', col1, this.currentY);
+    doc.setTextColor('#ef4444');
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmtCLP(totalEgresos), col2, this.currentY);
+    doc.setTextColor('#000000');
+    this.currentY += 8;
+
+    doc.line(col1, this.currentY - 2, col2 + 40, this.currentY - 2);
+    this.currentY += 3;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('SALDO FINAL:', col1, this.currentY);
+    doc.setTextColor(saldo >= 0 ? '#059669' : '#ef4444');
+    doc.text(fmtCLP(saldo), col2, this.currentY);
+    doc.setTextColor('#000000');
+    this.currentY += 5;
+
+    // Review month note
+    const reviewMonth = config.accountReviewMonth || 'Marzo';
+    this.currentY += 10;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor('#6b7280');
+    doc.text(`Mes de revisión de cuentas configurado: ${reviewMonth}`, MARGIN_LEFT, this.currentY);
+    doc.setTextColor('#000000');
+    doc.setFont('helvetica', 'normal');
+
+    // Signature section
+    this.currentY += 20;
+
+    // Check if we need a new page for signatures
+    if (this.currentY > PAGE_HEIGHT - 70) {
+      doc.addPage();
+      this.currentY = MARGIN_TOP + 10;
+    }
+
+    doc.setFontSize(10);
+    const sigWidth = 55;
+    const sigGap = (CONTENT_WIDTH - sigWidth * 3) / 2;
+    const sig1X = MARGIN_LEFT;
+    const sig2X = MARGIN_LEFT + sigWidth + sigGap;
+    const sig3X = MARGIN_LEFT + (sigWidth + sigGap) * 2;
+    const sigY = this.currentY;
+
+    // Signature lines
+    [sig1X, sig2X, sig3X].forEach(x => {
+      doc.line(x, sigY + 15, x + sigWidth, sigY + 15);
+    });
+
+    doc.setFont('helvetica', 'bold');
+    const treasurerName = dir.treasurer ? `${dir.treasurer.firstName || ''} ${dir.treasurer.lastName || ''}`.trim() : '';
+    const presidentName = dir.president ? `${dir.president.firstName || ''} ${dir.president.lastName || ''}`.trim() : '';
+
+    doc.text('TESORERO/A', sig1X + sigWidth / 2, sigY + 20, { align: 'center' });
+    doc.text('PRESIDENTE/A', sig2X + sigWidth / 2, sigY + 20, { align: 'center' });
+    doc.text('COMISIÓN REVISORA', sig3X + sigWidth / 2, sigY + 20, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    if (treasurerName) doc.text(treasurerName, sig1X + sigWidth / 2, sigY + 25, { align: 'center' });
+    if (presidentName) doc.text(presidentName, sig2X + sigWidth / 2, sigY + 25, { align: 'center' });
+    doc.text('DE CUENTAS', sig3X + sigWidth / 2, sigY + 25, { align: 'center' });
+
+    this.currentY = sigY + 35;
+    doc.setFontSize(9);
+    doc.text(`Documento generado el ${this.formatDate(new Date())} — ${tenant.platformName}`, MARGIN_LEFT, this.currentY);
+
+    this.drawFooter(doc, 1);
+    return doc;
+  }
+
+  /**
    * Obtiene el PDF como Blob URL para previsualización en iframe
    * Usa Blob URL en lugar de data URI para soportar PDFs grandes con imágenes
    */
