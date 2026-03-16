@@ -162,11 +162,16 @@ export default function Step5_Directorio({ onNext, onPrev }) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
-    // Validar certificados de inhabilidades si permite menores
+    // Validar certificados de inhabilidades si permite menores — solo para directores mayores de 18
     if (permiteMenores) {
       for (const cargo of requiredCargos) {
-        if (directorio[cargo.id] && !inhCerts[cargo.id]) {
-          return `Falta el Certificado de Inhabilidades para: ${cargo.nombre}`;
+        const assigned = directorio[cargo.id];
+        if (assigned) {
+          const age = calculateAge(assigned.birthDate);
+          const isAdult = age === null || age >= 18;
+          if (isAdult && !inhCerts[cargo.id]) {
+            return `Falta el Certificado de Inhabilidades para: ${cargo.nombre}`;
+          }
         }
       }
     }
@@ -215,12 +220,15 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     const err = validate();
     if (err) { addToast(err, 'error'); return; }
 
-    // Embeber certificados de inhabilidades en el directorio antes de avanzar
+    // Embeber certificados de inhabilidades en el directorio antes de avanzar (solo adultos)
     if (permiteMenores && Object.keys(inhCerts).length > 0) {
       const updated = { ...directorio };
       for (const [cargoId, cert] of Object.entries(inhCerts)) {
         if (updated[cargoId] && cert?.data) {
-          updated[cargoId] = { ...updated[cargoId], inhabilityCertificate: cert.data };
+          const age = calculateAge(updated[cargoId].birthDate);
+          if (age === null || age >= 18) {
+            updated[cargoId] = { ...updated[cargoId], inhabilityCertificate: cert.data };
+          }
         }
       }
       setFormDataField('directorioProvisorio', updated);
@@ -294,44 +302,54 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                     onFile={file => handleCertificate(cargo.id, file)}
                     value={certs[cargo.id]}
                   />
-                  {certs[cargo.id] ? (
-                    <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>Certificado subido</span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>Pendiente — podrás subirlo después desde el panel</span>
+                  {!certs[cargo.id] && (
+                    <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, display: 'block' }}>Opcional — podrás subirlo después desde el panel</span>
                   )}
                 </div>
               )}
 
-              {/* Certificado de Inhabilidades — solo si permite menores */}
-              {assigned && permiteMenores && (
-                <div style={{ marginTop: 10, padding: 12, background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 8 }}>
-                  <FileUpload
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    label="Certificado de Inhabilidades (Registro Civil) *"
-                    maxSizeMB={5}
-                    onFile={file => handleInhabilityCert(cargo.id, file)}
-                    value={inhCerts[cargo.id]}
-                  />
-                  {inhCerts[cargo.id] ? (
-                    <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>Certificado de Inhabilidades subido</span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: '#be123c', fontWeight: 600 }}>
-                      Obligatorio — la organizacion admite menores de edad
-                    </span>
-                  )}
-                  <div style={{ marginTop: 6, padding: '8px 10px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6 }}>
-                    <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-                      Obtén este certificado gratis <a
-                        href="https://inhabilidades.srcei.cl/ConsInhab/consultaInhabilidad.do"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
-                      >haciendo clic aqui</a>.
-                      Necesitarás tu ClaveUnica y el RUT del candidato.
-                    </p>
+              {/* Certificado de Inhabilidades — solo si permite menores Y el director es mayor de 18 */}
+              {assigned && permiteMenores && (() => {
+                const memberAge = calculateAge(assigned.birthDate);
+                const isAdult = memberAge === null || memberAge >= 18;
+                if (!isAdult) {
+                  return (
+                    <div style={{ marginTop: 10, padding: '10px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14 }}>&#10003;</span>
+                      <span style={{ fontSize: 12, color: '#166534' }}>
+                        Certificado de Inhabilidades no aplica — socio menor de 18 años
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginTop: 10, padding: 12, background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 8 }}>
+                    <FileUpload
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      label="Certificado de Inhabilidades (Registro Civil) *"
+                      maxSizeMB={5}
+                      onFile={file => handleInhabilityCert(cargo.id, file)}
+                      value={inhCerts[cargo.id]}
+                    />
+                    {!inhCerts[cargo.id] && (
+                      <span style={{ fontSize: 11, color: '#be123c', fontWeight: 600, display: 'block', marginTop: 6 }}>
+                        Obligatorio — la organización admite menores de edad
+                      </span>
+                    )}
+                    <div style={{ marginTop: 6, padding: '8px 10px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6 }}>
+                      <p style={{ fontSize: 11, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+                        Obtén este certificado gratis <a
+                          href="https://inhabilidades.srcei.cl/ConsInhab/consultaInhabilidad.do"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
+                        >haciendo clic aquí</a>.
+                        Necesitarás tu ClaveUnica y el RUT del candidato.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           );
         })}
