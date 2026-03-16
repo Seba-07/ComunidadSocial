@@ -20,6 +20,7 @@ const btnPrimary = {
 export default function SettingsPage() {
   const { user, hydrate } = useAuthStore();
   const addToast = useUiStore(s => s.addToast);
+  const isMuni = user?.role === 'MUNICIPALIDAD';
 
   // Profile form
   const [profile, setProfile] = useState({
@@ -38,13 +39,29 @@ export default function SettingsPage() {
   // Email verification
   const [sendingVerification, setSendingVerification] = useState(false);
 
+  // Municipality institutional config (only for MUNICIPALIDAD)
+  const [muniConfig, setMuniConfig] = useState({
+    officialName: '', rut: '', address: '', region: '', comuna: ''
+  });
+  const [savingMuni, setSavingMuni] = useState(false);
+
   useEffect(() => {
-    if (user?.role === 'MUNICIPALIDAD') {
+    if (isMuni) {
       apiService.getAdminPreference('requireBlockConfirmation')
         .then(res => { if (res.value !== null) setRequireBlockConfirmation(res.value); })
         .catch(() => {});
     }
-  }, [user?.role]);
+  }, [isMuni]);
+
+  useEffect(() => {
+    if (isMuni) {
+      apiService.getMunicipalityConfig()
+        .then(res => {
+          if (res.data) setMuniConfig(res.data);
+        })
+        .catch(() => {});
+    }
+  }, [isMuni]);
 
   async function handleToggleBlockConfirmation() {
     const newVal = !requireBlockConfirmation;
@@ -130,6 +147,19 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleSaveMuniConfig(e) {
+    e.preventDefault();
+    setSavingMuni(true);
+    try {
+      await apiService.updateMunicipalityConfig(muniConfig);
+      addToast('Datos institucionales actualizados', 'success');
+    } catch (err) {
+      addToast(err.message || 'Error al guardar datos institucionales', 'error');
+    } finally {
+      setSavingMuni(false);
+    }
+  }
+
   return (
     <div style={{ maxWidth: 700 }}>
       <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 20 }}>
@@ -173,7 +203,46 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Profile */}
+      {/* Datos de la Institución - only for MUNICIPALIDAD */}
+      {isMuni && (
+        <form onSubmit={handleSaveMuniConfig}>
+          <div style={cardStyle}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>Datos de la Institución</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>
+              Estos datos representan a la institución municipal y se usan en documentos legales, actas y estatutos.
+            </p>
+            <div className="r-grid-2" style={{ gap: 12 }}>
+              <div>
+                <label style={labelStyle}>Nombre Oficial</label>
+                <input value={muniConfig.officialName} onChange={e => setMuniConfig(c => ({ ...c, officialName: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>RUT</label>
+                <input value={muniConfig.rut} onChange={e => setMuniConfig(c => ({ ...c, rut: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Dirección</label>
+                <input value={muniConfig.address} onChange={e => setMuniConfig(c => ({ ...c, address: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Región</label>
+                <input value={muniConfig.region} onChange={e => setMuniConfig(c => ({ ...c, region: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Comuna</label>
+                <input value={muniConfig.comuna} onChange={e => setMuniConfig(c => ({ ...c, comuna: e.target.value }))} style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button type="submit" disabled={savingMuni} style={{ ...btnPrimary, opacity: savingMuni ? 0.6 : 1 }}>
+                {savingMuni ? 'Guardando...' : 'Guardar Datos Institucionales'}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* Datos Personales */}
       <form onSubmit={handleSaveProfile}>
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 16 }}>Datos Personales</h3>
@@ -214,7 +283,7 @@ export default function SettingsPage() {
         </div>
       </form>
 
-      {/* Password */}
+      {/* Cambiar Contraseña */}
       <form onSubmit={handleChangePassword}>
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 16 }}>Cambiar Contraseña</h3>
@@ -243,8 +312,8 @@ export default function SettingsPage() {
         </div>
       </form>
 
-      {/* Admin Preferences */}
-      {user?.role === 'MUNICIPALIDAD' && (
+      {/* Preferencias de Administración - only for MUNICIPALIDAD */}
+      {isMuni && (
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 16 }}>Preferencias de Administración</h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
@@ -278,7 +347,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Account info */}
+      {/* Información de Cuenta */}
       <div style={cardStyle}>
         <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 12 }}>Información de Cuenta</h3>
         <div className="r-grid-2" style={{ gap: 12, fontSize: 14 }}>
