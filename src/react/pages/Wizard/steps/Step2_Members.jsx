@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { validateRut, formatRut } from '../../../utils/validators';
 import DataTable from '../../../components/ui/DataTable';
@@ -40,6 +41,7 @@ function calculateAge(birthDate) {
 
 export default function Step2_Members({ onNext, onPrev }) {
   const { formData, addMember, removeMember, updateMember, templateConfig } = useWizardStore();
+  const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -47,6 +49,29 @@ export default function Step2_Members({ onNext, onPrev }) {
   const [form, setForm] = useState({ ...EMPTY_MEMBER });
 
   const members = formData.members || [];
+
+  // Auto-include creator as first member
+  useEffect(() => {
+    if (!user?.rut) return;
+    const creatorRut = user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+    const alreadyExists = members.some(m =>
+      m.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase() === creatorRut
+    );
+    if (!alreadyExists) {
+      addMember({
+        firstName: user.firstName || '',
+        segundoNombre: user.segundoNombre || '',
+        lastName: user.lastName || '',
+        apellidoMaterno: user.apellidoMaterno || '',
+        rut: user.rut,
+        email: user.email || '',
+        phone: user.phone || '',
+        birthDate: user.birthDate || '',
+        address: user.address || '',
+        _isCreator: true
+      });
+    }
+  }, []);
   const minMembers = templateConfig?.miembrosMinimos
     || (formData.organization?.type === 'JUNTA_VECINOS' ? 50 : 15);
 
@@ -127,8 +152,28 @@ export default function Step2_Members({ onNext, onPrev }) {
     onNext();
   }
 
+  // Helper to check if a member is the creator (by RUT match)
+  function isCreatorMember(member) {
+    if (!user?.rut || !member?.rut) return false;
+    const creatorRut = user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+    const memberRut = member.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+    return creatorRut === memberRut;
+  }
+
   const columns = [
-    { key: 'firstName', label: 'Nombre', sortable: true },
+    { key: 'firstName', label: 'Nombre', sortable: true,
+      render: (val, row) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {val}
+          {isCreatorMember(row) && (
+            <span style={{
+              padding: '1px 8px', borderRadius: 8, fontSize: 10, fontWeight: 600,
+              background: '#dbeafe', color: '#1e40af'
+            }}>Creador</span>
+          )}
+        </span>
+      )
+    },
     { key: 'lastName', label: 'Apellido', sortable: true },
     { key: 'rut', label: 'RUT', sortable: true, hideOnMobile: true },
     {
@@ -153,10 +198,16 @@ export default function Step2_Members({ onNext, onPrev }) {
       key: 'actions', label: '', sortable: false,
       render: (_, row) => {
         const idx = members.indexOf(row);
+        const isCreator = isCreatorMember(row);
         return (
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={() => openEdit(idx)} style={smallBtn}>Editar</button>
-            <button onClick={() => removeMember(idx)} style={{ ...smallBtn, color: '#ef4444' }}>Eliminar</button>
+            <button
+              onClick={() => !isCreator && removeMember(idx)}
+              disabled={isCreator}
+              title={isCreator ? 'El creador no puede ser eliminado' : ''}
+              style={{ ...smallBtn, color: isCreator ? '#9ca3af' : '#ef4444', cursor: isCreator ? 'not-allowed' : 'pointer' }}
+            >Eliminar</button>
           </div>
         );
       }

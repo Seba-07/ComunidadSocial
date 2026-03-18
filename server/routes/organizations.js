@@ -742,6 +742,34 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       }]
     };
 
+    // Validate creator's RUT is in provisionalDirectorio
+    if (provisionalDirectorio && req.user.rut) {
+      const creatorRut = req.user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      const KNOWN_CARGO_KEYS = ['president', 'secretary', 'treasurer', 'vicePresident',
+        'presidente', 'secretario', 'tesorero', 'vicepresidente'];
+      let creatorFound = false;
+
+      for (const [key, val] of Object.entries(provisionalDirectorio)) {
+        if (!val || typeof val !== 'object') continue;
+        if (['additionalMembers', 'designatedAt', 'type', 'expiresAt'].includes(key)) continue;
+        const memberRut = (val.rut || '').replace(/\./g, '').replace(/-/g, '').toLowerCase();
+        if (memberRut === creatorRut) { creatorFound = true; break; }
+      }
+      // Also check additionalMembers
+      if (!creatorFound && Array.isArray(provisionalDirectorio.additionalMembers)) {
+        for (const m of provisionalDirectorio.additionalMembers) {
+          const memberRut = (m?.rut || '').replace(/\./g, '').replace(/-/g, '').toLowerCase();
+          if (memberRut === creatorRut) { creatorFound = true; break; }
+        }
+      }
+
+      if (!creatorFound) {
+        return res.status(400).json({
+          error: 'El creador de la organización debe ocupar un cargo en el directorio provisorio.'
+        });
+      }
+    }
+
     // Asegurar que provisionalDirectorio se guarde explícitamente
     if (req.body.provisionalDirectorio) {
       const cleanMember = (member) => {
@@ -1000,6 +1028,32 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
     for (const field of allowedFields) {
       if (req.body[field] !== undefined && !customHandledFields.has(field)) {
         organization[field] = req.body[field];
+      }
+    }
+
+    // Validate creator's RUT is in provisionalDirectorio (same as POST route)
+    if (req.body.provisionalDirectorio && isOwner && req.user.rut) {
+      const creatorRut = req.user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      let creatorFound = false;
+      const pDirCheck = req.body.provisionalDirectorio;
+
+      for (const [key, val] of Object.entries(pDirCheck)) {
+        if (!val || typeof val !== 'object') continue;
+        if (['additionalMembers', 'designatedAt', 'type', 'expiresAt'].includes(key)) continue;
+        const memberRut = (val.rut || '').replace(/\./g, '').replace(/-/g, '').toLowerCase();
+        if (memberRut === creatorRut) { creatorFound = true; break; }
+      }
+      if (!creatorFound && Array.isArray(pDirCheck.additionalMembers)) {
+        for (const m of pDirCheck.additionalMembers) {
+          const memberRut = (m?.rut || '').replace(/\./g, '').replace(/-/g, '').toLowerCase();
+          if (memberRut === creatorRut) { creatorFound = true; break; }
+        }
+      }
+
+      if (!creatorFound) {
+        return res.status(400).json({
+          error: 'El creador de la organización debe ocupar un cargo en el directorio provisorio.'
+        });
       }
     }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import FileUpload from '../../../components/ui/FileUpload';
@@ -24,6 +25,7 @@ function calculateAge(birthDate) {
 
 export default function Step5_Directorio({ onNext, onPrev }) {
   const { formData, updateFormData, setFormDataField, templateConfig } = useWizardStore();
+  const user = useAuthStore(s => s.user);
   const addToast = useUiStore(s => s.addToast);
   const members = formData.members || [];
   const directorio = formData.directorioProvisorio || {};
@@ -53,6 +55,20 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         .catch(() => {});
     }
   }, [formData.organization?.type, templateConfig]);
+
+  // Pre-assign creator as Presidente if directorio is empty
+  useEffect(() => {
+    if (!user?.rut || Object.keys(directorio).length > 0) return;
+    const creatorRut = user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+    const creatorMember = members.find(m =>
+      m.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase() === creatorRut
+    );
+    if (creatorMember) {
+      setFormDataField('directorioProvisorio', {
+        presidente: { ...creatorMember, cargo: 'presidente' }
+      });
+    }
+  }, [members, user]);
 
   const selectedRuts = new Set(
     [...Object.values(directorio).map(d => d?.rut), ...comision.members.map(m => m?.rut)]
@@ -188,6 +204,17 @@ export default function Step5_Directorio({ onNext, onPrev }) {
             return `Falta el Certificado de Inhabilidades para: ${cargo.nombre}`;
           }
         }
+      }
+    }
+
+    // Validate creator is in directorio
+    if (user?.rut) {
+      const creatorRut = user.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      const creatorInDir = Object.values(directorio).some(person =>
+        person?.rut && person.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase() === creatorRut
+      );
+      if (!creatorInDir) {
+        return 'Como creador de la organización, debes ocupar un cargo en el directorio provisorio.';
       }
     }
 
