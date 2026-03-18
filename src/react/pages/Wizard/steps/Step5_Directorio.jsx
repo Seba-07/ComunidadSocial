@@ -163,8 +163,9 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
     // Validar certificados de antecedentes — obligatorio para todos los directores asignados
+    // Certs must have actual data (not just metadata from localStorage)
     for (const cargo of cargos) {
-      if (directorio[cargo.id] && !certs[cargo.id]) {
+      if (directorio[cargo.id] && (!certs[cargo.id] || !certs[cargo.id].data)) {
         return `Falta el Certificado de Antecedentes para: ${cargo.nombre}`;
       }
     }
@@ -175,7 +176,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
         if (assigned) {
           const age = calculateAge(assigned.birthDate);
           const isAdult = age === null || age >= 18;
-          if (isAdult && !inhCerts[cargo.id]) {
+          if (isAdult && (!inhCerts[cargo.id] || !inhCerts[cargo.id].data)) {
             return `Falta el Certificado de Inhabilidades para: ${cargo.nombre}`;
           }
         }
@@ -220,7 +221,7 @@ export default function Step5_Directorio({ onNext, onPrev }) {
     return null;
   }
 
-  const pendingCerts = cargos.filter(c => directorio[c.id] && !certs[c.id]);
+  const pendingCerts = cargos.filter(c => directorio[c.id] && (!certs[c.id] || !certs[c.id].data));
 
   function handleNext() {
     const err = validate();

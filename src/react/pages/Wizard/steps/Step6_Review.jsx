@@ -371,7 +371,7 @@ export default function Step6_Review({ onNext, onPrev }) {
                 <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || data.cargoNombre || cargo}:</span>
                   <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{data.firstName || ''} {data.lastName || ''} - {data.rut || '—'}</span>
-                  {certs[cargo]
+                  {certs[cargo]?.data
                     ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
                     : <span style={{ fontSize: 11, color: '#d97706' }}>Pendiente</span>}
                 </div>
@@ -384,7 +384,7 @@ export default function Step6_Review({ onNext, onPrev }) {
               ))}
               {(() => {
                 const personKeys = entries.map(([k]) => k);
-                const missing = personKeys.filter(c => !certs[c]);
+                const missing = personKeys.filter(c => !certs[c]?.data);
                 if (missing.length === 0) return null;
                 return (
                   <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400e' }}>

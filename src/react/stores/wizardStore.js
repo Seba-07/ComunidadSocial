@@ -104,9 +104,18 @@ export const useWizardStore = create((set, get) => ({
   saveProgress() {
     try {
       const { currentStep, formData, existingOrgId, templateConfig } = get();
+      // Strip base64 data from certificates to avoid exceeding localStorage limit (~5MB)
+      const lightCerts = {};
+      for (const [k, v] of Object.entries(formData.certificates || {})) {
+        lightCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
+      }
+      const lightInhCerts = {};
+      for (const [k, v] of Object.entries(formData.inhabilityCertificates || {})) {
+        lightInhCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
+      }
       const saved = {
         currentStep,
-        formData,
+        formData: { ...formData, certificates: lightCerts, inhabilityCertificates: lightInhCerts },
         existingOrgId,
         templateConfig,
         savedAt: new Date().toISOString()
@@ -166,6 +175,47 @@ export const useWizardStore = create((set, get) => ({
       const config = org.config || {};
       const ce = org.electoralCommission || org.comisionElectoral || [];
 
+      // Map server English keys → wizard Spanish cargo IDs
+      const FIELD_TO_CARGO = {
+        president: 'presidente', secretary: 'secretario',
+        treasurer: 'tesorero', vicePresident: 'vicepresidente'
+      };
+      const mappedDir = {};
+      for (const [key, val] of Object.entries(dir)) {
+        if (!val || typeof val !== 'object') continue;
+        if (['additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v'].includes(key)) continue;
+        const cargoId = FIELD_TO_CARGO[key] || key;
+        mappedDir[cargoId] = { ...val, cargo: cargoId };
+      }
+      // Also map additionalMembers back to their cargo keys
+      if (Array.isArray(dir.additionalMembers)) {
+        for (const m of dir.additionalMembers) {
+          if (m && m.cargo) {
+            mappedDir[m.cargo] = { ...m };
+          }
+        }
+      }
+
+      // Restore certificates from server's certificatesStep5
+      const restoredCerts = {};
+      if (Array.isArray(org.certificatesStep5)) {
+        for (const cert of org.certificatesStep5) {
+          // Find which cargo this cert belongs to by matching RUT
+          const certRut = (cert.memberId || '').replace(/\./g, '').replace(/-/g, '');
+          let matchedCargo = null;
+          for (const [cargoId, person] of Object.entries(mappedDir)) {
+            const personRut = (person.rut || '').replace(/\./g, '').replace(/-/g, '');
+            if (personRut && personRut === certRut) { matchedCargo = cargoId; break; }
+          }
+          if (matchedCargo && cert.certificate) {
+            restoredCerts[matchedCargo] = {
+              name: cert.memberName || 'certificado.pdf',
+              data: cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`
+            };
+          }
+        }
+      }
+
       set({
         currentStep: 0,
         existingOrgId: orgId,
@@ -205,9 +255,9 @@ export const useWizardStore = create((set, get) => ({
           estatutos: org.estatutos
             ? { type: typeof org.estatutos === 'string' ? org.estatutos : 'template', content: null, customFile: null }
             : { type: 'template', content: null, customFile: null },
-          directorioProvisorio: dir,
+          directorioProvisorio: mappedDir,
           comisionElectoral: { members: ce, electionDate: null },
-          certificates: {},
+          certificates: restoredCerts,
           inhabilityCertificates: {},
           documents: {},
           assemblySchedule: {
