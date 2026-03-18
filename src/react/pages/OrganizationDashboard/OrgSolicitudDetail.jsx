@@ -428,7 +428,9 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             <h3 style={sectionTitle}>Comisión Electoral ({ce.length})</h3>
             <div style={{ display: 'grid', gap: 8 }}>
               {ce.map((m, i) => {
-                const age = calculateAge(m.birthDate);
+                // Fallback: if birthDate missing, look it up from members list by RUT
+                const birthDate = m.birthDate || (m.rut && members.find(mb => mb.rut === m.rut)?.birthDate) || null;
+                const age = calculateAge(birthDate);
                 const isMinor = age !== null && age < 18;
                 return (
                   <div key={m.rut || i} style={{
@@ -458,7 +460,8 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
             const isEditing = editingCargo === key;
             const cert = getCertForMember(person.rut, person.firstName);
-            const age = calculateAge(person.birthDate);
+            const birthDate = person.birthDate || (person.rut && members.find(mb => mb.rut === person.rut)?.birthDate) || null;
+            const age = calculateAge(birthDate);
             const isMinor = age !== null && age < 18;
             return (
               <div key={key} style={{
