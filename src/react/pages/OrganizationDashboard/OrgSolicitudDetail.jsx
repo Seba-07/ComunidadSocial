@@ -31,6 +31,19 @@ function formatName(person) {
   return parts.join(' ') || '—';
 }
 
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+const minorBadge = { fontSize: 10, color: '#dc2626', fontWeight: 600, background: '#fef2f2', border: '1px solid #fecaca', padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap' };
+
 const RETRACTABLE_STATUSES = new Set(['waiting_ministro', 'ministro_scheduled', 'pending_review', 'in_review']);
 
 export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
@@ -371,20 +384,33 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   <th style={thStyle}>N°</th>
                   <th style={thStyle}>Nombre</th>
                   <th style={thStyle}>RUT</th>
+                  <th style={thStyle}>Edad</th>
                   <th style={thStyle}>Email</th>
                   <th style={thStyle}>Teléfono</th>
                 </tr>
               </thead>
               <tbody>
-                {members.map((m, i) => (
-                  <tr key={m.rut || i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={tdStyle}>{i + 1}</td>
-                    <td style={tdStyle}>{formatName(m)}</td>
-                    <td style={tdStyle}>{m.rut || '—'}</td>
-                    <td style={tdStyle}>{m.email || '—'}</td>
-                    <td style={tdStyle}>{m.phone || '—'}</td>
-                  </tr>
-                ))}
+                {members.map((m, i) => {
+                  const age = calculateAge(m.birthDate);
+                  const isMinor = age !== null && age < 18;
+                  return (
+                    <tr key={m.rut || i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={tdStyle}>{i + 1}</td>
+                      <td style={tdStyle}>{formatName(m)}</td>
+                      <td style={tdStyle}>{m.rut || '—'}</td>
+                      <td style={tdStyle}>
+                        {age !== null ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            {age}
+                            {isMinor && <span style={minorBadge}>Menor</span>}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td style={tdStyle}>{m.email || '—'}</td>
+                      <td style={tdStyle}>{m.phone || '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -401,20 +427,25 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           <div style={sectionStyle}>
             <h3 style={sectionTitle}>Comisión Electoral ({ce.length})</h3>
             <div style={{ display: 'grid', gap: 8 }}>
-              {ce.map((m, i) => (
-                <div key={m.rut || i} style={{
-                  padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fafafa',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <div>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
-                    <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+              {ce.map((m, i) => {
+                const age = calculateAge(m.birthDate);
+                const isMinor = age !== null && age < 18;
+                return (
+                  <div key={m.rut || i} style={{
+                    padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fafafa',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6,
+                  }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
+                      <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+                      {isMinor && <span style={{ ...minorBadge, marginLeft: 8 }}>Menor de edad</span>}
+                    </div>
+                    <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
+                      Miembro {i + 1}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
-                    Miembro {i + 1}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -427,6 +458,8 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
             const isEditing = editingCargo === key;
             const cert = getCertForMember(person.rut, person.firstName);
+            const age = calculateAge(person.birthDate);
+            const isMinor = age !== null && age < 18;
             return (
               <div key={key} style={{
                 padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
@@ -434,8 +467,9 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
-                  <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
+                  <div style={{ fontSize: 14, color: '#111827', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {formatName(person)} — {person.rut || '—'}
+                    {isMinor && <span style={minorBadge}>Menor de edad</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
