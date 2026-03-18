@@ -162,6 +162,12 @@ export default function Step5_Directorio({ onNext, onPrev }) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
+    // Validar certificados de antecedentes — obligatorio para todos los directores asignados
+    for (const cargo of cargos) {
+      if (directorio[cargo.id] && !certs[cargo.id]) {
+        return `Falta el Certificado de Antecedentes para: ${cargo.nombre}`;
+      }
+    }
     // Validar certificados de inhabilidades si permite menores — solo para directores mayores de 18
     if (permiteMenores) {
       for (const cargo of requiredCargos) {
@@ -292,18 +298,20 @@ export default function Step5_Directorio({ onNext, onPrev }) {
                 </select>
               )}
 
-              {/* Certificate upload - optional, can be uploaded later */}
+              {/* Certificate upload - required for all directors */}
               {assigned && (
                 <div style={{ marginTop: 8 }}>
                   <FileUpload
                     accept=".pdf,.jpg,.jpeg,.png"
-                    label="Certificado de Antecedentes (opcional)"
+                    label="Certificado de Antecedentes *"
                     maxSizeMB={5}
                     onFile={file => handleCertificate(cargo.id, file)}
                     value={certs[cargo.id]}
                   />
                   {!certs[cargo.id] && (
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, display: 'block' }}>Opcional — podrás subirlo después desde el panel</span>
+                    <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginTop: 4, display: 'block' }}>
+                      Obligatorio para avanzar
+                    </span>
                   )}
                 </div>
               )}
@@ -411,9 +419,8 @@ export default function Step5_Directorio({ onNext, onPrev }) {
       )}
 
       {pendingCerts.length > 0 && (
-        <div style={{ padding: 12, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 10, marginTop: 16, fontSize: 13, color: '#92400e' }}>
-          <strong>Documentación pendiente</strong> — Faltan certificados para: {pendingCerts.map(c => c.nombre).join(', ')}.
-          Podrás subirlos desde el panel de tu organización.
+        <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, marginTop: 16, fontSize: 13, color: '#991b1b' }}>
+          <strong>Certificados pendientes</strong> — Faltan certificados de antecedentes para: {pendingCerts.map(c => c.nombre).join(', ')}.
         </div>
       )}
 
