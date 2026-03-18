@@ -104,24 +104,28 @@ export const useWizardStore = create((set, get) => ({
   saveProgress() {
     try {
       const { currentStep, formData, existingOrgId, templateConfig } = get();
-      // Strip base64 data from certificates to avoid exceeding localStorage limit (~5MB)
-      const lightCerts = {};
-      for (const [k, v] of Object.entries(formData.certificates || {})) {
-        lightCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
-      }
-      const lightInhCerts = {};
-      for (const [k, v] of Object.entries(formData.inhabilityCertificates || {})) {
-        lightInhCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
-      }
       const saved = {
-        currentStep,
-        formData: { ...formData, certificates: lightCerts, inhabilityCertificates: lightInhCerts },
-        existingOrgId,
-        templateConfig,
+        currentStep, formData, existingOrgId, templateConfig,
         savedAt: new Date().toISOString()
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    } catch { /* localStorage full or unavailable */ }
+      // Try saving with full cert data first
+      const json = JSON.stringify(saved);
+      try {
+        localStorage.setItem(STORAGE_KEY, json);
+      } catch {
+        // localStorage quota exceeded — retry without base64 cert data
+        const lightCerts = {};
+        for (const [k, v] of Object.entries(formData.certificates || {})) {
+          lightCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
+        }
+        const lightInhCerts = {};
+        for (const [k, v] of Object.entries(formData.inhabilityCertificates || {})) {
+          lightInhCerts[k] = { name: v?.name || 'certificado.pdf', _hasData: true };
+        }
+        saved.formData = { ...formData, certificates: lightCerts, inhabilityCertificates: lightInhCerts };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      }
+    } catch { /* localStorage unavailable */ }
   },
 
   loadProgress() {
@@ -197,16 +201,32 @@ export const useWizardStore = create((set, get) => ({
       }
 
       // Restore certificates from server's certificatesStep5
+      // cert.memberId can be a RUT (new format) or a cargo key (old format like 'presidente')
+      const FIELD_TO_CARGO_REV = { president: 'presidente', secretary: 'secretario', treasurer: 'tesorero', vicePresident: 'vicepresidente' };
       const restoredCerts = {};
       if (Array.isArray(org.certificatesStep5)) {
         for (const cert of org.certificatesStep5) {
-          // Find which cargo this cert belongs to by matching RUT
-          const certRut = (cert.memberId || '').replace(/\./g, '').replace(/-/g, '');
+          const mid = cert.memberId || '';
           let matchedCargo = null;
-          for (const [cargoId, person] of Object.entries(mappedDir)) {
-            const personRut = (person.rut || '').replace(/\./g, '').replace(/-/g, '');
-            if (personRut && personRut === certRut) { matchedCargo = cargoId; break; }
+
+          // 1) Direct cargo key match (old format: memberId = 'presidente')
+          if (mappedDir[mid]) {
+            matchedCargo = mid;
           }
+          // 2) English key match (memberId = 'president')
+          if (!matchedCargo && FIELD_TO_CARGO_REV[mid]) {
+            const spanishKey = FIELD_TO_CARGO_REV[mid];
+            if (mappedDir[spanishKey]) matchedCargo = spanishKey;
+          }
+          // 3) RUT match (new format: memberId = '10.234.567-3')
+          if (!matchedCargo) {
+            const certRut = mid.replace(/\./g, '').replace(/-/g, '');
+            for (const [cargoId, person] of Object.entries(mappedDir)) {
+              const personRut = (person.rut || '').replace(/\./g, '').replace(/-/g, '');
+              if (personRut && personRut === certRut) { matchedCargo = cargoId; break; }
+            }
+          }
+
           if (matchedCargo && cert.certificate) {
             restoredCerts[matchedCargo] = {
               name: cert.memberName || 'certificado.pdf',
