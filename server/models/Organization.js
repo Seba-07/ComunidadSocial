@@ -579,6 +579,28 @@ const organizationSchema = new mongoose.Schema({
     id: String
   }],
 
+  // ============ DIRECTORIO / ELECCIONES ============
+  boardElectionDate: {
+    type: Date,
+    default: null
+  },
+  boardExpirationDate: {
+    type: Date,
+    default: null
+  },
+  boardStatus: {
+    type: String,
+    enum: ['VIGENTE', 'EN_PROCESO_ELECTORAL', 'VENCIDA'],
+    default: 'VIGENTE'
+  },
+  // Documento del TRICEL (acta de comisión electoral)
+  tricelDocument: {
+    s3Key: { type: String, default: null },
+    fileName: { type: String, default: null },
+    uploadedAt: { type: Date, default: null },
+    plannedElectionDate: { type: Date, default: null }
+  },
+
   // ============ CAMPOS NORMALIZADOS (v2) ============
   // Estos campos se usan para la nueva estructura normalizada
   // Coexisten con los campos embebidos durante la transición

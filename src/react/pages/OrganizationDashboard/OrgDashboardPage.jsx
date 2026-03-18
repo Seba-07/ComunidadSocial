@@ -38,7 +38,7 @@ const ORG_MENU_ITEMS = [
 ];
 
 // Tabs visible per access level
-const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'comunicaciones', 'finanzas']);
+const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'elecciones', 'comunicaciones', 'finanzas', 'documentos', 'proyectos', 'actividades']);
 const SOCIO_TABS = new Set(['overview', 'directorio', 'comunicaciones']);
 
 /**
@@ -198,7 +198,7 @@ export default function OrgDashboardPage() {
           {effectiveTab === 'members' && activeOrg && <OrgMembers org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'directorio' && activeOrg && <OrgDirectorio org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'asambleas' && activeOrg && <OrgAsambleas org={activeOrg} onRefresh={refreshActiveOrg} />}
-          {effectiveTab === 'elecciones' && activeOrg && <OrgElecciones org={activeOrg} />}
+          {effectiveTab === 'elecciones' && activeOrg && <OrgElecciones org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'comunicaciones' && activeOrg && <OrgComunicaciones org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'finanzas' && activeOrg && <OrgFinanzas org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'proyectos' && activeOrg && <OrgProyectos org={activeOrg} />}

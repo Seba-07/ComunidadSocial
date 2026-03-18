@@ -1800,6 +1800,16 @@ router.post('/:id/status', authenticate, requireRole('MUNICIPALIDAD'), validateO
 
     await organization.save();
 
+    // Si se aprueba, marcar directorio como vigente con fecha de elección = hoy
+    if (status === 'approved' && !organization.boardElectionDate) {
+      organization.boardElectionDate = new Date();
+      // Directorio provisorio dura 180 días por defecto (Ley 19.418)
+      const expiration = new Date();
+      expiration.setDate(expiration.getDate() + 180);
+      organization.boardExpirationDate = expiration;
+      organization.boardStatus = 'VIGENTE';
+    }
+
     // Si se aprueba la organización, crear automáticamente las cuentas de socios
     let memberAccountsResult = null;
     if (status === 'approved' && !organization.memberAccountsCreated) {
@@ -3911,6 +3921,119 @@ router.post('/:id/dissolve', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Dissolution error:', error);
     res.status(500).json({ error: 'Error al disolver la organización' });
+  }
+});
+
+// ============ ELECCIONES / TRICEL ============
+
+/**
+ * POST /api/organizations/:id/elections/start
+ * Inicia proceso electoral: sube acta TRICEL, cambia boardStatus a EN_PROCESO_ELECTORAL.
+ * Solo owner o directivo pueden iniciar.
+ */
+const tricelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Solo se permiten archivos PDF'));
+  }
+});
+
+router.post('/:id/elections/start', authenticate, validateObjectId(), tricelUpload.single('tricelDocument'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    // Permission: owner or MUNICIPALIDAD
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isMunicipalidad = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isMunicipalidad) {
+      return res.status(403).json({ error: 'No tienes permisos para iniciar un proceso electoral' });
+    }
+
+    if (organization.boardStatus === 'EN_PROCESO_ELECTORAL') {
+      return res.status(400).json({ error: 'Ya existe un proceso electoral en curso' });
+    }
+
+    const { plannedElectionDate } = req.body;
+    if (!plannedElectionDate) {
+      return res.status(400).json({ error: 'Debe indicar la fecha planificada para la elección' });
+    }
+
+    // Upload TRICEL document to S3 (or fallback)
+    let tricelDoc = { fileName: null, s3Key: null, uploadedAt: new Date(), plannedElectionDate: new Date(plannedElectionDate) };
+
+    if (req.file) {
+      const result = await storeFile(req.file.buffer, req.file.mimetype, {
+        organizationId: req.params.id,
+        type: 'tricel',
+        fileName: req.file.originalname
+      });
+      tricelDoc.fileName = req.file.originalname;
+      if (result.stored === 's3') {
+        tricelDoc.s3Key = result.s3Key;
+      }
+    }
+
+    organization.boardStatus = 'EN_PROCESO_ELECTORAL';
+    organization.tricelDocument = tricelDoc;
+    await organization.save();
+
+    // Audit log
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE',
+      resource: 'ORGANIZATION',
+      resourceId: organization._id,
+      resourceName: organization.organizationName,
+      detail: `Inició proceso electoral con fecha planificada ${new Date(plannedElectionDate).toLocaleDateString('es-CL')}`,
+      details: { type: 'election_start', plannedElectionDate, boardStatus: 'EN_PROCESO_ELECTORAL' },
+      ipAddress: req.ip
+    });
+
+    // Notify owner
+    if (!isOwner) {
+      await Notification.create({
+        userId: organization.userId,
+        type: 'election_started',
+        title: 'Proceso electoral iniciado',
+        message: `Se ha iniciado el proceso de renovación de directiva para tu organización. Fecha planificada: ${new Date(plannedElectionDate).toLocaleDateString('es-CL')}.`,
+        organizationId: organization._id
+      });
+    }
+
+    res.json({
+      message: 'Proceso electoral iniciado correctamente',
+      boardStatus: organization.boardStatus,
+      tricelDocument: organization.tricelDocument
+    });
+  } catch (error) {
+    console.error('Start election error:', error);
+    res.status(500).json({ error: 'Error al iniciar proceso electoral' });
+  }
+});
+
+/**
+ * GET /api/organizations/:id/elections/status
+ * Retorna el estado electoral de la organización.
+ */
+router.get('/:id/elections/status', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id)
+      .select('boardStatus boardElectionDate boardExpirationDate tricelDocument')
+      .lean();
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+    res.json(organization);
+  } catch (error) {
+    console.error('Election status error:', error);
+    res.status(500).json({ error: 'Error al obtener estado electoral' });
   }
 });
 
