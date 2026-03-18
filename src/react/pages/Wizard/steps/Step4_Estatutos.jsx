@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useUiStore } from '../../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
 import { jsPDF } from 'jspdf';
 import FileUpload from '../../../components/ui/FileUpload';
 import tenant from '../../../../config/tenant.js';
+import { getMissingVariables } from './estatutoVariables';
+
+const EstatutoEditor = lazy(() => import('../../../components/wizard/EstatutoEditor'));
 
 export default function Step4_Estatutos({ onNext, onPrev }) {
   const { formData, setFormDataField, templateConfig } = useWizardStore();
@@ -15,9 +18,9 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
 
   const orgType = formData.organization?.type;
 
-  // Load template snapshot when template mode selected and org type exists
+  // Load template snapshot when template/edit mode selected and org type exists
   useEffect(() => {
-    if (estatutos.type === 'template' && orgType && !snapshot) {
+    if ((estatutos.type === 'template' || estatutos.type === 'edit_template') && orgType && !snapshot) {
       loadSnapshot();
     }
   }, [estatutos.type, orgType]);
@@ -27,10 +30,9 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     try {
       const data = await apiService.getEstatutoTemplateSnapshot(orgType);
       setSnapshot(data);
-      // Store snapshot in formData for later use
+      // Store snapshot in formData for later use (preserve editedArticles if they exist)
       setFormDataField('estatutos', {
         ...estatutos,
-        type: 'template',
         snapshot: data,
         content: data.documentoCompleto || null
       });
@@ -43,8 +45,10 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
   }
 
   function setType(type) {
-    setFormDataField('estatutos', { ...estatutos, type, content: null, customFile: null, snapshot: null });
-    if (type === 'template') {
+    const base = { ...estatutos, type, content: null, customFile: null, snapshot: null };
+    if (type !== 'edit_template') base.editedArticles = null;
+    setFormDataField('estatutos', base);
+    if (type === 'template' || type === 'edit_template') {
       setSnapshot(null); // Will reload via useEffect
     }
   }
@@ -162,8 +166,10 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
     doc.text(orgName, pageWidth / 2, y, { align: 'center' });
     y += 12;
 
-    // Articles
-    const sorted = [...articles].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
+    // Articles — use editedArticles if in edit mode, otherwise raw articles with placeholder replacement
+    const useEdited = estatutos.type === 'edit_template' && estatutos.editedArticles?.length;
+    const sourceArticles = useEdited ? estatutos.editedArticles : articles;
+    const sorted = [...sourceArticles].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
     for (const art of sorted) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
@@ -178,7 +184,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      const content = replacePlaceholders(art.contenido || '');
+      const content = useEdited ? (art.contenido || '') : replacePlaceholders(art.contenido || '');
       const lines = doc.splitTextToSize(content, contentWidth);
       for (const line of lines) {
         if (y > pageHeight - 20) { doc.addPage(); y = 24; }
@@ -223,6 +229,7 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
       <div style={{ display: 'grid', gap: 12, marginBottom: 24 }}>
         {[
           { key: 'template', label: 'Usar plantilla automática', desc: 'Generados según Ley 19.418 y tipo de organización' },
+          { key: 'edit_template', label: 'Editar plantilla automática', desc: 'Personaliza el texto generado con un editor y validación en tiempo real' },
           { key: 'custom', label: 'Subir estatutos personalizados', desc: 'Sube tu propio archivo (PDF, DOC, DOCX)' }
         ].map(opt => (
           <div
@@ -319,6 +326,65 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
         </div>
       )}
 
+      {estatutos.type === 'edit_template' && (
+        <div>
+          {loading && (
+            <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+              Cargando plantilla para edición...
+            </div>
+          )}
+
+          {!loading && hasArticles && (
+            <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Cargando editor...</div>}>
+              <EstatutoEditor
+                articles={articles}
+                replacePlaceholders={replacePlaceholders}
+                formData={formData}
+                templateConfig={templateConfig}
+                onChange={(edited) => {
+                  setFormDataField('estatutos', { ...estatutos, editedArticles: edited });
+                }}
+              />
+            </Suspense>
+          )}
+
+          {!loading && !hasArticles && (
+            <div style={{
+              background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 10,
+              padding: 14, fontSize: 13, color: '#92400e'
+            }}>
+              Selecciona un tipo de organización en el Paso 1 para cargar la plantilla.
+            </div>
+          )}
+
+          {/* Download draft button for edited version */}
+          {hasArticles && estatutos.editedArticles?.length > 0 && (
+            <button
+              onClick={downloadDraftPDF}
+              style={{
+                marginTop: 16, width: '100%', padding: '12px 20px',
+                border: '1px solid #d1d5db', borderRadius: 10, background: 'white',
+                fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}
+            >
+              <span style={{ fontSize: 16 }}>&#8681;</span>
+              Descargar Borrador Editado
+            </button>
+          )}
+
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10,
+            padding: 14, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <span style={{ fontSize: 16 }}>&#9432;</span>
+            <p style={{ margin: 0, fontSize: 13, color: '#1e40af' }}>
+              Los cambios solo aplican a esta organización. La plantilla estándar del Secretario Municipal no se modifica.
+            </p>
+          </div>
+        </div>
+      )}
+
       {estatutos.type === 'custom' && (
         <div>
           <FileUpload
@@ -342,6 +408,17 @@ export default function Step4_Estatutos({ onNext, onPrev }) {
             const sizeMB = (estatutos.customFile.data.length * 0.75) / 1024 / 1024;
             if (sizeMB > 10) {
               addToast(`El archivo de estatutos pesa ${sizeMB.toFixed(1)}MB (máx. 10MB). Reduce su tamaño.`, 'error');
+              return;
+            }
+          }
+          if (estatutos.type === 'edit_template') {
+            if (!estatutos.editedArticles?.length) {
+              addToast('Edita al menos un artículo antes de continuar', 'error');
+              return;
+            }
+            const missing = getMissingVariables(estatutos.editedArticles, formData, templateConfig, CITACION_LABELS);
+            if (missing.length > 0) {
+              addToast(`Variables obligatorias faltantes en el texto: ${missing.map(v => v.label).join(', ')}`, 'error');
               return;
             }
           }

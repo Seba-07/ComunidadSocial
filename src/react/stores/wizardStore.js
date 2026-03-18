@@ -27,7 +27,7 @@ const initialFormData = {
     accountReviewMonth: 'Marzo',
     rutDisolucion: ''
   },
-  estatutos: { type: 'template', content: null, customFile: null },
+  estatutos: { type: 'template', content: null, customFile: null, editedArticles: null },
   directorioProvisorio: {},
   comisionElectoral: { members: [], electionDate: null },
   certificates: {},
@@ -275,6 +275,7 @@ export const useWizardStore = create((set, get) => ({
         provisionalDirectorio: formData.directorioProvisorio,
         electoralCommission: formData.comisionElectoral?.members || [],
         estatutos: typeof formData.estatutos === 'string' ? formData.estatutos : formData.estatutos?.type || '',
+        estatutosEditados: formData.estatutos?.type === 'edit_template' ? formData.estatutos.editedArticles : null,
         config: formData.config,
         electionDate: formData.assemblySchedule?.date || null,
         electionTime: formData.assemblySchedule?.time || null,

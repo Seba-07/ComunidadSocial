@@ -409,6 +409,15 @@ const organizationSchema = new mongoose.Schema({
     uploadedAt: { type: Date, default: Date.now }
   }],
 
+  // Artículos editados manualmente por el usuario (opción "Editar plantilla automática")
+  // Solo se llena si el usuario eligió editar — jamás modifica la plantilla global
+  estatutosEditados: [{
+    numero: Number,
+    titulo: String,
+    contenido: String,
+    orden: Number
+  }],
+
   // Snapshot del estatuto al momento de crear la organización
   // Esto permite que cambios futuros en las plantillas NO afecten a organizaciones ya creadas
   estatutosSnapshot: {

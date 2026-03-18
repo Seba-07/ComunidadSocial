@@ -702,6 +702,7 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       assemblyAddress,
       comments,
       estatutos,
+      estatutosEditados,
       certificatesStep5,
       config: wizardConfig
     } = req.body;
@@ -728,6 +729,7 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       assemblyAddress,
       comments,
       estatutos,
+      estatutosEditados: estatutosEditados || [],
       config: wizardConfig || {},
       userId: req.userId,
       status: 'waiting_ministro',
@@ -883,6 +885,16 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
       }
       // Replace placeholders with actual org data before saving
       orgData.estatutosSnapshot = replaceEstatutoPlaceholders(rawSnapshot, orgData);
+
+      // If user edited the template, use their edited articles for the final document
+      if (estatutos === 'edit_template' && estatutosEditados?.length) {
+        orgData.estatutosSnapshot.articulos = estatutosEditados;
+        orgData.estatutosSnapshot.documentoCompleto = estatutosEditados
+          .sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero))
+          .map(a => `Artículo ${a.numero}: ${a.titulo}\n${a.contenido}`)
+          .join('\n\n');
+      }
+
       // Also save the full generated text for PDF
       orgData.estatutos = orgData.estatutosSnapshot.documentoCompleto || '';
       logger.debug('CREATE ORG - estatutosSnapshot guardado con placeholders reemplazados:', orgData.estatutosSnapshot.articulos?.length, 'artículos');

@@ -242,7 +242,8 @@ export default function Step6_Review({ onNext, onPrev }) {
   }
 
   function previewDraftEstatuto() {
-    const articles = snapshot?.articulos || [];
+    const useEdited = estatutos.type === 'edit_template' && estatutos.editedArticles?.length;
+    const articles = useEdited ? estatutos.editedArticles : (snapshot?.articulos || []);
     if (!articles.length) { addToast('No hay artículos de estatuto para previsualizar', 'error'); return; }
     const doc = new jsPDF();
     const orgName = org.name || 'Organización';
@@ -290,7 +291,7 @@ export default function Step6_Review({ onNext, onPrev }) {
       y += 2;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      for (const line of doc.splitTextToSize(replacePlaceholders(art.contenido || ''), 170)) {
+      for (const line of doc.splitTextToSize(useEdited ? (art.contenido || '') : replacePlaceholders(art.contenido || ''), 170)) {
         if (y > ph - 20) { doc.addPage(); y = 24; }
         doc.text(line, 20, y); y += 5;
       }
@@ -422,12 +423,14 @@ export default function Step6_Review({ onNext, onPrev }) {
       <Section title="Estatutos">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <span style={{ fontSize: 14, color: '#374151' }}>
-            {estatutos.type === 'template' ? 'Plantilla automática (Ley 19.418)' : 'Documento personalizado'}
+            {estatutos.type === 'template' ? 'Plantilla automática (Ley 19.418)'
+              : estatutos.type === 'edit_template' ? 'Plantilla editada manualmente'
+              : 'Documento personalizado'}
             {estatutos.type === 'custom' && estatutos.customFile?.name && (
               <span style={{ color: '#6b7280', marginLeft: 8 }}>— {estatutos.customFile.name}</span>
             )}
           </span>
-          {estatutos.type === 'template' && snapshot?.articulos?.length > 0 && (
+          {(estatutos.type === 'template' || estatutos.type === 'edit_template') && snapshot?.articulos?.length > 0 && (
             <ViewButton onClick={previewDraftEstatuto} label="Ver Borrador" />
           )}
         </div>
