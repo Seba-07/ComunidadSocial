@@ -11,6 +11,17 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function Step6_Review({ onNext, onPrev }) {
   const { formData, templateConfig } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
@@ -369,7 +380,7 @@ export default function Step6_Review({ onNext, onPrev }) {
             <>
               {entries.map(([cargo, data]) => (
                 <div key={cargo} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{data.cargo || data.cargoNombre || cargo}:</span>
+                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{capitalize(data.cargo || data.cargoNombre || cargo)}:</span>
                   <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{data.firstName || ''} {data.lastName || ''} - {data.rut || '—'}</span>
                   {certs[cargo]
                     ? <span style={{ fontSize: 11, color: '#10b981' }}>Cert. OK</span>
@@ -378,7 +389,7 @@ export default function Step6_Review({ onNext, onPrev }) {
               ))}
               {additional.map((m, i) => (
                 <div key={`add_${i}`} style={{ display: 'flex', gap: 12, padding: '4px 0', fontSize: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{m.cargoNombre || m.cargo || `Director/a ${i + 1}`}:</span>
+                  <span style={{ fontWeight: 600, color: '#374151', minWidth: 120 }}>{capitalize(m.cargoNombre || m.cargo || `Director/a ${i + 1}`)}:</span>
                   <span style={{ color: '#6b7280', flex: 1, minWidth: 150 }}>{m.firstName || ''} {m.lastName || ''} - {m.rut || '—'}</span>
                 </div>
               ))}
@@ -388,7 +399,7 @@ export default function Step6_Review({ onNext, onPrev }) {
                 if (missing.length === 0) return null;
                 return (
                   <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400e' }}>
-                    <strong>Documentación Pendiente</strong> — Faltan certificados para: {missing.map(c => directorio[c]?.cargo || directorio[c]?.cargoNombre || c).join(', ')}.
+                    <strong>Documentación Pendiente</strong> — Faltan certificados para: {missing.map(c => capitalize(directorio[c]?.cargo || directorio[c]?.cargoNombre || c)).join(', ')}.
                     Podrás subirlos desde el panel de tu organización.
                   </div>
                 );
@@ -417,6 +428,9 @@ export default function Step6_Review({ onNext, onPrev }) {
         <Row label="Duración mandato" value={`${config.duracionMandato || 3} ${(config.duracionMandato || 3) === 1 ? 'año' : 'años'}`} />
         <Row label="Método de citación" value={CITACION_LABELS[config.metodoCitacion] || 'Carta certificada'} />
         <Row label="Mes de balance" value={config.accountReviewMonth || 'Marzo'} />
+        <Row label="Institución de disolución" value={
+          [config.beneficiarioDisolucion || tenant.dissolutionEntity || '—', config.rutDisolucion ? `RUT: ${config.rutDisolucion}` : ''].filter(Boolean).join(' — ')
+        } />
       </Section>
 
       {/* Estatutos */}
@@ -471,7 +485,21 @@ export default function Step6_Review({ onNext, onPrev }) {
             docs.push({ type: 'inhabilidades', cargo: person.cargo || cargoId, name: `${person.firstName || ''} ${person.lastName || ''}`.trim(), file: cert.name, data: cert.data });
           }
         }
-        if (docs.length === 0) return null;
+        // Identify minors in directorio who don't need inhability certs
+        const minorExemptions = [];
+        for (const [cargoId, person] of Object.entries(directorio)) {
+          if (!person || !person.firstName) continue;
+          const age = calculateAge(person.birthDate);
+          if (age !== null && age < 18) {
+            minorExemptions.push({
+              cargo: capitalize(person.cargo || cargoId),
+              name: `${person.firstName || ''} ${person.lastName || ''}`.trim(),
+              age
+            });
+          }
+        }
+
+        if (docs.length === 0 && minorExemptions.length === 0) return null;
 
         function viewDoc(d) {
           if (!d.data) {
@@ -490,7 +518,7 @@ export default function Step6_Review({ onNext, onPrev }) {
         return (
           <Section title={`Documentos Adjuntos (${docs.length})`}>
             {docs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < docs.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                   <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -504,6 +532,19 @@ export default function Step6_Review({ onNext, onPrev }) {
                   </div>
                 </div>
                 <ViewButton onClick={() => viewDoc(d)} label="Ver" />
+              </div>
+            ))}
+            {minorExemptions.map((ex, i) => (
+              <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{ex.name} ({ex.cargo})</div>
+                  <div style={{ fontSize: 11, color: '#b0b7c3' }}>
+                    Cert. Inhabilidades: No aplica (Menor de edad — {ex.age} años)
+                  </div>
+                </div>
               </div>
             ))}
           </Section>
