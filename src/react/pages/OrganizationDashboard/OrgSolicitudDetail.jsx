@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
@@ -62,6 +62,15 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRefs = useRef({});
+  const [generatedDocs, setGeneratedDocs] = useState([]);
+
+  useEffect(() => {
+    if (org._id) {
+      apiService.get(`/organizations/${org._id}/generated-documents`)
+        .then(docs => { if (Array.isArray(docs)) setGeneratedDocs(docs); })
+        .catch(() => {});
+    }
+  }, [org._id]);
 
   const dir = org.provisionalDirectorio || {};
   const members = org.members || [];
@@ -695,45 +704,58 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         );
       })()}
 
-      {/* 4c. Documentos Generados */}
-      {org.status !== 'draft' && (
-        <div style={sectionStyle}>
-          <h3 style={sectionTitle}>Documentos Generados</h3>
-          <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
-            Documentos oficiales generados a partir de los datos de la solicitud.
-          </p>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {[
-              { label: 'Acta Constitutiva', desc: 'Documento oficial de la asamblea constitutiva', action: () => apiService.downloadActaPDF(org._id) },
-              { label: 'Lista de Socios', desc: 'Nómina oficial de miembros fundadores', action: () => apiService.downloadMembersPDF(org._id) },
-            ].map((doc, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-                <div style={{ flexShrink: 0 }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      {/* 4c. Documentos Generados (from DB) */}
+      {generatedDocs.length > 0 && (() => {
+        const DOC_LABELS = {
+          acta_constitutiva: 'Acta Constitutiva',
+          lista_socios: 'Lista de Socios Fundadores',
+          nomina_directorio: 'Nómina del Directorio',
+          carta_solicitud: 'Carta de Solicitud',
+          declaracion_jurada: 'Declaración Jurada',
+        };
+        function viewGenDoc(doc) {
+          const w = window.open('', '_blank');
+          if (!w) return;
+          w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${DOC_LABELS[doc.docType] || doc.docType}</title>
+            <style>body{font-family:Arial,sans-serif;margin:40px auto;max-width:800px;line-height:1.6;color:#111;}
+            @media print{body{margin:0;max-width:100%;}}</style></head><body>${doc.content}</body></html>`);
+          w.document.close();
+        }
+        const eyeIconGen = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+        const viewBtnGen = {
+          padding: '5px 14px', border: 'none', borderRadius: 8,
+          background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+          transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)', flexShrink: 0,
+        };
+        return (
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>Documentos Generados ({generatedDocs.length})</h3>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {generatedDocs.map((doc, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                  <div style={{ flexShrink: 0 }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                      {DOC_LABELS[doc.docType] || capitalize(doc.docType?.replace(/_/g, ' ') || 'Documento')}
+                      {doc.cargoNombre && <span style={{ color: '#6b7280', fontWeight: 400 }}> — {doc.cargoNombre}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                      {doc.generatedAt ? `Generado: ${localeDateString(doc.generatedAt)}` : ''}
+                    </div>
+                  </div>
+                  <button onClick={() => viewGenDoc(doc)} style={viewBtnGen}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+                  >{eyeIconGen} Ver</button>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{doc.label}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af' }}>{doc.desc}</div>
-                </div>
-                <button onClick={async () => {
-                  try { await doc.action(); } catch (err) { addToast(err.message || 'Error al descargar documento', 'error'); }
-                }} style={{
-                  padding: '6px 14px', border: 'none', borderRadius: 8,
-                  background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                  transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)', flexShrink: 0,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Descargar
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 5. Estatutos */}
       <div style={sectionStyle}>
