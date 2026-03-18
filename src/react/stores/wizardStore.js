@@ -111,6 +111,7 @@ export const useWizardStore = create((set, get) => ({
         templateConfig,
         savedAt: new Date().toISOString()
       };
+      console.debug('[WizardStore] saveProgress:', { street: formData.organization?.street, streetNumber: formData.organization?.streetNumber, step: currentStep });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
     } catch { /* localStorage full or unavailable */ }
   },
@@ -130,17 +131,19 @@ export const useWizardStore = create((set, get) => ({
         return false;
       }
 
+      const restoredOrg = {
+        ...initialFormData.organization,
+        ...(saved.formData?.organization || {}),
+        commune: tenant.communeName || initialFormData.organization.commune,
+        region: initialFormData.organization.region
+      };
+      console.debug('[WizardStore] loadProgress:', { street: restoredOrg.street, streetNumber: restoredOrg.streetNumber, savedOrg: saved.formData?.organization });
       set({
         currentStep: saved.currentStep || 0,
         formData: {
           ...initialFormData,
           ...saved.formData,
-          organization: {
-            ...initialFormData.organization,
-            ...(saved.formData?.organization || {}),
-            commune: tenant.communeName || initialFormData.organization.commune,
-            region: initialFormData.organization.region
-          },
+          organization: restoredOrg,
           config: { ...initialFormData.config, ...(saved.formData?.config || {}) }
         },
         existingOrgId: saved.existingOrgId || null,
