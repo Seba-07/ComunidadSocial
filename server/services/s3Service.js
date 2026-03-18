@@ -11,6 +11,7 @@ import crypto from 'crypto';
 
 const BUCKET = process.env.AWS_S3_BUCKET;
 const REGION = process.env.AWS_REGION || 'us-east-1';
+const KEY_PREFIX = process.env.AWS_S3_KEY_PREFIX || '';
 
 let s3Client = null;
 
@@ -53,7 +54,8 @@ export async function upload(base64Data, options = {}) {
   const hash = crypto.createHash('md5').update(buffer).digest('hex').slice(0, 8);
   const ext = mimeType.includes('png') ? 'png' : mimeType.includes('jpeg') ? 'jpg' : 'bin';
   const prefix = options.organizationId || 'misc';
-  const s3Key = `${prefix}/${options.type || 'document'}/${hash}-${options.memberId || Date.now()}.${ext}`;
+  const base = KEY_PREFIX ? `${KEY_PREFIX}/${prefix}` : prefix;
+  const s3Key = `${base}/${options.type || 'document'}/${hash}-${options.memberId || Date.now()}.${ext}`;
 
   await client.send(new PutObjectCommand({
     Bucket: BUCKET,
