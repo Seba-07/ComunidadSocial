@@ -2555,6 +2555,7 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
       resource: 'ORGANIZATION',
       resourceId: organization._id,
       resourceName: organization.organizationName,
+      detail: `Consultó datos de ${organization.members.length} socios con cuentas vinculadas de "${organization.organizationName}"`,
       details: { type: 'view_members_with_accounts', memberCount: organization.members.length },
       ipAddress: req.ip
     });
@@ -3300,6 +3301,7 @@ router.get('/:id/export/members', authenticate, requireRole('MUNICIPALIDAD'), va
       resource: 'ORGANIZATION',
       resourceId: org._id,
       resourceName: org.organizationName,
+      detail: `Exportó nómina de ${(org.members || []).length} socios de "${org.organizationName}" en CSV`,
       details: { type: 'export_member_roster', memberCount: (org.members || []).length },
       ipAddress: req.ip
     });
@@ -3368,6 +3370,7 @@ router.get('/:id/export/changes', authenticate, requireRole('MUNICIPALIDAD'), va
       resource: 'ORGANIZATION',
       resourceId: org._id,
       resourceName: org.organizationName,
+      detail: `Exportó ${changes.length} cambios del período ${from} a ${to} de "${org.organizationName}"`,
       details: { type: 'export_semester_changes', from, to, changesCount: changes.length },
       ipAddress: req.ip
     });
@@ -3493,6 +3496,7 @@ router.get('/:id/export/election-results/:assemblyId', authenticate, requireRole
       resource: 'ORGANIZATION',
       resourceId: org._id,
       resourceName: org.organizationName,
+      detail: `Exportó resultados de elección de "${org.organizationName}"`,
       details: { type: 'export_election_results', assemblyId: req.params.assemblyId },
       ipAddress: req.ip
     });
@@ -3671,6 +3675,7 @@ router.post('/:id/directorio/renuncia',
         resource: 'ORGANIZATION',
         resourceId: organization._id,
         resourceName: organization.organizationName,
+        detail: `Renuncia de ${outMember.firstName} ${outMember.lastName} (${outCargoName}) en "${organization.organizationName}"${successor ? `. Reemplazado por ${successor.firstName} ${successor.lastName}` : ''}`,
         details: {
           type: 'directorio_resignation',
           reason,
@@ -3802,20 +3807,26 @@ router.post('/:id/dissolve', authenticate, async (req, res) => {
 
     await organization.save();
 
-    await AuditLog.create({
-      action: 'ORGANIZATION_DISSOLVED',
+    const user = await User.findById(req.userId).select('firstName lastName').lean();
+    const actorName = user ? `${user.firstName} ${user.lastName}` : 'Sistema';
+
+    AuditLog.logAction({
       userId: req.userId,
-      organizationId: organization._id,
+      userName: actorName,
+      userRole: req.userRole,
+      action: 'STATUS_CHANGE',
+      resource: 'ORGANIZATION',
+      resourceId: organization._id,
+      resourceName: organization.organizationName,
+      detail: `Disolvió la organización "${organization.organizationName}". Motivo: ${reason}`,
       details: {
-        organizationName: organization.organizationName,
+        type: 'organization_dissolution',
         reason,
         initiatedBy: isAdmin ? 'MUNICIPALIDAD' : 'DIRECTIVA',
         beneficiario: organization.config?.beneficiarioDisolucion || 'No configurado'
-      }
+      },
+      ipAddress: req.ip
     });
-
-    const user = await User.findById(req.userId).select('firstName lastName').lean();
-    const actorName = user ? `${user.firstName} ${user.lastName}` : 'Sistema';
 
     res.json({
       message: 'Organización disuelta exitosamente',

@@ -20,6 +20,7 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
       userRole: req.user.role,
       action: 'ACCESS_PII',
       resource: 'MINISTRO',
+      detail: `Consultó el listado de ${ministros.length} ministros de fe`,
       details: { type: 'list_all_ministros', count: ministros.length },
       ipAddress: req.ip
     });

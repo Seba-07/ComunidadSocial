@@ -21,6 +21,7 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
       userRole: req.user.role,
       action: 'ACCESS_PII',
       resource: 'USER',
+      detail: `Consultó el listado de ${users.length} dirigentes sociales`,
       details: { type: 'list_all_users', count: users.length },
       ipAddress: req.ip
     });
@@ -138,6 +139,7 @@ router.put('/me/consents', authenticate, async (req, res) => {
       action: 'UPDATE',
       resource: 'USER',
       resourceId: req.userId,
+      detail: `Actualizó sus preferencias de consentimiento de datos`,
       details: { type: 'consent_update', consents: consents.map(c => ({ purpose: c.purpose, granted: c.granted })) },
       ipAddress: clientIp
     });
@@ -206,6 +208,7 @@ router.get('/me/export', authenticate, async (req, res) => {
       action: 'EXPORT',
       resource: 'USER',
       resourceId: req.userId,
+      detail: `Exportó sus datos personales en formato ${format || 'JSON'}`,
       details: { type: 'personal_data_export', format },
       ipAddress: req.ip
     });
@@ -288,6 +291,7 @@ router.post('/me/oppose', authenticate, async (req, res) => {
       action: 'OPPOSE',
       resource: 'USER',
       resourceId: req.userId,
+      detail: `Ejerció derecho de oposición ARCOP sobre "${purpose}"`,
       details: {
         type: 'arcop_opposition',
         purpose,
@@ -360,6 +364,7 @@ router.delete('/me/account', authenticate, async (req, res) => {
       action: 'DELETE',
       resource: 'USER',
       resourceId: req.userId,
+      detail: `Solicitó eliminación de su cuenta. Motivo: ${reason}`,
       details: { type: 'account_deletion_request', reason },
       ipAddress: req.ip
     });
@@ -415,6 +420,7 @@ router.get('/:id', authenticate, async (req, res) => {
         resource: 'USER',
         resourceId: user._id,
         resourceName: `${user.firstName} ${user.lastName}`,
+        detail: `Accedió a la ficha personal del usuario ${user.firstName} ${user.lastName}`,
         details: { type: 'view_user_detail' },
         ipAddress: req.ip
       });

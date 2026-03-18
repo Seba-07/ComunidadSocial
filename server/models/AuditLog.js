@@ -57,6 +57,10 @@ const auditLogSchema = new mongoose.Schema({
   resourceName: {
     type: String
   },
+  detail: {
+    type: String,
+    default: ''
+  },
   details: {
     type: mongoose.Schema.Types.Mixed
   },

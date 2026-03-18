@@ -1,25 +1,129 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
-import { localeDateString, localeString } from '../../../utils/formatters';
+import { localeString } from '../../../utils/formatters';
 import DataTable from '../../../components/ui/DataTable';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
+// ============ Diccionario humanizado de acciones ============
 const ACTION_LABELS = {
-  CREATE: 'Crear', UPDATE: 'Actualizar', DELETE: 'Eliminar',
-  STATUS_CHANGE: 'Cambio Estado', LOGIN: 'Inicio Sesión',
-  LOGOUT: 'Cierre Sesión', ASSIGN: 'Asignar', VALIDATE: 'Validar'
+  CREATE: 'Creación',
+  UPDATE: 'Actualización',
+  DELETE: 'Eliminación',
+  STATUS_CHANGE: 'Cambio de Estado',
+  LOGIN: 'Inicio de Sesión',
+  LOGOUT: 'Cierre de Sesión',
+  ASSIGN: 'Asignación',
+  APPROVE: 'Aprobación',
+  REJECT: 'Rechazo',
+  UPLOAD: 'Carga de Archivo',
+  DOWNLOAD: 'Descarga',
+  EXPORT: 'Exportación',
+  OPPOSE: 'Oposición de Datos',
+  ACCESS_PII: 'Visualización de Datos'
 };
 
 const ACTION_COLORS = {
-  CREATE: '#10b981', UPDATE: '#2563eb', DELETE: '#ef4444',
-  STATUS_CHANGE: '#8b5cf6', LOGIN: '#06b6d4', ASSIGN: '#f59e0b', VALIDATE: '#22c55e'
+  CREATE: '#10b981',
+  UPDATE: '#2563eb',
+  DELETE: '#ef4444',
+  STATUS_CHANGE: '#8b5cf6',
+  LOGIN: '#06b6d4',
+  LOGOUT: '#64748b',
+  ASSIGN: '#f59e0b',
+  APPROVE: '#22c55e',
+  REJECT: '#ef4444',
+  UPLOAD: '#0891b2',
+  DOWNLOAD: '#6366f1',
+  EXPORT: '#f59e0b',
+  OPPOSE: '#dc2626',
+  ACCESS_PII: '#94a3b8'
 };
 
+// ============ Diccionario humanizado de recursos ============
 const RESOURCE_LABELS = {
-  ORGANIZATION: 'Organización', USER: 'Usuario', MINISTRO: 'Ministro',
-  ASSIGNMENT: 'Asignación', NEWS: 'Noticia', DOCUMENT: 'Documento', ESTATUTO: 'Estatuto'
+  ORGANIZATION: 'Organización',
+  USER: 'Usuario',
+  MINISTRO: 'Ministro de Fe',
+  ASSIGNMENT: 'Asignación',
+  NEWS: 'Noticia',
+  DOCUMENT: 'Documento',
+  ESTATUTO: 'Estatuto',
+  UNIDAD_VECINAL: 'Unidad Vecinal',
+  NOTIFICATION: 'Notificación',
+  GUIA: 'Guía',
+  LIBRARY_DOCUMENT: 'Biblioteca',
+  SYSTEM: 'Sistema',
+  CONSENT: 'Consentimiento'
 };
+
+// ============ Rol humanizado ============
+const ROLE_LABELS = {
+  MUNICIPALIDAD: 'Secretario Municipal',
+  ORGANIZADOR: 'Dirigente Social',
+  MIEMBRO: 'Miembro',
+  MIEMBRO_DIRECTIVO: 'Miembro Directivo',
+  MINISTRO_FE: 'Ministro de Fe'
+};
+
+/**
+ * Limpia el nombre de recurso removiendo prefijos técnicos
+ */
+function cleanResourceName(name) {
+  if (!name) return '';
+  // Remove prefixes like "SYSTEM:", "Incidente:", etc. if they duplicate the resource column
+  return name
+    .replace(/^SYSTEM:\s*/i, '')
+    .replace(/^ORGANIZATION:\s*/i, '')
+    .replace(/^USER:\s*/i, '');
+}
+
+/**
+ * Genera un detalle legible a partir de los datos del log (fallback para logs antiguos sin detail)
+ */
+function generateFallbackDetail(log) {
+  const type = log.details?.type;
+  const name = cleanResourceName(log.resourceName);
+
+  switch (type) {
+    case 'list_all_users':
+      return `Consultó el listado de ${log.details.count || ''} dirigentes sociales`;
+    case 'list_all_ministros':
+      return `Consultó el listado de ${log.details.count || ''} ministros de fe`;
+    case 'view_user_detail':
+      return name ? `Accedió a la ficha personal de ${name}` : 'Accedió a ficha de usuario';
+    case 'view_members_with_accounts':
+      return name ? `Consultó datos de socios de "${name}"` : 'Consultó datos de socios';
+    case 'consent_update':
+      return 'Actualizó sus preferencias de consentimiento';
+    case 'personal_data_export':
+      return `Exportó datos personales en formato ${log.details.format || 'JSON'}`;
+    case 'arcop_opposition':
+      return `Ejerció derecho de oposición ARCOP sobre "${log.details.purpose || ''}"`;
+    case 'account_deletion_request':
+      return `Solicitó eliminación de cuenta. Motivo: ${log.details.reason || 'No especificado'}`;
+    case 'security_incident_report':
+      return name ? `Registró incidente de seguridad "${name}"` : 'Registró incidente de seguridad';
+    case 'security_incident_update':
+      return name ? `Actualizó incidente "${name}" a estado "${log.details.status || ''}"` : 'Actualizó incidente de seguridad';
+    case 'export_member_roster':
+      return name ? `Exportó nómina de socios de "${name}"` : 'Exportó nómina de socios';
+    case 'export_semester_changes':
+      return name ? `Exportó cambios del período de "${name}"` : 'Exportó cambios del período';
+    case 'export_election_results':
+      return name ? `Exportó resultados de elección de "${name}"` : 'Exportó resultados de elección';
+    case 'directorio_resignation':
+      return log.details.outMember
+        ? `Renuncia de ${log.details.outMember.name} (${log.details.outMember.cargo}) en "${name}"`
+        : `Renuncia de directivo en "${name}"`;
+    case 'organization_dissolution':
+      return name ? `Disolvió la organización "${name}"` : 'Disolvió organización';
+    case 'auto_anonymization':
+      return `Anonimización automática por ${log.details.reason === 'inactive_3_years' ? 'inactividad (3 años)' : 'disolución (5 años)'}`;
+    default:
+      return null;
+  }
+}
 
 export default function AuditLogView() {
   const addToast = useUiStore(s => s.addToast);
@@ -76,16 +180,18 @@ export default function AuditLogView() {
       const data = await apiService.get(`/audit-log?${params.toString()}`);
       const entries = data.logs || data.entries || data || [];
 
-      // Build CSV
       const BOM = '\uFEFF';
       const headers = ['Fecha/Hora', 'Usuario', 'Rol', 'Acción', 'Recurso', 'Nombre Recurso', 'Detalle'];
-      const rows = entries.map(e => [
-        localeString(e.timestamp || e.createdAt),
-        e.userName || '', e.userRole || '',
-        ACTION_LABELS[e.action] || e.action,
-        RESOURCE_LABELS[e.resource] || e.resource,
-        e.resourceName || '', e.detail || ''
-      ]);
+      const rows = entries.map(e => {
+        const detailText = e.detail || generateFallbackDetail(e) || 'Sin detalle adicional';
+        return [
+          localeString(e.timestamp || e.createdAt),
+          e.userName || '', ROLE_LABELS[e.userRole] || e.userRole || '',
+          ACTION_LABELS[e.action] || e.action,
+          RESOURCE_LABELS[e.resource] || e.resource,
+          cleanResourceName(e.resourceName) || '', detailText
+        ];
+      });
 
       const csv = BOM + [headers, ...rows].map(r =>
         r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
@@ -95,7 +201,7 @@ export default function AuditLogView() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit_log_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `historial_auditoria_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       addToast('CSV exportado', 'success');
@@ -107,9 +213,11 @@ export default function AuditLogView() {
   const columns = [
     {
       key: 'timestamp', label: 'Fecha', sortable: true,
-      render: (val, row) => {
-        return <span style={{ fontSize: 12 }}>{localeString(val || row.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>;
-      }
+      render: (val, row) => (
+        <span style={{ fontSize: 12 }}>
+          {localeString(val || row.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )
     },
     {
       key: 'userName', label: 'Usuario', hideOnTablet: true,
@@ -117,8 +225,11 @@ export default function AuditLogView() {
         <div>
           <span style={{ fontSize: 13 }}>{val || 'Sistema'}</span>
           {row.userRole && (
-            <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 8, fontSize: 10, background: '#f3f4f6', color: '#6b7280' }}>
-              {row.userRole}
+            <span style={{
+              marginLeft: 6, padding: '2px 8px', borderRadius: 8, fontSize: 10, fontWeight: 500,
+              background: '#f0f9ff', color: '#0369a1'
+            }}>
+              {ROLE_LABELS[row.userRole] || row.userRole}
             </span>
           )}
         </div>
@@ -126,40 +237,69 @@ export default function AuditLogView() {
     },
     {
       key: 'action', label: 'Acción',
-      render: (val) => (
-        <span style={{
-          padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
-          background: (ACTION_COLORS[val] || '#6b7280') + '20',
-          color: ACTION_COLORS[val] || '#6b7280'
-        }}>
-          {ACTION_LABELS[val] || val}
-        </span>
-      )
+      render: (val) => {
+        const color = ACTION_COLORS[val] || '#6b7280';
+        return (
+          <span style={{
+            padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+            background: color + '15',
+            color: color,
+            whiteSpace: 'nowrap'
+          }}>
+            {ACTION_LABELS[val] || val}
+          </span>
+        );
+      }
     },
     {
       key: 'resource', label: 'Recurso',
-      render: (val, row) => (
-        <span style={{ fontSize: 13 }}>
-          {RESOURCE_LABELS[val] || val}{row.resourceName ? `: ${row.resourceName}` : ''}
-        </span>
-      )
+      render: (val, row) => {
+        const name = cleanResourceName(row.resourceName);
+        return (
+          <div style={{ fontSize: 13 }}>
+            <span style={{ color: '#374151', fontWeight: 500 }}>{RESOURCE_LABELS[val] || val}</span>
+            {name && (
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {name}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'detail', label: 'Detalle', hideOnMobile: true,
-      render: (val) => (
-        <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {val || '-'}
-        </span>
-      )
+      render: (val, row) => {
+        const text = val || generateFallbackDetail(row) || 'Sin detalle adicional';
+        const isNoDetail = text === 'Sin detalle adicional';
+        return (
+          <span style={{
+            fontSize: 12,
+            color: isNoDetail ? '#94a3b8' : '#374151',
+            fontStyle: isNoDetail ? 'italic' : 'normal',
+            maxWidth: 280,
+            display: 'inline-block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+          title={text}
+          >
+            {text}
+          </span>
+        );
+      }
     }
   ];
 
   return (
     <div className="audit-log-page" style={{ padding: 24 }}>
-      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="r-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Historial de Auditoría</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>{totalRecords} registros</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+            {totalRecords} registros — Retención: 365 días
+          </p>
         </div>
         <button onClick={exportCSV} style={{
           padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
@@ -202,7 +342,8 @@ export default function AuditLogView() {
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Buscar</label>
           <input type="text" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-            placeholder="Nombre usuario/recurso..."
+            onKeyDown={e => e.key === 'Enter' && applyFilters()}
+            placeholder="Nombre de usuario o recurso..."
             style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }} />
         </div>
         <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8 }}>
