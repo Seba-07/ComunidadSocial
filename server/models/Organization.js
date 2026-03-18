@@ -590,7 +590,7 @@ const organizationSchema = new mongoose.Schema({
   },
   boardStatus: {
     type: String,
-    enum: ['VIGENTE', 'EN_PROCESO_ELECTORAL', 'VENCIDA'],
+    enum: ['VIGENTE', 'EN_PROCESO_ELECTORAL', 'PENDIENTE_VALIDACION', 'VENCIDA'],
     default: 'VIGENTE'
   },
   // Documento del TRICEL (acta de comisión electoral)
@@ -599,6 +599,32 @@ const organizationSchema = new mongoose.Schema({
     fileName: { type: String, default: null },
     uploadedAt: { type: Date, default: null },
     plannedElectionDate: { type: Date, default: null }
+  },
+  // Acta de elección definitiva (PDF subido por el dirigente)
+  electionActDocument: {
+    s3Key: { type: String, default: null },
+    fileName: { type: String, default: null },
+    uploadedAt: { type: Date, default: null }
+  },
+  // Directiva electa pendiente de validación municipal
+  pendingElectoralBoard: {
+    president: {
+      rut: { type: String, default: '' },
+      firstName: { type: String, default: '' },
+      lastName: { type: String, default: '' }
+    },
+    secretary: {
+      rut: { type: String, default: '' },
+      firstName: { type: String, default: '' },
+      lastName: { type: String, default: '' }
+    },
+    treasurer: {
+      rut: { type: String, default: '' },
+      firstName: { type: String, default: '' },
+      lastName: { type: String, default: '' }
+    },
+    submittedAt: { type: Date, default: null },
+    submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
   },
 
   // ============ CAMPOS NORMALIZADOS (v2) ============

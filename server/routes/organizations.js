@@ -4091,4 +4091,178 @@ router.get('/:id/elections/status', authenticate, validateObjectId(), async (req
   }
 });
 
+/**
+ * POST /api/organizations/:id/elections/submit-results
+ * Envía resultados de elección: sube acta + nueva directiva propuesta.
+ * Cambia boardStatus a PENDIENTE_VALIDACION.
+ */
+router.post('/:id/elections/submit-results', authenticate, validateObjectId(), tricelUpload.single('electionActDocument'), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = organization.userId.toString() === req.userId.toString();
+    const isMunicipalidad = req.user.role === 'MUNICIPALIDAD';
+    if (!isOwner && !isMunicipalidad) return res.status(403).json({ error: 'No tienes permisos' });
+
+    if (organization.boardStatus !== 'EN_PROCESO_ELECTORAL') {
+      return res.status(400).json({ error: 'La organización no está en proceso electoral' });
+    }
+
+    const { presidentRut, presidentFirstName, presidentLastName,
+            secretaryRut, secretaryFirstName, secretaryLastName,
+            treasurerRut, treasurerFirstName, treasurerLastName } = req.body;
+
+    if (!presidentRut || !secretaryRut || !treasurerRut) {
+      return res.status(400).json({ error: 'Debe indicar los RUTs de Presidente, Secretario y Tesorero electos' });
+    }
+    if (!presidentFirstName || !presidentLastName || !secretaryFirstName || !secretaryLastName || !treasurerFirstName || !treasurerLastName) {
+      return res.status(400).json({ error: 'Debe indicar nombre y apellido de cada cargo electo' });
+    }
+
+    let electionDoc = { fileName: null, s3Key: null, uploadedAt: new Date() };
+    if (req.file) {
+      const result = await storeFile(req.file.buffer, req.file.mimetype, {
+        organizationId: req.params.id, type: 'election-act', fileName: req.file.originalname
+      });
+      electionDoc.fileName = req.file.originalname;
+      if (result.stored === 's3') electionDoc.s3Key = result.s3Key;
+    }
+
+    organization.boardStatus = 'PENDIENTE_VALIDACION';
+    organization.electionActDocument = electionDoc;
+    organization.pendingElectoralBoard = {
+      president: { rut: presidentRut.trim(), firstName: presidentFirstName.trim(), lastName: presidentLastName.trim() },
+      secretary: { rut: secretaryRut.trim(), firstName: secretaryFirstName.trim(), lastName: secretaryLastName.trim() },
+      treasurer: { rut: treasurerRut.trim(), firstName: treasurerFirstName.trim(), lastName: treasurerLastName.trim() },
+      submittedAt: new Date(),
+      submittedBy: req.user._id
+    };
+    await organization.save();
+
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE', resource: 'ORGANIZATION',
+      resourceId: organization._id, resourceName: organization.organizationName,
+      detail: 'Envió resultados de elección para validación municipal',
+      details: { type: 'election_results_submitted', boardStatus: 'PENDIENTE_VALIDACION' },
+      ipAddress: req.ip
+    });
+
+    res.json({ message: 'Resultados enviados. Pendiente de validación municipal.', boardStatus: organization.boardStatus });
+  } catch (error) {
+    console.error('Submit election results error:', error);
+    res.status(500).json({ error: 'Error al enviar resultados electorales' });
+  }
+});
+
+/**
+ * POST /api/organizations/:id/elections/approve
+ * Admin aprueba nueva directiva: reemplaza provisionalDirectorio,
+ * boardStatus → VIGENTE, boardExpirationDate = +3 años (Ley 19.418).
+ */
+router.post('/:id/elections/approve', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    if (organization.boardStatus !== 'PENDIENTE_VALIDACION') {
+      return res.status(400).json({ error: 'No hay directiva pendiente de validación' });
+    }
+
+    const pending = organization.pendingElectoralBoard;
+    if (!pending?.president?.rut) return res.status(400).json({ error: 'No hay datos de directiva electa' });
+
+    // Replace provisionalDirectorio with elected board
+    organization.provisionalDirectorio = {
+      ...organization.provisionalDirectorio,
+      president: { rut: pending.president.rut, firstName: pending.president.firstName, lastName: pending.president.lastName },
+      secretary: { rut: pending.secretary.rut, firstName: pending.secretary.firstName, lastName: pending.secretary.lastName },
+      treasurer: { rut: pending.treasurer.rut, firstName: pending.treasurer.firstName, lastName: pending.treasurer.lastName }
+    };
+
+    // Update board dates: election = now, expiration = +3 years
+    const now = new Date();
+    organization.boardElectionDate = now;
+    const expiration = new Date(now);
+    expiration.setFullYear(expiration.getFullYear() + 3);
+    organization.boardExpirationDate = expiration;
+    organization.boardStatus = 'VIGENTE';
+    organization.pendingElectoralBoard = undefined;
+
+    await organization.save();
+
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE', resource: 'ORGANIZATION',
+      resourceId: organization._id, resourceName: organization.organizationName,
+      detail: `Aprobó nueva directiva electa. Mandato vigente hasta ${expiration.toLocaleDateString('es-CL')}`,
+      details: { type: 'election_approved', boardExpirationDate: expiration, newPresident: pending.president.rut },
+      ipAddress: req.ip
+    });
+
+    await Notification.create({
+      userId: organization.userId,
+      type: 'election_approved',
+      title: 'Nueva directiva aprobada',
+      message: `La municipalidad ha aprobado la nueva directiva de tu organización. Mandato vigente hasta ${expiration.toLocaleDateString('es-CL')}.`,
+      organizationId: organization._id
+    });
+
+    res.json({ message: 'Directiva aprobada correctamente', boardStatus: 'VIGENTE', boardElectionDate: now, boardExpirationDate: expiration });
+  } catch (error) {
+    console.error('Approve election error:', error);
+    res.status(500).json({ error: 'Error al aprobar directiva' });
+  }
+});
+
+/**
+ * POST /api/organizations/:id/elections/reject
+ * Admin rechaza directiva propuesta: vuelve a EN_PROCESO_ELECTORAL.
+ */
+router.post('/:id/elections/reject', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    if (organization.boardStatus !== 'PENDIENTE_VALIDACION') {
+      return res.status(400).json({ error: 'No hay directiva pendiente de validación' });
+    }
+
+    const { reason } = req.body;
+    organization.boardStatus = 'EN_PROCESO_ELECTORAL';
+    organization.pendingElectoralBoard = undefined;
+    organization.electionActDocument = undefined;
+    await organization.save();
+
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE', resource: 'ORGANIZATION',
+      resourceId: organization._id, resourceName: organization.organizationName,
+      detail: `Rechazó directiva electa propuesta${reason ? ': ' + reason : ''}`,
+      details: { type: 'election_rejected', reason },
+      ipAddress: req.ip
+    });
+
+    await Notification.create({
+      userId: organization.userId,
+      type: 'election_rejected',
+      title: 'Directiva rechazada',
+      message: `La municipalidad ha rechazado la directiva propuesta.${reason ? ' Motivo: ' + reason : ''} Debe volver a presentar los resultados.`,
+      organizationId: organization._id
+    });
+
+    res.json({ message: 'Directiva rechazada. La organización vuelve a proceso electoral.', boardStatus: 'EN_PROCESO_ELECTORAL' });
+  } catch (error) {
+    console.error('Reject election error:', error);
+    res.status(500).json({ error: 'Error al rechazar directiva' });
+  }
+});
+
 export default router;

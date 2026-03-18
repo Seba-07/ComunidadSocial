@@ -32,6 +32,7 @@ const STATUS_FILTERS = [
   { key: 'rejected', label: 'Rechazadas', color: '#ef4444' },
   { key: 'dissolved', label: 'Disueltas', color: '#6b7280' },
   { key: 'fantasma', label: 'Fantasmas', color: '#dc2626' },
+  { key: 'pendiente_electoral', label: 'Validación Electoral', color: '#7c3aed' },
   { key: 'draft', label: 'Borradores', color: '#6b7280' }
 ];
 
@@ -52,6 +53,8 @@ export default function OrganizationsList() {
         ? organizations.filter(o => o.status !== 'draft').length
         : f.key === 'fantasma'
         ? ghostCount
+        : f.key === 'pendiente_electoral'
+        ? organizations.filter(o => o.boardStatus === 'PENDIENTE_VALIDACION').length
         : organizations.filter(o => o.status === f.key).length
     })), [organizations, ghostCount]);
 
@@ -61,6 +64,8 @@ export default function OrganizationsList() {
       result = result.filter(o => o.status !== 'draft');
     } else if (currentFilter === 'fantasma') {
       result = result.filter(isGhostOrg);
+    } else if (currentFilter === 'pendiente_electoral') {
+      result = result.filter(o => o.boardStatus === 'PENDIENTE_VALIDACION');
     } else {
       result = result.filter(o => o.status === currentFilter);
     }
@@ -161,6 +166,11 @@ export default function OrganizationsList() {
                 {isGhostOrg(org) && (
                   <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 10, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
                     Quórum Insuficiente
+                  </span>
+                )}
+                {org.boardStatus === 'PENDIENTE_VALIDACION' && (
+                  <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 10, fontWeight: 700, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #c4b5fd' }}>
+                    Validación Electoral
                   </span>
                 )}
               </div>

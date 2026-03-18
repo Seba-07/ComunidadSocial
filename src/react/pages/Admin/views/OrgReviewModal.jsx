@@ -104,6 +104,9 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [electionActioning, setElectionActioning] = useState(false);
+  const [rejectElectionReason, setRejectElectionReason] = useState('');
+  const [showRejectElection, setShowRejectElection] = useState(false);
 
   const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
@@ -313,6 +316,103 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
         {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+          {/* Electoral Validation Alert */}
+          {org.boardStatus === 'PENDIENTE_VALIDACION' && org.pendingElectoralBoard && (
+            <div style={{ background: '#f5f3ff', border: '2px solid #c4b5fd', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 24 }}>🗳️</span>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#5b21b6' }}>
+                  Nueva Directiva Pendiente de Validación
+                </h3>
+              </div>
+              <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+                {[
+                  { label: 'Presidente/a', data: org.pendingElectoralBoard.president },
+                  { label: 'Secretario/a', data: org.pendingElectoralBoard.secretary },
+                  { label: 'Tesorero/a', data: org.pendingElectoralBoard.treasurer },
+                ].filter(c => c.data?.rut).map(({ label, data }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'white', borderRadius: 8, flexWrap: 'wrap', gap: 4 }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: '#5b21b6' }}>{label}</span>
+                    <span style={{ fontSize: 13, color: '#374151' }}>{data.firstName} {data.lastName} — {data.rut}</span>
+                  </div>
+                ))}
+              </div>
+              {org.electionActDocument?.fileName && (
+                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+                  Acta de elección: <strong>{org.electionActDocument.fileName}</strong>
+                  {org.electionActDocument.uploadedAt && ` (${new Date(org.electionActDocument.uploadedAt).toLocaleDateString('es-CL')})`}
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  disabled={electionActioning}
+                  onClick={async () => {
+                    setElectionActioning(true);
+                    try {
+                      await apiService.post(`/organizations/${org._id}/elections/approve`);
+                      addToast('Directiva aprobada. Mandato vigente por 3 años.', 'success');
+                      const updated = await refreshOrganization(org._id);
+                      if (updated) setOrg(updated);
+                    } catch (err) { addToast(err.message || 'Error al aprobar', 'error'); }
+                    finally { setElectionActioning(false); }
+                  }}
+                  style={{
+                    padding: '10px 24px', border: 'none', borderRadius: 8,
+                    background: '#059669', color: '#fff', fontSize: 14, fontWeight: 700,
+                    cursor: electionActioning ? 'not-allowed' : 'pointer',
+                    opacity: electionActioning ? 0.6 : 1
+                  }}
+                >
+                  {electionActioning ? 'Procesando...' : 'Aprobar Nueva Directiva'}
+                </button>
+                <button
+                  onClick={() => setShowRejectElection(true)}
+                  style={{
+                    padding: '10px 24px', border: '1px solid #ef4444', borderRadius: 8,
+                    background: 'white', color: '#ef4444', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                  }}
+                >
+                  Rechazar
+                </button>
+              </div>
+              {showRejectElection && (
+                <div style={{ marginTop: 12, padding: 16, background: '#fef2f2', borderRadius: 8, border: '1px solid #fca5a5' }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#991b1b', marginBottom: 6 }}>Motivo del rechazo (opcional):</label>
+                  <textarea value={rejectElectionReason} onChange={(e) => setRejectElectionReason(e.target.value)}
+                    placeholder="Indique el motivo..." rows={2}
+                    style={{ width: '100%', padding: 10, border: '1px solid #fca5a5', borderRadius: 6, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => setShowRejectElection(false)}
+                      style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, background: 'white', fontSize: 12, cursor: 'pointer', color: '#374151' }}>
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={electionActioning}
+                      onClick={async () => {
+                        setElectionActioning(true);
+                        try {
+                          await apiService.post(`/organizations/${org._id}/elections/reject`, { reason: rejectElectionReason });
+                          addToast('Directiva rechazada. La organización vuelve a proceso electoral.', 'success');
+                          setShowRejectElection(false);
+                          setRejectElectionReason('');
+                          const updated = await refreshOrganization(org._id);
+                          if (updated) setOrg(updated);
+                        } catch (err) { addToast(err.message || 'Error al rechazar', 'error'); }
+                        finally { setElectionActioning(false); }
+                      }}
+                      style={{
+                        padding: '6px 14px', border: 'none', borderRadius: 6,
+                        background: '#ef4444', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Confirmar Rechazo
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {tab === 'datos' && (
             <div style={{ display: 'grid', gap: 12 }}>
               {[
