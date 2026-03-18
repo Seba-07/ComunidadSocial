@@ -583,27 +583,38 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           return { ...cert, cargoLabel };
         });
 
-        // Build minor exemptions from directorio
+        // Build inhability certs (adults) and minor exemptions from directorio
+        const inhCerts = [];
         const minorExemptions = [];
         for (const { person, label } of cargoEntries) {
           const bd = person.birthDate || (person.rut && members.find(mb => mb.rut === person.rut)?.birthDate) || null;
           const age = calculateAge(bd);
           if (age !== null && age < 18) {
             minorExemptions.push({ name: formatName(person), cargo: label, age });
+          } else if (person.inhabilityCertificate) {
+            inhCerts.push({ name: formatName(person), cargo: label, certificate: person.inhabilityCertificate });
           }
         }
 
-        if (enrichedCerts.length === 0 && minorExemptions.length === 0) return null;
+        if (enrichedCerts.length === 0 && inhCerts.length === 0 && minorExemptions.length === 0) return null;
 
         function viewCertDoc(cert) {
           if (!cert.certificate) return;
-          const data = cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`;
-          const w = window.open('');
-          if (!w) return;
-          if (data.includes('application/pdf') || cert.memberName?.endsWith('.pdf')) {
-            w.document.write(`<iframe src="${data}" style="width:100%;height:100%;border:none;position:fixed;top:0;left:0;"></iframe>`);
-          } else {
-            w.document.write(`<div style="display:flex;justify-content:center;padding:20px;background:#f1f5f9;min-height:100vh;"><img src="${data}" style="max-width:100%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);"/></div>`);
+          try {
+            // Convert base64 to Blob URL for reliable viewing (data URIs fail for large PDFs)
+            const raw = cert.certificate.includes(',') ? cert.certificate.split(',')[1] : cert.certificate;
+            const byteChars = atob(raw);
+            const byteArray = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+            const isPdf = cert.memberName?.endsWith('.pdf') || cert.certificate.includes('application/pdf') || byteChars.startsWith('%PDF');
+            const blob = new Blob([byteArray], { type: isPdf ? 'application/pdf' : 'image/png' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          } catch (err) {
+            console.error('Error viewing cert:', err);
+            // Fallback: try data URI
+            const data = cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`;
+            window.open(data, '_blank');
           }
         }
 
@@ -618,7 +629,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
         return (
           <div style={sectionStyle}>
-            <h3 style={sectionTitle}>Documentos Adjuntos ({enrichedCerts.length})</h3>
+            <h3 style={sectionTitle}>Documentos Adjuntos ({enrichedCerts.length + inhCerts.length})</h3>
 
             <div style={subTitleStyle}>Certificados de Antecedentes</div>
             {enrichedCerts.map((cert, i) => (
@@ -643,9 +654,30 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               </div>
             ))}
 
-            {minorExemptions.length > 0 && (
+            {(inhCerts.length > 0 || minorExemptions.length > 0) && (
               <>
                 <div style={{ ...subTitleStyle, marginTop: 16 }}>Certificados de Inhabilidades</div>
+                {inhCerts.map((ic, i) => (
+                  <div key={`inh_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                        {ic.name}
+                        <span style={{ color: '#6b7280', fontWeight: 400 }}> — {ic.cargo}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Cert. Inhabilidades</div>
+                    </div>
+                    <button onClick={() => viewCertDoc({ certificate: ic.certificate, memberName: 'inhabilidad.pdf' })} style={viewBtnStyle}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+                    >{eyeIcon} Ver</button>
+                  </div>
+                ))}
                 {minorExemptions.map((ex, i) => (
                   <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                     <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -662,6 +694,46 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           </div>
         );
       })()}
+
+      {/* 4c. Documentos Generados */}
+      {org.status !== 'draft' && (
+        <div style={sectionStyle}>
+          <h3 style={sectionTitle}>Documentos Generados</h3>
+          <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
+            Documentos oficiales generados a partir de los datos de la solicitud.
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {[
+              { label: 'Acta Constitutiva', desc: 'Documento oficial de la asamblea constitutiva', action: () => apiService.downloadActaPDF(org._id) },
+              { label: 'Lista de Socios', desc: 'Nómina oficial de miembros fundadores', action: () => apiService.downloadMembersPDF(org._id) },
+            ].map((doc, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                <div style={{ flexShrink: 0 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{doc.label}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>{doc.desc}</div>
+                </div>
+                <button onClick={async () => {
+                  try { await doc.action(); } catch (err) { addToast(err.message || 'Error al descargar documento', 'error'); }
+                }} style={{
+                  padding: '6px 14px', border: 'none', borderRadius: 8,
+                  background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)', flexShrink: 0,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Descargar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 5. Estatutos */}
       <div style={sectionStyle}>

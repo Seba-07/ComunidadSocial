@@ -207,8 +207,21 @@ export const useWizardStore = create((set, get) => ({
       // cert.memberId can be a RUT (new format) or a cargo key (old format like 'presidente')
       const FIELD_TO_CARGO_REV = { president: 'presidente', secretary: 'secretario', treasurer: 'tesorero', vicePresident: 'vicepresidente' };
       const restoredCerts = {};
+      // Restore inhability certificates from directorio members' inhabilityCertificate field
+      const restoredInhCerts = {};
+      for (const [cargoId, person] of Object.entries(mappedDir)) {
+        if (person.inhabilityCertificate) {
+          restoredInhCerts[cargoId] = {
+            name: 'certificado_inhabilidad.pdf',
+            data: person.inhabilityCertificate.startsWith('data:') ? person.inhabilityCertificate : `data:application/pdf;base64,${person.inhabilityCertificate}`
+          };
+          console.log('[loadFromOrg] restored inhCert for:', cargoId);
+        }
+      }
+
       console.log('[loadFromOrg] mappedDir result:', Object.keys(mappedDir));
       console.log('[loadFromOrg] certificatesStep5 count:', (org.certificatesStep5 || []).length);
+      console.log('[loadFromOrg] inhCerts restored:', Object.keys(restoredInhCerts));
       if (Array.isArray(org.certificatesStep5)) {
         for (const cert of org.certificatesStep5) {
           const mid = cert.memberId || '';
@@ -284,7 +297,7 @@ export const useWizardStore = create((set, get) => ({
           directorioProvisorio: mappedDir,
           comisionElectoral: { members: ce, electionDate: null },
           certificates: restoredCerts,
-          inhabilityCertificates: {},
+          inhabilityCertificates: restoredInhCerts,
           documents: {},
           assemblySchedule: {
             date: org.electionDate || null,
