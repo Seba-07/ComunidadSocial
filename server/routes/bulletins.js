@@ -2,12 +2,12 @@ import { Router } from 'express';
 import Bulletin from '../models/Bulletin.js';
 import Organization from '../models/Organization.js';
 import AuditLog from '../models/AuditLog.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
 // POST /api/bulletins — Create bulletin (admin only)
-router.post('/', authenticateToken, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const { title, content, targetAudience } = req.body;
 
@@ -43,7 +43,7 @@ router.post('/', authenticateToken, requireRole('MUNICIPALIDAD'), async (req, re
 });
 
 // GET /api/bulletins/admin — List all bulletins for admin
-router.get('/admin', authenticateToken, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.get('/admin', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const bulletins = await Bulletin.find()
       .sort({ createdAt: -1 })
@@ -58,7 +58,7 @@ router.get('/admin', authenticateToken, requireRole('MUNICIPALIDAD'), async (req
 });
 
 // DELETE /api/bulletins/:id — Delete bulletin (admin only)
-router.delete('/:id', authenticateToken, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const bulletin = await Bulletin.findByIdAndDelete(req.params.id);
     if (!bulletin) return res.status(404).json({ error: 'Comunicado no encontrado' });
@@ -82,7 +82,7 @@ router.delete('/:id', authenticateToken, requireRole('MUNICIPALIDAD'), async (re
 });
 
 // GET /api/organizations/:id/bulletins — Bulletins relevant to this org
-router.get('/:id/bulletins', authenticateToken, async (req, res) => {
+router.get('/:id/bulletins', authenticate, async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id).select('organizationType boardStatus').lean();
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
