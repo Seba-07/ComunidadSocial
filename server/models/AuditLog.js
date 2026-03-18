@@ -47,7 +47,8 @@ const auditLogSchema = new mongoose.Schema({
       'GUIA',
       'LIBRARY_DOCUMENT',
       'SYSTEM',
-      'CONSENT'
+      'CONSENT',
+      'SECURITY_INCIDENT'
     ],
     required: true
   },

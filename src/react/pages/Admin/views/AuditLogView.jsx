@@ -54,7 +54,8 @@ const RESOURCE_LABELS = {
   GUIA: 'Guía',
   LIBRARY_DOCUMENT: 'Biblioteca',
   SYSTEM: 'Sistema',
-  CONSENT: 'Consentimiento'
+  CONSENT: 'Consentimiento',
+  SECURITY_INCIDENT: 'Incidente de Seguridad'
 };
 
 // ============ Rol humanizado ============
@@ -236,39 +237,29 @@ export default function AuditLogView() {
       )
     },
     {
-      key: 'action', label: 'Acción',
-      render: (val) => {
-        const color = ACTION_COLORS[val] || '#6b7280';
-        return (
-          <span style={{
-            padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-            background: color + '15',
-            color: color,
-            whiteSpace: 'nowrap'
-          }}>
-            {ACTION_LABELS[val] || val}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'resource', label: 'Recurso',
+      key: 'action', label: 'Evento',
       render: (val, row) => {
-        const name = cleanResourceName(row.resourceName);
+        const color = ACTION_COLORS[val] || '#6b7280';
+        const resourceLabel = RESOURCE_LABELS[row.resource] || row.resource;
         return (
-          <div style={{ fontSize: 13 }}>
-            <span style={{ color: '#374151', fontWeight: 500 }}>{RESOURCE_LABELS[val] || val}</span>
-            {name && (
-              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {name}
-              </div>
-            )}
+          <div>
+            <span style={{
+              padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+              background: color + '15',
+              color: color,
+              whiteSpace: 'nowrap'
+            }}>
+              {ACTION_LABELS[val] || val}
+            </span>
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+              {resourceLabel}
+            </div>
           </div>
         );
       }
     },
     {
-      key: 'detail', label: 'Detalle', hideOnMobile: true,
+      key: 'detail', label: 'Detalle',
       render: (val, row) => {
         const text = val || generateFallbackDetail(row) || 'Sin detalle adicional';
         const isNoDetail = text === 'Sin detalle adicional';
@@ -277,14 +268,10 @@ export default function AuditLogView() {
             fontSize: 12,
             color: isNoDetail ? '#94a3b8' : '#374151',
             fontStyle: isNoDetail ? 'italic' : 'normal',
-            maxWidth: 280,
-            display: 'inline-block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-          title={text}
-          >
+            lineHeight: 1.5,
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+          }}>
             {text}
           </span>
         );

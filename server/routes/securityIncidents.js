@@ -53,9 +53,9 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createSecu
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
       action: 'CREATE',
-      resource: 'SYSTEM',
+      resource: 'SECURITY_INCIDENT',
       resourceId: incident._id,
-      resourceName: `Incidente: ${title}`,
+      resourceName: title,
       detail: `Registró incidente de seguridad "${title}" con severidad ${severity}`,
       details: { type: 'security_incident_report', severity, incidentType: type },
       ipAddress: req.ip
@@ -119,9 +119,9 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateSe
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
       action: 'UPDATE',
-      resource: 'SYSTEM',
+      resource: 'SECURITY_INCIDENT',
       resourceId: incident._id,
-      resourceName: `Incidente: ${incident.title}`,
+      resourceName: incident.title,
       detail: `Actualizó incidente de seguridad a estado "${incident.status}"`,
       details: { type: 'security_incident_update', status: incident.status },
       ipAddress: req.ip

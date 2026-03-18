@@ -5,7 +5,7 @@ import { authLimiter, sensitiveLimiter, allowFields, ALLOWED_FIELDS } from '../m
 import { validate, createMinistroSchema, loginSchema } from '../middleware/validation.js';
 import crypto from 'crypto';
 import { maskPiiFields } from '../middleware/dataMasking.js';
-import AuditLog from '../models/AuditLog.js';
+
 
 const router = express.Router();
 
@@ -13,17 +13,6 @@ const router = express.Router();
 router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const ministros = await User.find({ role: 'MINISTRO_FE' }).sort({ createdAt: -1 });
-
-    AuditLog.logAction({
-      userId: req.userId,
-      userName: `${req.user.firstName} ${req.user.lastName}`,
-      userRole: req.user.role,
-      action: 'ACCESS_PII',
-      resource: 'MINISTRO',
-      detail: `Consultó el listado de ${ministros.length} ministros de fe`,
-      details: { type: 'list_all_ministros', count: ministros.length },
-      ipAddress: req.ip
-    });
 
     res.json(ministros);
   } catch (error) {

@@ -14,18 +14,6 @@ router.get('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => 
   try {
     const users = await User.find({ role: 'ORGANIZADOR' }).sort({ createdAt: -1 });
 
-    // Log PII access
-    AuditLog.logAction({
-      userId: req.userId,
-      userName: `${req.user.firstName} ${req.user.lastName}`,
-      userRole: req.user.role,
-      action: 'ACCESS_PII',
-      resource: 'USER',
-      detail: `Consultó el listado de ${users.length} dirigentes sociales`,
-      details: { type: 'list_all_users', count: users.length },
-      ipAddress: req.ip
-    });
-
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);

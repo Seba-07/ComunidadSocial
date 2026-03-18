@@ -2546,19 +2546,7 @@ router.get('/:id/members-with-accounts', authenticate, requireRole('MUNICIPALIDA
       };
     });
 
-    // Log PII access
-    AuditLog.logAction({
-      userId: req.userId,
-      userName: `${req.user.firstName} ${req.user.lastName}`,
-      userRole: req.user.role,
-      action: 'ACCESS_PII',
-      resource: 'ORGANIZATION',
-      resourceId: organization._id,
-      resourceName: organization.organizationName,
-      detail: `Consultó datos de ${organization.members.length} socios con cuentas vinculadas de "${organization.organizationName}"`,
-      details: { type: 'view_members_with_accounts', memberCount: organization.members.length },
-      ipAddress: req.ip
-    });
+    // PII list access: no se registra en auditoría (solo lecturas individuales)
 
     res.json({
       organization: {
