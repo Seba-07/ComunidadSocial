@@ -474,7 +474,10 @@ export default function Step6_Review({ onNext, onPrev }) {
         if (docs.length === 0) return null;
 
         function viewDoc(d) {
-          if (!d.data) return;
+          if (!d.data) {
+            addToast('Archivo no disponible — vuelve al Paso 5 y sube el certificado nuevamente', 'error');
+            return;
+          }
           const w = window.open('');
           if (!w) return;
           if (d.data.startsWith('data:application/pdf') || d.file?.endsWith('.pdf')) {
@@ -500,9 +503,7 @@ export default function Step6_Review({ onNext, onPrev }) {
                     {d.type === 'inhabilidades' ? 'Cert. Inhabilidades' : 'Cert. Antecedentes'} — {d.file}
                   </div>
                 </div>
-                {d.data && (
-                  <ViewButton onClick={() => viewDoc(d)} label="Ver" />
-                )}
+                <ViewButton onClick={() => viewDoc(d)} label="Ver" />
               </div>
             ))}
           </Section>
