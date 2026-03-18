@@ -67,14 +67,32 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const members = org.members || [];
   const certs = org.certificatesStep5 || [];
 
-  // Build cargo entries from known keys (English DB + Spanish wizard) + any custom keys
+  // DEBUG — remove after fixing directorio display issue
+  console.log('[OrgSolicitudDetail] provisionalDirectorio raw:', JSON.stringify(dir, (k, v) => {
+    // Truncate long strings (base64 certs)
+    if (typeof v === 'string' && v.length > 100) return v.slice(0, 80) + '...[truncated]';
+    return v;
+  }, 2));
+
+  // Build cargo entries: extract person data from ALL possible structures
   const cargoEntries = [];
   const usedKeys = new Set();
+
+  // Helper: check if value looks like a person object
+  const isPerson = (v) => v && typeof v === 'object' && !Array.isArray(v) && (v.rut || v.firstName);
+
+  // Label lookup for known cargo keys
+  const CARGO_LABELS = {
+    president: 'Presidente/a', presidente: 'Presidente/a',
+    vicePresident: 'Vicepresidente/a', vicepresidente: 'Vicepresidente/a',
+    secretary: 'Secretario/a', secretario: 'Secretario/a',
+    treasurer: 'Tesorero/a', tesorero: 'Tesorero/a',
+  };
 
   // 1) Check known cargo keys (English from DB schema + Spanish from wizard)
   for (const { key, altKey, label } of CARGO_KEYS) {
     const person = dir[key] || dir[altKey];
-    if (person && (person.rut || person.firstName)) {
+    if (isPerson(person)) {
       cargoEntries.push({ key, label, person });
       usedKeys.add(key);
       usedKeys.add(altKey);
@@ -84,18 +102,20 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   // 2) Additional directors array
   if (dir.additionalMembers?.length) {
     dir.additionalMembers.forEach((m, i) => {
-      if (m && (m.rut || m.firstName)) {
+      if (isPerson(m)) {
         cargoEntries.push({ key: `additional_${i}`, label: m.cargoNombre || m.cargo || `Director/a ${i + 1}`, person: m });
       }
     });
   }
 
-  // 3) Any other cargo keys (director1, director2, or custom names from wizard templates)
-  const skipKeys = new Set([...usedKeys, 'additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v']);
+  // 3) Scan ALL remaining keys for person-like objects (handles any format)
+  const metaKeys = new Set([...usedKeys, 'additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v', '$__', '$isNew', '_doc']);
   for (const [key, value] of Object.entries(dir)) {
-    if (skipKeys.has(key)) continue;
-    if (value && typeof value === 'object' && !Array.isArray(value) && (value.rut || value.firstName)) {
-      cargoEntries.push({ key, label: capitalize(value.cargoNombre || value.cargo || key), person: value });
+    if (metaKeys.has(key)) continue;
+    if (isPerson(value)) {
+      const label = CARGO_LABELS[key] || capitalize(value.cargoNombre || value.cargo || key);
+      cargoEntries.push({ key, label, person: value });
+      usedKeys.add(key);
     }
   }
 
@@ -549,7 +569,20 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               </div>
             );
           }) : (
-            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay directorio asignado</p>
+            <div>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px' }}>No hay directorio asignado</p>
+              {Object.keys(dir).length > 0 && (
+                <div style={{ fontSize: 12, color: '#6b7280', background: '#f9fafb', padding: 10, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                  <p style={{ margin: '0 0 4px', fontWeight: 600 }}>Claves encontradas: {Object.keys(dir).join(', ')}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>
+                    Por favor copia este texto y envíalo al desarrollador para resolver el problema.
+                  </p>
+                  <pre style={{ fontSize: 10, background: '#f3f4f6', padding: 8, borderRadius: 6, marginTop: 6, overflow: 'auto', maxHeight: 200 }}>
+                    {JSON.stringify(dir, (k, v) => typeof v === 'string' && v.length > 100 ? v.slice(0, 50) + '...' : v, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
