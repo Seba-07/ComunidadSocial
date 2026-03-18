@@ -1001,6 +1001,68 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       }
     }
 
+    // Map provisionalDirectorio wizard Spanish keys → DB English keys (same as POST route)
+    if (req.body.provisionalDirectorio) {
+      const pDir = req.body.provisionalDirectorio;
+      const cleanMember = (m) => {
+        if (!m) return null;
+        const { certificado, certificate, ...clean } = m;
+        return clean;
+      };
+
+      let president = pDir.president || null;
+      let secretary = pDir.secretary || null;
+      let treasurer = pDir.treasurer || null;
+      let vicePresident = pDir.vicePresident || null;
+      let additionalMembers = pDir.additionalMembers || [];
+
+      if (pDir.presidente && !pDir.president) president = pDir.presidente;
+      if (pDir.secretario && !pDir.secretary) secretary = pDir.secretario;
+      if (pDir.tesorero && !pDir.treasurer) treasurer = pDir.tesorero;
+      if (pDir.vicepresidente && !pDir.vicePresident) vicePresident = pDir.vicepresidente;
+
+      // Collect custom cargo entries as additionalMembers
+      const knownKeys = new Set(['president', 'secretary', 'treasurer', 'vicePresident',
+        'presidente', 'secretario', 'tesorero', 'vicepresidente',
+        'additionalMembers', 'designatedAt', 'type', 'expiresAt']);
+      Object.entries(pDir).forEach(([key, val]) => {
+        if (!knownKeys.has(key) && val && typeof val === 'object' && val.rut) {
+          additionalMembers.push({ ...val, cargo: key, cargoNombre: val.cargoNombre || key });
+        }
+      });
+
+      organization.provisionalDirectorio = {
+        president: cleanMember(president),
+        secretary: cleanMember(secretary),
+        treasurer: cleanMember(treasurer),
+        vicePresident: cleanMember(vicePresident),
+        additionalMembers: additionalMembers.map(cleanMember),
+        designatedAt: organization.provisionalDirectorio?.designatedAt || new Date(),
+        type: 'PROVISIONAL'
+      };
+    }
+
+    // Map certificatesStep5 from wizard format (same as POST route)
+    if (req.body.certificatesStep5 && typeof req.body.certificatesStep5 === 'object' && !Array.isArray(req.body.certificatesStep5)) {
+      const MAX_CERT_BASE64 = 4 * 1024 * 1024;
+      const dirData = req.body.provisionalDirectorio || {};
+      const certEntries = Object.entries(req.body.certificatesStep5).map(([key, cert]) => {
+        const person = dirData[key] || {};
+        let base64 = cert.certificate || cert.data || cert.base64 || '';
+        if (base64.includes(',')) base64 = base64.split(',')[1];
+        if (base64.length > MAX_CERT_BASE64) base64 = '';
+        return {
+          memberId: person.rut || key,
+          memberName: cert.memberName || cert.name || [person.firstName, person.lastName].filter(Boolean).join(' ') || key,
+          certificate: base64,
+          uploadedAt: new Date()
+        };
+      }).filter(c => c.certificate);
+      if (certEntries.length > 0) {
+        organization.certificatesStep5 = certEntries;
+      }
+    }
+
     // ============ ACTION HANDLERS ============
     // Handle specific actions from req.body
 

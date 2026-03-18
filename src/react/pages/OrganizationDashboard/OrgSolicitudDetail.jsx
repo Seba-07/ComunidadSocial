@@ -67,13 +67,6 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const members = org.members || [];
   const certs = org.certificatesStep5 || [];
 
-  // DEBUG — remove after fixing directorio display issue
-  console.log('[OrgSolicitudDetail] provisionalDirectorio raw:', JSON.stringify(dir, (k, v) => {
-    // Truncate long strings (base64 certs)
-    if (typeof v === 'string' && v.length > 100) return v.slice(0, 80) + '...[truncated]';
-    return v;
-  }, 2));
-
   // Build cargo entries: extract person data from ALL possible structures
   const cargoEntries = [];
   const usedKeys = new Set();
@@ -569,27 +562,27 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               </div>
             );
           }) : (
-            <div>
-              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px' }}>No hay directorio asignado</p>
-              {Object.keys(dir).length > 0 && (
-                <div style={{ fontSize: 12, color: '#6b7280', background: '#f9fafb', padding: 10, borderRadius: 8, border: '1px solid #e5e7eb' }}>
-                  <p style={{ margin: '0 0 4px', fontWeight: 600 }}>Claves encontradas: {Object.keys(dir).join(', ')}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>
-                    Por favor copia este texto y envíalo al desarrollador para resolver el problema.
-                  </p>
-                  <pre style={{ fontSize: 10, background: '#f3f4f6', padding: 8, borderRadius: 6, marginTop: 6, overflow: 'auto', maxHeight: 200 }}>
-                    {JSON.stringify(dir, (k, v) => typeof v === 'string' && v.length > 100 ? v.slice(0, 50) + '...' : v, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
+            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay directorio asignado</p>
           )}
         </div>
       </div>
 
       {/* 4b. Documentos Adjuntos */}
-      {certs.length > 0 && (() => {
-        const antecedentes = certs.filter(c => c.certificate);
+      {(() => {
+        const validCerts = certs.filter(c => c.certificate);
+        // Match each cert to a cargo by RUT
+        const enrichedCerts = validCerts.map(cert => {
+          const certRut = (cert.memberId || '').replace(/\./g, '').replace(/-/g, '');
+          let cargoLabel = '';
+          for (const { label, person } of cargoEntries) {
+            const pRut = (person.rut || '').replace(/\./g, '').replace(/-/g, '');
+            if (pRut && pRut === certRut) { cargoLabel = label; break; }
+          }
+          // Also try matching by memberId as cargo key
+          if (!cargoLabel && CARGO_LABELS[cert.memberId]) cargoLabel = CARGO_LABELS[cert.memberId];
+          return { ...cert, cargoLabel };
+        });
+
         // Build minor exemptions from directorio
         const minorExemptions = [];
         for (const { person, label } of cargoEntries) {
@@ -599,61 +592,60 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             minorExemptions.push({ name: formatName(person), cargo: label, age });
           }
         }
-        if (antecedentes.length === 0 && minorExemptions.length === 0) return null;
+
+        if (enrichedCerts.length === 0 && minorExemptions.length === 0) return null;
 
         function viewCertDoc(cert) {
           if (!cert.certificate) return;
           const data = cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`;
           const w = window.open('');
           if (!w) return;
-          if (data.startsWith('data:application/pdf') || cert.memberName?.endsWith('.pdf')) {
+          if (data.includes('application/pdf') || cert.memberName?.endsWith('.pdf')) {
             w.document.write(`<iframe src="${data}" style="width:100%;height:100%;border:none;position:fixed;top:0;left:0;"></iframe>`);
           } else {
             w.document.write(`<div style="display:flex;justify-content:center;padding:20px;background:#f1f5f9;min-height:100vh;"><img src="${data}" style="max-width:100%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);"/></div>`);
           }
         }
 
-        const subTitleStyle = { fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '12px 0 4px', paddingBottom: 4, borderBottom: '1px solid #e5e7eb' };
+        const viewBtnStyle = {
+          padding: '5px 14px', border: 'none', borderRadius: 8,
+          background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+          transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)', flexShrink: 0,
+        };
+        const subTitleStyle = { fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '12px 0 6px', paddingBottom: 4, borderBottom: '1px solid #e5e7eb' };
+        const eyeIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
 
         return (
           <div style={sectionStyle}>
-            <h3 style={sectionTitle}>Documentos Adjuntos ({antecedentes.length})</h3>
+            <h3 style={sectionTitle}>Documentos Adjuntos ({enrichedCerts.length})</h3>
 
-            {antecedentes.length > 0 && (
-              <>
-                <div style={subTitleStyle}>Certificados de Antecedentes</div>
-                {antecedentes.map((cert, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
-                      </div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{cert.memberName || '—'}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>RUT: {cert.memberId || '—'}</div>
-                    </div>
-                    <button onClick={() => viewCertDoc(cert)} style={{
-                      padding: '5px 14px', border: 'none', borderRadius: 8,
-                      background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                      transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                      Ver
-                    </button>
+            <div style={subTitleStyle}>Certificados de Antecedentes</div>
+            {enrichedCerts.map((cert, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
                   </div>
-                ))}
-              </>
-            )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                    {cert.memberName || '—'}
+                    {cert.cargoLabel && <span style={{ color: '#6b7280', fontWeight: 400 }}> — {cert.cargoLabel}</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>Cert. Antecedentes — RUT: {cert.memberId || '—'}</div>
+                </div>
+                <button onClick={() => viewCertDoc(cert)} style={viewBtnStyle}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+                >{eyeIcon} Ver</button>
+              </div>
+            ))}
 
             {minorExemptions.length > 0 && (
               <>
-                <div style={{ ...subTitleStyle, marginTop: antecedentes.length > 0 ? 16 : 12 }}>Certificados de Inhabilidades</div>
+                <div style={{ ...subTitleStyle, marginTop: 16 }}>Certificados de Inhabilidades</div>
                 {minorExemptions.map((ex, i) => (
                   <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                     <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
