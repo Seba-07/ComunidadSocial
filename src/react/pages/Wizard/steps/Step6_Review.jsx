@@ -515,38 +515,54 @@ export default function Step6_Review({ onNext, onPrev }) {
           }
         }
 
+        const antecedentes = docs.filter(d => d.type === 'antecedentes');
+        const inhabilidades = docs.filter(d => d.type === 'inhabilidades');
+
+        const docRow = (d, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{d.name} ({capitalize(d.cargo)})</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>{d.file}</div>
+            </div>
+            <ViewButton onClick={() => viewDoc(d)} label="Ver" />
+          </div>
+        );
+
+        const subTitle = { fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '12px 0 4px', paddingBottom: 4, borderBottom: '1px solid #e5e7eb' };
+
         return (
           <Section title={`Documentos Adjuntos (${docs.length})`}>
-            {docs.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+            {antecedentes.length > 0 && (
+              <>
+                <div style={subTitle}>Certificados de Antecedentes</div>
+                {antecedentes.map(docRow)}
+              </>
+            )}
+            {(inhabilidades.length > 0 || minorExemptions.length > 0) && (
+              <>
+                <div style={{ ...subTitle, marginTop: antecedentes.length > 0 ? 16 : 12 }}>Certificados de Inhabilidades</div>
+                {inhabilidades.map(docRow)}
+                {minorExemptions.map((ex, i) => (
+                  <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                    <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{ex.name} ({ex.cargo})</div>
+                      <div style={{ fontSize: 11, color: '#b0b7c3' }}>
+                        No aplica (Menor de edad — {ex.age} años)
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{d.name}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                    {d.type === 'inhabilidades' ? 'Cert. Inhabilidades' : 'Cert. Antecedentes'} — {d.file}
-                  </div>
-                </div>
-                <ViewButton onClick={() => viewDoc(d)} label="Ver" />
-              </div>
-            ))}
-            {minorExemptions.map((ex, i) => (
-              <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
-                <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{ex.name} ({ex.cargo})</div>
-                  <div style={{ fontSize: 11, color: '#b0b7c3' }}>
-                    Cert. Inhabilidades: No aplica (Menor de edad — {ex.age} años)
-                  </div>
-                </div>
-              </div>
-            ))}
+                ))}
+              </>
+            )}
           </Section>
         );
       })()}
