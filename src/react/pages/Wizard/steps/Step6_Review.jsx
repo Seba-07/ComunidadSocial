@@ -23,7 +23,7 @@ function calculateAge(birthDate) {
 }
 
 export default function Step6_Review({ onNext, onPrev }) {
-  const { formData, templateConfig } = useWizardStore();
+  const { formData, templateConfig, setFormDataField } = useWizardStore();
   const addToast = useUiStore(s => s.addToast);
   const [docTemplates, setDocTemplates] = useState({});
 
@@ -579,7 +579,27 @@ export default function Step6_Review({ onNext, onPrev }) {
 
       <div className="r-toolbar">
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={onNext} style={{
+        <button onClick={() => {
+          // Save rendered document templates for submission to GeneratedDocuments collection
+          const docs = {};
+          const templateData = buildTemplateData();
+          for (const [key, tmpl] of Object.entries(docTemplates)) {
+            if (tmpl?.content) {
+              let rendered = tmpl.content;
+              for (const [ph, val] of Object.entries(templateData)) {
+                rendered = rendered.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
+              }
+              // Also apply replacePlaceholders for {{NOMBRE_ORGANIZACION}} style
+              rendered = replacePlaceholders(rendered);
+              const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
+              docs[docTypeMap[key] || key] = { content: rendered, generatedAt: new Date().toISOString() };
+            }
+          }
+          if (Object.keys(docs).length > 0) {
+            setFormDataField('documents', docs);
+          }
+          onNext();
+        }} style={{
           padding: '12px 28px', border: 'none', borderRadius: 10,
           background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
           color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer'

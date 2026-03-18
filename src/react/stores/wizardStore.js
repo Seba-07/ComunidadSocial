@@ -397,6 +397,27 @@ export const useWizardStore = create((set, get) => ({
         await apiService.syncCertificates(orgId, formData.certificates, formData.estatutos?.customFile);
       }
 
+      // Save generated documents (acta, lista de socios, etc.)
+      if (formData.documents && typeof formData.documents === 'object') {
+        const docs = Object.entries(formData.documents)
+          .filter(([, doc]) => doc && doc.content)
+          .map(([key, doc]) => ({
+            docType: key,
+            content: doc.content,
+            generatedAt: doc.generatedAt || new Date().toISOString(),
+            editedAt: doc.editedAt || null,
+            cargoId: doc.cargoId || null,
+            cargoNombre: doc.cargoNombre || null
+          }));
+        if (docs.length > 0) {
+          try {
+            await apiService.post(`/organizations/${orgId}/generated-documents`, { documents: docs });
+          } catch (e) {
+            console.warn('Error saving generated documents (org created OK):', e.message);
+          }
+        }
+      }
+
       // Clear saved progress
       localStorage.removeItem(STORAGE_KEY);
       set({ isSubmitting: false, existingOrgId: orgId });
