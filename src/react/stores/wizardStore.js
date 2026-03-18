@@ -4,6 +4,7 @@ import tenant from '../../config/tenant.js';
 
 const STORAGE_KEY = 'wizard_progress';
 const EXPIRY_DAYS = 7;
+let _saveTimer = null;
 
 const initialFormData = {
   organization: {
@@ -58,12 +59,19 @@ export const useWizardStore = create((set, get) => ({
           : { ...(typeof state.formData[section] === 'object' && !Array.isArray(state.formData[section]) ? state.formData[section] : {}), ...data }
       }
     }));
+    get()._debouncedSave();
   },
 
   setFormDataField(section, value) {
     set(state => ({
       formData: { ...state.formData, [section]: value }
     }));
+    get()._debouncedSave();
+  },
+
+  _debouncedSave() {
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => get().saveProgress(), 1000);
   },
 
   addMember(member) {
@@ -255,6 +263,8 @@ export const useWizardStore = create((set, get) => ({
         description: org.description,
         objectives: org.objectives,
         address: org.address || [org.street, org.streetNumber].filter(Boolean).join(' '),
+        street: org.street || '',
+        streetNumber: org.streetNumber || '',
         comuna: org.commune,
         region: org.region,
         unidadVecinal: org.neighborhood,
