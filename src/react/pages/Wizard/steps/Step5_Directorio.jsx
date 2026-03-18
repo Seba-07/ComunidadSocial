@@ -124,34 +124,42 @@ export default function Step5_Directorio({ onNext, onPrev }) {
 
   function handleCertificate(cargoId, file) {
     if (!file) {
-      const updated = { ...certs };
-      delete updated[cargoId];
-      setFormDataField('certificates', updated);
+      // Use functional update to avoid stale closure
+      updateFormData('certificates', prev => {
+        const updated = { ...prev };
+        delete updated[cargoId];
+        return updated;
+      });
       return;
     }
+    const fileName = file.name;
     const reader = new FileReader();
     reader.onload = () => {
-      setFormDataField('certificates', {
-        ...certs,
-        [cargoId]: { name: file.name, data: reader.result }
-      });
+      // Use functional update — reader.onload is async, certs may be stale
+      updateFormData('certificates', prev => ({
+        ...prev,
+        [cargoId]: { name: fileName, data: reader.result }
+      }));
     };
     reader.readAsDataURL(file);
   }
 
   function handleInhabilityCert(cargoId, file) {
     if (!file) {
-      const updated = { ...inhCerts };
-      delete updated[cargoId];
-      setFormDataField('inhabilityCertificates', updated);
+      updateFormData('inhabilityCertificates', prev => {
+        const updated = { ...prev };
+        delete updated[cargoId];
+        return updated;
+      });
       return;
     }
+    const fileName = file.name;
     const reader = new FileReader();
     reader.onload = () => {
-      setFormDataField('inhabilityCertificates', {
-        ...inhCerts,
-        [cargoId]: { name: file.name, data: reader.result }
-      });
+      updateFormData('inhabilityCertificates', prev => ({
+        ...prev,
+        [cargoId]: { name: fileName, data: reader.result }
+      }));
     };
     reader.readAsDataURL(file);
   }
