@@ -99,6 +99,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        birthDate: user.birthDate || null,
         phone: user.phone || '',
         address: user.address || '',
         role: user.role,
@@ -163,6 +164,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        birthDate: user.birthDate || null,
         phone: user.phone || '',
         address: user.address || '',
         region: user.region || '',
@@ -290,6 +292,7 @@ router.get('/me', authenticate, async (req, res) => {
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
+    birthDate: user.birthDate || null,
     phone: user.phone || '',
     address: user.address || '',
     region: user.region || '',
@@ -316,7 +319,7 @@ router.post('/profile', authenticate, async (req, res) => {
     }
 
     // Solo permitir campos de perfil (no role, password, etc.)
-    const allowedFields = ['firstName', 'lastName', 'phone', 'address', 'region', 'commune'];
+    const allowedFields = ['firstName', 'lastName', 'birthDate', 'phone', 'address', 'region', 'commune'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         user[field] = req.body[field];
@@ -332,6 +335,7 @@ router.post('/profile', authenticate, async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        birthDate: user.birthDate || null,
         phone: user.phone || '',
         address: user.address || '',
         region: user.region || '',

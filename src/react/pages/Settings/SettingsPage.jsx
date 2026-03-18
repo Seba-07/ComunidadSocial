@@ -24,7 +24,7 @@ export default function SettingsPage() {
 
   // Profile form
   const [profile, setProfile] = useState({
-    firstName: '', lastName: '', phone: '', address: '', region: '', commune: ''
+    firstName: '', lastName: '', birthDate: '', phone: '', address: '', region: '', commune: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -82,6 +82,7 @@ export default function SettingsPage() {
       setProfile({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
+        birthDate: user.birthDate ? user.birthDate.slice(0, 10) : '',
         phone: user.phone || '',
         address: user.address || '',
         region: user.region || 'Región Metropolitana',
@@ -261,6 +262,10 @@ export default function SettingsPage() {
             <div>
               <label style={labelStyle}>Apellido</label>
               <input value={profile.lastName} onChange={e => setProfile(p => ({ ...p, lastName: e.target.value }))} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Fecha de Nacimiento</label>
+              <input type="date" value={profile.birthDate} onChange={e => setProfile(p => ({ ...p, birthDate: e.target.value }))} style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Teléfono</label>
