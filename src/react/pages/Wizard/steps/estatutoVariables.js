@@ -8,8 +8,6 @@ export const ESTATUTO_VARIABLES = [
   { key: '{{REGION}}', label: 'Región', required: true },
   { key: '{{DIRECCION}}', label: 'Dirección', required: true },
   { key: '{{OBJETIVOS}}', label: 'Objetivos', required: false },
-  { key: '{{DESCRIPCION}}', label: 'Descripción', required: false },
-  { key: '{{MIEMBROS_MINIMOS}}', label: 'Miembros Mínimos', required: true },
   { key: '{{EDAD_MINIMA}}', label: 'Edad Mínima', required: true },
   { key: '{{N_MIEMBROS}}', label: 'N° Miembros Directorio', required: true },
   { key: '{{MIEMBROS_COMISION_ELECTORAL}}', label: 'N° Comisión Electoral', required: true },
