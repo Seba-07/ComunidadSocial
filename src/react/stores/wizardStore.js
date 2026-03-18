@@ -281,7 +281,8 @@ export const useWizardStore = create((set, get) => ({
         electionDate: formData.assemblySchedule?.date || null,
         electionTime: formData.assemblySchedule?.time || null,
         assemblyAddress: formData.assemblySchedule?.address || '',
-        edadConfig: templateConfig?.edadConfig || null
+        edadConfig: templateConfig?.edadConfig || null,
+        certificatesStep5: formData.certificates || {}
       };
 
       let data;

@@ -824,26 +824,36 @@ router.post('/', authenticate, requireVerifiedEmail, validate(createOrganization
     // Guardar certificados del Paso 5 (SOLO metadata, sin base64 para evitar límite BSON 16MB)
     // Los archivos base64 se guardan en colección separada CertificateFiles
     if (certificatesStep5) {
-      const parseCerts = (certs) => {
+      const MAX_CERT_BASE64 = 4 * 1024 * 1024; // ~3MB file = ~4MB base64
+      const parseCerts = (certs, dirData) => {
         if (Array.isArray(certs) && certs.length > 0) {
           return certs.map(cert => ({
             memberId: cert.memberId || cert.rut || '',
             memberName: cert.memberName || cert.name || '',
+            certificate: cert.certificate || cert.data || cert.base64 || '',
             uploadedAt: new Date()
           }));
         } else if (typeof certs === 'object' && Object.keys(certs).length > 0) {
-          return Object.entries(certs).map(([key, cert]) => ({
-            memberId: key,
-            memberName: cert.memberName || cert.name || key,
-            uploadedAt: new Date()
-          }));
+          return Object.entries(certs).map(([key, cert]) => {
+            // Resolve RUT and name from directorio for this cargo
+            const person = dirData?.[key] || {};
+            let base64 = cert.certificate || cert.data || cert.base64 || '';
+            if (base64.includes(',')) base64 = base64.split(',')[1];
+            if (base64.length > MAX_CERT_BASE64) base64 = ''; // Skip oversized
+            return {
+              memberId: person.rut || key,
+              memberName: cert.memberName || cert.name || [person.firstName, person.lastName].filter(Boolean).join(' ') || key,
+              certificate: base64,
+              uploadedAt: new Date()
+            };
+          });
         }
         return [];
       };
-      const certsMeta = parseCerts(certificatesStep5);
+      const certsMeta = parseCerts(certificatesStep5, req.body.provisionalDirectorio);
       if (certsMeta.length > 0) {
         orgData.certificatesStep5 = certsMeta;
-        logger.debug('CREATE ORG - certificatesStep5 metadata:', certsMeta.length, 'certificados');
+        logger.debug('CREATE ORG - certificatesStep5:', certsMeta.length, 'certificados,', certsMeta.filter(c => c.certificate).length, 'con base64');
       }
     }
 
@@ -2065,12 +2075,32 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
     const MAX_CERT_BASE64 = 4 * 1024 * 1024; // ~3MB file = ~4MB base64
     if (certificates && typeof certificates === 'object') {
       for (const [key, certData] of Object.entries(certificates)) {
-        const existing = organization.certificatesStep5.find(c => c.memberId === key);
-        if (existing && !existing.certificate && certData.certificate) {
-          let base64 = certData.certificate;
-          if (base64.includes(',')) base64 = base64.split(',')[1];
-          if (base64.length > MAX_CERT_BASE64) continue; // Skip oversized certs
-          existing.certificate = base64;
+        // Match by cargo key or by RUT
+        const normKey = key.replace(/\./g, '').replace(/-/g, '');
+        const existing = organization.certificatesStep5.find(c => {
+          const cId = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
+          return cId === normKey || cId === key;
+        });
+
+        let base64 = certData.certificate || certData.data || certData.base64 || '';
+        if (base64.includes(',')) base64 = base64.split(',')[1];
+        if (!base64 || base64.length > MAX_CERT_BASE64) continue;
+
+        if (existing) {
+          if (!existing.certificate) {
+            existing.certificate = base64;
+            certsSynced++;
+          }
+        } else {
+          // Create new entry if not found (wizard sends by cargo ID)
+          const dir = organization.provisionalDirectorio || {};
+          const person = dir[key] || dir.president && key === 'presidente' && dir.president || {};
+          organization.certificatesStep5.push({
+            memberId: person?.rut || key,
+            memberName: certData.name || certData.memberName || [person?.firstName, person?.lastName].filter(Boolean).join(' ') || key,
+            certificate: base64,
+            uploadedAt: new Date()
+          });
           certsSynced++;
         }
       }
