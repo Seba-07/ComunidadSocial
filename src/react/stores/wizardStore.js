@@ -51,23 +51,18 @@ export const useWizardStore = create((set, get) => ({
   },
 
   updateFormData(section, data) {
-    set(state => {
-      const current = state.formData[section];
-      const updated = typeof data === 'function'
-        ? data(current)
-        : { ...(typeof current === 'object' && !Array.isArray(current) ? current : {}), ...data };
-      if (section === 'organization') {
-        console.log('[WizardStore] updateFormData organization:', { incoming: data, street: updated.street, streetNumber: updated.streetNumber });
+    set(state => ({
+      formData: {
+        ...state.formData,
+        [section]: typeof data === 'function'
+          ? data(state.formData[section])
+          : { ...(typeof state.formData[section] === 'object' && !Array.isArray(state.formData[section]) ? state.formData[section] : {}), ...data }
       }
-      return { formData: { ...state.formData, [section]: updated } };
-    });
+    }));
     get()._debouncedSave();
   },
 
   setFormDataField(section, value) {
-    if (section === 'organization') {
-      console.log('[WizardStore] setFormDataField organization:', { street: value?.street, streetNumber: value?.streetNumber });
-    }
     set(state => ({
       formData: { ...state.formData, [section]: value }
     }));
@@ -76,10 +71,7 @@ export const useWizardStore = create((set, get) => ({
 
   _debouncedSave() {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => {
-      console.log('[WizardStore] _debouncedSave fired');
-      get().saveProgress();
-    }, 1000);
+    _saveTimer = setTimeout(() => get().saveProgress(), 1000);
   },
 
   addMember(member) {
@@ -119,7 +111,6 @@ export const useWizardStore = create((set, get) => ({
         templateConfig,
         savedAt: new Date().toISOString()
       };
-      console.log('[WizardStore] saveProgress:', { street: formData.organization?.street, streetNumber: formData.organization?.streetNumber, step: currentStep });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
     } catch { /* localStorage full or unavailable */ }
   },
@@ -145,7 +136,6 @@ export const useWizardStore = create((set, get) => ({
         commune: tenant.communeName || initialFormData.organization.commune,
         region: initialFormData.organization.region
       };
-      console.log('[WizardStore] loadProgress:', { street: restoredOrg.street, streetNumber: restoredOrg.streetNumber, savedOrg: saved.formData?.organization });
       set({
         currentStep: saved.currentStep || 0,
         formData: {
