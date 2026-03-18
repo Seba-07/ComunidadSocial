@@ -299,6 +299,85 @@ router.get(
 );
 
 /**
+ * GET /admin-overview
+ * KPIs and aggregations for the admin command center.
+ * Requires MUNICIPALIDAD role.
+ */
+router.get(
+  '/admin-overview',
+  authenticate,
+  requireRole('MUNICIPALIDAD'),
+  async (req, res) => {
+    try {
+      const [
+        totalApproved,
+        totalMembersAgg,
+        byTypeAgg,
+        byBoardStatusAgg,
+        attentionOrgs
+      ] = await Promise.all([
+        Organization.countDocuments({ status: 'approved' }),
+
+        // Sum all active members across approved orgs
+        Organization.aggregate([
+          { $match: { status: 'approved' } },
+          { $project: { activeCount: { $size: { $filter: { input: { $ifNull: ['$members', []] }, as: 'm', cond: { $ne: ['$$m.status', 'inactive'] } } } } } },
+          { $group: { _id: null, total: { $sum: '$activeCount' } } }
+        ]),
+
+        // Distribution by organization type (approved only)
+        Organization.aggregate([
+          { $match: { status: 'approved' } },
+          { $group: { _id: '$organizationType', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ]),
+
+        // Distribution by boardStatus (approved orgs only)
+        Organization.aggregate([
+          { $match: { status: 'approved' } },
+          { $group: { _id: { $ifNull: ['$boardStatus', 'VIGENTE'] }, count: { $sum: 1 } } }
+        ]),
+
+        // Orgs needing attention: VENCIDA or PENDIENTE_VALIDACION
+        Organization.find(
+          { status: 'approved', boardStatus: { $in: ['VENCIDA', 'PENDIENTE_VALIDACION', 'EN_PROCESO_ELECTORAL'] } },
+          { organizationName: 1, organizationType: 1, boardStatus: 1, boardExpirationDate: 1 }
+        ).sort({ boardExpirationDate: 1 }).limit(20).lean()
+      ]);
+
+      const totalMembers = totalMembersAgg[0]?.total || 0;
+
+      const organizationsByType = byTypeAgg
+        .filter(t => t._id)
+        .map(t => ({ type: t._id, count: t.count }));
+
+      const boardStatusMap = { VIGENTE: 0, VENCIDA: 0, EN_PROCESO_ELECTORAL: 0, PENDIENTE_VALIDACION: 0 };
+      for (const entry of byBoardStatusAgg) {
+        if (entry._id in boardStatusMap) boardStatusMap[entry._id] = entry.count;
+        else if (entry._id === null) boardStatusMap.VIGENTE += entry.count;
+      }
+
+      res.json({
+        totalOrganizations: totalApproved,
+        totalMembers,
+        organizationsByType,
+        organizationsByBoardStatus: boardStatusMap,
+        attentionOrgs: attentionOrgs.map(o => ({
+          _id: o._id,
+          name: o.organizationName,
+          type: o.organizationType,
+          boardStatus: o.boardStatus,
+          boardExpirationDate: o.boardExpirationDate
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching admin overview:', error);
+      res.status(500).json({ error: 'Error al obtener resumen administrativo' });
+    }
+  }
+);
+
+/**
  * GET /advanced-metrics
  * Advanced metrics for the "Centro de Comando" dashboard.
  * Calculates legal alerts, board expirations, upcoming assemblies,

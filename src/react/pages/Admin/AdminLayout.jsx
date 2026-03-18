@@ -2,7 +2,8 @@ import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 
 const MENU_ITEMS = [
-  { key: 'organizations', label: 'Organizaciones', icon: '🏢' },
+  { key: 'overview', label: 'Centro de Mando', icon: '\uD83D\uDCCA' },
+  { key: 'organizations', label: 'Organizaciones', icon: '\uD83C\uDFE2' },
   { key: 'schedule', label: 'Horarios', icon: '📅' },
   { key: 'calendar', label: 'Calendario', icon: '🗓️' },
   { key: 'ministros', label: 'Ministros de Fe', icon: '⚖️' },

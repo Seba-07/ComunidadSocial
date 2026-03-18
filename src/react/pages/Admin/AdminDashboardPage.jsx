@@ -23,8 +23,10 @@ const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
 const DocumentTemplatesView = lazy(() => import('./views/DocumentTemplatesView'));
 const NewsManagerView = lazy(() => import('./views/NewsManagerView'));
 const BulletinsView = lazy(() => import('./views/BulletinsView'));
+const AdminOverviewView = lazy(() => import('./views/AdminOverviewView'));
 
 const VIEW_MAP = {
+  overview: AdminOverviewView,
   organizations: OrganizationsList,
   ministros: MinistroManagerView,
   users: UserManagerView,
@@ -46,7 +48,7 @@ export: ExportView,
 };
 
 export default function AdminDashboardPage() {
-  const [activeView, setActiveView] = useState('organizations');
+  const [activeView, setActiveView] = useState('overview');
   const [incidentPrefill, setIncidentPrefill] = useState(null);
   const { organizations, fetchAllOrganizations, fetchStats, stats } = useAdminStore();
   const addToast = useUiStore(s => s.addToast);
@@ -75,9 +77,10 @@ export default function AdminDashboardPage() {
   };
 
   const ViewComponent = VIEW_MAP[activeView] || OrganizationsList;
-  const isLazy = activeView !== 'organizations';
+  const isLazy = true;
 
   const viewProps = {};
+  if (activeView === 'overview') viewProps.onViewChange = handleViewChange;
   if (activeView === 'seguridad') viewProps.prefillData = incidentPrefill;
   if (activeView === 'soporte') viewProps.onEscalateToIncident = handleEscalateToIncident;
 
