@@ -185,11 +185,14 @@ export const useWizardStore = create((set, get) => ({
         treasurer: 'tesorero', vicePresident: 'vicepresidente'
       };
       const mappedDir = {};
+      console.log('[loadFromOrg] provisionalDirectorio keys:', Object.keys(dir));
+      console.log('[loadFromOrg] provisionalDirectorio:', JSON.stringify(dir, (k, v) => typeof v === 'string' && v.length > 80 ? v.slice(0, 40) + '...' : v, 2));
       for (const [key, val] of Object.entries(dir)) {
-        if (!val || typeof val !== 'object') continue;
-        if (['additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v'].includes(key)) continue;
+        if (!val || typeof val !== 'object') { console.log('[loadFromOrg] skip (not object):', key, typeof val); continue; }
+        if (['additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v'].includes(key)) { console.log('[loadFromOrg] skip (meta):', key); continue; }
         const cargoId = FIELD_TO_CARGO[key] || key;
         mappedDir[cargoId] = { ...val, cargo: cargoId };
+        console.log('[loadFromOrg] mapped:', key, '→', cargoId, '| rut:', val.rut, '| name:', val.firstName);
       }
       // Also map additionalMembers back to their cargo keys
       if (Array.isArray(dir.additionalMembers)) {
@@ -204,6 +207,8 @@ export const useWizardStore = create((set, get) => ({
       // cert.memberId can be a RUT (new format) or a cargo key (old format like 'presidente')
       const FIELD_TO_CARGO_REV = { president: 'presidente', secretary: 'secretario', treasurer: 'tesorero', vicePresident: 'vicepresidente' };
       const restoredCerts = {};
+      console.log('[loadFromOrg] mappedDir result:', Object.keys(mappedDir));
+      console.log('[loadFromOrg] certificatesStep5 count:', (org.certificatesStep5 || []).length);
       if (Array.isArray(org.certificatesStep5)) {
         for (const cert of org.certificatesStep5) {
           const mid = cert.memberId || '';
@@ -227,6 +232,7 @@ export const useWizardStore = create((set, get) => ({
             }
           }
 
+          console.log('[loadFromOrg] cert match:', cert.memberId, '→ cargo:', matchedCargo, '| hasCert:', !!cert.certificate);
           if (matchedCargo && cert.certificate) {
             restoredCerts[matchedCargo] = {
               name: cert.memberName || 'certificado.pdf',

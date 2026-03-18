@@ -995,8 +995,10 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
     const allowedFields = isAdmin ? allowedForAdmin : allowedForOrganizer;
 
     // Solo copiar campos permitidos
+    // Skip fields that have custom mapping below (provisionalDirectorio, certificatesStep5)
+    const customHandledFields = new Set(['provisionalDirectorio', 'certificatesStep5']);
     for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
+      if (req.body[field] !== undefined && !customHandledFields.has(field)) {
         organization[field] = req.body[field];
       }
     }
@@ -1031,15 +1033,21 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
         }
       });
 
+      const designatedAt = organization.provisionalDirectorio?.designatedAt || new Date();
       organization.provisionalDirectorio = {
         president: cleanMember(president),
         secretary: cleanMember(secretary),
         treasurer: cleanMember(treasurer),
         vicePresident: cleanMember(vicePresident),
         additionalMembers: additionalMembers.map(cleanMember),
-        designatedAt: organization.provisionalDirectorio?.designatedAt || new Date(),
+        designatedAt,
         type: 'PROVISIONAL'
       };
+      organization.markModified('provisionalDirectorio');
+      logger.debug('UPDATE ORG - provisionalDirectorio mapped:',
+        'president:', !!president, 'secretary:', !!secretary,
+        'treasurer:', !!treasurer, 'vicePresident:', !!vicePresident,
+        'additional:', additionalMembers.length);
     }
 
     // Map certificatesStep5 from wizard format (same as POST route)
@@ -1060,6 +1068,8 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       }).filter(c => c.certificate);
       if (certEntries.length > 0) {
         organization.certificatesStep5 = certEntries;
+        organization.markModified('certificatesStep5');
+        logger.debug('UPDATE ORG - certificatesStep5:', certEntries.length, 'certs saved');
       }
     }
 
@@ -2136,11 +2146,23 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
     // Sync certificados (max 3MB por certificado en base64)
     const MAX_CERT_BASE64 = 4 * 1024 * 1024; // ~3MB file = ~4MB base64
     if (certificates && typeof certificates === 'object') {
+      // Build a map from Spanish cargo key → person data from directorio (English keys in DB)
+      const CARGO_TO_FIELD = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer', vicepresidente: 'vicePresident' };
+      const dir = organization.provisionalDirectorio || {};
+
       for (const [key, certData] of Object.entries(certificates)) {
-        // Match by cargo key or by RUT
+        // Resolve the person from directorio: key may be Spanish cargo ID or RUT
+        const dbField = CARGO_TO_FIELD[key];
+        const person = (dbField && dir[dbField]) || dir[key] || {};
+        const personRut = (person.rut || '').replace(/\./g, '').replace(/-/g, '');
         const normKey = key.replace(/\./g, '').replace(/-/g, '');
+
+        // Match existing cert by RUT (primary) or by cargo key (fallback)
         const existing = organization.certificatesStep5.find(c => {
           const cId = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
+          // Match by RUT if we know the person
+          if (personRut && cId === personRut) return true;
+          // Fallback: match by cargo key
           return cId === normKey || cId === key;
         });
 
@@ -2149,14 +2171,12 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
         if (!base64 || base64.length > MAX_CERT_BASE64) continue;
 
         if (existing) {
+          // Update only if existing entry is missing the base64 data
           if (!existing.certificate) {
             existing.certificate = base64;
             certsSynced++;
           }
         } else {
-          // Create new entry if not found (wizard sends by cargo ID)
-          const dir = organization.provisionalDirectorio || {};
-          const person = dir[key] || dir.president && key === 'presidente' && dir.president || {};
           organization.certificatesStep5.push({
             memberId: person?.rut || key,
             memberName: certData.name || certData.memberName || [person?.firstName, person?.lastName].filter(Boolean).join(' ') || key,
@@ -2175,6 +2195,7 @@ router.post('/:id/sync-certificates', authenticate, async (req, res) => {
     }
 
     if (certsSynced > 0 || estatutosSynced) {
+      if (certsSynced > 0) organization.markModified('certificatesStep5');
       await organization.save();
     }
 
