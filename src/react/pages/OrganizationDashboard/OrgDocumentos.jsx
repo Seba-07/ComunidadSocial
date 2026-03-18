@@ -24,10 +24,16 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const PREVIEWABLE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+
+function isPDF(mimeType) { return mimeType === 'application/pdf'; }
+function isPreviewable(mimeType) { return PREVIEWABLE_TYPES.includes(mimeType); }
+
 export default function OrgDocumentos({ org, onRefresh }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
   const addToast = useUiStore((s) => s.addToast);
 
   useEffect(() => {
@@ -92,6 +98,10 @@ export default function OrgDocumentos({ org, onRefresh }) {
     }
   }
 
+  function getPreviewUrl(docId) {
+    return `${apiService.baseUrl}/org-documents/${org._id}/${docId}/preview`;
+  }
+
   // Assembly actas
   const assemblyActas = (org?.assemblies || []).filter((a) => a.status === 'finalizada');
 
@@ -136,9 +146,16 @@ export default function OrgDocumentos({ org, onRefresh }) {
                     {doc.description && <p style={{ fontSize: 12, color: '#374151', margin: '4px 0 0' }}>{doc.description}</p>}
                   </div>
                 </div>
-                <button onClick={() => handleDownloadDoc(doc._id, doc.originalName || doc.name)} style={{ ...actionBtnStyle, color: '#065f46', borderColor: '#bbf7d0', fontWeight: 600 }}>
-                  Descargar
-                </button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {isPreviewable(doc.mimeType) && (
+                    <button onClick={() => setPreviewDoc(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd', fontWeight: 600 }}>
+                      {isPDF(doc.mimeType) ? 'Ver PDF' : 'Ver'}
+                    </button>
+                  )}
+                  <button onClick={() => handleDownloadDoc(doc._id, doc.originalName || doc.name)} style={{ ...actionBtnStyle, color: '#065f46', borderColor: '#bbf7d0', fontWeight: 600 }}>
+                    Descargar
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -211,6 +228,11 @@ export default function OrgDocumentos({ org, onRefresh }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
+                  {isPreviewable(doc.mimeType) && (
+                    <button onClick={() => setPreviewDoc(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd' }}>
+                      {isPDF(doc.mimeType) ? 'Ver PDF' : 'Ver'}
+                    </button>
+                  )}
                   <button onClick={() => handleDownloadDoc(doc._id, doc.originalName || doc.name)} style={actionBtnStyle}>Descargar</button>
                   <button onClick={() => handleDeleteDoc(doc._id)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
                 </div>
@@ -222,6 +244,37 @@ export default function OrgDocumentos({ org, onRefresh }) {
 
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} orgId={org._id}
         onUploaded={() => { setShowUpload(false); loadDocuments(); }} addToast={addToast} />
+
+      {/* Preview Modal */}
+      {previewDoc && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) setPreviewDoc(null); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
+              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>{previewDoc.name}</h4>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => handleDownloadDoc(previewDoc._id, previewDoc.originalName || previewDoc.name)}
+                  style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#374151' }}>
+                  Descargar
+                </button>
+                <button onClick={() => setPreviewDoc(null)}
+                  style={{ padding: '4px 12px', fontSize: 14, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', fontWeight: 700 }}>
+                  X
+                </button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 0 }}>
+              {isPDF(previewDoc.mimeType) ? (
+                <iframe src={getPreviewUrl(previewDoc._id)} style={{ width: '100%', height: '75vh', border: 'none' }} title="Preview" />
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
+                  <img src={getPreviewUrl(previewDoc._id)} alt={previewDoc.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

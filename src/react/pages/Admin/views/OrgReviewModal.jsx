@@ -101,6 +101,7 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [orgDocs, setOrgDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [showAdminUpload, setShowAdminUpload] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
@@ -949,6 +950,12 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
+                        {doc.mimeType && ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/jpg'].includes(doc.mimeType) && (
+                          <button onClick={() => setPreviewDoc(doc)}
+                            style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #93c5fd', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#2563eb', fontWeight: 500 }}>
+                            {doc.mimeType === 'application/pdf' ? 'Ver PDF' : 'Ver'}
+                          </button>
+                        )}
                         <button onClick={async () => {
                           try {
                             const response = await fetch(`${apiService.baseUrl}/org-documents/${org._id}/${doc._id}/download`, {
@@ -978,6 +985,33 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   onUploaded={() => { setShowAdminUpload(false); loadOrgDocs(); }}
                   addToast={addToast}
                 />
+              )}
+
+              {/* Preview Modal */}
+              {previewDoc && (
+                <div onClick={(e) => { if (e.target === e.currentTarget) setPreviewDoc(null); }}
+                  style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+                  <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
+                      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>{previewDoc.name}</h4>
+                      <button onClick={() => setPreviewDoc(null)}
+                        style={{ padding: '4px 12px', fontSize: 14, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', fontWeight: 700 }}>
+                        X
+                      </button>
+                    </div>
+                    <div style={{ flex: 1, overflow: 'auto' }}>
+                      {previewDoc.mimeType === 'application/pdf' ? (
+                        <iframe src={`${apiService.baseUrl}/org-documents/${org._id}/${previewDoc._id}/preview`}
+                          style={{ width: '100%', height: '75vh', border: 'none' }} title="Preview" />
+                      ) : (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
+                          <img src={`${apiService.baseUrl}/org-documents/${org._id}/${previewDoc._id}/preview`}
+                            alt={previewDoc.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}

@@ -10,6 +10,22 @@ import { isPathWithinDir } from '../utils/pathSecurity.js';
 
 const router = express.Router();
 
+// ============ S3 INTEGRATION ============
+let s3Service = null;
+try {
+  const mod = await import('../services/s3Service.js');
+  if (mod.isS3Configured()) {
+    s3Service = mod;
+    console.log('[org-documents] S3 storage enabled');
+  } else {
+    console.log('[org-documents] S3 not configured, using local disk');
+  }
+} catch {
+  console.log('[org-documents] S3 module not available, using local disk');
+}
+
+const useS3 = !!s3Service;
+
 // ============ MODELO OrgDocument (inline) ============
 const orgDocumentSchema = new mongoose.Schema({
   organizationId: {
@@ -51,6 +67,15 @@ const orgDocumentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  s3Key: {
+    type: String,
+    default: null
+  },
+  storageType: {
+    type: String,
+    enum: ['local', 's3'],
+    default: 'local'
+  },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -79,28 +104,25 @@ orgDocumentSchema.index({ category: 1 });
 const OrgDocument = mongoose.model('OrgDocument', orgDocumentSchema);
 
 // ============ CONFIGURACIÓN DE MULTER ============
+// S3 mode: memory storage (buffer in req.file.buffer)
+// Local mode: disk storage (file on disk in req.file.path)
 const uploadDir = './uploads/org-documents/';
-if (!fs.existsSync(uploadDir)) {
+if (!useS3 && !fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  }
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
+
+const memoryStorage = multer.memoryStorage();
 
 const ALLOWED_FILE_TYPES = /pdf|doc|docx|xls|xlsx|jpg|jpeg|png|gif/;
 
 const upload = multer({
-  storage,
-  limits: {
-    fileSize: 20 * 1024 * 1024 // 20MB
-  },
+  storage: useS3 ? memoryStorage : diskStorage,
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
     if (ALLOWED_FILE_TYPES.test(ext)) {
@@ -113,60 +135,82 @@ const upload = multer({
 
 // ============ HELPERS ============
 
-/**
- * Verifica si el usuario tiene permiso sobre la organización.
- * Retorna la organización si tiene permiso, o null y envía respuesta de error.
- */
 async function checkOrgPermission(req, res) {
   const { orgId } = req.params;
-
   if (!mongoose.Types.ObjectId.isValid(orgId)) {
     res.status(400).json({ error: 'ID de organización no válido' });
     return null;
   }
-
   const organization = await Organization.findById(orgId);
-
   if (!organization) {
     res.status(404).json({ error: 'Organización no encontrada' });
     return null;
   }
-
   const isOwner = organization.userId.toString() === req.userId.toString();
   const isMunicipalidad = req.user.role === 'MUNICIPALIDAD';
-
-  // Allow MIEMBRO users who belong to this organization
   let isMember = false;
   if (req.user.role === 'MIEMBRO') {
     const orgIdStr = orgId.toString();
     const allOrgIds = req.user.getAllOrgIds ? req.user.getAllOrgIds() : [];
     isMember = allOrgIds.includes(orgIdStr);
   }
-
   if (!isOwner && !isMunicipalidad && !isMember) {
     res.status(403).json({ error: 'No tienes permisos para acceder a los documentos de esta organización' });
     return null;
   }
-
   return organization;
+}
+
+/**
+ * Sends a file to the response (handles both S3 and local).
+ * @param {Object} document - OrgDocument record
+ * @param {Object} res - Express response
+ * @param {boolean} inline - If true, display inline (preview); if false, force download
+ */
+async function sendFile(document, res, inline = false) {
+  const disposition = inline ? 'inline' : `attachment; filename="${encodeURIComponent(document.originalName || document.name)}"`;
+
+  // S3 storage
+  if (document.storageType === 's3' && document.s3Key && s3Service) {
+    try {
+      const url = await s3Service.getPresignedUrl(document.s3Key, 3600);
+      return res.redirect(url);
+    } catch (err) {
+      console.error('S3 presigned URL error:', err.message);
+      return res.status(500).json({ error: 'Error al acceder al archivo en S3' });
+    }
+  }
+
+  // Local storage
+  if (!document.filePath) {
+    return res.status(404).json({ error: 'Archivo no encontrado' });
+  }
+  const filePath = path.resolve(document.filePath);
+  if (!isPathWithinDir(filePath, './uploads/org-documents/')) {
+    return res.status(403).json({ error: 'Acceso denegado al archivo' });
+  }
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
+  }
+
+  res.setHeader('Content-Disposition', disposition);
+  if (document.mimeType) res.setHeader('Content-Type', document.mimeType);
+  fs.createReadStream(filePath).pipe(res);
 }
 
 // ============ ENDPOINTS ============
 
 /**
- * GET /api/organization-documents/:orgId
- * Listar todos los documentos de una organización.
+ * GET /api/org-documents/:orgId
  */
 router.get('/:orgId', authenticate, async (req, res) => {
   try {
     const organization = await checkOrgPermission(req, res);
     if (!organization) return;
-
     const documents = await OrgDocument.find({ organizationId: req.params.orgId })
       .populate('uploadedBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .lean();
-
     res.json(documents);
   } catch (error) {
     console.error('Get org documents error:', error);
@@ -175,43 +219,66 @@ router.get('/:orgId', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/organization-documents/:orgId/upload
- * Subir un documento para una organización.
+ * POST /api/org-documents/:orgId/upload
  */
 router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file'), async (req, res) => {
   try {
     const organization = await checkOrgPermission(req, res);
     if (!organization) {
-      // Eliminar archivo subido si no tiene permisos
-      if (req.file) {
-        try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
-      }
+      if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch { /* ignore */ } }
       return;
     }
-
     if (!req.file) {
       return res.status(400).json({ error: 'No se proporcionó ningún archivo' });
     }
 
     const { name, description, category, isPublished, isOfficial } = req.body;
-
     if (!name) {
-      fs.unlinkSync(req.file.path);
+      if (req.file?.path) fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'El nombre del documento es requerido' });
     }
 
     const officialFlag = (isOfficial === 'true' || isOfficial === true) && req.user.role === 'MUNICIPALIDAD';
+
+    let storageType = 'local';
+    let filePath = req.file.path || null;
+    let s3Key = null;
+
+    // Upload to S3 if available
+    if (useS3 && req.file.buffer) {
+      try {
+        const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        const result = await s3Service.upload(base64, {
+          organizationId: req.params.orgId,
+          type: 'org-document',
+          fileName: req.file.originalname
+        });
+        s3Key = result.s3Key;
+        storageType = 's3';
+        filePath = null;
+      } catch (err) {
+        console.error('[org-documents] S3 upload failed, saving locally:', err.message);
+        // Fallback: save buffer to disk
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        const localName = `${Date.now()}-${req.file.originalname}`;
+        filePath = path.join(uploadDir, localName);
+        fs.writeFileSync(filePath, req.file.buffer);
+        storageType = 'local';
+      }
+    }
 
     const document = new OrgDocument({
       organizationId: req.params.orgId,
       name,
       description: description || '',
       category: category || 'OTRO',
-      fileName: req.file.filename,
+      fileName: req.file.filename || req.file.originalname,
       originalName: req.file.originalname,
       mimeType: req.file.mimetype,
       fileSize: req.file.size,
-      filePath: req.file.path,
+      filePath,
+      s3Key,
+      storageType,
       uploadedBy: req.user._id,
       uploadedByRole: req.user.role || '',
       isOfficial: officialFlag,
@@ -219,54 +286,30 @@ router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file')
     });
 
     await document.save();
-
     res.status(201).json(document);
   } catch (error) {
-    // Eliminar archivo en caso de error
-    if (req.file) {
-      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
-    }
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch { /* ignore */ } }
     console.error('Upload org document error:', error);
     res.status(500).json({ error: 'Error al subir documento' });
   }
 });
 
 /**
- * GET /api/organization-documents/:orgId/:docId/download
- * Descargar un documento de una organización.
+ * GET /api/org-documents/:orgId/:docId/download
  */
 router.get('/:orgId/:docId/download', authenticate, async (req, res) => {
   try {
     const organization = await checkOrgPermission(req, res);
     if (!organization) return;
-
     const { docId } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(docId)) {
       return res.status(400).json({ error: 'ID de documento no válido' });
     }
-
-    const document = await OrgDocument.findOne({
-      _id: docId,
-      organizationId: req.params.orgId
-    });
-
+    const document = await OrgDocument.findOne({ _id: docId, organizationId: req.params.orgId });
     if (!document) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
-
-    const filePath = path.resolve(document.filePath);
-
-    // SEGURIDAD: verificar que el path esté dentro del directorio de uploads
-    if (!isPathWithinDir(filePath, './uploads/org-documents/')) {
-      return res.status(403).json({ error: 'Acceso denegado al archivo' });
-    }
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
-    }
-
-    res.download(filePath, document.originalName);
+    await sendFile(document, res, false);
   } catch (error) {
     console.error('Download org document error:', error);
     res.status(500).json({ error: 'Error al descargar documento' });
@@ -274,30 +317,52 @@ router.get('/:orgId/:docId/download', authenticate, async (req, res) => {
 });
 
 /**
- * DELETE /api/organization-documents/:orgId/:docId
- * Eliminar un documento de una organización.
+ * GET /api/org-documents/:orgId/:docId/preview
+ * Sirve el archivo inline para previsualización en el navegador (PDF, imágenes).
+ */
+router.get('/:orgId/:docId/preview', authenticate, async (req, res) => {
+  try {
+    const organization = await checkOrgPermission(req, res);
+    if (!organization) return;
+    const { docId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(docId)) {
+      return res.status(400).json({ error: 'ID de documento no válido' });
+    }
+    const document = await OrgDocument.findOne({ _id: docId, organizationId: req.params.orgId });
+    if (!document) {
+      return res.status(404).json({ error: 'Documento no encontrado' });
+    }
+    await sendFile(document, res, true);
+  } catch (error) {
+    console.error('Preview org document error:', error);
+    res.status(500).json({ error: 'Error al previsualizar documento' });
+  }
+});
+
+/**
+ * DELETE /api/org-documents/:orgId/:docId
  */
 router.delete('/:orgId/:docId', authenticate, async (req, res) => {
   try {
     const organization = await checkOrgPermission(req, res);
     if (!organization) return;
-
     const { docId } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(docId)) {
       return res.status(400).json({ error: 'ID de documento no válido' });
     }
-
-    const document = await OrgDocument.findOne({
-      _id: docId,
-      organizationId: req.params.orgId
-    });
-
+    const document = await OrgDocument.findOne({ _id: docId, organizationId: req.params.orgId });
     if (!document) {
       return res.status(404).json({ error: 'Documento no encontrado' });
     }
 
-    // Eliminar archivo físico (solo si está dentro del directorio permitido)
+    // Delete from S3
+    if (document.storageType === 's3' && document.s3Key && s3Service) {
+      try { await s3Service.deleteObject(document.s3Key); } catch (e) {
+        console.error('Error al eliminar de S3:', e.message);
+      }
+    }
+
+    // Delete local file
     try {
       if (document.filePath && isPathWithinDir(document.filePath, './uploads/org-documents/') && fs.existsSync(document.filePath)) {
         fs.unlinkSync(document.filePath);
@@ -307,7 +372,6 @@ router.delete('/:orgId/:docId', authenticate, async (req, res) => {
     }
 
     await OrgDocument.findByIdAndDelete(docId);
-
     res.json({ message: 'Documento eliminado correctamente' });
   } catch (error) {
     console.error('Delete org document error:', error);
