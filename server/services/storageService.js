@@ -85,8 +85,7 @@ export async function deleteDocument(ref) {
 export async function storeFile(buffer, mimeType, options = {}) {
   if (isS3Configured()) {
     try {
-      const base64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
-      const result = await s3Service.upload(base64, options);
+      const result = await s3Service.uploadBuffer(buffer, mimeType, options);
       return { stored: 's3', s3Key: result.s3Key, mimeType: result.mimeType, size: result.size };
     } catch (err) {
       console.warn('[storage] S3 file upload failed:', err.message);

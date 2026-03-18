@@ -34,6 +34,8 @@ export default function OrgDocumentos({ org, onRefresh }) {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
 
   useEffect(() => {
@@ -98,8 +100,38 @@ export default function OrgDocumentos({ org, onRefresh }) {
     }
   }
 
-  function getPreviewUrl(docId) {
-    return `${apiService.baseUrl}/org-documents/${org._id}/${docId}/preview`;
+  async function openPreview(doc) {
+    setPreviewDoc(doc);
+    setPreviewUrl(null);
+    setPreviewLoading(true);
+    try {
+      const response = await fetch(`${apiService.baseUrl}/org-documents/${org._id}/${doc._id}/preview`, {
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', ...(apiService._authToken && { Authorization: `Bearer ${apiService._authToken}` }) }
+      });
+      if (!response.ok) throw new Error('Error al obtener preview');
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        // S3 mode: backend returns { url, mimeType }
+        const data = await response.json();
+        setPreviewUrl(data.url);
+      } else {
+        // Local mode: backend streams the file directly
+        const blob = await response.blob();
+        setPreviewUrl(URL.createObjectURL(blob));
+      }
+    } catch {
+      addToast('Error al previsualizar documento', 'error');
+      setPreviewDoc(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePreview() {
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    setPreviewDoc(null);
+    setPreviewUrl(null);
   }
 
   // Assembly actas
@@ -148,7 +180,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {isPreviewable(doc.mimeType) && (
-                    <button onClick={() => setPreviewDoc(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd', fontWeight: 600 }}>
+                    <button onClick={() => openPreview(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd', fontWeight: 600 }}>
                       {isPDF(doc.mimeType) ? 'Ver PDF' : 'Ver'}
                     </button>
                   )}
@@ -229,7 +261,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {isPreviewable(doc.mimeType) && (
-                    <button onClick={() => setPreviewDoc(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd' }}>
+                    <button onClick={() => openPreview(doc)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#93c5fd' }}>
                       {isPDF(doc.mimeType) ? 'Ver PDF' : 'Ver'}
                     </button>
                   )}
@@ -247,7 +279,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
 
       {/* Preview Modal */}
       {previewDoc && (
-        <div onClick={(e) => { if (e.target === e.currentTarget) setPreviewDoc(null); }}
+        <div onClick={(e) => { if (e.target === e.currentTarget) closePreview(); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
@@ -257,18 +289,28 @@ export default function OrgDocumentos({ org, onRefresh }) {
                   style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#374151' }}>
                   Descargar
                 </button>
-                <button onClick={() => setPreviewDoc(null)}
+                <button onClick={closePreview}
                   style={{ padding: '4px 12px', fontSize: 14, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', fontWeight: 700 }}>
                   X
                 </button>
               </div>
             </div>
             <div style={{ flex: 1, overflow: 'auto', padding: 0 }}>
-              {isPDF(previewDoc.mimeType) ? (
-                <iframe src={getPreviewUrl(previewDoc._id)} style={{ width: '100%', height: '75vh', border: 'none' }} title="Preview" />
+              {previewLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                  <LoadingSpinner text="Cargando vista previa..." />
+                </div>
+              ) : previewUrl ? (
+                isPDF(previewDoc.mimeType) ? (
+                  <iframe src={previewUrl} style={{ width: '100%', height: '75vh', border: 'none' }} title="Preview" />
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
+                    <img src={previewUrl} alt={previewDoc.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+                  </div>
+                )
               ) : (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
-                  <img src={getPreviewUrl(previewDoc._id)} alt={previewDoc.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: '#6b7280' }}>
+                  Error al cargar vista previa
                 </div>
               )}
             </div>

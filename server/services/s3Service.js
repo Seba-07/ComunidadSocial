@@ -3,11 +3,13 @@
  * Replaces base64-in-MongoDB storage with S3 object storage.
  *
  * Required env vars: AWS_S3_BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+ * Optional: AWS_S3_KEY_PREFIX (isolates environments in shared bucket)
  */
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
+import path from 'path';
 
 const BUCKET = process.env.AWS_S3_BUCKET;
 const REGION = process.env.AWS_REGION || 'us-east-1';
@@ -20,7 +22,13 @@ function getClient() {
     if (!BUCKET) {
       throw new Error('AWS_S3_BUCKET not configured. S3 operations are disabled.');
     }
-    s3Client = new S3Client({ region: REGION });
+    s3Client = new S3Client({
+      region: REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+      }
+    });
   }
   return s3Client;
 }
@@ -29,33 +37,53 @@ function getClient() {
  * Check if S3 is configured and available.
  */
 export function isS3Configured() {
-  return !!process.env.AWS_S3_BUCKET;
+  return !!(process.env.AWS_S3_BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
 }
 
 /**
- * Upload a base64 string to S3.
- * @param {string} base64Data - Base64 encoded data (with or without data: prefix)
- * @param {Object} options - { organizationId, type, memberId, fileName }
- * @returns {{ s3Key: string, url: string }} S3 key and public URL
+ * Derive file extension from MIME type or original filename.
  */
-export async function upload(base64Data, options = {}) {
-  const client = getClient();
-
-  // Strip data: prefix if present
-  let cleanBase64 = base64Data;
-  let mimeType = 'image/png';
-  const dataMatch = base64Data.match(/^data:([^;]+);base64,(.+)$/);
-  if (dataMatch) {
-    mimeType = dataMatch[1];
-    cleanBase64 = dataMatch[2];
+function getExtension(mimeType, fileName) {
+  if (fileName) {
+    const ext = path.extname(fileName).toLowerCase().replace('.', '');
+    if (ext) return ext;
   }
+  const map = {
+    'application/pdf': 'pdf',
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  };
+  return map[mimeType] || 'bin';
+}
 
-  const buffer = Buffer.from(cleanBase64, 'base64');
-  const hash = crypto.createHash('md5').update(buffer).digest('hex').slice(0, 8);
-  const ext = mimeType.includes('png') ? 'png' : mimeType.includes('jpeg') ? 'jpg' : 'bin';
-  const prefix = options.organizationId || 'misc';
+/**
+ * Build an S3 key with optional environment prefix.
+ */
+function buildKey(organizationId, type, fileName, mimeType) {
+  const prefix = organizationId || 'misc';
   const base = KEY_PREFIX ? `${KEY_PREFIX}/${prefix}` : prefix;
-  const s3Key = `${base}/${options.type || 'document'}/${hash}-${options.memberId || Date.now()}.${ext}`;
+  const hash = crypto.randomBytes(6).toString('hex');
+  const ext = getExtension(mimeType, fileName);
+  return `${base}/${type || 'document'}/${Date.now()}-${hash}.${ext}`;
+}
+
+/**
+ * Upload a Buffer directly to S3 (preferred for multer uploads).
+ * Files are stored PRIVATE (no public ACL).
+ * @param {Buffer} buffer - File data
+ * @param {string} mimeType - MIME type (e.g. 'application/pdf')
+ * @param {Object} options - { organizationId, type, fileName }
+ * @returns {{ s3Key: string, mimeType: string, size: number }}
+ */
+export async function uploadBuffer(buffer, mimeType, options = {}) {
+  const client = getClient();
+  const s3Key = buildKey(options.organizationId, options.type, options.fileName, mimeType);
 
   await client.send(new PutObjectCommand({
     Bucket: BUCKET,
@@ -65,7 +93,7 @@ export async function upload(base64Data, options = {}) {
     Metadata: {
       organizationId: options.organizationId || '',
       type: options.type || '',
-      memberId: options.memberId || ''
+      originalName: options.fileName || ''
     }
   }));
 
@@ -73,11 +101,43 @@ export async function upload(base64Data, options = {}) {
 }
 
 /**
- * Get a signed URL for temporary read access (default 1 hour).
+ * Upload a base64 string to S3 (legacy, used by storageService).
+ * @param {string} base64Data - Base64 encoded data (with or without data: prefix)
+ * @param {Object} options - { organizationId, type, memberId, fileName }
+ * @returns {{ s3Key: string, mimeType: string, size: number }}
  */
-export async function getPresignedUrl(s3Key, expiresIn = 3600) {
+export async function upload(base64Data, options = {}) {
+  let cleanBase64 = base64Data;
+  let mimeType = 'application/octet-stream';
+  const dataMatch = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+  if (dataMatch) {
+    mimeType = dataMatch[1];
+    cleanBase64 = dataMatch[2];
+  }
+
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  return uploadBuffer(buffer, mimeType, options);
+}
+
+/**
+ * Get a signed URL for temporary read access.
+ * @param {string} s3Key - S3 object key
+ * @param {number} expiresIn - Seconds until expiration (default 1 hour)
+ * @param {Object} overrides - Optional overrides for Content-Disposition, Content-Type
+ * @returns {string} Presigned URL
+ */
+export async function getPresignedUrl(s3Key, expiresIn = 3600, overrides = {}) {
   const client = getClient();
-  const command = new GetObjectCommand({ Bucket: BUCKET, Key: s3Key });
+  const commandInput = { Bucket: BUCKET, Key: s3Key };
+
+  if (overrides.contentDisposition) {
+    commandInput.ResponseContentDisposition = overrides.contentDisposition;
+  }
+  if (overrides.contentType) {
+    commandInput.ResponseContentType = overrides.contentType;
+  }
+
+  const command = new GetObjectCommand(commandInput);
   return getSignedUrl(client, command, { expiresIn });
 }
 

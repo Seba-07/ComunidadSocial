@@ -163,25 +163,33 @@ async function checkOrgPermission(req, res) {
 
 /**
  * Sends a file to the response (handles both S3 and local).
+ * For S3: returns JSON with presigned URL (frontend handles display/download).
+ * For local: streams the file with correct headers.
  * @param {Object} document - OrgDocument record
  * @param {Object} res - Express response
  * @param {boolean} inline - If true, display inline (preview); if false, force download
  */
 async function sendFile(document, res, inline = false) {
-  const disposition = inline ? 'inline' : `attachment; filename="${encodeURIComponent(document.originalName || document.name)}"`;
+  const fileName = document.originalName || document.name;
+  const disposition = inline
+    ? 'inline'
+    : `attachment; filename="${encodeURIComponent(fileName)}"`;
 
-  // S3 storage
+  // S3 storage → return presigned URL with Content-Disposition baked in
   if (document.storageType === 's3' && document.s3Key && s3Service) {
     try {
-      const url = await s3Service.getPresignedUrl(document.s3Key, 3600);
-      return res.redirect(url);
+      const url = await s3Service.getPresignedUrl(document.s3Key, 3600, {
+        contentDisposition: disposition,
+        contentType: document.mimeType || undefined
+      });
+      return res.json({ url, mimeType: document.mimeType, fileName });
     } catch (err) {
       console.error('S3 presigned URL error:', err.message);
       return res.status(500).json({ error: 'Error al acceder al archivo en S3' });
     }
   }
 
-  // Local storage
+  // Local storage → stream directly
   if (!document.filePath) {
     return res.status(404).json({ error: 'Archivo no encontrado' });
   }
@@ -247,8 +255,7 @@ router.post('/:orgId/upload', authenticate, uploadLimiter, upload.single('file')
     // Upload to S3 if available
     if (useS3 && req.file.buffer) {
       try {
-        const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-        const result = await s3Service.upload(base64, {
+        const result = await s3Service.uploadBuffer(req.file.buffer, req.file.mimetype, {
           organizationId: req.params.orgId,
           type: 'org-document',
           fileName: req.file.originalname
