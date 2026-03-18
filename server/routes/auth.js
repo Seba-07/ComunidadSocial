@@ -33,7 +33,7 @@ function getFrontendUrl() {
 // Register - Rate limited: 3 registros por hora por IP + validación Zod
 router.post('/register', registerLimiter, validate(registerSchema), async (req, res) => {
   try {
-    const { rut, firstName, lastName, email, password, phone, address } = req.body;
+    const { rut, firstName, lastName, email, birthDate, password, phone, address } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ $or: [{ email }, { rut }] });
@@ -53,6 +53,7 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
       firstName,
       lastName,
       email,
+      birthDate: new Date(birthDate),
       password,
       phone,
       address,

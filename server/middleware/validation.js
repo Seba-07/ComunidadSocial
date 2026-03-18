@@ -94,6 +94,9 @@ export const registerSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   email: emailSchema,
+  birthDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Fecha de nacimiento inválida'
+  }),
   password: passwordSchema,
   phone: phoneSchema,
   address: z.string().max(200).optional(),

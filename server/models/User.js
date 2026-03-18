@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  birthDate: {
+    type: Date,
+    default: null
+  },
   password: {
     type: String,
     required: true

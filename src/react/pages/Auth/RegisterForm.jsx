@@ -7,7 +7,7 @@ import { validateRut, formatRut } from '../../utils/validators';
 
 export default function RegisterForm() {
   const [form, setForm] = useState({
-    firstName: '', lastName: '', rut: '', email: '', password: '', passwordConfirm: '', privacyAccepted: false
+    firstName: '', lastName: '', rut: '', email: '', birthDate: '', password: '', passwordConfirm: '', privacyAccepted: false
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +32,13 @@ export default function RegisterForm() {
     if (form.lastName.length < 2) errs.lastName = 'El apellido debe tener al menos 2 caracteres';
     if (!validateRut(form.rut)) errs.rut = 'RUT inválido';
     if (!form.email.includes('@') || !form.email.includes('.')) errs.email = 'Email inválido';
+    if (!form.birthDate) errs.birthDate = 'La fecha de nacimiento es requerida';
+    else {
+      const bd = new Date(form.birthDate);
+      const age = (Date.now() - bd.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      if (age < 14) errs.birthDate = 'Debe tener al menos 14 años';
+      if (age > 120) errs.birthDate = 'Fecha de nacimiento inválida';
+    }
     if (form.password.length < 6) errs.password = 'La contraseña debe tener al menos 6 caracteres';
     else if (!/[A-Z]/.test(form.password)) errs.password = 'Debe contener al menos una mayúscula';
     if (form.password !== form.passwordConfirm) errs.passwordConfirm = 'Las contraseñas no coinciden';
@@ -52,6 +59,7 @@ export default function RegisterForm() {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
+        birthDate: form.birthDate,
         password: form.password,
         privacyAccepted: true
       });
@@ -66,6 +74,7 @@ export default function RegisterForm() {
           lastName: 'lastName',
           rut: 'rut',
           email: 'email',
+          birthDate: 'birthDate',
           password: 'password'
         };
         const newErrors = {};
@@ -129,6 +138,14 @@ export default function RegisterForm() {
         value={form.email}
         onChange={set('email')}
         error={errors.email}
+      />
+      <FormField
+        label="Fecha de Nacimiento *"
+        id="register-birthdate"
+        type="date"
+        value={form.birthDate}
+        onChange={set('birthDate')}
+        error={errors.birthDate}
       />
       <FormField
         label="Contraseña *"
