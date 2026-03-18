@@ -43,6 +43,9 @@ import supportRoutes from './routes/support.js';
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
 
+// Cron jobs (vencimiento automático de directorios)
+import { initCronJobs } from './services/cronService.js';
+
 dotenv.config();
 
 const app = express();
@@ -159,6 +162,7 @@ if (process.env.NODE_ENV !== 'test') {
     .then(async () => {
       console.log(`Connected to MongoDB: ${MONGODB_URI.replace(/\/\/[^@]+@/, '//***:***@')}`);
       await autoMigrateOrganizations();
+      initCronJobs();
     })
     .catch((err) => {
       console.error('MongoDB connection error:', err);

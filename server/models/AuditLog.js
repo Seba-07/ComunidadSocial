@@ -4,7 +4,7 @@ const auditLogSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   userName: {
     type: String
@@ -28,7 +28,8 @@ const auditLogSchema = new mongoose.Schema({
       'DOWNLOAD',
       'EXPORT',
       'OPPOSE',
-      'ACCESS_PII'
+      'ACCESS_PII',
+      'SYSTEM_ALERT'
     ],
     required: true
   },

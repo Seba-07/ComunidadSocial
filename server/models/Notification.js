@@ -51,7 +51,10 @@ const notificationSchema = new mongoose.Schema({
       'ministro_block_created',
       'ministro_block_pending',
       'ministro_block_approved',
-      'ministro_block_rejected'
+      'ministro_block_rejected',
+      // Tipos para vencimiento de directorio
+      'board_expiring',
+      'board_expired'
     ],
     required: true
   },

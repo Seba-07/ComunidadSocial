@@ -81,8 +81,48 @@ export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
     (a) => a.status === 'convocada' || a.status === 'en_curso'
   );
 
+  // Board expiration warning (30 days or less)
+  const boardExpirationWarning = (() => {
+    if (org.boardStatus !== 'VIGENTE' || !org.boardExpirationDate) return null;
+    const daysLeft = Math.ceil((new Date(org.boardExpirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+    if (daysLeft > 30) return null;
+    const dateStr = new Date(org.boardExpirationDate).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+    return { daysLeft, dateStr };
+  })();
+
   return (
     <div>
+      {/* Board Expiration Alert */}
+      {boardExpirationWarning && (
+        <div style={{
+          background: boardExpirationWarning.daysLeft <= 7 ? '#fef2f2' : '#fffbeb',
+          border: `2px solid ${boardExpirationWarning.daysLeft <= 7 ? '#fca5a5' : '#fde68a'}`,
+          borderRadius: 12, padding: 16, marginBottom: 24,
+          display: 'flex', alignItems: 'flex-start', gap: 12
+        }}>
+          <span style={{ fontSize: 24, flexShrink: 0 }}>{boardExpirationWarning.daysLeft <= 7 ? '\u26A0\uFE0F' : '\u23F3'}</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: boardExpirationWarning.daysLeft <= 7 ? '#991b1b' : '#92400e', marginBottom: 4 }}>
+              {boardExpirationWarning.daysLeft <= 0 ? 'Mandato de la directiva vencido' : `Mandato vence en ${boardExpirationWarning.daysLeft} d\u00edas`}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: boardExpirationWarning.daysLeft <= 7 ? '#991b1b' : '#92400e', lineHeight: 1.5 }}>
+              Atenci\u00f3n: El mandato de su directiva vence el <strong>{boardExpirationWarning.dateStr}</strong>.
+              Por favor, inicie el proceso de renovaci\u00f3n de directorio a la brevedad.
+            </p>
+            <button
+              onClick={() => onNavigateTab('elecciones')}
+              style={{
+                marginTop: 10, padding: '6px 16px', fontSize: 13, fontWeight: 600,
+                background: boardExpirationWarning.daysLeft <= 7 ? '#dc2626' : '#d97706',
+                color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer'
+              }}
+            >
+              Ir a Elecciones
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Alerts */}
       {activeAssemblies.length > 0 && (
         <div style={{ marginBottom: 24 }}>

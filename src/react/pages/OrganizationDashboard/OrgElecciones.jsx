@@ -78,6 +78,27 @@ export default function OrgElecciones({ org, onRefresh }) {
         Elecciones y Renovación de Directorio
       </h2>
 
+      {/* Expiration Warning Banner */}
+      {status === 'VIGENTE' && expirationDays !== null && expirationDays <= 30 && (
+        <div style={{
+          background: expirationDays <= 7 ? '#fef2f2' : '#fffbeb',
+          border: `2px solid ${expirationDays <= 7 ? '#fca5a5' : '#fde68a'}`,
+          borderRadius: 12, padding: 16, marginBottom: 24,
+          display: 'flex', alignItems: 'flex-start', gap: 12
+        }}>
+          <span style={{ fontSize: 24, flexShrink: 0 }}>{expirationDays <= 7 ? '\u26A0\uFE0F' : '\u23F3'}</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: expirationDays <= 7 ? '#991b1b' : '#92400e', marginBottom: 4 }}>
+              {expirationDays <= 0 ? 'Mandato de la directiva vencido' : `Mandato vence en ${expirationDays} d\u00edas`}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: expirationDays <= 7 ? '#991b1b' : '#92400e', lineHeight: 1.5 }}>
+              Atenci\u00f3n: El mandato de su directiva vence el <strong>{formatDate(electionData?.boardExpirationDate)}</strong>.
+              Por favor, inicie el proceso de renovaci\u00f3n de directorio a la brevedad.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status Card */}
       <div style={{ background: config.bg, border: `2px solid ${config.border}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
