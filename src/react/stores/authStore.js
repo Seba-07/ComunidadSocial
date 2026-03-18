@@ -46,11 +46,14 @@ export const useAuthStore = create((set, get) => ({
     if (!isAuthenticated) return false;
 
     try {
-      // Intentar obtener datos del usuario (valida token/cookie)
-      await apiService.getCurrentUser();
+      // Intentar obtener datos del usuario (valida token/cookie) con timeout de 8s
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Session verify timeout')), 8000)
+      );
+      await Promise.race([apiService.getCurrentUser(), timeout]);
       return true;
     } catch {
-      // Token inválido y refresh falló → limpiar sesión
+      // Token inválido, timeout, o refresh falló → limpiar sesión
       try { await apiService.logout(); } catch { /* ignore */ }
       set({ user: null, isAuthenticated: false, error: null });
       return false;

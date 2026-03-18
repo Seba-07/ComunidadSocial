@@ -12,9 +12,18 @@ function getApiUrl() {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Fallback: dev local con Vite proxy (localhost:3000 → localhost:3001)
+  // Fallback: dev local con Vite proxy (localhost → localhost:3001)
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return '/api';
+  }
+
+  // Producción/preview sin VITE_API_URL: inferir Railway backend
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    // develop branch → dev backend, main/production → prod backend
+    const isDev = window.location.hostname.includes('-develop-') || window.location.hostname.includes('-dev-');
+    return isDev
+      ? 'https://comunidadsocial-dev-production.up.railway.app/api'
+      : 'https://comunidadsocial-production.up.railway.app/api';
   }
 
   // SSR or unknown — default to local backend
