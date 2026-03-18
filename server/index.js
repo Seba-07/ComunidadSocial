@@ -39,6 +39,7 @@ import documentRegistryRoutes from './routes/documentRegistry.js';
 import tenantRoutes from './routes/tenant.js';
 import municipalityConfigRoutes from './routes/municipalityConfig.js';
 import supportRoutes from './routes/support.js';
+import bulletinsRoutes from './routes/bulletins.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -195,6 +196,9 @@ app.use('/api/document-registry', documentRegistryRoutes);
 app.use('/api/tenant', tenantRoutes);
 app.use('/api/config/municipality', municipalityConfigRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/bulletins', bulletinsRoutes);
+// Org-scoped bulletin endpoint (reuses bulletins router)
+app.use('/api/organizations', bulletinsRoutes);
 
 // CSP violation report endpoint (no auth required)
 app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {

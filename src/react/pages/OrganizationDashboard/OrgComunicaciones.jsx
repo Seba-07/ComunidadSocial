@@ -7,27 +7,52 @@ import { formatDate } from '../../utils/formatters';
 
 const COMM_TYPES = [
   { value: 'general', label: 'General' },
-  { value: 'asamblea', label: 'Citación a Asamblea' },
-  { value: 'actividad', label: 'Invitación a Actividad' },
-  { value: 'informe', label: 'Informe de Gestión' },
+  { value: 'asamblea', label: 'Citaci\u00f3n a Asamblea' },
+  { value: 'actividad', label: 'Invitaci\u00f3n a Actividad' },
+  { value: 'informe', label: 'Informe de Gesti\u00f3n' },
   { value: 'urgente', label: 'Aviso Urgente' }
 ];
 
 const TEMPLATES = [
-  { icon: '📋', label: 'Citación a Asamblea', type: 'asamblea', subject: 'Citación a Asamblea', body: 'Estimados socios,\n\nSe les convoca a la asamblea que se realizará en [LUGAR] el día [FECHA] a las [HORA].\n\nTabla:\n1. [PUNTO 1]\n2. [PUNTO 2]\n\nSe ruega puntualidad.\n\nDirectorio' },
-  { icon: '🎉', label: 'Invitación a Actividad', type: 'actividad', subject: 'Invitación a Actividad', body: 'Estimados socios,\n\nLos invitamos cordialmente a participar de [ACTIVIDAD] que se realizará el día [FECHA].\n\n¡Los esperamos!\n\nDirectorio' },
-  { icon: '📊', label: 'Informe de Gestión', type: 'informe', subject: 'Informe de Gestión', body: 'Estimados socios,\n\nLes compartimos el informe de gestión del período [PERÍODO].\n\n[CONTENIDO DEL INFORME]\n\nDirectorio' },
-  { icon: '🚨', label: 'Aviso Urgente', type: 'urgente', subject: 'Aviso Urgente', body: 'Estimados socios,\n\nSe les informa que [CONTENIDO URGENTE].\n\nPor favor tomar las medidas necesarias.\n\nDirectorio' }
+  { icon: '\uD83D\uDCCB', label: 'Citaci\u00f3n a Asamblea', type: 'asamblea', subject: 'Citaci\u00f3n a Asamblea', body: 'Estimados socios,\n\nSe les convoca a la asamblea que se realizar\u00e1 en [LUGAR] el d\u00eda [FECHA] a las [HORA].\n\nTabla:\n1. [PUNTO 1]\n2. [PUNTO 2]\n\nSe ruega puntualidad.\n\nDirectorio' },
+  { icon: '\uD83C\uDF89', label: 'Invitaci\u00f3n a Actividad', type: 'actividad', subject: 'Invitaci\u00f3n a Actividad', body: 'Estimados socios,\n\nLos invitamos cordialmente a participar de [ACTIVIDAD] que se realizar\u00e1 el d\u00eda [FECHA].\n\n\u00a1Los esperamos!\n\nDirectorio' },
+  { icon: '\uD83D\uDCCA', label: 'Informe de Gesti\u00f3n', type: 'informe', subject: 'Informe de Gesti\u00f3n', body: 'Estimados socios,\n\nLes compartimos el informe de gesti\u00f3n del per\u00edodo [PER\u00cdODO].\n\n[CONTENIDO DEL INFORME]\n\nDirectorio' },
+  { icon: '\uD83D\uDEA8', label: 'Aviso Urgente', type: 'urgente', subject: 'Aviso Urgente', body: 'Estimados socios,\n\nSe les informa que [CONTENIDO URGENTE].\n\nPor favor tomar las medidas necesarias.\n\nDirectorio' }
 ];
+
+function formatBulletinDate(d) {
+  if (!d) return '\u2014';
+  return new Date(d).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 
 export default function OrgComunicaciones({ org, onRefresh }) {
   const [showCreate, setShowCreate] = useState(false);
   const [templateData, setTemplateData] = useState(null);
+  const [bulletins, setBulletins] = useState([]);
+  const [loadingBulletins, setLoadingBulletins] = useState(true);
+  const [expandedBulletin, setExpandedBulletin] = useState(null);
+  const [activeTab, setActiveTab] = useState('bulletins');
   const addToast = useUiStore((s) => s.addToast);
 
   const communications = org?.communications || [];
   const members = org?.members || [];
   const membersWithEmail = members.filter((m) => m.email).length;
+
+  useEffect(() => {
+    if (org?._id) loadBulletins();
+  }, [org?._id]);
+
+  async function loadBulletins() {
+    setLoadingBulletins(true);
+    try {
+      const res = await apiService.get(`/organizations/${org._id}/bulletins`);
+      setBulletins(res.data || []);
+    } catch {
+      setBulletins([]);
+    } finally {
+      setLoadingBulletins(false);
+    }
+  }
 
   function openTemplate(template) {
     setTemplateData(template);
@@ -35,22 +60,149 @@ export default function OrgComunicaciones({ org, onRefresh }) {
   }
 
   async function handleDelete(commId) {
-    if (!confirm('¿Eliminar esta comunicación?')) return;
+    if (!confirm('\u00bfEliminar esta comunicaci\u00f3n?')) return;
     try {
       await apiService.updateOrganization(org._id, { removeCommunication: commId });
-      addToast('Comunicación eliminada', 'success');
+      addToast('Comunicaci\u00f3n eliminada', 'success');
       onRefresh();
     } catch (error) {
       addToast(error.message || 'Error al eliminar', 'error');
     }
   }
 
+  const tabs = [
+    { key: 'bulletins', label: 'Comunicados Municipales', count: bulletins.length },
+    { key: 'internal', label: 'Comunicaciones Internas', count: communications.length }
+  ];
+
   return (
     <div>
-      <div className="r-toolbar" style={{ marginBottom: 16 }}>
-        <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Comunicaciones</h3>
-        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => { setTemplateData(null); setShowCreate(true); }}>
-          + Nueva Comunicación
+      <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: '0 0 16px' }}>Comunicaciones</h3>
+
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 10, padding: 4, marginBottom: 24 }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+            flex: 1, padding: '10px 16px', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+            background: activeTab === t.key ? 'white' : 'transparent',
+            color: activeTab === t.key ? '#1e40af' : '#6b7280',
+            boxShadow: activeTab === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+          }}>
+            {t.label} {t.count > 0 && <span style={{ marginLeft: 6, fontSize: 12, padding: '1px 8px', borderRadius: 10, background: activeTab === t.key ? '#dbeafe' : '#e5e7eb' }}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'bulletins' ? (
+        <BulletinsInbox bulletins={bulletins} loading={loadingBulletins} expandedId={expandedBulletin} onToggle={id => setExpandedBulletin(expandedBulletin === id ? null : id)} />
+      ) : (
+        <InternalComms
+          communications={communications}
+          members={members}
+          membersWithEmail={membersWithEmail}
+          onOpenCreate={() => { setTemplateData(null); setShowCreate(true); }}
+          onOpenTemplate={openTemplate}
+          onDelete={handleDelete}
+        />
+      )}
+
+      <CreateCommunicationModal
+        open={showCreate}
+        onClose={() => { setShowCreate(false); setTemplateData(null); }}
+        orgId={org._id}
+        template={templateData}
+        membersWithEmail={membersWithEmail}
+        onCreated={() => { setShowCreate(false); setTemplateData(null); onRefresh(); }}
+        addToast={addToast}
+      />
+    </div>
+  );
+}
+
+// ========== Bulletins Inbox ==========
+function BulletinsInbox({ bulletins, loading, expandedId, onToggle }) {
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
+        <p style={{ fontSize: 14 }}>Cargando comunicados...</p>
+      </div>
+    );
+  }
+
+  if (bulletins.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
+        <p style={{ fontSize: 40, margin: '0 0 12px' }}>{'\uD83D\uDCEC'}</p>
+        <p style={{ fontSize: 16 }}>No hay comunicados municipales</p>
+        <p style={{ fontSize: 13, marginTop: 8 }}>Los comunicados oficiales de la municipalidad aparecer\u00e1n aqu\u00ed</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {bulletins.map(b => {
+        const isExpanded = expandedId === b._id;
+        return (
+          <div key={b._id} style={{
+            background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
+            overflow: 'hidden', transition: 'box-shadow 0.15s',
+            borderLeft: '4px solid #1e40af'
+          }}>
+            <div
+              onClick={() => onToggle(b._id)}
+              style={{ padding: 20, cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 6 }}>
+                    {b.title}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600,
+                      background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe'
+                    }}>
+                      Secretar\u00eda Municipal
+                    </span>
+                    <span>{formatBulletinDate(b.createdAt)}</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: 18, color: '#9ca3af', flexShrink: 0, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>
+                  {'\u25BC'}
+                </span>
+              </div>
+              {!isExpanded && b.content && (
+                <p style={{ margin: '10px 0 0', fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
+                  {b.content.length > 180 ? b.content.slice(0, 180) + '...' : b.content}
+                </p>
+              )}
+            </div>
+            {isExpanded && (
+              <div style={{ padding: '0 20px 20px', borderTop: '1px solid #f3f4f6' }}>
+                <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#374151', lineHeight: 1.7, paddingTop: 16 }}>
+                  {b.content}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ========== Internal Communications ==========
+function InternalComms({ communications, members, membersWithEmail, onOpenCreate, onOpenTemplate, onDelete }) {
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={onOpenCreate}>
+          + Nueva Comunicaci\u00f3n
         </button>
       </div>
 
@@ -63,12 +215,12 @@ export default function OrgComunicaciones({ org, onRefresh }) {
 
       {/* Quick Templates */}
       <div style={{ marginBottom: 24 }}>
-        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Plantillas Rápidas</h4>
+        <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Plantillas R\u00e1pidas</h4>
         <div className="r-grid-2">
           {TEMPLATES.map((t) => (
             <button
               key={t.type}
-              onClick={() => openTemplate(t)}
+              onClick={() => onOpenTemplate(t)}
               style={{
                 padding: 16, border: '1px solid #e5e7eb', borderRadius: 12,
                 background: 'white', cursor: 'pointer', textAlign: 'left',
@@ -89,7 +241,7 @@ export default function OrgComunicaciones({ org, onRefresh }) {
       {communications.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
           <p style={{ fontSize: 16 }}>No hay comunicaciones registradas</p>
-          <p style={{ fontSize: 13, marginTop: 8 }}>Usa las plantillas rápidas o crea una nueva comunicación</p>
+          <p style={{ fontSize: 13, marginTop: 8 }}>Usa las plantillas r\u00e1pidas o crea una nueva comunicaci\u00f3n</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -101,7 +253,7 @@ export default function OrgComunicaciones({ org, onRefresh }) {
                   <span style={{ fontWeight: 600, color: '#1e3a8a', wordBreak: 'break-word' }}>{comm.subject || 'Sin asunto'}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(comm.date)}</span>
-                    <button onClick={() => handleDelete(commId)} style={{ padding: '2px 8px', fontSize: 11, border: '1px solid #fca5a5', borderRadius: 4, background: 'white', color: '#ef4444', cursor: 'pointer' }}>
+                    <button onClick={() => onDelete(commId)} style={{ padding: '2px 8px', fontSize: 11, border: '1px solid #fca5a5', borderRadius: 4, background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                       Eliminar
                     </button>
                   </div>
@@ -127,17 +279,7 @@ export default function OrgComunicaciones({ org, onRefresh }) {
           })}
         </div>
       )}
-
-      <CreateCommunicationModal
-        open={showCreate}
-        onClose={() => { setShowCreate(false); setTemplateData(null); }}
-        orgId={org._id}
-        template={templateData}
-        membersWithEmail={membersWithEmail}
-        onCreated={() => { setShowCreate(false); setTemplateData(null); onRefresh(); }}
-        addToast={addToast}
-      />
-    </div>
+    </>
   );
 }
 
@@ -156,7 +298,6 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
   const [message, setMessage] = useState(template?.body || '');
   const [submitting, setSubmitting] = useState(false);
 
-  // Update fields when template changes
   useEffect(() => {
     if (template) {
       setSubject(template.subject || '');
@@ -175,13 +316,12 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
       const result = await apiService.updateOrganization(orgId, {
         addCommunication: { subject, type, message, date: new Date().toISOString(), recipients: membersWithEmail }
       });
-      // Find the newly added communication to get emailsSentCount
       const comms = result?.communications || [];
       const lastComm = comms[comms.length - 1];
       const sentCount = lastComm?.emailsSentCount || 0;
       const toastMsg = sentCount > 0
-        ? `Comunicación guardada y notificada por correo a ${sentCount} socio${sentCount !== 1 ? 's' : ''}`
-        : 'Comunicación guardada (sin emails enviados)';
+        ? `Comunicaci\u00f3n guardada y notificada por correo a ${sentCount} socio${sentCount !== 1 ? 's' : ''}`
+        : 'Comunicaci\u00f3n guardada (sin emails enviados)';
       addToast(toastMsg, 'success');
       setSubject(''); setType('general'); setMessage('');
       onCreated();
@@ -193,9 +333,9 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Nueva Comunicación">
+    <Modal open={open} onClose={onClose} title="Nueva Comunicaci\u00f3n">
       <form className="auth-form" onSubmit={handleSubmit}>
-        <FormField label="Asunto *" id="comm-subject" type="text" placeholder="Asunto de la comunicación" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <FormField label="Asunto *" id="comm-subject" type="text" placeholder="Asunto de la comunicaci\u00f3n" value={subject} onChange={(e) => setSubject(e.target.value)} />
         <FormField label="Tipo" id="comm-type">
           <select id="comm-type" value={type} onChange={(e) => setType(e.target.value)}
             style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16 }}>
@@ -208,11 +348,11 @@ function CreateCommunicationModal({ open, onClose, orgId, template, membersWithE
             style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
         </FormField>
         <div className="r-info-card" style={{ background: '#eff6ff', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#1e40af' }}>
-          Se enviará a {membersWithEmail} miembro(s) con email registrado.
+          Se enviar\u00e1 a {membersWithEmail} miembro(s) con email registrado.
         </div>
         <div className="r-form-row">
           <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, background: '#f3f4f6', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancelar</button>
-          <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Enviando...' : 'Enviar Comunicación'}</button>
+          <button type="submit" className="btn-auth" style={{ flex: 1 }} disabled={submitting}>{submitting ? 'Enviando...' : 'Enviar Comunicaci\u00f3n'}</button>
         </div>
       </form>
     </Modal>
