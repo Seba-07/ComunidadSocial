@@ -31,6 +31,11 @@ function formatName(person) {
   return parts.join(' ') || '—';
 }
 
+function capitalize(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function calculateAge(birthDate) {
   if (!birthDate) return null;
   const birth = new Date(birthDate);
@@ -62,15 +67,21 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const members = org.members || [];
   const certs = org.certificatesStep5 || [];
 
-  // Build cargo entries explicitly from known keys (English from DB, Spanish fallback)
+  // Build cargo entries from known keys (English DB + Spanish wizard) + any custom keys
   const cargoEntries = [];
+  const usedKeys = new Set();
+
+  // 1) Check known cargo keys (English from DB schema + Spanish from wizard)
   for (const { key, altKey, label } of CARGO_KEYS) {
     const person = dir[key] || dir[altKey];
     if (person && (person.rut || person.firstName)) {
       cargoEntries.push({ key, label, person });
+      usedKeys.add(key);
+      usedKeys.add(altKey);
     }
   }
-  // Additional directors/custom cargos
+
+  // 2) Additional directors array
   if (dir.additionalMembers?.length) {
     dir.additionalMembers.forEach((m, i) => {
       if (m && (m.rut || m.firstName)) {
@@ -78,14 +89,13 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
       }
     });
   }
-  // Also check for any non-standard cargo keys (e.g. director1, director2 from wizard)
-  const knownKeys = new Set(['president', 'vicePresident', 'secretary', 'treasurer',
-    'presidente', 'vicepresidente', 'secretario', 'tesorero',
-    'additionalMembers', 'designatedAt', 'type', '_id', '__v']);
+
+  // 3) Any other cargo keys (director1, director2, or custom names from wizard templates)
+  const skipKeys = new Set([...usedKeys, 'additionalMembers', 'designatedAt', 'type', 'expiresAt', '_id', '__v']);
   for (const [key, value] of Object.entries(dir)) {
-    if (knownKeys.has(key)) continue;
+    if (skipKeys.has(key)) continue;
     if (value && typeof value === 'object' && !Array.isArray(value) && (value.rut || value.firstName)) {
-      cargoEntries.push({ key, label: value.cargoNombre || key, person: value });
+      cargoEntries.push({ key, label: capitalize(value.cargoNombre || value.cargo || key), person: value });
     }
   }
 
@@ -312,7 +322,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             const submitEntry = [...(org.statusHistory || [])].reverse().find(h => h.status === 'waiting_ministro');
             return localeDateString(submitEntry?.date || org.createdAt);
           })()}</div></div>
-          <div><span style={labelStyle}>Dirección</span><div style={valueStyle}>{[org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '—'}</div></div>
+          <div><span style={labelStyle}>Dirección</span><div style={valueStyle}>{capitalize([org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '—')}</div></div>
           <div><span style={labelStyle}>Comuna / Región</span><div style={valueStyle}>{[org.comuna, org.region].filter(Boolean).join(', ') || '—'}</div></div>
           <div><span style={labelStyle}>Email de Contacto</span><div style={valueStyle}>{org.contactEmail || '—'}</div></div>
           <div><span style={labelStyle}>Teléfono</span><div style={valueStyle}>{org.contactPhone || '—'}</div></div>
@@ -355,7 +365,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           <div className="r-grid-2" style={{ gap: '12px 24px' }}>
             <div><span style={labelStyle}>Fecha Confirmada</span><div style={valueStyle}>{localeDateString(org.ministroData.scheduledDate)}</div></div>
             <div><span style={labelStyle}>Hora Confirmada</span><div style={valueStyle}>{org.ministroData.scheduledTime || '—'}</div></div>
-            <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.ministroData.location || org.assemblyAddress || '—'}</div></div>
+            <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{capitalize(org.ministroData.location || org.assemblyAddress || '—')}</div></div>
             <div><span style={labelStyle}>Ministro de Fe</span><div style={valueStyle}>{org.ministroData.name || '—'}</div></div>
           </div>
         </div>
@@ -365,7 +375,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           <div className="r-grid-3" style={{ gap: '12px 24px' }}>
             {org.electionDate && <div><span style={labelStyle}>Fecha</span><div style={valueStyle}>{localeDateString(org.electionDate)}</div></div>}
             {org.electionTime && <div><span style={labelStyle}>Hora</span><div style={valueStyle}>{org.electionTime}</div></div>}
-            {org.assemblyAddress && <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{org.assemblyAddress}</div></div>}
+            {org.assemblyAddress && <div><span style={labelStyle}>Lugar</span><div style={valueStyle}>{capitalize(org.assemblyAddress)}</div></div>}
           </div>
           <p style={{ margin: '8px 0 0', fontSize: 12, color: '#6b7280' }}>
             Pendiente de confirmación por el municipio.
@@ -402,7 +412,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                         {age !== null ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                             {age}
-                            {isMinor && <span style={minorBadge}>Menor</span>}
+                            {isMinor && <span style={minorBadge}>Menor de edad</span>}
                           </span>
                         ) : '—'}
                       </td>
@@ -539,20 +549,94 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               </div>
             );
           }) : (
-            <div>
-              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px' }}>No hay directorio asignado</p>
-              {Object.keys(dir).length > 0 && (
-                <details style={{ fontSize: 12, color: '#6b7280' }}>
-                  <summary style={{ cursor: 'pointer' }}>Debug: claves en provisionalDirectorio</summary>
-                  <pre style={{ fontSize: 11, background: '#f3f4f6', padding: 8, borderRadius: 6, marginTop: 4, overflow: 'auto' }}>
-                    {JSON.stringify(dir, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
+            <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay directorio asignado</p>
           )}
         </div>
       </div>
+
+      {/* 4b. Documentos Adjuntos */}
+      {certs.length > 0 && (() => {
+        const antecedentes = certs.filter(c => c.certificate);
+        // Build minor exemptions from directorio
+        const minorExemptions = [];
+        for (const { person, label } of cargoEntries) {
+          const bd = person.birthDate || (person.rut && members.find(mb => mb.rut === person.rut)?.birthDate) || null;
+          const age = calculateAge(bd);
+          if (age !== null && age < 18) {
+            minorExemptions.push({ name: formatName(person), cargo: label, age });
+          }
+        }
+        if (antecedentes.length === 0 && minorExemptions.length === 0) return null;
+
+        function viewCertDoc(cert) {
+          if (!cert.certificate) return;
+          const data = cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`;
+          const w = window.open('');
+          if (!w) return;
+          if (data.startsWith('data:application/pdf') || cert.memberName?.endsWith('.pdf')) {
+            w.document.write(`<iframe src="${data}" style="width:100%;height:100%;border:none;position:fixed;top:0;left:0;"></iframe>`);
+          } else {
+            w.document.write(`<div style="display:flex;justify-content:center;padding:20px;background:#f1f5f9;min-height:100vh;"><img src="${data}" style="max-width:100%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);"/></div>`);
+          }
+        }
+
+        const subTitleStyle = { fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '12px 0 4px', paddingBottom: 4, borderBottom: '1px solid #e5e7eb' };
+
+        return (
+          <div style={sectionStyle}>
+            <h3 style={sectionTitle}>Documentos Adjuntos ({antecedentes.length})</h3>
+
+            {antecedentes.length > 0 && (
+              <>
+                <div style={subTitleStyle}>Certificados de Antecedentes</div>
+                {antecedentes.map((cert, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div style={{ position: 'absolute', bottom: -1, right: -3, width: 11, height: 11, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="7" height="7" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{cert.memberName || '—'}</div>
+                      <div style={{ fontSize: 11, color: '#9ca3af' }}>RUT: {cert.memberId || '—'}</div>
+                    </div>
+                    <button onClick={() => viewCertDoc(cert)} style={{
+                      padding: '5px 14px', border: 'none', borderRadius: 8,
+                      background: 'linear-gradient(135deg, #f0f5ff, #e8eeff)', color: '#2563eb',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                      transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(37,99,235,0.08)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #f0f5ff, #e8eeff)'; e.currentTarget.style.color = '#2563eb'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Ver
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {minorExemptions.length > 0 && (
+              <>
+                <div style={{ ...subTitleStyle, marginTop: antecedentes.length > 0 ? 16 : 12 }}>Certificados de Inhabilidades</div>
+                {minorExemptions.map((ex, i) => (
+                  <div key={`minor_${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < minorExemptions.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                    <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{ex.name} ({ex.cargo})</div>
+                      <div style={{ fontSize: 11, color: '#b0b7c3' }}>No aplica (Menor de edad — {ex.age} años)</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 5. Estatutos */}
       <div style={sectionStyle}>
