@@ -82,6 +82,11 @@ export default function WizardPage() {
       if (orgType) fetchTemplateConfig(orgType).catch(() => {});
     }
     setReady(true);
+
+    // Force-save on page unload (refresh, close tab) to prevent data loss
+    const handleBeforeUnload = () => saveProgress();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   function handleResumeYes() {

@@ -264,11 +264,11 @@ export const ALLOWED_FIELDS = {
 
   // Campos de organización que el organizador puede actualizar
   organization: [
-    'organizationName', 'organizationType', 'address', 'comuna',
+    'organizationName', 'organizationType', 'address', 'street', 'streetNumber', 'comuna',
     'region', 'territory', 'unidadVecinal', 'contactEmail', 'contactPhone',
     'contactPreference', 'members', 'minMembers', 'electoralCommission',
     'provisionalDirectorio', 'electionDate', 'electionTime', 'assemblyAddress',
-    'comments', 'estatutos', 'corrections',
+    'comments', 'estatutos', 'estatutosEditados', 'corrections',
     'description', 'objectives', 'legacyDriveLink', 'directorioHistorico', 'config', 'userCorrectedFields',
     'assemblies', 'lastDirectorioElection',
     'finances', 'communications',
