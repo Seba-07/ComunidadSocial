@@ -11,6 +11,12 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function joinWithAnd(arr) {
+  if (!arr || arr.length === 0) return '';
+  if (arr.length === 1) return arr[0];
+  return arr.slice(0, -1).join(', ') + ' y ' + arr[arr.length - 1];
+}
+
 function calculateAge(birthDate) {
   if (!birthDate) return null;
   const birth = new Date(birthDate);
@@ -135,7 +141,7 @@ export default function Step6_Review({ onNext, onPrev }) {
         comunicacion_directa: 'comunicación directa a cada socio'
       })[config.metodoCitacion] || 'carta certificada al domicilio registrado',
       DIAS_ANTICIPACION: String(config.diasAnticipacion || 10),
-      MESES_ASAMBLEA: (config.asambleas || []).join(' y ') || '_______________',
+      MESES_ASAMBLEA: joinWithAnd(config.asambleas || []) || '_______________',
       ENTIDAD_DISOLUCION: config.beneficiarioDisolucion || tenant.dissolutionEntity || '_______________',
       RUT_DISOLUCION: config.rutDisolucion || '_______________',
       MES_INFORME: config.accountReviewMonth || 'Marzo',

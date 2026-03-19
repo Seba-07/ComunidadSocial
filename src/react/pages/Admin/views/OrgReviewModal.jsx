@@ -8,7 +8,7 @@ import Tabs from '../../../components/ui/Tabs';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import { formatDate, localeDateString } from '../../../utils/formatters';
 
-const REVIEW_TABS = [
+const BASE_TABS = [
   { key: 'datos', label: 'Datos' },
   { key: 'asamblea', label: 'Asamblea' },
   { key: 'miembros', label: 'Miembros' },
@@ -16,8 +16,10 @@ const REVIEW_TABS = [
   { key: 'documentos', label: 'Documentos' },
   { key: 'archivo', label: 'Archivo' },
   { key: 'historial', label: 'Historial' },
-  { key: 'aprobar', label: 'Aprobar' }
 ];
+
+// Estados post-asamblea donde el flujo FEA es accesible
+const FEA_ELIGIBLE_STATUSES = new Set(['ministro_approved', 'sent_registry', 'registry_observations', 'approved']);
 
 const ADMIN_DOC_CATEGORIES = [
   { value: 'CERTIFICADO', label: 'Certificado' },
@@ -142,6 +144,11 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const cargoEntries = buildCargoEntries(directorio);
   const electoralCommission = org.electoralCommission || org.comisionElectoral || [];
   const certs = org.certificatesStep5 || [];
+
+  // Tab "Aprobar" solo visible en estados post-asamblea
+  const reviewTabs = FEA_ELIGIBLE_STATUSES.has(org.status)
+    ? [...BASE_TABS, { key: 'aprobar', label: 'Aprobar' }]
+    : BASE_TABS;
 
   // Org name/type with fallbacks for both old and new field names
   const orgName = org.organizationName || org.name || 'Organización';
@@ -316,7 +323,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
         {/* Tabs */}
         <div style={{ padding: '0 24px' }}>
-          <Tabs tabs={REVIEW_TABS} activeTab={tab} onChange={setTab} />
+          <Tabs tabs={reviewTabs} activeTab={tab} onChange={setTab} />
         </div>
 
         {/* Content */}

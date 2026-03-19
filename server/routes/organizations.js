@@ -102,7 +102,12 @@ function replaceEstatutoPlaceholders(snapshot, orgData) {
     '{{CUOTA_INCORPORACION}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
     '{{CUOTA_INC}}': config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${config.monedaCuota || 'UTM'}` : '_______________',
     '{{DURACION_MANDATO}}': duracionStr,
-    '{{MESES_ASAMBLEA}}': (config.asambleas || []).join(' y ') || '_______________',
+    '{{MESES_ASAMBLEA}}': (() => {
+      const m = config.asambleas || [];
+      if (m.length === 0) return '_______________';
+      if (m.length === 1) return m[0];
+      return m.slice(0, -1).join(', ') + ' y ' + m[m.length - 1];
+    })(),
     '{{METODO_CITACION}}': CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
     '{{DIAS_ANTICIPACION}}': String(config.diasAnticipacion || 10),
     '{{ENTIDAD_DISOLUCION}}': config.beneficiarioDisolucion || tenant.dissolutionEntity || '_______________',
