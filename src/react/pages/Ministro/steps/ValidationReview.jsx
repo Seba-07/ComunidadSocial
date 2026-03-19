@@ -105,25 +105,27 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, on
       {quorumMet && (
         <div style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
-            Documentos Firmados (opcional)
+            Documentos Firmados *
           </h3>
-          <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
-            Si dispone de escaner o foto, suba el acta y lista firmada. Tambien puede subirlos despues.
+          <p style={{ fontSize: 12, color: '#92400e', marginBottom: 12, fontWeight: 500 }}>
+            Obligatorio: suba el acta constitutiva y la lista de asistencia con las firmas originales (escaner o foto).
           </p>
 
           <FileUploadBox
-            label="Acta Constitutiva Firmada"
+            label="Acta Constitutiva Firmada *"
             file={actaFile}
             inputRef={actaRef}
             onSelect={handleFileSelect(setActaFile)}
             onClear={() => setActaFile(null)}
+            required
           />
           <FileUploadBox
-            label="Lista de Asistencia Firmada"
+            label="Lista de Asistencia Firmada *"
             file={attendanceFile}
             inputRef={attendanceRef}
             onSelect={handleFileSelect(setAttendanceFile)}
             onClear={() => setAttendanceFile(null)}
+            required
           />
         </div>
       )}
@@ -181,31 +183,41 @@ export default function ValidationReview({ wizardData, org, onPrev, onSubmit, on
               Rechazar Asamblea
             </button>
           )}
-          <button
-            onClick={handleCertify}
-            disabled={!quorumMet || !wizardData.ministroSignature || isSubmitting}
-            style={{
-              padding: 'clamp(10px, 2.5vw, 14px) clamp(20px, 5vw, 32px)',
-              border: 'none', borderRadius: 10,
-              background: (quorumMet && wizardData.ministroSignature && !isSubmitting)
-                ? 'linear-gradient(135deg, #10b981, #059669)' : '#d1d5db',
-              color: 'white', fontSize: 'clamp(14px, 3vw, 16px)', fontWeight: 700,
-              cursor: (quorumMet && wizardData.ministroSignature && !isSubmitting) ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {isSubmitting ? 'Certificando...' : !quorumMet ? 'Sin Quorum' : !wizardData.ministroSignature ? 'Falta Firma' : 'Certificar Constitucion'}
-          </button>
+          {(() => {
+            const canCertify = quorumMet && wizardData.ministroSignature && actaFile && attendanceFile && !isSubmitting;
+            const missingLabel = !quorumMet ? 'Sin Quorum'
+              : !wizardData.ministroSignature ? 'Falta Firma'
+              : !actaFile ? 'Falta Acta Firmada'
+              : !attendanceFile ? 'Falta Lista Firmada'
+              : null;
+            return (
+              <button
+                onClick={handleCertify}
+                disabled={!canCertify}
+                style={{
+                  padding: 'clamp(10px, 2.5vw, 14px) clamp(20px, 5vw, 32px)',
+                  border: 'none', borderRadius: 10,
+                  background: canCertify ? 'linear-gradient(135deg, #10b981, #059669)' : '#d1d5db',
+                  color: 'white', fontSize: 'clamp(14px, 3vw, 16px)', fontWeight: 700,
+                  cursor: canCertify ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {isSubmitting ? 'Certificando...' : missingLabel || 'Certificar Constitucion'}
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>
   );
 }
 
-function FileUploadBox({ label, file, inputRef, onSelect, onClear }) {
+function FileUploadBox({ label, file, inputRef, onSelect, onClear, required }) {
   return (
     <div style={{
-      padding: 14, border: file ? '2px solid #10b981' : '2px dashed #d1d5db',
-      borderRadius: 10, marginBottom: 10, background: file ? '#f0fdf4' : 'white',
+      padding: 14, borderRadius: 10, marginBottom: 10,
+      border: file ? '2px solid #10b981' : required ? '2px dashed #f59e0b' : '2px dashed #d1d5db',
+      background: file ? '#f0fdf4' : required ? '#fffbeb' : 'white',
     }}>
       {file ? (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
