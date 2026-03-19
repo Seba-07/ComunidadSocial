@@ -355,20 +355,65 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             </p>
           )}
           <div style={{ display: 'grid', gap: 10 }}>
-            {org.corrections.items.map((item, i) => (
-              <div key={i} style={{ padding: 12, background: 'white', border: '1px solid #fed7aa', borderRadius: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>{item.label}</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Observacion: {item.message}</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>Valor actual: {item.currentValue || '—'}</div>
-                <input
-                  type="text"
-                  placeholder="Ingresa el valor corregido..."
-                  value={correctedFields[item.field] || ''}
-                  onChange={e => setCorrectedFields(prev => ({ ...prev, [item.field]: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 13, boxSizing: 'border-box', background: '#fffbeb' }}
-                />
-              </div>
-            ))}
+            {org.corrections.items.map((item, i) => {
+              const isCertField = item.field?.startsWith('cert.');
+              return (
+                <div key={i} style={{ padding: 12, background: 'white', border: '1px solid #fed7aa', borderRadius: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Observacion: {item.message}</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>Valor actual: {item.currentValue || '—'}</div>
+                  {isCertField ? (
+                    <div>
+                      {correctedFields[item.field] ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>
+                            Nuevo archivo cargado ({correctedFields[item.field].name})
+                          </span>
+                          <button onClick={() => setCorrectedFields(prev => {
+                            const copy = { ...prev };
+                            delete copy[item.field];
+                            return copy;
+                          })} style={{ padding: '2px 8px', border: '1px solid #ef4444', borderRadius: 4, background: 'white', color: '#ef4444', fontSize: 11, cursor: 'pointer' }}>
+                            Quitar
+                          </button>
+                        </div>
+                      ) : (
+                        <label style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+                          border: '2px dashed #f59e0b', borderRadius: 8, background: '#fffbeb',
+                          cursor: 'pointer', fontSize: 13, color: '#92400e', fontWeight: 600,
+                        }}>
+                          Seleccionar nuevo archivo (PDF, JPG, PNG)
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              if (file.size > 5 * 1024 * 1024) { addToast('Archivo demasiado grande (max 5MB)', 'error'); return; }
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setCorrectedFields(prev => ({
+                                  ...prev,
+                                  [item.field]: { name: file.name, data: reader.result, _isFile: true }
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Ingresa el valor corregido..."
+                      value={correctedFields[item.field] || ''}
+                      onChange={e => setCorrectedFields(prev => ({ ...prev, [item.field]: e.target.value }))}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 13, boxSizing: 'border-box', background: '#fffbeb' }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div style={{ marginTop: 16 }}>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Comentario (opcional):</label>
@@ -380,14 +425,39 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             disabled={resubmitting || Object.keys(correctedFields).length === 0}
             onClick={async () => {
               const pendingCount = org.corrections.items.length;
-              const filledCount = Object.values(correctedFields).filter(v => v.trim()).length;
+              const filledCount = Object.values(correctedFields).filter(v => {
+                if (typeof v === 'object' && v._isFile) return !!v.data;
+                return typeof v === 'string' && v.trim();
+              }).length;
               if (filledCount < pendingCount) {
                 addToast(`Completa todas las correcciones (${filledCount}/${pendingCount})`, 'error');
                 return;
               }
               setResubmitting(true);
               try {
-                await apiService.resubmitOrganization(org._id, resubmitComment, correctedFields);
+                // Separate text fields from file fields
+                const textFields = {};
+                const fileFields = {};
+                for (const [key, val] of Object.entries(correctedFields)) {
+                  if (typeof val === 'object' && val._isFile) {
+                    fileFields[key] = val.data;
+                  } else {
+                    textFields[key] = val;
+                  }
+                }
+                // Submit text corrections
+                await apiService.resubmitOrganization(org._id, resubmitComment, textFields);
+                // Upload corrected certificate files
+                for (const [field, base64Data] of Object.entries(fileFields)) {
+                  // Extract RUT from field path: cert.123456789.antecedentes → 123456789
+                  const parts = field.split('.');
+                  if (parts.length >= 2) {
+                    const memberId = parts[1];
+                    await apiService.syncCertificates(org._id, {
+                      [memberId]: { certificate: base64Data }
+                    });
+                  }
+                }
                 addToast('Correcciones enviadas exitosamente', 'success');
                 onRefresh();
               } catch (err) {

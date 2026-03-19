@@ -1025,34 +1025,45 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               </h4>
               {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
                 const cert = getCertForMember(person.rut, person.firstName);
+                const certField = `cert.${(person.rut || key).replace(/\./g, '').replace(/-/g, '')}.antecedentes`;
                 return (
                   <div key={key} style={{
-                    padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8,
+                    padding: 12, borderRadius: 8, marginBottom: 8,
+                    border: isFieldFlagged(certField) ? '2px solid #fca5a5' : '1px solid #e5e7eb',
+                    background: isFieldFlagged(certField) ? '#fef2f2' : 'white',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                   }}>
                     <div>
                       <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{label}: </span>
                       <span style={{ fontSize: 13, color: '#6b7280' }}>{formatName(person)}</span>
                     </div>
-                    {cert ? (
-                      <button
-                        onClick={() => downloadBase64(cert.certificate, `Certificado_${formatName(person)}.pdf`)}
-                        style={{
-                          padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
-                          border: '1px solid #a7f3d0', background: '#d1fae5', color: '#059669',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Descargar
-                      </button>
-                    ) : (
-                      <span style={{
-                        fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fef3c7',
-                        padding: '4px 10px', borderRadius: 6,
-                      }}>
-                        No cargado
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {cert ? (
+                        <button
+                          onClick={() => downloadBase64(cert.certificate, `Certificado_${formatName(person)}.pdf`)}
+                          style={{
+                            padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                            border: '1px solid #a7f3d0', background: '#d1fae5', color: '#059669',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Descargar
+                        </button>
+                      ) : (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, color: '#d97706', background: '#fef3c7',
+                          padding: '4px 10px', borderRadius: 6,
+                        }}>
+                          No cargado
+                        </span>
+                      )}
+                      <FlagBtn
+                        field={certField}
+                        label={`Certificado Antecedentes: ${formatName(person)} (${label})`}
+                        tab="documentos"
+                        value={cert ? 'Archivo cargado' : 'No cargado'}
+                      />
+                    </div>
                   </div>
                 );
               }) : (
