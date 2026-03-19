@@ -22,10 +22,10 @@ const TEST_MEMBERS = [
   { firstName: 'Claudia', lastName: 'Vargas', rut: '16.543.210-K', email: 'claudia.vargas@test.cl', phone: '+56 9 1234 5009', birthDate: '1995-08-25', genero: 'femenino', address: 'Av. Condell 1890, Renca' },
   { firstName: 'Jorge', lastName: 'Martínez', rut: '11.876.543-5', email: 'jorge.martinez@test.cl', phone: '+56 9 1234 5010', birthDate: '1980-02-14', genero: 'masculino', address: 'Calle Neptuno 234, Renca' },
   // 4 menores de edad (1 de 14 años, 1 de 15, 1 de 16, 1 de 17)
-  { firstName: 'Martina', lastName: 'Castillo', rut: '23.567.890-1', email: 'martina.castillo@test.cl', phone: '+56 9 1234 5011', birthDate: '2012-01-15', genero: 'femenino', address: 'Calle Neptuno 234, Renca' },
+  { firstName: 'Martina', lastName: 'Castillo', rut: '23.567.890-K', email: 'martina.castillo@test.cl', phone: '+56 9 1234 5011', birthDate: '2012-01-15', genero: 'femenino', address: 'Calle Neptuno 234, Renca' },
   { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-4', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5012', birthDate: '2011-06-20', genero: 'masculino', address: 'Av. Dorsal 980, Renca' },
   { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-8', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5013', birthDate: '2010-08-14', genero: 'femenino', address: 'Calle Saturno 321, Renca' },
-  { firstName: 'Mateo', lastName: 'Reyes', rut: '22.890.123-6', email: 'mateo.reyes@test.cl', phone: '+56 9 1234 5014', birthDate: '2009-04-10', genero: 'masculino', address: 'Psje. Los Jazmines 45, Renca' },
+  { firstName: 'Mateo', lastName: 'Reyes', rut: '22.890.123-7', email: 'mateo.reyes@test.cl', phone: '+56 9 1234 5014', birthDate: '2009-04-10', genero: 'masculino', address: 'Psje. Los Jazmines 45, Renca' },
 ];
 
 function calculateAge(birthDate) {
@@ -92,6 +92,27 @@ export default function Step2_Members({ onNext, onPrev }) {
       return;
     }
 
+    if (form.firstName.trim().length < 2) {
+      addToast('El nombre debe tener al menos 2 caracteres', 'error');
+      return;
+    }
+    if (form.lastName.trim().length < 2) {
+      addToast('El apellido debe tener al menos 2 caracteres', 'error');
+      return;
+    }
+
+    // Validate RUT format and check digit
+    if (!validateRut(form.rut)) {
+      addToast(`RUT inválido para ${form.firstName} ${form.lastName}. Verifica el dígito verificador.`, 'error');
+      return;
+    }
+
+    // Validate phone format if provided
+    if (form.phone && !/^(\+?56)?[\d\s-]{8,15}$/.test(form.phone)) {
+      addToast('Formato de teléfono inválido', 'error');
+      return;
+    }
+
     // Check duplicate RUT
     const normalizedRut = form.rut.replace(/\./g, '').replace(/-/g, '').toLowerCase();
     const duplicate = members.findIndex((m, i) => {
@@ -114,6 +135,14 @@ export default function Step2_Members({ onNext, onPrev }) {
   function handleNext() {
     if (members.length < minMembers) {
       addToast(`Se requieren al menos ${minMembers} miembros (tienes ${members.length})`, 'error');
+      return;
+    }
+
+    // RUT validation - check all members have valid RUTs
+    const rutsInvalidos = members.filter(m => !validateRut(m.rut));
+    if (rutsInvalidos.length > 0) {
+      const nombres = rutsInvalidos.map(m => `${m.firstName} ${m.lastName} (${m.rut})`).join(', ');
+      addToast(`RUT inválido en: ${nombres}. Corrige el dígito verificador antes de continuar.`, 'error');
       return;
     }
 

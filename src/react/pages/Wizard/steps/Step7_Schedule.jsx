@@ -93,7 +93,29 @@ export default function Step7_Schedule({ onPrev }) {
       if (err.code === 'PAYLOAD_TOO_LARGE' || msg.includes('tamaño') || msg.includes('límite')) {
         msg = 'Los archivos adjuntos son demasiado grandes. Vuelve al paso 5 y reduce el tamaño de los certificados (máx. 5MB cada uno).';
       } else if (err.details?.length) {
-        msg += ': ' + err.details.map(d => d.message || d).join(', ');
+        const members = formData.members || [];
+        const readable = err.details.map(d => {
+          const field = d.field || '';
+          const message = d.message || d;
+          // Map field paths like "members.2.rut" to member names
+          const memberMatch = field.match(/^members\.(\d+)\.(\w+)$/);
+          if (memberMatch) {
+            const idx = parseInt(memberMatch[1]);
+            const member = members[idx];
+            const fieldName = memberMatch[2];
+            const who = member ? `${member.firstName} ${member.lastName}` : `Miembro #${idx + 1}`;
+            return `${who}: ${message} (campo: ${fieldName})`;
+          }
+          // Map provisionalDirectorio fields
+          if (field.startsWith('provisionalDirectorio')) {
+            return `Directorio: ${message}`;
+          }
+          if (field.startsWith('electoralCommission')) {
+            return `Comisión Electoral: ${message}`;
+          }
+          return field ? `${field}: ${message}` : message;
+        });
+        msg += ':\n' + readable.join('\n');
       }
       addToast(msg, 'error');
     }

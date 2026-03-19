@@ -203,8 +203,13 @@ export default function Step1_OrgData({ onNext, isFirst }) {
   function validate() {
     if (!org.type) return 'Selecciona un tipo de organización';
     if (!org.name?.trim()) return 'Ingresa el nombre';
+    if (org.name.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+    if (org.name.trim().length > 150) return 'El nombre no puede exceder 150 caracteres';
     if (!org.street?.trim()) return 'Ingresa la calle';
+    if (org.street.trim().length < 3) return 'La calle debe tener al menos 3 caracteres';
     if (!org.email?.trim()) return 'Ingresa un email de contacto';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(org.email.trim())) return 'El email de contacto no es válido';
+    if (org.phone && !/^(\+?56)?[\d\s-]{8,15}$/.test(org.phone)) return 'Formato de teléfono inválido';
     return null;
   }
 
