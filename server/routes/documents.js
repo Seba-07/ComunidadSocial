@@ -972,8 +972,12 @@ function generateCertificadoBorradorHTML(org) {
   const secretaryName = secretary ? [secretary.firstName, secretary.lastName].filter(Boolean).join(' ') : '---';
   const treasurerName = treasurer ? [treasurer.firstName, treasurer.lastName].filter(Boolean).join(' ') : '---';
 
-  const today = new Date();
-  const dateStr = formatDate(today);
+  // Fecha legal de constitución: fecha de la asamblea ejecutada por el MF, no la fecha actual
+  const assemblyDate = org.ministroData?.scheduledDate
+    || org.validationData?.validatedAt
+    || org.createdAt
+    || new Date();
+  const dateStr = formatDate(assemblyDate);
   const membersCount = (org.members || []).length;
 
   return `<!DOCTYPE html>

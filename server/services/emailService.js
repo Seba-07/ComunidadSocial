@@ -154,13 +154,14 @@ const emailService = {
    * @param {string}  params.subject - Asunto del correo.
    * @param {string}  params.html    - Cuerpo HTML del correo.
    */
-  async sendEmail({ to, bcc, subject, html }) {
+  async sendEmail({ to, bcc, subject, html, attachments }) {
     try {
       if (DRY_RUN) {
         console.log('[emailService] DRY RUN ─────────────────────────────');
         console.log(`  Para:   ${to || '(ninguno)'}`);
         if (bcc) console.log(`  BCC:    ${Array.isArray(bcc) ? bcc.length + ' destinatarios' : bcc}`);
         console.log(`  Asunto: ${subject}`);
+        if (attachments?.length) console.log(`  Adjuntos: ${attachments.length}`);
         console.log('  HTML:   (omitido en consola)');
         console.log('──────────────────────────────────────────────────');
         return;
@@ -169,6 +170,7 @@ const emailService = {
       const mailOptions = { from: SMTP_FROM, subject, html };
       if (to) mailOptions.to = to;
       if (bcc) mailOptions.bcc = bcc;
+      if (attachments?.length) mailOptions.attachments = attachments;
 
       await transporter.sendMail(mailOptions);
 
@@ -307,7 +309,7 @@ const emailService = {
    * @param {string}  params.orgName     - Nombre de la organización.
    * @param {string}  [params.certNumber] - Número de certificado.
    */
-  async sendApprovalNotification({ email, userName, orgName, certNumber }) {
+  async sendApprovalNotification({ email, userName, orgName, certNumber, pdfAttachment }) {
     const bodyHtml = `
       <h2>¡Felicitaciones!</h2>
       <p>Hola <strong>${userName}</strong>,</p>
@@ -332,13 +334,19 @@ const emailService = {
       <div class="divider"></div>
 
       <p>Su organización comunitaria ha completado satisfactoriamente todos los requisitos establecidos por la <strong>Ley 19.418</strong> sobre Juntas de Vecinos y demás Organizaciones Comunitarias.</p>
-      <p>Puede descargar su certificado y documentación ingresando a la plataforma.</p>
+      ${pdfAttachment ? '<p><strong>Se adjunta el Certificado de Personalidad Jurídica firmado electrónicamente.</strong></p>' : '<p>Puede descargar su certificado y documentación ingresando a la plataforma.</p>'}
     `;
 
     const subject = `¡Organización aprobada! — ${orgName}`;
     const html = buildEmailTemplate('Organización Aprobada', bodyHtml);
 
-    await this.sendEmail({ to: email, subject, html });
+    const attachments = pdfAttachment ? [{
+      filename: pdfAttachment.filename || `Certificado_${orgName.replace(/\s+/g, '_')}.pdf`,
+      content: pdfAttachment.content,
+      contentType: 'application/pdf',
+    }] : undefined;
+
+    await this.sendEmail({ to: email, subject, html, attachments });
   },
 
   // -----------------------------------------------------------------------
@@ -466,6 +474,46 @@ const emailService = {
    * @param {string}  params.orgName      - Nombre de la organización.
    * @param {string}  params.tempPassword - Contraseña temporal.
    */
+  async sendMemberActivationEmail({ email, userName, orgName, activationUrl }) {
+    const bodyHtml = `
+      <h2>¡Bienvenido/a a ${tenant.platformShortName}!</h2>
+      <p>Hola <strong>${userName}</strong>,</p>
+      <p>La organización <strong>${orgName}</strong> ha sido aprobada y se ha creado una cuenta para usted como socio fundador.</p>
+
+      <p>Para activar su cuenta y crear su contraseña, haga clic en el siguiente botón:</p>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${activationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+          Activar mi Cuenta
+        </a>
+      </div>
+
+      <p>Si no puede hacer clic en el botón, copie y pegue este enlace en su navegador:</p>
+      <p style="word-break: break-all; color: #6b7280; font-size: 13px;">${activationUrl}</p>
+
+      <table class="info-table">
+        <tr>
+          <td>Correo electrónico</td>
+          <td>${email}</td>
+        </tr>
+        <tr>
+          <td>Organización</td>
+          <td>${orgName}</td>
+        </tr>
+      </table>
+
+      <div class="divider"></div>
+      <p style="color: #f59e0b; font-weight: 600;">Este enlace de activación expira en 7 días.</p>
+      <p>Si tiene alguna consulta, contacte al dirigente social de su organización.</p>
+    `;
+
+    const subject = `Active su cuenta — ${orgName} | ${tenant.platformShortName}`;
+    const html = buildEmailTemplate('Activación de Cuenta', bodyHtml);
+
+    await this.sendEmail({ to: email, subject, html });
+  },
+
+  // Mantener legacy para compatibilidad
   async sendWelcomeMemberEmail({ email, userName, orgName, tempPassword }) {
     const bodyHtml = `
       <h2>¡Bienvenido/a a ${tenant.platformShortName}!</h2>

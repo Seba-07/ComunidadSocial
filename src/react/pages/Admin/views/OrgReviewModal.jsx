@@ -1251,17 +1251,28 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                   Paso 3: Aprobar Organizacion
                 </h4>
                 <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
-                  Al aprobar, se guardara el certificado firmado y se notificara al dirigente social.
-                  Se crearan automaticamente las cuentas de los socios.
+                  Al aprobar se realizara automaticamente:
                 </p>
+                <ul style={{ margin: '0 0 16px', paddingLeft: 20, fontSize: 13, color: '#374151', lineHeight: 1.8 }}>
+                  <li>Se guardara el certificado FEA firmado</li>
+                  <li>Se crearan cuentas para los socios con email de activacion</li>
+                  <li>Se enviara al dirigente el certificado firmado por correo</li>
+                  <li>El estado pasara a <strong>Aprobada</strong></li>
+                </ul>
                 <button
                   disabled={!signedPdf || isActioning}
                   onClick={async () => {
                     if (!signedPdf) return;
                     setIsActioning(true);
                     try {
-                      await approveWithDocument(org._id, signedPdf);
-                      addToast('Organizacion aprobada con certificado FEA', 'success');
+                      const result = await approveWithDocument(org._id, signedPdf);
+                      const data = result?.data || {};
+                      const created = data.accountsCreated || 0;
+                      const sent = data.activationsSent || 0;
+                      addToast(
+                        `Organizacion aprobada. ${created} cuentas creadas${sent > 0 ? `, ${sent} emails de activacion enviados` : ''}. Certificado enviado al dirigente.`,
+                        'success'
+                      );
                       onClose();
                     } catch (err) {
                       addToast(err.message, 'error');

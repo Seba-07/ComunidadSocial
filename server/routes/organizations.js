@@ -318,13 +318,18 @@ async function createMemberAccounts(organization) {
         continue;
       }
 
-      // Crear nuevo usuario MIEMBRO — password = RUT limpio (sin puntos ni guión)
-      const tempPassword = member.rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      // Crear nuevo usuario MIEMBRO — sin password, con activationToken
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
+      // Password temporal fuerte (nunca se usa directamente, solo para cumplir schema required)
+      const tempPassword = crypto.randomBytes(16).toString('hex');
+      const memberEmail = member.email || null; // No generar emails falsos
+
       const newUser = new User({
         rut: member.rut,
         firstName: member.firstName,
         lastName: member.lastName,
-        email: member.email || `${member.rut.replace(/\./g, '').replace(/-/g, '')}@miembro.comunidadsocial.cl`,
+        email: memberEmail || `${member.rut.replace(/\./g, '').replace(/-/g, '')}@placeholder.local`,
         password: tempPassword,
         phone: member.phone,
         address: member.address,
@@ -332,13 +337,14 @@ async function createMemberAccounts(organization) {
         organizationIds: [organization._id],
         organizationId: organization._id,
         mustChangePassword: true,
-        active: true
+        active: false, // Inactivo hasta que active su cuenta
+        resetPasswordToken: activationToken,
+        resetPasswordExpires: activationExpires,
       });
 
       await newUser.save();
 
       // Create essential consent for new member (Ley 21.719)
-      // Note: created on behalf by organizer per Ley 19.418; full consent on first login
       await Consent.create({
         userId: newUser._id,
         purpose: 'essential',
@@ -348,12 +354,31 @@ async function createMemberAccounts(organization) {
         ipAddress: 'system:member-creation'
       }).catch(err => console.error('Consent creation error for member:', err.message));
 
+      // Send activation email if member has a real email
+      if (memberEmail) {
+        const baseUrl = process.env.FRONTEND_URL || process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173';
+        const activationUrl = `${baseUrl}/app/activate?token=${activationToken}`;
+        try {
+          await emailService.sendMemberActivationEmail({
+            email: memberEmail,
+            userName: `${member.firstName} ${member.lastName}`.trim(),
+            orgName: organization.organizationName,
+            activationUrl,
+          });
+        } catch (emailErr) {
+          console.error(`Error sending activation email to ${memberEmail}:`, emailErr.message);
+        }
+      }
+
       createdAccounts.push({
         rut: member.rut,
         firstName: member.firstName,
         lastName: member.lastName,
-        email: newUser.email,
-        status: 'created'
+        email: memberEmail,
+        status: 'created',
+        hasEmail: !!memberEmail,
+        activationSent: !!memberEmail,
       });
 
     } catch (error) {
@@ -2031,6 +2056,10 @@ router.post('/:id/approve-with-document', authenticate, requireRole('MUNICIPALID
       organizationId: organization._id
     });
 
+    // Build summary for response
+    const activationsSent = memberAccountsResult?.createdAccounts?.filter(a => a.activationSent).length || 0;
+    const accountsCreated = memberAccountsResult?.createdAccounts?.filter(a => a.status === 'created').length || 0;
+
     res.json({
       message: 'Organización aprobada con certificado firmado',
       data: {
@@ -2039,20 +2068,29 @@ router.post('/:id/approve-with-document', authenticate, requireRole('MUNICIPALID
           fileName: organization.certificadoPersonalidadJuridica.fileName,
           uploadedAt: organization.certificadoPersonalidadJuridica.uploadedAt
         },
+        accountsCreated,
+        activationsSent,
         memberAccountsResult
       }
     });
 
-    // Send email notification
+    // Send email notification with PDF attachment
     if (organization.userId) {
       try {
         const user = await User.findById(organization.userId);
         if (user?.email) {
+          // Prepare PDF attachment from the uploaded file buffer
+          const pdfAttachment = req.file ? {
+            filename: `Certificado_${organization.organizationName.replace(/\s+/g, '_')}.pdf`,
+            content: req.file.buffer,
+          } : undefined;
+
           await emailService.sendApprovalNotification({
             email: user.email,
             userName: `${user.firstName} ${user.lastName}`,
             orgName: organization.organizationName,
-            certNumber: organization.certNumber || ''
+            certNumber: organization.certNumber || '',
+            pdfAttachment,
           });
         }
       } catch (emailErr) {
