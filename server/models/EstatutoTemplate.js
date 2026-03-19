@@ -81,16 +81,25 @@ const placeholderSchema = new mongoose.Schema({
   }]
 }, { _id: false });
 
-// Sub-esquema para imágenes de header/footer
+// Sub-esquema para imágenes de header/footer (S3 storage)
 const imagenDocumentoSchema = new mongoose.Schema({
   tipo: {
     type: String,
     enum: ['header', 'footer'],
     required: true
   },
+  s3Key: {
+    type: String,
+    default: null
+  },
+  mimeType: {
+    type: String,
+    default: null
+  },
+  // Legacy field — kept for backward compat with existing disk-based URLs
   url: {
     type: String,
-    required: true
+    default: null
   },
   fileName: {
     type: String

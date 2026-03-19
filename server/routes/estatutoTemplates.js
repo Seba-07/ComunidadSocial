@@ -1,39 +1,19 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import EstatutoTemplate, { TIPOS_ORGANIZACION_LIST } from '../models/EstatutoTemplate.js';
 import Organization from '../models/Organization.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createEstatutoTemplateSchema, updateEstatutoTemplateSchema } from '../middleware/validation.js';
+import * as storageService from '../services/storageService.js';
 
 const router = express.Router();
 
-// Crear directorio para uploads si no existe
-const uploadDir = './uploads/estatutos';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configurar multer para imágenes de header/footer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
-
+// Multer en memoria (sin disco) — las imágenes van a S3
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowed.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Tipo de archivo no permitido. Use JPEG, PNG, GIF o WebP.'), false);
-    }
+    cb(null, allowed.includes(file.mimetype));
   },
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
@@ -329,7 +309,7 @@ router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, re
   }
 });
 
-// POST /api/estatuto-templates/:id/imagen - Subir imagen header/footer
+// POST /api/estatuto-templates/:id/imagen - Subir imagen header/footer (S3)
 router.post('/:id/imagen', authenticate, requireRole('MUNICIPALIDAD'), upload.single('imagen'), async (req, res) => {
   try {
     if (!req.file) {
@@ -338,15 +318,12 @@ router.post('/:id/imagen', authenticate, requireRole('MUNICIPALIDAD'), upload.si
 
     const template = await EstatutoTemplate.findById(req.params.id);
     if (!template) {
-      // Eliminar archivo subido
-      fs.unlinkSync(req.file.path);
       return res.status(404).json({ error: 'Plantilla no encontrada' });
     }
 
     const { tipo, width, height, alignment } = req.body;
 
     if (!tipo || !['header', 'footer'].includes(tipo)) {
-      fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'Tipo de imagen inválido. Use "header" o "footer"' });
     }
 
@@ -354,21 +331,29 @@ router.post('/:id/imagen', authenticate, requireRole('MUNICIPALIDAD'), upload.si
     const existingIndex = template.imagenesDocumento.findIndex(img => img.tipo === tipo);
     if (existingIndex !== -1) {
       const oldImg = template.imagenesDocumento[existingIndex];
-      try {
-        const oldPath = `.${oldImg.url}`;
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      } catch (e) {
-        console.warn('No se pudo eliminar imagen anterior:', e.message);
+      if (oldImg.s3Key) {
+        await storageService.deleteDocument({ s3Key: oldImg.s3Key });
       }
       template.imagenesDocumento.splice(existingIndex, 1);
     }
 
-    // Agregar nueva imagen
+    // Subir a S3
+    const result = await storageService.storeFile(req.file.buffer, req.file.mimetype, {
+      organizationId: 'templates',
+      type: `estatuto-${tipo}`,
+      fileName: req.file.originalname
+    });
+
+    // Resolver URL para la respuesta
+    const imageUrl = result.s3Key
+      ? await storageService.getDocumentUrl({ s3Key: result.s3Key })
+      : result.data;
+
     template.imagenesDocumento.push({
       tipo,
-      url: `/uploads/estatutos/${req.file.filename}`,
+      s3Key: result.s3Key || null,
+      mimeType: req.file.mimetype,
+      url: imageUrl,
       fileName: req.file.originalname,
       width: width ? parseInt(width) : null,
       height: height ? parseInt(height) : null,
@@ -380,15 +365,12 @@ router.post('/:id/imagen', authenticate, requireRole('MUNICIPALIDAD'), upload.si
 
     res.json(template);
   } catch (error) {
-    if (req.file) {
-      try { fs.unlinkSync(req.file.path); } catch (e) {}
-    }
     console.error('Error al subir imagen:', error);
     res.status(500).json({ error: 'Error al subir imagen' });
   }
 });
 
-// DELETE /api/estatuto-templates/:id/imagen/:tipo - Eliminar imagen
+// DELETE /api/estatuto-templates/:id/imagen/:tipo - Eliminar imagen (S3)
 router.delete('/:id/imagen/:tipo', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const template = await EstatutoTemplate.findById(req.params.id);
@@ -399,13 +381,8 @@ router.delete('/:id/imagen/:tipo', authenticate, requireRole('MUNICIPALIDAD'), a
     const imgIndex = template.imagenesDocumento.findIndex(img => img.tipo === req.params.tipo);
     if (imgIndex !== -1) {
       const img = template.imagenesDocumento[imgIndex];
-      try {
-        const imgPath = `.${img.url}`;
-        if (fs.existsSync(imgPath)) {
-          fs.unlinkSync(imgPath);
-        }
-      } catch (e) {
-        console.warn('No se pudo eliminar archivo de imagen:', e.message);
+      if (img.s3Key) {
+        await storageService.deleteDocument({ s3Key: img.s3Key });
       }
       template.imagenesDocumento.splice(imgIndex, 1);
       template.modificadoPor = req.user._id;
