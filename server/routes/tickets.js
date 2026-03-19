@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 import { createTicketSchema, updateTicketStatusSchema } from '../middleware/validation.js';
 import Ticket from '../models/Ticket.js';
+import Organization from '../models/Organization.js';
 import AuditLog from '../models/AuditLog.js';
 
 const router = Router();
@@ -13,6 +14,31 @@ const router = Router();
 router.post('/', authenticate, validate(createTicketSchema), async (req, res) => {
   try {
     const { title, description, category, organizationId } = req.body;
+
+    // SEGURIDAD: Verificar que el usuario pertenece a la organización
+    if (req.user.role !== 'MUNICIPALIDAD') {
+      const org = await Organization.findById(organizationId).select('userId members provisionalDirectorio').lean();
+      if (!org) {
+        return res.status(404).json({ error: 'Organización no encontrada' });
+      }
+
+      const isOwner = org.userId?.toString() === req.user._id.toString();
+      const cleanRut = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      const userRut = cleanRut(req.user.rut);
+      const isMember = (org.members || []).some(m => cleanRut(m.rut) === userRut);
+      const prov = org.provisionalDirectorio;
+      const isDirectivo = prov && (
+        (prov.president && cleanRut(prov.president.rut) === userRut) ||
+        (prov.secretary && cleanRut(prov.secretary.rut) === userRut) ||
+        (prov.treasurer && cleanRut(prov.treasurer.rut) === userRut) ||
+        (prov.vicePresident && cleanRut(prov.vicePresident.rut) === userRut) ||
+        (prov.additionalMembers || []).some(m => m && cleanRut(m.rut) === userRut)
+      );
+
+      if (!isOwner && !isMember && !isDirectivo) {
+        return res.status(403).json({ error: 'No perteneces a esta organización' });
+      }
+    }
 
     const ticket = new Ticket({
       title,

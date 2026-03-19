@@ -4,6 +4,7 @@ import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
+import { useAuthStore } from '../../stores/authStore';
 import { validateRut, formatRut } from '../../utils/validators';
 import { localeDateString } from '../../utils/formatters';
 
@@ -24,6 +25,19 @@ function getMinMembers(orgType) {
   return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM;
 }
 
+function isDirectivoOfOrg(org, user) {
+  if (!user?.rut || !org?.provisionalDirectorio) return false;
+  const clean = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  const userRut = clean(user.rut);
+  const prov = org.provisionalDirectorio;
+  if (prov.president && clean(prov.president.rut) === userRut) return true;
+  if (prov.vicePresident && clean(prov.vicePresident.rut) === userRut) return true;
+  if (prov.secretary && clean(prov.secretary.rut) === userRut) return true;
+  if (prov.treasurer && clean(prov.treasurer.rut) === userRut) return true;
+  if (prov.additionalMembers?.some(m => m && clean(m.rut) === userRut)) return true;
+  return false;
+}
+
 export default function OrgMembers({ org, onRefresh }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
@@ -34,6 +48,10 @@ export default function OrgMembers({ org, onRefresh }) {
   const [deactivateReason, setDeactivateReason] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
+  const user = useAuthStore((s) => s.user);
+
+  // RBAC: solo owner, admin o directivo pueden editar miembros
+  const canEdit = user?.role === 'MUNICIPALIDAD' || org?.userId === user?._id || isDirectivoOfOrg(org, user);
 
   const members = org?.members || [];
   const activeCount = members.filter((m) => m.status !== 'inactive').length;
@@ -142,14 +160,14 @@ export default function OrgMembers({ org, onRefresh }) {
         return (
           <div className="r-btn-row" style={{ gap: 6 }}>
             <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
-            {!isInactive && <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>}
-            {!isInactive && <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>}
-            {isInactive ? (
+            {canEdit && !isInactive && <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>}
+            {canEdit && !isInactive && <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>}
+            {canEdit && (isInactive ? (
               <button onClick={() => handleReactivate(row)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#bfdbfe' }}>Reactivar</button>
             ) : (
               <button onClick={() => setDeactivateTarget(row)} style={{ ...actionBtnStyle, color: '#f59e0b', borderColor: '#fde68a' }}>Dar de Baja</button>
-            )}
-            <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>
+            ))}
+            {canEdit && <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>}
           </div>
         );
       }
@@ -208,9 +226,11 @@ export default function OrgMembers({ org, onRefresh }) {
           )}
           <input type="text" placeholder="Buscar por nombre o RUT..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="r-search" />
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowAdd(true)}>
-            + Agregar
-          </button>
+          {canEdit && (
+            <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowAdd(true)}>
+              + Agregar
+            </button>
+          )}
         </div>
       </div>
 

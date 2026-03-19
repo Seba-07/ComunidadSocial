@@ -4000,7 +4000,7 @@ router.post('/:id/members/:rut/deactivate', authenticate, validateObjectId(), as
 
     // Owner or MUNICIPALIDAD can deactivate
     const isOwner = organization.userId.toString() === req.userId.toString();
-    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'No autorizado' });
     }
@@ -4044,7 +4044,7 @@ router.post('/:id/members/:rut/reactivate', authenticate, validateObjectId(), as
     if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
 
     const isOwner = organization.userId.toString() === req.userId.toString();
-    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'No autorizado' });
     }
@@ -4074,7 +4074,7 @@ router.post('/:id/dissolve', authenticate, async (req, res) => {
 
     // Owner or MUNICIPALIDAD can dissolve
     const isOwner = organization.userId.toString() === req.userId.toString();
-    const isAdmin = req.userRole === 'MUNICIPALIDAD';
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: 'No autorizado para disolver esta organización' });
     }
@@ -4106,7 +4106,7 @@ router.post('/:id/dissolve', authenticate, async (req, res) => {
     AuditLog.logAction({
       userId: req.userId,
       userName: actorName,
-      userRole: req.userRole,
+      userRole: req.user.role,
       action: 'STATUS_CHANGE',
       resource: 'ORGANIZATION',
       resourceId: organization._id,
