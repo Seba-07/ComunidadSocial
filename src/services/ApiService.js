@@ -923,6 +923,28 @@ class ApiService {
     return this.get('/organization-types/grouped');
   }
 
+  async uploadEstatutoImage(templateId, file, tipo) {
+    const formData = new FormData();
+    formData.append('imagen', file);
+    formData.append('tipo', tipo);
+    const url = `${this.baseUrl}/estatuto-templates/${templateId}/imagen`;
+    const headers = { ...this.getHeaders() };
+    delete headers['Content-Type'];
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Error al subir imagen');
+    return data;
+  }
+
+  async deleteEstatutoImage(templateId, tipo) {
+    return this.delete(`/estatuto-templates/${templateId}/imagen/${tipo}`);
+  }
+
   async getEstatutoTemplateConfig(tipo) {
     return this.get(`/estatuto-templates/${tipo}/config`);
   }

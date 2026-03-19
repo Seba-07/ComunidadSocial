@@ -442,6 +442,7 @@ export default function EstatutosManagerView() {
             { key: 'directorio', label: 'Directorio' },
             { key: 'objetivos', label: 'Objetivos' },
             { key: 'config', label: 'Configuración' },
+            { key: 'diseno', label: 'Diseño' },
             { key: 'documentos', label: 'Documentos' },
             { key: 'preview', label: 'Vista Previa' }
           ]}
@@ -807,6 +808,14 @@ export default function EstatutosManagerView() {
                 </div>
               </div>
             </div>
+          )}
+
+          {editTab === 'diseno' && (
+            <EstatutoImageUploader
+              templateId={selectedTemplate._id}
+              imagenesDocumento={selectedTemplate.imagenesDocumento || []}
+              onUpdate={(updated) => setSelectedTemplate(updated)}
+            />
           )}
 
           {editTab === 'documentos' && (
@@ -1379,3 +1388,199 @@ const smallBtn = {
   padding: '6px 12px', border: '1px solid #d1d5db', borderRadius: 6,
   background: 'white', fontSize: 12, cursor: 'pointer', color: '#374151'
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Componente de subida de imágenes header/footer para estatutos
+// ═══════════════════════════════════════════════════════════════
+function EstatutoImageUploader({ templateId, imagenesDocumento, onUpdate }) {
+  const addToast = useUiStore(s => s.addToast);
+  const [uploading, setUploading] = useState(null); // 'header' | 'footer' | null
+  const [deleting, setDeleting] = useState(null);
+
+  const headerImg = imagenesDocumento.find(img => img.tipo === 'header');
+  const footerImg = imagenesDocumento.find(img => img.tipo === 'footer');
+
+  async function handleUpload(tipo, file) {
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      addToast('Formato no soportado. Use JPEG, PNG, GIF o WebP.', 'warning');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('La imagen no debe exceder 5MB', 'warning');
+      return;
+    }
+    try {
+      setUploading(tipo);
+      const updated = await apiService.uploadEstatutoImage(templateId, file, tipo);
+      onUpdate(updated);
+      addToast(`Imagen de ${tipo === 'header' ? 'cabecera' : 'pie de página'} subida`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  async function handleDelete(tipo) {
+    try {
+      setDeleting(tipo);
+      const updated = await apiService.deleteEstatutoImage(templateId, tipo);
+      onUpdate(updated);
+      addToast(`Imagen de ${tipo === 'header' ? 'cabecera' : 'pie de página'} eliminada`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>
+        Sube imágenes de cabecera y pie de página para los documentos PDF generados con este estatuto.
+        Formatos: JPEG, PNG, GIF, WebP. Máximo 5MB.
+      </p>
+
+      <ImageSlot
+        label="Imagen de Cabecera (Header)"
+        tipo="header"
+        image={headerImg}
+        uploading={uploading === 'header'}
+        deleting={deleting === 'header'}
+        onUpload={(file) => handleUpload('header', file)}
+        onDelete={() => handleDelete('header')}
+      />
+
+      <div style={{ height: 20 }} />
+
+      <ImageSlot
+        label="Imagen de Pie de Página (Footer)"
+        tipo="footer"
+        image={footerImg}
+        uploading={uploading === 'footer'}
+        deleting={deleting === 'footer'}
+        onUpload={(file) => handleUpload('footer', file)}
+        onDelete={() => handleDelete('footer')}
+      />
+    </div>
+  );
+}
+
+function ImageSlot({ label, tipo, image, uploading, deleting, onUpload, onDelete }) {
+  const fileRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const imageUrl = image?.url || image?.data || null;
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) onUpload(file);
+  }
+
+  return (
+    <div style={{
+      border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, background: 'white'
+    }}>
+      <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#111827' }}>{label}</h4>
+
+      {uploading ? (
+        <div style={{
+          height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', background: '#f9fafb', borderRadius: 8, gap: 8
+        }}>
+          <div style={{
+            width: 28, height: 28, border: '3px solid #e5e7eb', borderTopColor: '#2563eb',
+            borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+          }} />
+          <span style={{ fontSize: 13, color: '#6b7280' }}>Subiendo imagen...</span>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      ) : imageUrl ? (
+        <div>
+          <div style={{
+            background: '#f9fafb', borderRadius: 8, padding: 12,
+            display: 'flex', alignItems: 'center', gap: 16
+          }}>
+            <img
+              src={imageUrl}
+              alt={`${tipo} preview`}
+              style={{
+                maxWidth: 200, maxHeight: 100, objectFit: 'contain',
+                borderRadius: 6, border: '1px solid #e5e7eb'
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {image.fileName || `${tipo}.img`}
+              </p>
+              {image.width && image.height && (
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
+                  {image.width} x {image.height}px
+                </p>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              onClick={() => fileRef.current?.click()}
+              style={{
+                padding: '6px 14px', fontSize: 12, fontWeight: 500, border: '1px solid #d1d5db',
+                borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer'
+              }}
+            >
+              Reemplazar
+            </button>
+            <button
+              onClick={onDelete}
+              disabled={deleting}
+              style={{
+                padding: '6px 14px', fontSize: 12, fontWeight: 500, border: '1px solid #fecaca',
+                borderRadius: 6, background: '#fef2f2', color: '#dc2626', cursor: 'pointer',
+                opacity: deleting ? 0.6 : 1
+              }}
+            >
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+          style={{
+            height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 8,
+            border: `2px dashed ${dragOver ? '#2563eb' : '#d1d5db'}`,
+            borderRadius: 8, cursor: 'pointer',
+            background: dragOver ? '#eff6ff' : '#f9fafb',
+            transition: 'all 0.15s'
+          }}
+        >
+          <span style={{ fontSize: 28, opacity: 0.5 }}>🖼️</span>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>
+            Arrastra una imagen o <span style={{ color: '#2563eb', fontWeight: 600 }}>haz clic para seleccionar</span>
+          </span>
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>JPEG, PNG, GIF, WebP - máx 5MB</span>
+        </div>
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        style={{ display: 'none' }}
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = '';
+        }}
+      />
+    </div>
+  );
+}
