@@ -519,8 +519,14 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 </div>
               ))}
               {org.objectives && (
-                <div style={{ marginTop: 8 }}>
-                  <span style={{ fontWeight: 600, color: '#374151', fontSize: 14, display: 'block', marginBottom: 6 }}>Objetivos:</span>
+                <div style={{
+                  marginTop: 8, padding: isFieldFlagged('objectives') ? '8px 12px' : 0,
+                  background: isFieldFlagged('objectives') ? '#fef2f2' : 'transparent', borderRadius: 6,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontWeight: 600, color: '#374151', fontSize: 14 }}>Objetivos:</span>
+                    <FlagBtn field="objectives" label="Objetivos de la organización" tab="datos" value={org.objectives} />
+                  </div>
                   <ul style={{ margin: 0, paddingLeft: 20, color: '#6b7280', fontSize: 13, lineHeight: 1.8 }}>
                     {org.objectives.split('\n').filter(Boolean).map((obj, i) => (
                       <li key={i}>{obj}</li>
@@ -546,19 +552,24 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                         entrega_personal: 'Entrega personal',
                       };
                       const rows = [
-                        ['Cuota mensual', c.cuotaMin != null && c.cuotaMax != null ? `${prefix}${c.cuotaMin}${suffix} — ${prefix}${c.cuotaMax}${suffix}` : null],
-                        ['Cuota incorporación', c.cuotaIncorporacion != null ? `${prefix}${c.cuotaIncorporacion}${suffix}` : null],
-                        ['Duración mandato', c.duracionMandato ? `${c.duracionMandato} ${c.duracionMandato === 1 ? 'año' : 'años'}` : null],
-                        ['Método de citación', CITACION[c.metodoCitacion] || c.metodoCitacion],
-                        ['Días de anticipación', c.diasAnticipacion ? `${c.diasAnticipacion} días` : null],
-                        ['Asambleas ordinarias', (c.asambleas || []).length > 0 ? c.asambleas.join(', ') : null],
-                        ['Mes balance anual', c.accountReviewMonth],
-                        ['Entidad disolución', c.beneficiarioDisolucion ? `${c.beneficiarioDisolucion}${c.rutDisolucion ? ` (RUT: ${c.rutDisolucion})` : ''}` : null],
+                        ['Cuota mensual', c.cuotaMin != null && c.cuotaMax != null ? `${prefix}${c.cuotaMin}${suffix} — ${prefix}${c.cuotaMax}${suffix}` : null, 'config.cuotaMin'],
+                        ['Cuota incorporación', c.cuotaIncorporacion != null ? `${prefix}${c.cuotaIncorporacion}${suffix}` : null, 'config.cuotaIncorporacion'],
+                        ['Duración mandato', c.duracionMandato ? `${c.duracionMandato} ${c.duracionMandato === 1 ? 'año' : 'años'}` : null, 'config.duracionMandato'],
+                        ['Método de citación', CITACION[c.metodoCitacion] || c.metodoCitacion, 'config.metodoCitacion'],
+                        ['Días de anticipación', c.diasAnticipacion ? `${c.diasAnticipacion} días` : null, 'config.diasAnticipacion'],
+                        ['Asambleas ordinarias', (c.asambleas || []).length > 0 ? c.asambleas.join(', ') : null, 'config.asambleas'],
+                        ['Mes balance anual', c.accountReviewMonth, 'config.accountReviewMonth'],
+                        ['Entidad disolución', c.beneficiarioDisolucion ? `${c.beneficiarioDisolucion}${c.rutDisolucion ? ` (RUT: ${c.rutDisolucion})` : ''}` : null, 'config.beneficiarioDisolucion'],
                       ].filter(([, v]) => v);
-                      return rows.map(([label, value]) => (
-                        <div key={label} style={{ display: 'flex', gap: 12 }}>
+                      return rows.map(([label, value, field]) => (
+                        <div key={label} style={{
+                          display: 'flex', gap: 12, alignItems: 'center',
+                          background: field && isFieldFlagged(field) ? '#fef2f2' : 'transparent',
+                          padding: field && isFieldFlagged(field) ? '4px 8px' : 0, borderRadius: 6,
+                        }}>
                           <span style={{ fontWeight: 600, color: '#374151', minWidth: 160, fontSize: 13 }}>{label}:</span>
-                          <span style={{ color: '#6b7280', fontSize: 13 }}>{value}</span>
+                          <span style={{ color: '#6b7280', fontSize: 13, flex: 1 }}>{value}</span>
+                          {field && <FlagBtn field={field} label={label} tab="datos" value={value} />}
                         </div>
                       ));
                     })()}
@@ -853,9 +864,12 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                     })();
                     const comAge = calculateAge(bd);
                     const comMinor = comAge !== null && comAge < 18;
+                    const comField = `electoralCommission.${i}`;
                     return (
                       <div key={m.rut || i} style={{
-                        padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: comMinor ? '#fef3c7' : '#f0f9ff',
+                        padding: 12, borderRadius: 8,
+                        border: isFieldFlagged(comField) ? '2px solid #fca5a5' : '1px solid #e5e7eb',
+                        background: isFieldFlagged(comField) ? '#fef2f2' : comMinor ? '#fef3c7' : '#f0f9ff',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
                       }}>
                         <div>
@@ -867,9 +881,12 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                             </span>
                           )}
                         </div>
-                        <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
-                          Miembro {i + 1}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
+                            Miembro {i + 1}
+                          </span>
+                          <FlagBtn field={comField} label={`Comisión Electoral: ${formatName(m)} (${m.rut})`} tab="directorio" value={`${formatName(m)} — ${m.rut}`} />
+                        </div>
                       </div>
                     );
                   })}
@@ -886,7 +903,7 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               </h4>
               {generatedDocs.length > 0 ? (
                 <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
-                  {generatedDocs.map((doc, i) => {
+                  {(() => {
                     const DOC_LABELS = {
                       acta_constitutiva: 'Acta Constitutiva',
                       lista_socios: 'Lista de Socios Fundadores',
@@ -894,57 +911,57 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                       carta_solicitud: 'Carta de Solicitud',
                       declaracion_jurada: 'Declaración Jurada',
                     };
-                    return (
-                      <div key={i} style={{
-                        padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
-                              {DOC_LABELS[doc.docType] || doc.docType?.replace(/_/g, ' ') || 'Documento'}
+                    return generatedDocs.map((doc, i) => {
+                      const docField = `generatedDoc.${doc.docType || i}`;
+                      const docLabel = DOC_LABELS[doc.docType] || doc.docType?.replace(/_/g, ' ') || 'Documento';
+                      return (
+                        <div key={i} style={{
+                          padding: 12, borderRadius: 8,
+                          border: isFieldFlagged(docField) ? '2px solid #fca5a5' : '1px solid #e5e7eb',
+                          background: isFieldFlagged(docField) ? '#fef2f2' : '#f9fafb',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{docLabel}</div>
+                              {doc.generatedAt && (
+                                <div style={{ fontSize: 11, color: '#9ca3af' }}>Generado: {localeDateString(doc.generatedAt)}</div>
+                              )}
                             </div>
-                            {doc.generatedAt && (
-                              <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                                Generado: {localeDateString(doc.generatedAt)}
-                              </div>
-                            )}
                           </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={() => {
-                            if (!doc.content) return;
-                            if (doc.content.startsWith('data:application/pdf')) {
-                              try {
-                                const base64 = doc.content.split(',')[1] || doc.content.split('base64,')[1];
-                                const byteChars = atob(base64);
-                                const byteArray = new Uint8Array(byteChars.length);
-                                for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-                                const blob = new Blob([byteArray], { type: 'application/pdf' });
-                                window.open(URL.createObjectURL(blob), '_blank');
-                              } catch { window.open(doc.content, '_blank'); }
-                            } else {
-                              const w = window.open('', '_blank');
-                              if (w) { w.document.write(doc.content); w.document.close(); }
-                            }
-                          }} style={{
-                            padding: '5px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
-                            border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer',
-                          }}>Ver</button>
-                          {doc.content?.startsWith('data:application/pdf') && (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <button onClick={() => {
-                              const label = DOC_LABELS[doc.docType] || 'Documento';
-                              downloadBase64(doc.content, `${label}_${orgName.replace(/\s+/g, '_')}.pdf`);
+                              if (!doc.content) return;
+                              if (doc.content.startsWith('data:application/pdf')) {
+                                try {
+                                  const base64 = doc.content.split(',')[1] || doc.content.split('base64,')[1];
+                                  const byteChars = atob(base64);
+                                  const byteArray = new Uint8Array(byteChars.length);
+                                  for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                                  const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                  window.open(URL.createObjectURL(blob), '_blank');
+                                } catch { window.open(doc.content, '_blank'); }
+                              } else {
+                                const w = window.open('', '_blank');
+                                if (w) { w.document.write(doc.content); w.document.close(); }
+                              }
                             }} style={{
                               padding: '5px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
-                              border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer',
-                            }}>Descargar</button>
-                          )}
+                              border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer',
+                            }}>Ver</button>
+                            {doc.content?.startsWith('data:application/pdf') && (
+                              <button onClick={() => downloadBase64(doc.content, `${docLabel}_${orgName.replace(/\s+/g, '_')}.pdf`)} style={{
+                                padding: '5px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                                border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer',
+                              }}>Descargar</button>
+                            )}
+                            <FlagBtn field={docField} label={`Documento: ${docLabel}`} tab="documentos" value="PDF generado" />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <div style={{ padding: 12, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 20, fontSize: 13, color: '#92400e' }}>
@@ -953,12 +970,20 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               )}
 
               {/* Estatutos (compilados — leer desde estatutosGeneratedText si existe, sino snapshot) */}
-              <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, margin: '0 0 10px' }}>
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
+                <FlagBtn field="estatutos" label="Estatutos de la organización" tab="documentos" value="Documento de estatutos" />
+              </div>
               {org.estatutosGeneratedText ? (
-                <div style={{ marginBottom: 16 }}>
+                <div style={{
+                  marginBottom: 16,
+                  border: isFieldFlagged('estatutos') ? '2px solid #fca5a5' : 'none',
+                  borderRadius: 8,
+                }}>
                   <div style={{
-                    padding: 14, border: '1px solid #e5e7eb', borderRadius: 8,
-                    background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: 14, border: isFieldFlagged('estatutos') ? 'none' : '1px solid #e5e7eb', borderRadius: 8,
+                    background: isFieldFlagged('estatutos') ? '#fef2f2' : '#fafafa',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   }}>
                     <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Estatutos compilados (con datos reales)</span>
                     <button onClick={() => {
