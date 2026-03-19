@@ -1,57 +1,113 @@
-export default function ValidateDirectorio({ wizardData, updateWizardData, org, onNext }) {
+const SKIP_KEYS = new Set([
+  'type', '_id', '__v', 'additionalMembers', 'designatedAt',
+  'members', 'createdAt', 'updatedAt'
+]);
+
+const CARGO_LABELS = {
+  president: 'Presidente/a', presidente: 'Presidente/a',
+  vicePresident: 'Vicepresidente/a', vicepresidente: 'Vicepresidente/a',
+  secretary: 'Secretario/a', secretario: 'Secretario/a',
+  treasurer: 'Tesorero/a', tesorero: 'Tesorero/a',
+};
+
+function formatName(p) {
+  if (!p || typeof p !== 'object') return String(p || '');
+  return [p.firstName, p.lastName].filter(Boolean).join(' ') || p.name || '';
+}
+
+export default function ValidateDirectorio({ wizardData, updateWizardData, org, onNext, onPrev }) {
   const directorio = wizardData.directorio || {};
-  const members = directorio.members || Object.entries(directorio)
-    .filter(([k]) => !['type', '_id'].includes(k))
-    .map(([cargo, data]) => ({
-      cargo,
-      ...(typeof data === 'object' ? data : {}),
-      name: typeof data === 'object'
-        ? `${data.firstName || data.name || ''} ${data.lastName || ''}`.trim()
-        : String(data)
-    }));
+
+  // Build flat list of directors from the nested object structure
+  const members = (() => {
+    const list = [];
+    // Standard cargo keys
+    for (const [key, value] of Object.entries(directorio)) {
+      if (SKIP_KEYS.has(key)) continue;
+      if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+      if (!value.rut && !value.firstName) continue;
+      list.push({
+        key,
+        cargo: CARGO_LABELS[key] || value.cargoNombre || value.cargo || key,
+        ...value,
+        name: formatName(value),
+        validated: value.validated || false,
+      });
+    }
+    // Additional members
+    if (Array.isArray(directorio.additionalMembers)) {
+      directorio.additionalMembers.forEach((m, i) => {
+        if (!m || typeof m !== 'object' || (!m.rut && !m.firstName)) return;
+        list.push({
+          key: `additional_${i}`,
+          cargo: m.cargoNombre || m.cargo || `Director/a ${i + 1}`,
+          ...m,
+          name: formatName(m),
+          validated: m.validated || false,
+        });
+      });
+    }
+    return list;
+  })();
 
   function toggleValidated(idx) {
-    const updated = [...members];
-    updated[idx] = { ...updated[idx], validated: !updated[idx].validated };
-    updateWizardData({ directorio: { ...directorio, members: updated } });
+    const member = members[idx];
+    if (!member) return;
+
+    // Update the validated flag in the original directorio structure
+    const updatedDir = { ...directorio };
+    if (member.key.startsWith('additional_')) {
+      const addIdx = parseInt(member.key.split('_')[1]);
+      const updatedAdd = [...(updatedDir.additionalMembers || [])];
+      updatedAdd[addIdx] = { ...updatedAdd[addIdx], validated: !member.validated };
+      updatedDir.additionalMembers = updatedAdd;
+    } else {
+      updatedDir[member.key] = { ...updatedDir[member.key], validated: !member.validated };
+    }
+    updateWizardData({ directorio: updatedDir });
   }
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: 700, color: '#111827' }}>
         Verificar Directorio Provisorio
       </h2>
-      <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280' }}>
-        Verifica la identidad de cada miembro del directorio.
+      <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280' }}>
+        Verifique la cedula de identidad de cada miembro del directorio.
       </p>
 
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: 'grid', gap: 10 }}>
         {members.map((m, i) => (
-          <div key={i} style={{
-            padding: 16, border: '1px solid #e5e7eb', borderRadius: 10,
-            background: m.validated ? '#f0fdf4' : 'white',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            flexWrap: 'wrap', gap: 8
-          }}>
+          <div
+            key={m.key}
+            onClick={() => toggleValidated(i)}
+            style={{
+              padding: 'clamp(12px, 3vw, 16px)', borderRadius: 10, cursor: 'pointer',
+              border: `2px solid ${m.validated ? '#10b981' : '#e5e7eb'}`,
+              background: m.validated ? '#f0fdf4' : 'white',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 8, minHeight: 52,
+              touchAction: 'manipulation', transition: 'border-color 0.15s, background 0.15s',
+            }}
+          >
             <div>
-              <span style={{ fontWeight: 600, fontSize: 14, color: '#111827', textTransform: 'capitalize' }}>
-                {m.cargo || 'Miembro'}
+              <span style={{ fontWeight: 600, fontSize: 'clamp(13px, 3vw, 14px)', color: '#2563eb', display: 'block', marginBottom: 2 }}>
+                {m.cargo}
               </span>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                {m.name || m.firstName || ''} {m.lastName || ''} - {m.rut || ''}
-              </p>
+              <span style={{ fontSize: 'clamp(13px, 3vw, 14px)', color: '#111827' }}>
+                {m.name} — {m.rut || '—'}
+              </span>
             </div>
-            <button
-              onClick={() => toggleValidated(i)}
-              style={{
-                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: m.validated ? '1px solid #10b981' : '1px solid #d1d5db',
-                background: m.validated ? '#10b981' : 'white',
-                color: m.validated ? 'white' : '#374151'
-              }}
-            >
-              {m.validated ? 'Verificado' : 'Verificar'}
-            </button>
+            <div style={{
+              width: 'clamp(32px, 7vw, 40px)', height: 'clamp(32px, 7vw, 40px)',
+              borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 'clamp(16px, 4vw, 20px)', flexShrink: 0,
+              background: m.validated ? '#10b981' : '#f3f4f6',
+              color: m.validated ? 'white' : '#d1d5db',
+              transition: 'background 0.15s',
+            }}>
+              {m.validated ? '\u2713' : ''}
+            </div>
           </div>
         ))}
       </div>
@@ -60,11 +116,13 @@ export default function ValidateDirectorio({ wizardData, updateWizardData, org, 
         <p style={{ color: '#6b7280', textAlign: 'center', padding: 20 }}>Sin directorio provisorio</p>
       )}
 
-      <div className="r-btn-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
+        <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={onNext} style={nextBtn}>Siguiente</button>
       </div>
     </div>
   );
 }
 
-const nextBtn = { padding: '12px 28px', border: 'none', borderRadius: 10, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' };
+const prevBtn = { padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px)', border: '1px solid #d1d5db', borderRadius: 10, background: 'white', fontSize: 'clamp(14px, 3vw, 15px)', cursor: 'pointer', color: '#374151' };
+const nextBtn = { padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px)', border: 'none', borderRadius: 10, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', fontSize: 'clamp(14px, 3vw, 15px)', fontWeight: 600, cursor: 'pointer' };
