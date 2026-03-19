@@ -1664,6 +1664,56 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
         </Modal>
       )}
 
+      {/* Reschedule modal */}
+      {showReschedule && (
+        <Modal open onClose={() => setShowReschedule(false)} title="Reprogramar Asamblea">
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Nueva fecha</label>
+              <input type="date" value={rescheduleData.date}
+                onChange={e => setRescheduleData(d => ({ ...d, date: e.target.value }))}
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Nueva hora</label>
+              <input type="time" value={rescheduleData.time}
+                onChange={e => setRescheduleData(d => ({ ...d, time: e.target.value }))}
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Motivo (opcional)</label>
+              <input type="text" value={rescheduleData.reason}
+                onChange={e => setRescheduleData(d => ({ ...d, reason: e.target.value }))}
+                placeholder="Ej: Solicitud del dirigente, emergencia climática..."
+                style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button onClick={() => setShowReschedule(false)} style={actionBtn('#6b7280')}>Cancelar</button>
+            <button
+              disabled={!rescheduleData.date || !rescheduleData.time || isActioning}
+              onClick={async () => {
+                setIsActioning(true);
+                try {
+                  await apiService.rescheduleByOrg(org._id, rescheduleData.date, rescheduleData.time, rescheduleData.reason);
+                  addToast('Asamblea reprogramada. Se notificó al Ministro y al dirigente.', 'success');
+                  setShowReschedule(false);
+                  const updated = await refreshOrganization(org._id);
+                  if (updated) setOrg(updated);
+                } catch (err) {
+                  addToast(err.message || 'Error al reprogramar', 'error');
+                } finally {
+                  setIsActioning(false);
+                }
+              }}
+              style={actionBtn('#f59e0b')}
+            >
+              {isActioning ? 'Reprogramando...' : 'Confirmar Reprogramacion'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Flagging popover — appears when clicking "+ Observar" */}
       {flaggingField && (
         <div onClick={e => { if (e.target === e.currentTarget) setFlaggingField(null); }}
