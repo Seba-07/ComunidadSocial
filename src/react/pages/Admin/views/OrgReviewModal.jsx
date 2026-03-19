@@ -633,10 +633,10 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['N°', 'Nombre', 'RUT', 'Edad', 'Email', 'Teléfono'].map(h => (
-                        <th key={h} className={h === 'Email' || h === 'Teléfono' ? 'r-hide-mobile' : undefined} style={{
+                      {['N°', 'Nombre', 'RUT', 'F. Nacimiento', 'Edad', 'Domicilio', 'Email', 'Teléfono'].map(h => (
+                        <th key={h} className={h === 'Email' || h === 'Teléfono' || h === 'F. Nacimiento' ? 'r-hide-mobile' : undefined} style={{
                           padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #e5e7eb',
-                          fontSize: 12, fontWeight: 600, color: '#374151'
+                          fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap'
                         }}>{h}</th>
                       ))}
                     </tr>
@@ -651,20 +651,22 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                           background: isMinor ? '#fef3c7' : 'transparent',
                         }}>
                           <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{i + 1}</td>
-                          <td style={{ padding: '8px 10px', fontSize: 13 }}>
-                            {formatName(m)}
-                          </td>
+                          <td style={{ padding: '8px 10px', fontSize: 13 }}>{formatName(m)}</td>
                           <td style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.rut || '—'}</td>
+                          <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>
+                            {m.birthDate ? new Date(m.birthDate).toLocaleDateString('es-CL') : '—'}
+                          </td>
                           <td style={{ padding: '8px 10px', fontSize: 13 }}>
                             {age !== null ? (
                               <span style={{
                                 color: isMinor ? '#d97706' : '#374151',
-                                fontWeight: isMinor ? 600 : 400,
+                                fontWeight: isMinor ? 600 : 400, whiteSpace: 'nowrap',
                               }}>
-                                {age} años{isMinor ? ' (menor)' : ''}
+                                {age}{isMinor ? ' (menor)' : ''}
                               </span>
                             ) : '—'}
                           </td>
+                          <td style={{ padding: '8px 10px', fontSize: 12, color: '#6b7280', maxWidth: 180 }}>{m.address || '—'}</td>
                           <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.email || '—'}</td>
                           <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.phone || '—'}</td>
                         </tr>
@@ -680,6 +682,15 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             <div style={{ display: 'grid', gap: 12 }}>
               {cargoEntries.length > 0 ? cargoEntries.map(({ key, label, person }) => {
                 const cert = getCertForMember(person.rut, person.firstName);
+                // Cross-reference birthDate from members array if not on person directly
+                const birthDate = person.birthDate || (() => {
+                  if (!person.rut) return null;
+                  const normRut = person.rut.replace(/\./g, '').replace(/-/g, '');
+                  const match = members.find(m => m.rut && m.rut.replace(/\./g, '').replace(/-/g, '') === normRut);
+                  return match?.birthDate || null;
+                })();
+                const age = calculateAge(birthDate);
+                const isMinor = age !== null && age < 18;
                 return (
                   <div key={key} style={{
                     padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
@@ -690,12 +701,11 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                       <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
                         {formatName(person)} — {person.rut || '—'}
                       </div>
-                      {person.birthDate && (() => {
-                        const age = calculateAge(person.birthDate);
-                        return age !== null ? (
-                          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Edad: {age} años</div>
-                        ) : null;
-                      })()}
+                      {age !== null && (
+                        <div style={{ fontSize: 12, color: isMinor ? '#d97706' : '#6b7280', fontWeight: isMinor ? 600 : 400, marginTop: 2 }}>
+                          Edad: {age} años{isMinor ? ' (menor de edad)' : ''}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {cert ? (
@@ -742,20 +752,35 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                   <h4 style={{ margin: '16px 0 4px', fontSize: 14, fontWeight: 600, color: '#111827' }}>
                     Comisión Electoral ({electoralCommission.length})
                   </h4>
-                  {electoralCommission.map((m, i) => (
-                    <div key={m.rut || i} style={{
-                      padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f0f9ff',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
-                    }}>
-                      <div>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
-                        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+                  {electoralCommission.map((m, i) => {
+                    const bd = m.birthDate || (() => {
+                      if (!m.rut) return null;
+                      const normRut = m.rut.replace(/\./g, '').replace(/-/g, '');
+                      const match = members.find(mb => mb.rut && mb.rut.replace(/\./g, '').replace(/-/g, '') === normRut);
+                      return match?.birthDate || null;
+                    })();
+                    const comAge = calculateAge(bd);
+                    const comMinor = comAge !== null && comAge < 18;
+                    return (
+                      <div key={m.rut || i} style={{
+                        padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: comMinor ? '#fef3c7' : '#f0f9ff',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                      }}>
+                        <div>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>{formatName(m)}</span>
+                          <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{m.rut || ''}</span>
+                          {comAge !== null && (
+                            <span style={{ fontSize: 12, color: comMinor ? '#d97706' : '#6b7280', marginLeft: 8, fontWeight: comMinor ? 600 : 400 }}>
+                              ({comAge} años{comMinor ? ' - menor' : ''})
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
+                          Miembro {i + 1}
+                        </span>
                       </div>
-                      <span style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, background: '#dbeafe', padding: '3px 8px', borderRadius: 4 }}>
-                        Miembro {i + 1}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </div>
@@ -1307,6 +1332,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
           padding: '16px 24px', borderTop: '1px solid #e5e7eb',
           display: 'flex', gap: 8, flexWrap: 'wrap'
         }}>
+          {/* Pre-asamblea: revisión y agendamiento */}
           {(org.status === 'waiting_ministro' || org.status === 'pending_review' || org.status === 'in_review') && (
             <>
               {org.status === 'pending_review' && (
@@ -1321,12 +1347,16 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
           )}
+          {/* Post-asamblea: flujo FEA — solo acciones de aprobación */}
           {org.status === 'ministro_approved' && (
             <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
               style={actionBtn('#6366f1')}>Enviar al Registro</button>
           )}
           {(org.status === 'ministro_approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
-            <button onClick={() => setTab('aprobar')} style={actionBtn('#10b981')}>
+            <button onClick={() => setTab('aprobar')} style={{
+              ...actionBtn('#10b981'),
+              padding: '10px 24px', fontSize: 14,
+            }}>
               Aprobar con Certificado FEA
             </button>
           )}
