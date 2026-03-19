@@ -681,7 +681,7 @@ async function rescheduleHandler(req, res) {
     if (!assignment) return res.status(404).json({ error: 'Asignacion no encontrada' });
 
     if (assignment.status !== 'pending') {
-      return res.status(400).json({ error: 'Solo se pueden reprogramar asignaciones pendientes' });
+      return res.status(400).json({ error: `Solo se pueden reprogramar asignaciones pendientes (estado actual: ${assignment.status})` });
     }
 
     const { newDate, newTime, reason } = req.body;
@@ -698,60 +698,59 @@ async function rescheduleHandler(req, res) {
     assignment.lastEditedAt = new Date();
     await assignment.save();
 
-    // Sync with Organization.ministroData
-    const organization = await Organization.findById(assignment.organizationId);
-    if (organization) {
-      if (organization.ministroData) {
-        organization.ministroData.scheduledDate = new Date(newDate);
-        organization.ministroData.scheduledTime = newTime;
-      }
-      // Track change in appointmentChanges
-      if (!organization.appointmentChanges) organization.appointmentChanges = [];
-      organization.appointmentChanges.push({
-        changedAt: new Date(),
-        changedBy: req.userId,
-        previousData: { scheduledDate: previousDate, scheduledTime: previousTime },
-        newData: { scheduledDate: new Date(newDate), scheduledTime: newTime },
-        reason: reason || 'Reprogramación por Secretaría Municipal',
-      });
-      organization.appointmentWasModified = true;
-      organization.markModified('ministroData');
-      organization.markModified('appointmentChanges');
-      await organization.save();
+    // Sync with Organization.ministroData (non-blocking errors)
+    try {
+      const organization = await Organization.findById(assignment.organizationId);
+      if (organization) {
+        if (organization.ministroData) {
+          organization.ministroData.scheduledDate = new Date(newDate);
+          organization.ministroData.scheduledTime = newTime;
+          organization.markModified('ministroData');
+        }
 
-      // Sync with linked Assembly if exists
-      if (assignment.assemblyId) {
-        await Assembly.findByIdAndUpdate(assignment.assemblyId, {
-          date: new Date(newDate),
-          time: newTime,
+        // Track change
+        if (!organization.appointmentChanges) organization.appointmentChanges = [];
+        organization.appointmentChanges.push({
+          changedAt: new Date(),
+          previousData: { scheduledDate: previousDate, scheduledTime: previousTime },
+          newData: { scheduledDate: new Date(newDate), scheduledTime: newTime },
+          reason: reason || 'Reprogramacion por Secretaria Municipal',
         });
-      }
+        organization.appointmentWasModified = true;
+        organization.markModified('appointmentChanges');
+        await organization.save();
 
-      // Notify Ministro de Fe
-      await Notification.create({
-        userId: assignment.ministroId,
-        type: 'assignment_rescheduled',
-        title: 'Asamblea reprogramada',
-        message: `La asamblea de "${assignment.organizationName}" ha sido reprogramada para el ${new Date(newDate).toLocaleDateString('es-CL')} a las ${newTime}.`,
-        organizationId: assignment.organizationId,
-        data: { assignmentId: assignment._id, previousDate, previousTime, newDate, newTime },
-      });
+        // Sync linked Assembly
+        if (assignment.assemblyId) {
+          await Assembly.findByIdAndUpdate(assignment.assemblyId, { date: new Date(newDate), time: newTime }).catch(() => {});
+        }
 
-      // Notify organization owner (dirigente)
-      if (organization.userId) {
-        await Notification.create({
-          userId: organization.userId,
-          type: 'assignment_rescheduled',
+        // Notifications (non-blocking)
+        const dateLabel = new Date(newDate).toLocaleDateString('es-CL');
+        Notification.create({
+          userId: assignment.ministroId,
+          type: 'status_change',
           title: 'Asamblea reprogramada',
-          message: `El municipio ha reprogramado su asamblea con Ministro de Fe para el ${new Date(newDate).toLocaleDateString('es-CL')} a las ${newTime}.`,
-          organizationId: organization._id,
-          data: { assignmentId: assignment._id, newDate, newTime },
-        });
+          message: `La asamblea de "${assignment.organizationName}" fue reprogramada para el ${dateLabel} a las ${newTime}.`,
+          organizationId: assignment.organizationId,
+        }).catch(e => console.warn('Notification MF error:', e.message));
+
+        if (organization.userId) {
+          Notification.create({
+            userId: organization.userId,
+            type: 'status_change',
+            title: 'Asamblea reprogramada',
+            message: `El municipio reprogramo su asamblea con Ministro de Fe para el ${dateLabel} a las ${newTime}.`,
+            organizationId: organization._id,
+          }).catch(e => console.warn('Notification owner error:', e.message));
+        }
       }
+    } catch (syncErr) {
+      console.warn('Reschedule sync warning (assignment updated OK):', syncErr.message);
     }
 
     res.json({
-      message: 'Asignación reprogramada exitosamente',
+      message: 'Asignacion reprogramada exitosamente',
       assignment: {
         _id: assignment._id,
         scheduledDate: assignment.scheduledDate,
@@ -760,7 +759,7 @@ async function rescheduleHandler(req, res) {
     });
   } catch (error) {
     console.error('Reschedule assignment error:', error);
-    res.status(500).json({ error: 'Error al reprogramar asignacion' });
+    res.status(500).json({ error: `Error al reprogramar: ${error.message}` });
   }
 }
 
