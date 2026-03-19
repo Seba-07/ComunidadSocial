@@ -58,7 +58,12 @@ export default function ValidationWizard({ assignment, org: preloadedOrg, onClos
 
   function initFromOrg(orgData) {
     const dir = orgData.provisionalDirectorio || {};
-    const com = orgData.comisionElectoral?.members || orgData.comisionElectoral || [];
+    // Try all possible formats: electoralCommission (EN), comisionElectoral (ES), .members nested
+    const rawCom = orgData.electoralCommission
+      || orgData.comisionElectoral?.members
+      || orgData.comisionElectoral
+      || [];
+    const com = Array.isArray(rawCom) ? rawCom : (rawCom.members || []);
     const members = orgData.members || [];
 
     setWizardData(d => ({
