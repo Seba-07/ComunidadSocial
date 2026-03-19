@@ -4424,4 +4424,61 @@ router.post('/:id/elections/reject', authenticate, requireRole('MUNICIPALIDAD'),
   }
 });
 
+/**
+ * POST /api/organizations/:id/elections/impugn
+ * Municipalidad impugna una elección: congela el proceso electoral (Ley 19.418).
+ * Solo MUNICIPALIDAD puede ejecutar esta acción.
+ */
+router.post('/:id/elections/impugn', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    // Solo se puede impugnar si hay un proceso electoral activo o pendiente de validación
+    const impugnableStatuses = new Set(['EN_PROCESO_ELECTORAL', 'PENDIENTE_VALIDACION']);
+    if (!impugnableStatuses.has(organization.boardStatus)) {
+      return res.status(400).json({
+        error: 'Solo se puede impugnar una elección en curso o pendiente de validación',
+        currentStatus: organization.boardStatus
+      });
+    }
+
+    const { reason } = req.body;
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ error: 'Debe proporcionar un motivo de impugnación (mínimo 10 caracteres)' });
+    }
+
+    const previousStatus = organization.boardStatus;
+    organization.boardStatus = 'ELECCION_IMPUGNADA';
+    await organization.save();
+
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE', resource: 'ORGANIZATION',
+      resourceId: organization._id, resourceName: organization.organizationName,
+      detail: `Impugnó proceso electoral: ${reason.trim()}`,
+      details: { type: 'election_impugned', previousStatus, reason: reason.trim() },
+      ipAddress: req.ip
+    });
+
+    await Notification.create({
+      userId: organization.userId,
+      type: 'election_impugned',
+      title: 'Elección impugnada',
+      message: `La municipalidad ha impugnado el proceso electoral. Motivo: ${reason.trim()}`,
+      organizationId: organization._id
+    });
+
+    res.json({
+      message: 'Elección impugnada exitosamente. El proceso electoral queda congelado.',
+      boardStatus: 'ELECCION_IMPUGNADA'
+    });
+  } catch (error) {
+    console.error('Impugn election error:', error);
+    res.status(500).json({ error: 'Error al impugnar elección' });
+  }
+});
+
 export default router;

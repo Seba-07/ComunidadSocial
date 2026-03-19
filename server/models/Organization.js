@@ -592,7 +592,7 @@ const organizationSchema = new mongoose.Schema({
   },
   boardStatus: {
     type: String,
-    enum: ['VIGENTE', 'EN_PROCESO_ELECTORAL', 'PENDIENTE_VALIDACION', 'VENCIDA'],
+    enum: ['VIGENTE', 'EN_PROCESO_ELECTORAL', 'PENDIENTE_VALIDACION', 'VENCIDA', 'ELECCION_IMPUGNADA'],
     default: 'VIGENTE'
   },
   // Documento del TRICEL (acta de comisión electoral)

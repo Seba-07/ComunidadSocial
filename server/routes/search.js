@@ -50,13 +50,12 @@ router.get('/', authenticate, async (req, res) => {
 
     // Buscar en Organizaciones
     if (searchAll || type === 'organizations') {
-      results.organizations = await Organization.find({
-        $or: [
-          { organizationName: regex },
-          { 'members.firstName': regex },
-          { 'members.lastName': regex }
-        ]
-      })
+      // Non-admin users: search only by org name (no member name search to prevent data leaks)
+      const orgQuery = req.user.role === 'MUNICIPALIDAD'
+        ? { $or: [{ organizationName: regex }, { 'members.firstName': regex }, { 'members.lastName': regex }] }
+        : { organizationName: regex };
+
+      results.organizations = await Organization.find(orgQuery)
         .select('organizationName organizationType status createdAt')
         .limit(10)
         .lean();
@@ -64,19 +63,18 @@ router.get('/', authenticate, async (req, res) => {
 
     // Buscar en Usuarios
     if (searchAll || type === 'users') {
-      results.users = await User.find({
-        $or: [
-          { firstName: regex },
-          { lastName: regex },
-          { email: regex }
-        ]
-      })
-        .select('firstName lastName email role')
+      // Non-admin users: search only by name, not by email
+      const userQuery = req.user.role === 'MUNICIPALIDAD'
+        ? { $or: [{ firstName: regex }, { lastName: regex }, { email: regex }] }
+        : { $or: [{ firstName: regex }, { lastName: regex }] };
+
+      results.users = await User.find(userQuery)
+        .select(req.user.role === 'MUNICIPALIDAD' ? 'firstName lastName email role' : 'firstName lastName role')
         .limit(10)
         .lean();
       // Mask emails for non-admin users
       if (req.user.role !== 'MUNICIPALIDAD') {
-        results.users.forEach(u => { u.email = maskEmail(u.email); });
+        results.users.forEach(u => { u.email = undefined; });
       }
     }
 

@@ -335,6 +335,14 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
     if (!form.firstName || form.firstName.length < 2) errs.firstName = 'Nombre requerido';
     if (!form.lastName || form.lastName.length < 2) errs.lastName = 'Apellido requerido';
     if (!isEdit && !validateRut(form.rut)) errs.rut = 'RUT inválido';
+    if (!form.birthDate) {
+      errs.birthDate = 'Fecha de nacimiento es requerida';
+    } else {
+      const age = calcAge(form.birthDate);
+      if (age !== null && age < 14) {
+        errs.birthDate = 'Por Ley 19.418, el socio debe tener al menos 14 años de edad';
+      }
+    }
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -382,7 +390,7 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
         <FormField label="Nombre *" id="m-fname" type="text" placeholder="Juan" value={form.firstName} onChange={set('firstName')} error={errors.firstName} />
         <FormField label="Apellido *" id="m-lname" type="text" placeholder="Pérez" value={form.lastName} onChange={set('lastName')} error={errors.lastName} />
         {!isEdit && <FormField label="RUT *" id="m-rut" type="text" placeholder="12.345.678-9" value={form.rut} onChange={set('rut')} error={errors.rut} />}
-        <FormField label="Fecha de Nacimiento" id="m-birth" type="date" value={form.birthDate} onChange={set('birthDate')} />
+        <FormField label="Fecha de Nacimiento *" id="m-birth" type="date" value={form.birthDate} onChange={set('birthDate')} error={errors.birthDate} />
         <FormField label="Teléfono" id="m-phone" type="tel" placeholder="+56 9 1234 5678" value={form.phone} onChange={set('phone')} />
         <FormField label="Email" id="m-email" type="email" placeholder="juan@email.cl" value={form.email} onChange={set('email')} />
         <FormField label="Dirección" id="m-address" type="text" placeholder="Calle 123" value={form.address} onChange={set('address')} />

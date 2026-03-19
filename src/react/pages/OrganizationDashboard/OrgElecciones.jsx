@@ -8,6 +8,7 @@ const STATUS_CONFIG = {
   EN_PROCESO_ELECTORAL: { label: 'En Proceso Electoral', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: '🗳️' },
   PENDIENTE_VALIDACION: { label: 'Pendiente de Validación', color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd', icon: '⏳' },
   VENCIDA: { label: 'Vencida', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: '⚠️' },
+  ELECCION_IMPUGNADA: { label: 'Elección Impugnada', color: '#991b1b', bg: '#fef2f2', border: '#fca5a5', icon: '🚫' },
 };
 
 function formatDate(d) {
@@ -151,6 +152,18 @@ export default function OrgElecciones({ org, onRefresh }) {
               <div><span style={{ color: '#6b7280' }}>Acta TRICEL: </span><span style={{ fontWeight: 500 }}>{electionData.tricelDocument.fileName}</span></div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Impugned election banner */}
+      {status === 'ELECCION_IMPUGNADA' && (
+        <div style={{ background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#991b1b', margin: '0 0 8px' }}>
+            Proceso Electoral Congelado
+          </h3>
+          <p style={{ margin: 0, fontSize: 14, color: '#991b1b', lineHeight: 1.5 }}>
+            La municipalidad ha impugnado esta elección. El proceso electoral se encuentra suspendido hasta que la autoridad competente resuelva la impugnación. No es posible iniciar nuevas elecciones ni enviar resultados mientras persista este estado.
+          </p>
         </div>
       )}
 
