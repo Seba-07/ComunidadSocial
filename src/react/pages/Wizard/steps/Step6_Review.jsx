@@ -4,7 +4,6 @@ import { useUiStore } from '../../../stores/uiStore';
 import { pdfService } from '@services/PDFService.js';
 import { apiService } from '@services/ApiService.js';
 import { jsPDF } from 'jspdf';
-import { templateToHtml } from '@shared/utils/templateBlockParser.js';
 import tenant from '../../../../config/tenant.js';
 
 function capitalize(str) {
@@ -599,47 +598,51 @@ export default function Step6_Review({ onNext, onPrev }) {
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={async () => {
           try {
-            // Save rendered document templates as full HTML for submission to GeneratedDocuments
+            // Generate PDFs (same as preview) and store as base64 for submission
             const docs = {};
             const templateData = buildTemplateData();
+            const orgData = {
+              organization: org, organizationName: org.name, organizationType: org.type,
+              members, provisionalDirectorio: directorio, comisionElectoral: comision,
+            };
             const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
+            const titleMap = { acta: 'ACTA DE ASAMBLEA GENERAL CONSTITUTIVA', socios: 'LISTA DE SOCIOS FUNDADORES', nomina: 'NÓMINA DEL DIRECTORIO', carta: 'CARTA DE SOLICITUD' };
 
             for (const [key, tmpl] of Object.entries(docTemplates)) {
               if (tmpl?.content) {
-                // Replace placeholders in template content
-                let resolved = tmpl.content;
-                for (const [ph, val] of Object.entries(templateData)) {
-                  resolved = resolved.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
-                }
-                resolved = replacePlaceholders(resolved);
-
-                // Convert S3 presigned URLs to base64 data URLs (permanent, won't expire)
-                let headerCfg = tmpl.headerConfig ? { ...tmpl.headerConfig } : null;
-                let footerCfg = tmpl.footerConfig ? { ...tmpl.footerConfig } : null;
-                if (headerCfg?.imageUrl || footerCfg?.imageUrl) {
+                // Prefetch header/footer images as base64
+                let pdfConfig = {};
+                if (tmpl.headerConfig || tmpl.footerConfig) {
                   try {
-                    const prefetched = await pdfService.prefetchConfigImages(headerCfg, footerCfg);
-                    headerCfg = prefetched.headerConfig;
-                    footerCfg = prefetched.footerConfig;
+                    pdfConfig = await pdfService.prefetchConfigImages(tmpl.headerConfig, tmpl.footerConfig);
                   } catch { /* continue without images */ }
                 }
+                if (tmpl.pageSize) pdfConfig.pageSize = tmpl.pageSize;
 
-                // Convert to full HTML with header/footer/tables/columns rendered
-                const htmlContent = templateToHtml(resolved, {
-                  headerConfig: headerCfg,
-                  footerConfig: footerCfg,
-                  pageSize: tmpl.pageSize || 'letter',
-                });
-                docs[docTypeMap[key] || key] = { content: htmlContent, generatedAt: new Date().toISOString() };
+                // Generate PDF using the same engine as the "Ver" preview
+                let pdfDoc;
+                if (key === 'acta') {
+                  pdfDoc = pdfService.generateActaAsamblea(orgData, tmpl.content, templateData, pdfConfig);
+                } else if (key === 'socios') {
+                  pdfDoc = pdfService.generateListaSocios(orgData, tmpl.content, templateData, pdfConfig);
+                } else {
+                  pdfDoc = pdfService.generateFromTemplate(tmpl.content, templateData, titleMap[key] || 'DOCUMENTO', pdfConfig);
+                }
+
+                if (pdfDoc) {
+                  const pdfBase64 = pdfDoc.output('dataurlstring');
+                  docs[docTypeMap[key] || key] = { content: pdfBase64, generatedAt: new Date().toISOString() };
+                }
               }
             }
 
-            console.log(`[Step6] Documentos generados: ${Object.keys(docs).length} de ${Object.keys(docTemplates).length} plantillas`);
+            console.log(`[Step6] PDFs generados: ${Object.keys(docs).length} de ${Object.keys(docTemplates).length} plantillas`);
             if (Object.keys(docs).length > 0) {
               setFormDataField('documents', docs);
             }
           } catch (err) {
-            console.error('[Step6] Error generando documentos:', err);
+            console.error('[Step6] Error generando PDFs:', err);
+            addToast('Error al generar documentos PDF', 'error');
           }
           onNext();
         }} style={{

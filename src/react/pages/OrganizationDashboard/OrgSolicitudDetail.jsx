@@ -721,14 +721,18 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           declaracion_jurada: 'Declaración Jurada',
         };
         function viewGenDoc(doc) {
+          if (!doc.content) return;
+          // PDF stored as base64 data URL — open directly in browser PDF viewer
+          if (doc.content.startsWith('data:application/pdf')) {
+            window.open(doc.content, '_blank');
+            return;
+          }
+          // Fallback for legacy HTML or raw text documents
           const w = window.open('', '_blank');
           if (!w) return;
-          // If content is already a full HTML document (generated with templateToHtml), use directly
-          if (doc.content && doc.content.trim().startsWith('<!DOCTYPE')) {
+          if (doc.content.trim().startsWith('<!DOCTYPE')) {
             w.document.write(doc.content);
           } else {
-            // Legacy: content has raw template syntax ([TABLE], [COLS], etc.)
-            // Convert to proper HTML with templateToHtml before displaying
             const html = templateToHtml(doc.content || '');
             w.document.write(html);
           }
