@@ -1,4 +1,3 @@
-import StatusBadge from '../../components/ui/StatusBadge';
 import { formatDate } from '../../utils/formatters';
 
 const STATUS_COLORS = {
@@ -11,44 +10,86 @@ const STATUS_LABELS = {
   completed: 'Completada', cancelled: 'Cancelada'
 };
 
-export default function AssignmentCard({ assignment, onValidate }) {
+export default function AssignmentCard({ assignment, onSelect }) {
   const a = assignment;
   const status = a.status || 'pending';
-  const canValidate = status === 'pending' || status === 'in_progress';
+  const org = a.organizationId || a.organization || {};
+  const isToday = (() => {
+    if (!a.scheduledDate) return false;
+    const d = new Date(a.scheduledDate);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  })();
+
+  const memberCount = org.members?.length || a.memberCount || 0;
 
   return (
-    <div style={{
-      background: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-      padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12
-    }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>
-            {a.organizationName || a.organization?.name || 'Organización'}
-          </span>
-          <span style={{
-            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-            background: (STATUS_COLORS[status] || '#6b7280') + '20',
-            color: STATUS_COLORS[status] || '#6b7280'
-          }}>
-            {STATUS_LABELS[status] || status}
+    <div
+      onClick={() => onSelect?.(a)}
+      style={{
+        background: 'white', borderRadius: 12, padding: 'clamp(14px, 3vw, 20px)',
+        border: isToday ? '2px solid #2563eb' : '1px solid #e5e7eb',
+        cursor: onSelect ? 'pointer' : 'default',
+        transition: 'box-shadow 0.15s',
+        boxShadow: isToday ? '0 2px 12px rgba(37,99,235,0.12)' : 'none',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 'clamp(15px, 3.5vw, 17px)', fontWeight: 700, color: '#111827' }}>
+              {a.organizationName || org.organizationName || 'Organización'}
+            </span>
+            {isToday && (
+              <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 10, fontWeight: 700, background: '#2563eb', color: 'white' }}>
+                HOY
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 12, color: '#6b7280' }}>
+            {org.organizationType?.replace(/_/g, ' ') || ''}
           </span>
         </div>
-        <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {(a.date || a.scheduledDate) && <span>{formatDate(a.date || a.scheduledDate)}</span>}
-          {a.time && <span>{a.time}</span>}
-          {a.address && <span>{a.address}</span>}
-        </div>
+        <span style={{
+          padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+          background: (STATUS_COLORS[status] || '#6b7280') + '20',
+          color: STATUS_COLORS[status] || '#6b7280'
+        }}>
+          {a.assemblyRejected ? 'Rechazada' : STATUS_LABELS[status] || status}
+        </span>
       </div>
 
-      {canValidate && onValidate && (
-        <button onClick={onValidate} style={{
-          padding: '10px 20px', border: 'none', borderRadius: 10,
-          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer'
-        }}>
-          Validar
-        </button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, fontSize: 13 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}>
+          <span style={{ fontSize: 16 }}>&#128197;</span>
+          <span>{a.scheduledDate ? formatDate(a.scheduledDate) : '—'}</span>
+        </div>
+        {a.scheduledTime && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}>
+            <span style={{ fontSize: 16 }}>&#128336;</span>
+            <span>{a.scheduledTime}</span>
+          </div>
+        )}
+        {a.location && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}>
+            <span style={{ fontSize: 16 }}>&#128205;</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.location}</span>
+          </div>
+        )}
+        {memberCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}>
+            <span style={{ fontSize: 16 }}>&#128101;</span>
+            <span>{memberCount} socios</span>
+          </div>
+        )}
+      </div>
+
+      {/* Contact info */}
+      {(org.contactPhone || org.contactEmail) && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f3f4f6', display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#6b7280' }}>
+          {org.contactPhone && <span>Tel: {org.contactPhone}</span>}
+          {org.contactEmail && <span>{org.contactEmail}</span>}
+        </div>
       )}
     </div>
   );

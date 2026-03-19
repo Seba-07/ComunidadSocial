@@ -7,17 +7,18 @@ import SharedSidebar from '../../components/layout/SharedSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatsGrid from '../../components/ui/StatsGrid';
 import AssignmentCard from './AssignmentCard';
+import AssignmentDetail from './AssignmentDetail';
 import ValidationWizard from './ValidationWizard';
 import OrgPrivacy from '../OrganizationDashboard/OrgPrivacy';
 import SettingsPage from '../Settings/SettingsPage';
 import MiHorario from './MiHorario';
 
 const MINISTRO_MENU_ITEMS = [
-  { key: 'pending', label: 'Asignaciones', icon: '📋' },
-  { key: 'completed', label: 'Completadas', icon: '✅' },
-  { key: 'horario', label: 'Mi Horario', icon: '📅' },
-  { key: 'privacidad', label: 'Privacidad', icon: '🔒' },
-  { key: 'configuracion', label: 'Configuración', icon: '⚙️' }
+  { key: 'pending', label: 'Asignaciones', icon: '&#128203;' },
+  { key: 'completed', label: 'Completadas', icon: '&#9989;' },
+  { key: 'horario', label: 'Mi Horario', icon: '&#128197;' },
+  { key: 'privacidad', label: 'Privacidad', icon: '&#128274;' },
+  { key: 'configuracion', label: 'Configuracion', icon: '&#9881;' }
 ];
 
 export default function MinistroDashboardPage() {
@@ -25,9 +26,11 @@ export default function MinistroDashboardPage() {
   const { myPending, assignments, fetchMyPending, fetchMinistroAssignments } = useAssignmentsStore();
   const addToast = useUiStore(s => s.addToast);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeAssignment, setActiveAssignment] = useState(null);
-  const [showWizard, setShowWizard] = useState(false);
   const [activeView, setActiveView] = useState('pending');
+  // Detail + wizard states
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardOrg, setWizardOrg] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -45,37 +48,61 @@ export default function MinistroDashboardPage() {
 
   const completedAssignments = assignments.filter(a => a.status === 'completed');
 
+  // Separate today vs upcoming
+  const todayStr = new Date().toDateString();
+  const todayAssignments = myPending.filter(a => a.scheduledDate && new Date(a.scheduledDate).toDateString() === todayStr);
+  const upcomingAssignments = myPending.filter(a => !a.scheduledDate || new Date(a.scheduledDate).toDateString() !== todayStr);
+
   const stats = [
-    { icon: '📋', label: 'Pendientes', value: myPending.length, color: '#f59e0b' },
-    { icon: '✅', label: 'Completadas', value: completedAssignments.length, color: '#10b981' },
-    { icon: '📅', label: 'Total', value: assignments.length, color: '#2563eb' }
+    { icon: '&#128197;', label: 'Hoy', value: todayAssignments.length, color: '#2563eb' },
+    { icon: '&#128203;', label: 'Pendientes', value: myPending.length, color: '#f59e0b' },
+    { icon: '&#9989;', label: 'Completadas', value: completedAssignments.length, color: '#10b981' },
   ];
 
   const menuItems = MINISTRO_MENU_ITEMS.map(item => {
-    if (item.key === 'pending' && myPending.length > 0) {
-      return { ...item, badge: myPending.length };
-    }
-    if (item.key === 'completed' && completedAssignments.length > 0) {
-      return { ...item, badge: completedAssignments.length };
-    }
+    if (item.key === 'pending' && myPending.length > 0) return { ...item, badge: myPending.length };
+    if (item.key === 'completed' && completedAssignments.length > 0) return { ...item, badge: completedAssignments.length };
     return item;
   });
 
-  function openValidation(assignment) {
-    setActiveAssignment(assignment);
+  function handleSelectAssignment(a) {
+    setSelectedAssignment(a);
+  }
+
+  function handleStartAssembly(a, org) {
+    setWizardOrg(org);
     setShowWizard(true);
   }
 
-  function closeValidation() {
+  function handleCloseWizard() {
     setShowWizard(false);
-    setActiveAssignment(null);
+    setWizardOrg(null);
+    setSelectedAssignment(null);
     fetchMyPending().catch(() => {});
+    if (user?._id) fetchMinistroAssignments(user._id).catch(() => {});
   }
 
   if (isLoading) return <LoadingSpinner text="Cargando asignaciones..." />;
 
-  if (showWizard && activeAssignment) {
-    return <ValidationWizard assignment={activeAssignment} onClose={closeValidation} />;
+  // Wizard mode — fullscreen
+  if (showWizard && selectedAssignment) {
+    return <ValidationWizard assignment={selectedAssignment} org={wizardOrg} onClose={handleCloseWizard} />;
+  }
+
+  // Detail mode
+  if (selectedAssignment) {
+    return (
+      <>
+        <SharedHeader />
+        <div style={{ minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
+          <AssignmentDetail
+            assignment={selectedAssignment}
+            onBack={() => setSelectedAssignment(null)}
+            onStartAssembly={handleStartAssembly}
+          />
+        </div>
+      </>
+    );
   }
 
   return (
@@ -84,28 +111,62 @@ export default function MinistroDashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6', paddingTop: 'var(--header-height, 60px)' }}>
         <SharedSidebar
           title="Ministro de Fe"
-          subtitle="Validación de Actos"
+          subtitle="Validacion de Actos"
           menuItems={menuItems}
           activeKey={activeView}
           onItemClick={setActiveView}
         />
         <main className="r-main-content" style={{ flex: 1, overflow: 'auto', marginLeft: 'var(--sidebar-width, 260px)', transition: 'margin-left 0.25s ease' }}>
-          <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', padding: 'clamp(12px, 3vw, 24px)' }}>
             <StatsGrid stats={stats} />
 
             {activeView === 'pending' && (
               <>
-                <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                  Asignaciones Pendientes
+                {/* Today's assemblies — highlighted */}
+                {todayAssignments.length > 0 && (
+                  <>
+                    <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 700, color: '#2563eb' }}>
+                      Asambleas de Hoy ({todayAssignments.length})
+                    </h2>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {todayAssignments.map(a => (
+                        <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Upcoming */}
+                <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                  {todayAssignments.length > 0 ? 'Proximas' : 'Asignaciones Pendientes'} ({upcomingAssignments.length})
                 </h2>
-                {myPending.length === 0 ? (
+                {upcomingAssignments.length === 0 && todayAssignments.length === 0 ? (
                   <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
-                    <p style={{ color: '#6b7280', fontSize: 16 }}>No tienes asignaciones pendientes</p>
+                    <p style={{ color: '#6b7280', fontSize: 16, margin: 0 }}>No tienes asignaciones pendientes</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    {myPending.map(a => (
-                      <AssignmentCard key={a._id} assignment={a} onValidate={() => openValidation(a)} />
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {upcomingAssignments.map(a => (
+                      <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeView === 'completed' && (
+              <>
+                <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                  Completadas ({completedAssignments.length})
+                </h2>
+                {completedAssignments.length === 0 ? (
+                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
+                    <p style={{ color: '#6b7280', fontSize: 16, margin: 0 }}>No hay asignaciones completadas</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {completedAssignments.map(a => (
+                      <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
                     ))}
                   </div>
                 )}
@@ -115,25 +176,6 @@ export default function MinistroDashboardPage() {
             {activeView === 'horario' && <MiHorario />}
             {activeView === 'privacidad' && <OrgPrivacy />}
             {activeView === 'configuracion' && <SettingsPage />}
-
-            {activeView === 'completed' && (
-              <>
-                <h2 style={{ margin: '24px 0 16px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                  Completadas
-                </h2>
-                {completedAssignments.length === 0 ? (
-                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
-                    <p style={{ color: '#6b7280', fontSize: 16 }}>No hay asignaciones completadas</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    {completedAssignments.map(a => (
-                      <AssignmentCard key={a._id} assignment={a} />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
           </div>
         </main>
       </div>

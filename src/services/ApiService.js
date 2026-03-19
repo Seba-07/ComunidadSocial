@@ -742,6 +742,10 @@ class ApiService {
     return this.post(`/assignments/${assignmentId}/cancel`, { reason });
   }
 
+  async rejectAssembly(assignmentId, reason, attendanceCount, quorumRequired) {
+    return this.post(`/assignments/${assignmentId}/reject-assembly`, { reason, attendanceCount, quorumRequired });
+  }
+
   async checkScheduleConflict(ministroId, date, time) {
     return this.get(`/assignments/check-conflict/${ministroId}/${date}/${time}`);
   }

@@ -1801,7 +1801,8 @@ router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'M
 const VALID_STATUS_TRANSITIONS = {
   'draft': ['waiting_ministro', 'rejected'],
   'waiting_ministro': ['ministro_scheduled', 'corrections_requested', 'rejected', 'draft'],
-  'ministro_scheduled': ['ministro_approved', 'waiting_ministro', 'rejected'],
+  'ministro_scheduled': ['ministro_approved', 'assembly_failed', 'waiting_ministro', 'rejected'],
+  'assembly_failed': ['waiting_ministro', 'ministro_scheduled', 'rejected'],
   'ministro_approved': ['pending_review', 'in_review', 'sent_registry', 'corrections_requested', 'rejected'],
   'pending_review': ['in_review', 'corrections_requested', 'rejected', 'approved'],
   'in_review': ['approved', 'corrections_requested', 'rejected', 'sent_registry'],

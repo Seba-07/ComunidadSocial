@@ -616,4 +616,44 @@ router.get('/stats/:ministroId', authenticate, async (req, res) => {
   }
 });
 
+// Reject assembly (Ministro) — quorum not met or problems in terrain
+router.post('/:id/reject-assembly', authenticate, requireRole('MINISTRO_FE', 'MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const assignment = await Assignment.findById(req.params.id);
+    if (!assignment) return res.status(404).json({ error: 'Asignación no encontrada' });
+
+    const { reason, attendanceCount, quorumRequired } = req.body;
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ error: 'Debe indicar un motivo de rechazo (mínimo 10 caracteres)' });
+    }
+
+    assignment.status = 'completed';
+    assignment.assemblyRejected = true;
+    assignment.rejectionReason = reason.trim();
+    assignment.attendanceCount = attendanceCount || 0;
+    assignment.quorumRequired = quorumRequired || 15;
+    assignment.quorumAchieved = false;
+    assignment.completedAt = new Date();
+
+    await assignment.save();
+
+    // Update organization status to assembly_failed
+    const organization = await Organization.findById(assignment.organizationId);
+    if (organization) {
+      organization.status = 'assembly_failed';
+      organization.statusHistory.push({
+        status: 'assembly_failed',
+        date: new Date(),
+        comment: `Asamblea rechazada por Ministro de Fe: ${reason.trim()}`
+      });
+      await organization.save();
+    }
+
+    res.json({ message: 'Asamblea rechazada', assignment });
+  } catch (error) {
+    console.error('Reject assembly error:', error);
+    res.status(500).json({ error: 'Error al rechazar asamblea' });
+  }
+});
+
 export default router;

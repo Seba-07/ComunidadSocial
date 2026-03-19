@@ -88,6 +88,19 @@ const assignmentSchema = new mongoose.Schema({
     notes: String
   },
 
+  // Assembly execution data
+  quorumRequired: { type: Number, default: 15 },
+  quorumAchieved: { type: Boolean, default: false },
+  attendanceCount: { type: Number, default: 0 },
+
+  // Scanned documents (uploaded by MF after assembly)
+  actaScannedUrl: String,      // PDF escaneado del acta firmada
+  attendanceScannedUrl: String, // PDF escaneado de la lista de asistencia firmada
+
+  // Assembly rejection
+  assemblyRejected: { type: Boolean, default: false },
+  rejectionReason: String,
+
   // Completion data
   completedAt: Date,
   cancelledAt: Date,

@@ -318,6 +318,7 @@ const organizationSchema = new mongoose.Schema({
       'waiting_ministro',
       'ministro_scheduled',
       'ministro_approved',
+      'assembly_failed',
       'pending_review',
       'in_review',
       'corrections_requested',

@@ -10,14 +10,14 @@ import ValidateCommission from './steps/ValidateCommission';
 import SignatureCapture from './steps/SignatureCapture';
 import ValidationReview from './steps/ValidationReview';
 
-const STEPS = ['Directorio', 'Asistentes', 'Comisión', 'Firmas', 'Confirmar'];
+const STEPS = ['Asistencia', 'Directorio', 'Comision', 'Firmas', 'Certificar'];
 
-export default function ValidationWizard({ assignment, onClose }) {
+export default function ValidationWizard({ assignment, org: preloadedOrg, onClose }) {
   const { validateSignatures } = useAssignmentsStore();
   const addToast = useUiStore(s => s.addToast);
   const [currentStep, setCurrentStep] = useState(0);
-  const [org, setOrg] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [org, setOrg] = useState(preloadedOrg || null);
+  const [isLoading, setIsLoading] = useState(!preloadedOrg);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [wizardData, setWizardData] = useState({
@@ -27,10 +27,17 @@ export default function ValidationWizard({ assignment, onClose }) {
     signatures: {},
     ministroSignature: null,
     notes: '',
-    groupPhoto: null
+    groupPhoto: null,
+    quorumRequired: 15,
+    quorumAchieved: false,
+    attendanceCount: 0,
   });
 
   useEffect(() => {
+    if (preloadedOrg) {
+      initFromOrg(preloadedOrg);
+      return;
+    }
     async function loadOrg() {
       try {
         const orgId = assignment.organizationId?._id || assignment.organizationId || assignment.organization?._id;
@@ -38,31 +45,34 @@ export default function ValidationWizard({ assignment, onClose }) {
           const data = await apiService.getOrganization(orgId);
           const orgData = data.organization || data;
           setOrg(orgData);
-
-          // Pre-populate from org data
-          const dir = orgData.provisionalDirectorio || {};
-          const com = orgData.comisionElectoral?.members || [];
-          const members = orgData.members || [];
-
-          setWizardData(d => ({
-            ...d,
-            directorio: dir,
-            comisionElectoral: com,
-            attendees: members.map(m => ({
-              ...m,
-              present: false,
-              name: `${m.firstName || m.primerNombre || ''} ${m.lastName || m.apellidoPaterno || ''}`.trim()
-            }))
-          }));
+          initFromOrg(orgData);
         }
       } catch (err) {
-        addToast('Error cargando datos de organización', 'error');
+        addToast('Error cargando datos de organizacion', 'error');
       } finally {
         setIsLoading(false);
       }
     }
     loadOrg();
   }, [assignment]);
+
+  function initFromOrg(orgData) {
+    const dir = orgData.provisionalDirectorio || {};
+    const com = orgData.comisionElectoral?.members || orgData.comisionElectoral || [];
+    const members = orgData.members || [];
+
+    setWizardData(d => ({
+      ...d,
+      directorio: dir,
+      comisionElectoral: Array.isArray(com) ? com : [],
+      attendees: members.map(m => ({
+        ...m,
+        present: false,
+        name: `${m.firstName || ''} ${m.lastName || ''}`.trim()
+      }))
+    }));
+    setIsLoading(false);
+  }
 
   function updateWizardData(updates) {
     setWizardData(d => ({ ...d, ...updates }));
@@ -76,14 +86,32 @@ export default function ValidationWizard({ assignment, onClose }) {
     if (currentStep > 0) setCurrentStep(s => s - 1);
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(extraData = {}) {
     setIsSubmitting(true);
     try {
-      await validateSignatures(assignment._id, wizardData.signatures, wizardData);
-      addToast('Validación completada exitosamente', 'success');
+      const fullWizardData = {
+        ...wizardData,
+        actaScannedUrl: extraData.actaScanned || null,
+        attendanceScannedUrl: extraData.attendanceScanned || null,
+      };
+      await validateSignatures(assignment._id, wizardData.signatures, fullWizardData);
+      addToast('Asamblea certificada exitosamente', 'success');
       onClose();
     } catch (err) {
-      addToast(err.message, 'error');
+      addToast(err.message || 'Error al certificar', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleRejectAssembly(reason, attendanceCount, quorumRequired) {
+    setIsSubmitting(true);
+    try {
+      await apiService.rejectAssembly(assignment._id, reason, attendanceCount, quorumRequired);
+      addToast('Asamblea rechazada', 'success');
+      onClose();
+    } catch (err) {
+      addToast(err.message || 'Error al rechazar', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -100,12 +128,12 @@ export default function ValidationWizard({ assignment, onClose }) {
     <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
       <div style={{
         background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-        color: 'white', padding: '16px 24px',
+        color: 'white', padding: 'clamp(12px, 3vw, 16px) clamp(16px, 4vw, 24px)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: 8
       }}>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
-          Validación: {org?.name || 'Organización'}
+        <h1 style={{ margin: 0, fontSize: 'clamp(15px, 3.5vw, 18px)', fontWeight: 700 }}>
+          Asamblea: {org?.organizationName || org?.name || 'Organizacion'}
         </h1>
         <button onClick={onClose} style={{
           padding: '6px 14px', border: '1px solid rgba(255,255,255,0.3)',
@@ -114,23 +142,25 @@ export default function ValidationWizard({ assignment, onClose }) {
         }}>Salir</button>
       </div>
 
-      <div style={{ background: 'white', padding: '16px 24px', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ background: 'white', padding: 'clamp(10px, 2vw, 16px) clamp(16px, 4vw, 24px)', borderBottom: '1px solid #e5e7eb' }}>
         <ProgressBar steps={STEPS} currentStep={currentStep} />
       </div>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: 'clamp(12px, 3vw, 24px)' }}>
         <div style={{
           background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-          padding: 'clamp(16px, 4vw, 32px)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+          padding: 'clamp(14px, 3vw, 28px)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
         }}>
-          {currentStep === 0 && <ValidateDirectorio {...stepProps} />}
-          {currentStep === 1 && <AttendeeCheckin {...stepProps} />}
+          {/* Step order: Asistencia → Directorio → Comision → Firmas → Certificar */}
+          {currentStep === 0 && <AttendeeCheckin {...stepProps} />}
+          {currentStep === 1 && <ValidateDirectorio {...stepProps} />}
           {currentStep === 2 && <ValidateCommission {...stepProps} />}
           {currentStep === 3 && <SignatureCapture {...stepProps} />}
           {currentStep === 4 && (
             <ValidationReview
               {...stepProps}
               onSubmit={handleSubmit}
+              onRejectAssembly={handleRejectAssembly}
               isSubmitting={isSubmitting}
             />
           )}
