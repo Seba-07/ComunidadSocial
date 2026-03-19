@@ -326,8 +326,8 @@ export const scheduleMinistroSchema = z.object({
 export const statusChangeSchema = z.object({
   status: z.enum([
     'draft', 'waiting_ministro', 'ministro_scheduled', 'ministro_approved',
-    'pending_review', 'in_review', 'rejected', 'sent_registry',
-    'registry_observations', // Estado cuando Registro Civil tiene observaciones
+    'pending_review', 'in_review', 'corrections_requested', 'rejected', 'sent_registry',
+    'registry_observations',
     'approved', 'dissolved'
   ]),
   comment: z.string().max(500).optional()
@@ -344,11 +344,18 @@ const correctionItemSchema = z.object({
   role: z.string().optional(),
   docType: z.string().optional(),
   label: z.string().min(1),
-  message: z.string().max(1000).default('Requiere corrección')
+  message: z.string().max(1000).default('Requiere corrección'),
+  currentValue: z.string().optional(),
+  tab: z.string().optional()
 });
 
 export const rejectWithCorrectionsSchema = z.object({
   corrections: z.array(correctionItemSchema).min(1),
+  generalComment: z.string().max(1000).optional()
+});
+
+export const requestCorrectionsSchema = z.object({
+  corrections: z.array(correctionItemSchema).min(1, 'Debe seleccionar al menos un campo para corregir'),
   generalComment: z.string().max(1000).optional()
 });
 
@@ -622,6 +629,7 @@ export default {
   scheduleMinistroSchema,
   statusChangeSchema,
   rejectWithCorrectionsSchema,
+  requestCorrectionsSchema,
   createNotificationSchema,
   createNewsSchema,
   updateNewsSchema,

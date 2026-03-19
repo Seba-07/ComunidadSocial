@@ -12,6 +12,7 @@ const STATUS_LABELS = {
   ministro_approved: 'Aprobada por Ministro',
   pending_review: 'Pendiente de Revisión',
   in_review: 'En Revisión',
+  corrections_requested: 'Correcciones Solicitadas',
   sent_registry: 'Registro Civil',
   registry_observations: 'Observaciones Registro',
   rejected: 'Rechazada',
@@ -61,6 +62,9 @@ export default function OrgSolicitudDetail({ org, onBack, onRefresh }) {
   const [retractReason, setRetractReason] = useState('');
   const [retracting, setRetracting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [correctedFields, setCorrectedFields] = useState({});
+  const [resubmitComment, setResubmitComment] = useState('');
+  const [resubmitting, setResubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRefs = useRef({});
   const [generatedDocs, setGeneratedDocs] = useState([]);
@@ -335,6 +339,74 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           Detalle de la solicitud de constitución
         </p>
       </div>
+
+      {/* Corrections Banner */}
+      {org.status === 'corrections_requested' && org.corrections?.items?.length > 0 && (
+        <div style={{ marginBottom: 20, padding: 20, background: '#fff7ed', border: '2px solid #f59e0b', borderRadius: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 24 }}>&#9888;</span>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#92400e' }}>
+              Correcciones Solicitadas ({org.corrections.items.length})
+            </h3>
+          </div>
+          {org.corrections.generalComment && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#92400e', fontStyle: 'italic' }}>
+              "{org.corrections.generalComment}"
+            </p>
+          )}
+          <div style={{ display: 'grid', gap: 10 }}>
+            {org.corrections.items.map((item, i) => (
+              <div key={i} style={{ padding: 12, background: 'white', border: '1px solid #fed7aa', borderRadius: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Observacion: {item.message}</div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>Valor actual: {item.currentValue || '—'}</div>
+                <input
+                  type="text"
+                  placeholder="Ingresa el valor corregido..."
+                  value={correctedFields[item.field] || ''}
+                  onChange={e => setCorrectedFields(prev => ({ ...prev, [item.field]: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 13, boxSizing: 'border-box', background: '#fffbeb' }}
+                />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Comentario (opcional):</label>
+            <textarea value={resubmitComment} onChange={e => setResubmitComment(e.target.value)}
+              placeholder="Explica las correcciones realizadas..."
+              rows={2} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
+          </div>
+          <button
+            disabled={resubmitting || Object.keys(correctedFields).length === 0}
+            onClick={async () => {
+              const pendingCount = org.corrections.items.length;
+              const filledCount = Object.values(correctedFields).filter(v => v.trim()).length;
+              if (filledCount < pendingCount) {
+                addToast(`Completa todas las correcciones (${filledCount}/${pendingCount})`, 'error');
+                return;
+              }
+              setResubmitting(true);
+              try {
+                await apiService.resubmitOrganization(org._id, resubmitComment, correctedFields);
+                addToast('Correcciones enviadas exitosamente', 'success');
+                onRefresh();
+              } catch (err) {
+                addToast(err.message || 'Error al reenviar', 'error');
+              } finally {
+                setResubmitting(false);
+              }
+            }}
+            style={{
+              marginTop: 12, padding: '12px 28px', border: 'none', borderRadius: 10,
+              background: Object.keys(correctedFields).length > 0 ? '#f59e0b' : '#d1d5db',
+              color: 'white', fontSize: 15, fontWeight: 700,
+              cursor: Object.keys(correctedFields).length > 0 ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {resubmitting ? 'Reenviando...' : 'Reenviar con Correcciones'}
+          </button>
+        </div>
+      )}
 
       {/* 1. Datos Generales */}
       <div style={sectionStyle}>

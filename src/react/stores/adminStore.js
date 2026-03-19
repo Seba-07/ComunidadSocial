@@ -75,6 +75,20 @@ export const useAdminStore = create((set, get) => ({
     }
   },
 
+  async requestCorrections(orgId, corrections, generalComment) {
+    try {
+      await apiService.requestCorrections(orgId, corrections, generalComment);
+      const { organizations } = get();
+      const updated = organizations.map(o =>
+        o._id === orgId ? { ...o, status: 'corrections_requested' } : o
+      );
+      set({ organizations: updated });
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
   async scheduleMinistro(orgId, ministroData) {
     try {
       await apiService.scheduleMinistro(orgId, ministroData);

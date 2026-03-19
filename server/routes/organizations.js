@@ -8,7 +8,7 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { authenticate, requireRole, requireVerifiedEmail } from '../middleware/auth.js';
 import { allowFields, ALLOWED_FIELDS, validateObjectId, qrCheckinLimiter } from '../middleware/security.js';
-import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema, directorioResignationSchema } from '../middleware/validation.js';
+import { validate, createOrganizationSchema, statusChangeSchema, rejectWithCorrectionsSchema, requestCorrectionsSchema, directorioResignationSchema } from '../middleware/validation.js';
 import MinistroBlock from '../models/MinistroBlock.js';
 import Document from '../models/Document.js';
 import Member from '../models/Member.js';
@@ -1800,12 +1800,13 @@ router.post('/:id/approve-ministro', authenticate, requireRole('MINISTRO_FE', 'M
 // ============ VALIDACIÓN DE TRANSICIONES DE ESTADO ============
 const VALID_STATUS_TRANSITIONS = {
   'draft': ['waiting_ministro', 'rejected'],
-  'waiting_ministro': ['ministro_scheduled', 'rejected', 'draft'],
+  'waiting_ministro': ['ministro_scheduled', 'corrections_requested', 'rejected', 'draft'],
   'ministro_scheduled': ['ministro_approved', 'waiting_ministro', 'rejected'],
-  'ministro_approved': ['pending_review', 'in_review', 'sent_registry', 'rejected'],
-  'pending_review': ['in_review', 'rejected', 'approved'],
-  'in_review': ['approved', 'rejected', 'sent_registry'],
-  'rejected': ['pending_review', 'draft', 'waiting_ministro'], // Puede volver al status previo al rechazo
+  'ministro_approved': ['pending_review', 'in_review', 'sent_registry', 'corrections_requested', 'rejected'],
+  'pending_review': ['in_review', 'corrections_requested', 'rejected', 'approved'],
+  'in_review': ['approved', 'corrections_requested', 'rejected', 'sent_registry'],
+  'corrections_requested': ['waiting_ministro', 'pending_review', 'in_review'],
+  'rejected': ['pending_review', 'draft', 'waiting_ministro'],
   'sent_registry': ['approved', 'registry_observations', 'rejected'],
   'registry_observations': ['sent_registry', 'approved', 'rejected'],
   'approved': ['dissolved'], // Estado final, solo puede disolverse
@@ -2138,6 +2139,80 @@ router.post('/:id/reject', authenticate, requireRole('MUNICIPALIDAD'), validate(
   }
 });
 
+// Request corrections (Admin only) — estado transitorio, no es rechazo
+router.post('/:id/request-corrections', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), validate(requestCorrectionsSchema), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organización no encontrada' });
+    }
+
+    if (!isValidStatusTransition(organization.status, 'corrections_requested')) {
+      return res.status(400).json({
+        error: `No se pueden solicitar correcciones desde el estado: ${organization.status}`,
+        allowedTransitions: VALID_STATUS_TRANSITIONS[organization.status] || []
+      });
+    }
+
+    const { corrections, generalComment } = req.body;
+    const previousStatus = organization.status;
+
+    organization.status = 'corrections_requested';
+    organization.corrections = {
+      version: 2,
+      items: corrections,
+      generalComment,
+      fromStatus: previousStatus,
+      createdAt: new Date(),
+      resolved: false
+    };
+
+    organization.statusHistory.push({
+      status: 'corrections_requested',
+      date: new Date(),
+      comment: generalComment || 'Se solicitan correcciones al dirigente',
+      corrections: organization.corrections
+    });
+
+    await organization.save();
+
+    // Notify user
+    const itemCount = corrections.length;
+    await Notification.create({
+      userId: organization.userId,
+      type: 'correction_required',
+      title: 'Correcciones solicitadas',
+      message: `Tu solicitud "${organization.organizationName}" requiere ${itemCount} corrección${itemCount > 1 ? 'es' : ''}. Revisa los detalles.`,
+      organizationId: organization._id,
+      data: { corrections: organization.corrections }
+    });
+
+    res.json({ message: 'Correcciones solicitadas', organization });
+
+    // Send email
+    if (organization.userId) {
+      try {
+        const user = await User.findById(organization.userId);
+        if (user?.email) {
+          const correctionStrings = corrections.map(c => `${c.label}: ${c.message}`);
+          await emailService.sendRejectionNotification({
+            email: user.email,
+            userName: `${user.firstName} ${user.lastName}`,
+            orgName: organization.organizationName,
+            corrections: correctionStrings,
+            comment: generalComment || ''
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending corrections email:', emailErr);
+      }
+    }
+  } catch (error) {
+    console.error('Request corrections error:', error);
+    res.status(500).json({ error: 'Error al solicitar correcciones' });
+  }
+});
+
 // Resubmit after corrections
 router.post('/:id/resubmit', authenticate, async (req, res) => {
   try {
@@ -2151,31 +2226,109 @@ router.post('/:id/resubmit', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'No tienes permisos' });
     }
 
-    if (organization.status !== 'rejected') {
-      return res.status(400).json({ error: 'Solo se pueden reenviar solicitudes rechazadas' });
+    if (organization.status !== 'rejected' && organization.status !== 'corrections_requested') {
+      return res.status(400).json({ error: 'Solo se pueden reenviar solicitudes rechazadas o con correcciones solicitadas' });
     }
 
-    const { userComment, fieldResponses } = req.body;
+    const { userComment, correctedFields } = req.body;
 
-    const targetStatus = organization.corrections?.fromStatus || 'pending_review';
+    // Apply corrected field values to the organization
+    if (correctedFields && typeof correctedFields === 'object') {
+      for (const [path, value] of Object.entries(correctedFields)) {
+        // Safely set nested paths (e.g., "provisionalDirectorio.presidente.rut")
+        const parts = path.split('.');
+        let target = organization;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (target[parts[i]] === undefined || target[parts[i]] === null) break;
+          target = target[parts[i]];
+        }
+        if (target) {
+          target[parts[parts.length - 1]] = value;
+        }
+      }
+      organization.markModified('provisionalDirectorio');
+      organization.markModified('members');
+      organization.markModified('config');
+
+      // Mark each correction item as corrected
+      if (organization.corrections?.items) {
+        for (const item of organization.corrections.items) {
+          if (correctedFields[item.field] !== undefined) {
+            item.correctedValue = String(correctedFields[item.field]);
+            item.correctedAt = new Date();
+          }
+        }
+      }
+    }
+
+    const targetStatus = organization.corrections?.fromStatus || 'waiting_ministro';
     organization.status = targetStatus;
     if (organization.corrections) {
       organization.corrections.resolved = true;
       organization.corrections.resolvedAt = new Date();
       organization.corrections.userResponse = userComment;
-      organization.corrections.userFieldResponses = fieldResponses;
     }
 
     organization.statusHistory.push({
       status: targetStatus,
       date: new Date(),
-      comment: 'Solicitud reenviada con correcciones',
+      comment: 'Solicitud reenviada con correcciones aplicadas',
       userComment
     });
 
     await organization.save();
 
-    res.json(organization);
+    // Regenerate PDFs with corrected data
+    try {
+      const EstatutoTemplate = (await import('../models/EstatutoTemplate.js')).default;
+      const DocumentTemplate = (await import('../models/DocumentTemplate.js')).default;
+      const GeneratedDocuments = (await import('../models/GeneratedDocuments.js')).default;
+
+      const template = await EstatutoTemplate.findOne({
+        tipoOrganizacion: organization.organizationType,
+        activo: true, publicado: true
+      });
+
+      if (template) {
+        const templateIds = {
+          acta: template.actaTemplateId,
+          socios: template.sociosTemplateId,
+          nomina: template.nominaTemplateId,
+          carta: template.cartaTemplateId,
+        };
+
+        // Flag that PDFs need regeneration (frontend will do it on next view)
+        await GeneratedDocuments.findOneAndUpdate(
+          { organizationId: organization._id },
+          { $set: { needsRegeneration: true, regenerationReason: 'corrections_applied' } }
+        );
+      }
+    } catch (regenErr) {
+      logger.error('Error flagging PDF regeneration:', regenErr.message);
+    }
+
+    // Notify admins
+    try {
+      const admins = await User.find({ role: 'MUNICIPALIDAD', isActive: true });
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'new_organization',
+          title: 'Correcciones aplicadas',
+          message: `"${organization.organizationName}" ha sido corregida y reenviada.`,
+          data: { organizationId: organization._id, organizationName: organization.organizationName },
+          organizationId: organization._id
+        });
+      }
+    } catch (notifErr) {
+      logger.error('Error creating notifications for resubmit:', notifErr.message);
+    }
+
+    res.json({
+      message: 'Solicitud reenviada con correcciones',
+      _id: organization._id,
+      status: organization.status
+    });
   } catch (error) {
     console.error('Resubmit organization error:', error);
     res.status(500).json({ error: 'Error al reenviar' });

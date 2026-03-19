@@ -94,6 +94,12 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [showSchedule, setShowSchedule] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [corrections, setCorrections] = useState({});
+  // Corrections basket
+  const [correctionItems, setCorrectionItems] = useState([]);
+  const [showCorrectionsModal, setShowCorrectionsModal] = useState(false);
+  const [correctionsGeneralComment, setCorrectionsGeneralComment] = useState('');
+  const [flaggingField, setFlaggingField] = useState(null); // { field, label, tab, currentValue }
+  const [flagComment, setFlagComment] = useState('');
   const [scheduleData, setScheduleData] = useState({ ministroId: '', date: '', time: '', location: '' });
   const [isActioning, setIsActioning] = useState(false);
   const [signedPdf, setSignedPdf] = useState(null);
@@ -111,7 +117,7 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [showRejectElection, setShowRejectElection] = useState(false);
   const [generatedDocs, setGeneratedDocs] = useState([]);
 
-  const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
+  const { updateOrgStatus, rejectOrg, requestCorrections, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
   const addToast = useUiStore(s => s.addToast);
 
@@ -290,6 +296,70 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
   const activeMinistros = ministros.filter(m => m.isActive !== false);
 
+  // Corrections basket helpers
+  const isFieldFlagged = (field) => correctionItems.some(c => c.field === field);
+  function flagField(field, label, tab, currentValue) {
+    if (isFieldFlagged(field)) return;
+    setFlaggingField({ field, label, tab, currentValue: String(currentValue || '') });
+    setFlagComment('');
+  }
+  function confirmFlag() {
+    if (!flaggingField) return;
+    setCorrectionItems(prev => [...prev, {
+      field: flaggingField.field,
+      label: flaggingField.label,
+      tab: flaggingField.tab,
+      currentValue: flaggingField.currentValue,
+      category: flaggingField.tab === 'miembros' ? 'miembros' : flaggingField.tab === 'directorio' ? 'directorio' : 'datos_generales',
+      message: flagComment.trim() || 'Requiere corrección',
+    }]);
+    setFlaggingField(null);
+    setFlagComment('');
+  }
+  function removeFlagItem(field) {
+    setCorrectionItems(prev => prev.filter(c => c.field !== field));
+  }
+
+  async function submitCorrections() {
+    if (correctionItems.length === 0) {
+      addToast('Selecciona al menos un campo para corregir', 'error');
+      return;
+    }
+    setIsActioning(true);
+    try {
+      await requestCorrections(org._id, correctionItems, correctionsGeneralComment);
+      addToast(`Correcciones enviadas (${correctionItems.length} campos)`, 'success');
+      setShowCorrectionsModal(false);
+      setCorrectionItems([]);
+      setCorrectionsGeneralComment('');
+      onClose();
+    } catch (err) {
+      addToast(err.message || 'Error al enviar correcciones', 'error');
+    } finally {
+      setIsActioning(false);
+    }
+  }
+
+  // Reusable flag button for clickable fields
+  const canRequestCorrections = ['waiting_ministro', 'pending_review', 'in_review'].includes(org.status);
+  function FlagBtn({ field, label, tab, value }) {
+    if (!canRequestCorrections) return null;
+    const flagged = isFieldFlagged(field);
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); flagged ? removeFlagItem(field) : flagField(field, label, tab, value); }}
+        title={flagged ? 'Quitar de correcciones' : 'Marcar para corregir'}
+        style={{
+          padding: '2px 6px', border: 'none', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+          background: flagged ? '#fecaca' : 'transparent', color: flagged ? '#dc2626' : '#9ca3af',
+          marginLeft: 4, flexShrink: 0, transition: 'all 0.15s',
+        }}
+        onMouseEnter={e => { if (!flagged) { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.color = '#f59e0b'; } }}
+        onMouseLeave={e => { if (!flagged) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9ca3af'; } }}
+      >{flagged ? '- Quitar' : '+ Observar'}</button>
+    );
+  }
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -428,19 +498,24 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           {tab === 'datos' && (
             <div style={{ display: 'grid', gap: 12 }}>
               {[
-                ['Nombre', orgName],
-                ['Tipo', orgType],
-                ['Dirección', [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address],
-                ['Comuna / Región', [org.comuna, org.region].filter(Boolean).join(', ')],
-                ['Email de Contacto', org.contactEmail || org.email],
-                ['Teléfono', org.contactPhone || org.phone],
-                ['Unidad Vecinal', org.unidadVecinal],
-                ['Territorio', org.territory],
-                ['Creada', formatDate(org.createdAt)],
-              ].filter(([, value]) => value).map(([label, value]) => (
-                <div key={label} style={{ display: 'flex', gap: 12 }}>
+                ['Nombre', orgName, 'organizationName'],
+                ['Tipo', orgType, 'organizationType'],
+                ['Dirección', [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address, 'address'],
+                ['Comuna / Región', [org.comuna, org.region].filter(Boolean).join(', '), null],
+                ['Email de Contacto', org.contactEmail || org.email, 'contactEmail'],
+                ['Teléfono', org.contactPhone || org.phone, 'contactPhone'],
+                ['Unidad Vecinal', org.unidadVecinal, 'unidadVecinal'],
+                ['Territorio', org.territory, 'territory'],
+                ['Creada', formatDate(org.createdAt), null],
+              ].filter(([, value]) => value).map(([label, value, field]) => (
+                <div key={label} style={{
+                  display: 'flex', gap: 12, alignItems: 'center',
+                  background: field && isFieldFlagged(field) ? '#fef2f2' : 'transparent',
+                  padding: field && isFieldFlagged(field) ? '4px 8px' : 0, borderRadius: 6,
+                }}>
                   <span style={{ fontWeight: 600, color: '#374151', minWidth: 140, fontSize: 14 }}>{label}:</span>
-                  <span style={{ color: '#6b7280', fontSize: 14 }}>{value}</span>
+                  <span style={{ color: '#6b7280', fontSize: 14, flex: 1 }}>{value}</span>
+                  {field && <FlagBtn field={field} label={label} tab="datos" value={value} />}
                 </div>
               ))}
               {org.objectives && (
@@ -640,8 +715,8 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['N°', 'Nombre', 'RUT', 'F. Nacimiento', 'Edad', 'Domicilio', 'Email', 'Teléfono'].map(h => (
-                        <th key={h} className={h === 'Email' || h === 'Teléfono' || h === 'F. Nacimiento' ? 'r-hide-mobile' : undefined} style={{
+                      {['N°', 'Nombre', 'RUT', 'F. Nacimiento', 'Edad', 'Domicilio', 'Email', 'Teléfono', ...(canRequestCorrections ? [''] : [])].map((h, hi) => (
+                        <th key={hi} className={h === 'Email' || h === 'Teléfono' || h === 'F. Nacimiento' ? 'r-hide-mobile' : undefined} style={{
                           padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #e5e7eb',
                           fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap'
                         }}>{h}</th>
@@ -676,6 +751,11 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                           <td style={{ padding: '8px 10px', fontSize: 12, color: '#6b7280', maxWidth: 180 }}>{m.address || '—'}</td>
                           <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.email || '—'}</td>
                           <td className="r-hide-mobile" style={{ padding: '8px 10px', fontSize: 13, color: '#6b7280' }}>{m.phone || '—'}</td>
+                          {canRequestCorrections && (
+                            <td style={{ padding: '4px 6px' }}>
+                              <FlagBtn field={`members.${i}`} label={`Miembro: ${formatName(m)} (${m.rut})`} tab="miembros" value={formatName(m)} />
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -700,11 +780,16 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                 const isMinor = age !== null && age < 18;
                 return (
                   <div key={key} style={{
-                    padding: 14, border: '1px solid #e5e7eb', borderRadius: 10, background: '#fafafa',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                    padding: 14, borderRadius: 10, gap: 8,
+                    border: isFieldFlagged(`provisionalDirectorio.${key}`) ? '2px solid #fca5a5' : '1px solid #e5e7eb',
+                    background: isFieldFlagged(`provisionalDirectorio.${key}`) ? '#fef2f2' : '#fafafa',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap',
                   }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 2, display: 'flex', alignItems: 'center' }}>
+                        {label}
+                        <FlagBtn field={`provisionalDirectorio.${key}`} label={`${label}: ${formatName(person)}`} tab="directorio" value={`${formatName(person)} — ${person.rut}`} />
+                      </div>
                       <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
                         {formatName(person)} — {person.rut || '—'}
                       </div>
@@ -1350,6 +1435,27 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 <button onClick={openScheduleModal} disabled={isActioning}
                   style={actionBtn('#2563eb')}>Agendar Ministro</button>
               )}
+              <button onClick={() => {
+                if (correctionItems.length === 0) {
+                  addToast('Primero marca campos haciendo clic en "+ Observar" junto a cada dato', 'error');
+                  return;
+                }
+                setShowCorrectionsModal(true);
+              }} disabled={isActioning}
+                style={{
+                  ...actionBtn('#f59e0b'),
+                  position: 'relative',
+                }}>
+                Solicitar Correcciones
+                {correctionItems.length > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -6, right: -6,
+                    background: '#dc2626', color: 'white', borderRadius: '50%',
+                    width: 20, height: 20, fontSize: 11, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>{correctionItems.length}</span>
+                )}
+              </button>
               <button onClick={() => setShowReject(true)} disabled={isActioning}
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
@@ -1491,6 +1597,63 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
             <button onClick={() => setShowSchedule(false)} style={actionBtn('#6b7280')}>Cancelar</button>
             <button onClick={handleScheduleMinistro} disabled={isActioning} style={actionBtn('#2563eb')}>
               {isActioning ? 'Agendando...' : 'Agendar'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Flagging popover — appears when clicking "+ Observar" */}
+      {flaggingField && (
+        <div onClick={e => { if (e.target === e.currentTarget) setFlaggingField(null); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: 20, width: '90%', maxWidth: 420, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#111827' }}>Observar campo</h4>
+            <div style={{ padding: 10, background: '#f9fafb', borderRadius: 8, marginBottom: 12, border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 2 }}>{flaggingField.label}</div>
+              <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{flaggingField.currentValue || '—'}</div>
+            </div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Comentario de corrección:</label>
+            <textarea value={flagComment} onChange={e => setFlagComment(e.target.value)}
+              placeholder="Ej: El RUT tiene un dígito incorrecto..."
+              rows={3} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+              <button onClick={() => setFlaggingField(null)} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8, background: 'white', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={confirmFlag} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: '#f59e0b', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Agregar a observaciones</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Corrections send modal */}
+      {showCorrectionsModal && (
+        <Modal open onClose={() => setShowCorrectionsModal(false)} title={`Enviar Correcciones (${correctionItems.length})`}>
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
+              Los siguientes campos serán marcados para corrección. El dirigente social solo podrá modificar estos datos.
+            </p>
+            <div style={{ display: 'grid', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+              {correctionItems.map((item, i) => (
+                <div key={i} style={{ padding: 10, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#991b1b' }}>{item.label}</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Valor actual: {item.currentValue || '—'}</div>
+                    <div style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>{item.message}</div>
+                  </div>
+                  <button onClick={() => removeFlagItem(item.field)} style={{ padding: '2px 8px', border: 'none', borderRadius: 4, background: '#fecaca', color: '#dc2626', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>Quitar</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Observación general (opcional):</label>
+            <textarea value={correctionsGeneralComment} onChange={e => setCorrectionsGeneralComment(e.target.value)}
+              placeholder="Comentario general para el dirigente social..."
+              rows={3} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button onClick={() => setShowCorrectionsModal(false)} style={actionBtn('#6b7280')}>Cancelar</button>
+            <button onClick={submitCorrections} disabled={isActioning} style={actionBtn('#f59e0b')}>
+              {isActioning ? 'Enviando...' : `Enviar ${correctionItems.length} correcciones`}
             </button>
           </div>
         </Modal>

@@ -320,6 +320,7 @@ const organizationSchema = new mongoose.Schema({
       'ministro_approved',
       'pending_review',
       'in_review',
+      'corrections_requested',
       'rejected',
       'sent_registry',
       'registry_observations', // Estado cuando Registro Civil tiene observaciones

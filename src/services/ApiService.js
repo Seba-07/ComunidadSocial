@@ -559,8 +559,12 @@ class ApiService {
     return this.post(`/organizations/${orgId}/reject`, { corrections, generalComment });
   }
 
-  async resubmitOrganization(orgId, userComment, fieldResponses) {
-    return this.post(`/organizations/${orgId}/resubmit`, { userComment, fieldResponses });
+  async requestCorrections(orgId, corrections, generalComment) {
+    return this.post(`/organizations/${orgId}/request-corrections`, { corrections, generalComment });
+  }
+
+  async resubmitOrganization(orgId, userComment, correctedFields) {
+    return this.post(`/organizations/${orgId}/resubmit`, { userComment, correctedFields });
   }
 
   async retractOrganization(orgId, reason) {
