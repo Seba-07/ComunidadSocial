@@ -186,6 +186,20 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
+// Reschedule by organization ID (Admin only) — must be before /:id routes
+router.put('/by-org/:orgId/reschedule', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const assignment = await Assignment.findOne({ organizationId: req.params.orgId, status: 'pending' });
+    if (!assignment) return res.status(404).json({ error: 'No se encontro asignacion pendiente para esta organizacion' });
+    req.params.id = assignment._id.toString();
+    req.assignmentDoc = assignment;
+    return rescheduleHandler(req, res);
+  } catch (error) {
+    console.error('Reschedule by org error:', error);
+    res.status(500).json({ error: 'Error al reprogramar' });
+  }
+});
+
 // Create assignment (Admin only)
 router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
@@ -658,23 +672,7 @@ router.post('/:id/reject-assembly', authenticate, requireRole('MINISTRO_FE', 'MU
   }
 });
 
-// Reschedule by organization ID (Admin only) — finds the pending assignment for this org
-router.put('/by-org/:orgId/reschedule', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  try {
-    const assignment = await Assignment.findOne({ organizationId: req.params.orgId, status: 'pending' });
-    if (!assignment) return res.status(404).json({ error: 'No se encontro asignacion pendiente para esta organizacion' });
-    // Forward to the same logic
-    req.params.id = assignment._id.toString();
-    req.assignmentDoc = assignment;
-    // Fall through to /:id/reschedule handler below
-    return rescheduleHandler(req, res);
-  } catch (error) {
-    console.error('Reschedule by org error:', error);
-    res.status(500).json({ error: 'Error al reprogramar' });
-  }
-});
-
-// Reschedule assignment (Admin only) — change date/time of confirmed assembly
+// Reschedule assignment by ID (Admin only)
 router.put('/:id/reschedule', authenticate, requireRole('MUNICIPALIDAD'), (req, res) => rescheduleHandler(req, res));
 
 async function rescheduleHandler(req, res) {
