@@ -15,17 +15,22 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
   const [loading, setLoading] = useState(true);
 
   const a = assignment;
-  const orgId = a.organizationId?._id || a.organizationId;
+  // organizationId comes populated from /assignments/my/pending (includes org data)
+  const populatedOrg = (typeof a.organizationId === 'object' && a.organizationId !== null) ? a.organizationId : null;
+  const orgId = populatedOrg?._id || a.organizationId;
 
   useEffect(() => {
     async function load() {
       try {
-        const [orgData, docs] = await Promise.all([
-          apiService.getOrganization(orgId),
-          apiService.get(`/organizations/${orgId}/generated-documents`).catch(() => []),
-        ]);
-        setOrg(orgData.organization || orgData);
-        if (Array.isArray(docs)) setGeneratedDocs(docs);
+        // Use populated org data from assignment (MF doesn't have GET /organizations/:id permission)
+        if (populatedOrg) {
+          setOrg(populatedOrg);
+        }
+        // Load generated documents
+        if (orgId) {
+          const docs = await apiService.get(`/organizations/${orgId}/generated-documents`).catch(() => []);
+          if (Array.isArray(docs)) setGeneratedDocs(docs);
+        }
       } catch { addToast('Error al cargar datos', 'error'); }
       finally { setLoading(false); }
     }
@@ -56,11 +61,10 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
 
   const dir = org?.provisionalDirectorio || {};
   const members = org?.members || [];
-  const isToday = (() => {
-    if (!a.scheduledDate) return false;
-    return new Date(a.scheduledDate).toDateString() === new Date().toDateString();
-  })();
-  const isPast = a.scheduledDate && new Date(a.scheduledDate) < new Date(new Date().toDateString());
+  const todayISO = new Date().toLocaleDateString('en-CA');
+  const schedISO = a.scheduledDate ? new Date(a.scheduledDate).toLocaleDateString('en-CA') : '';
+  const isToday = schedISO === todayISO;
+  const isPast = schedISO && schedISO < todayISO;
   const canStart = (isToday || isPast) && a.status === 'pending';
 
   return (

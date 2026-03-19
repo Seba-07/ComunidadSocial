@@ -14,11 +14,11 @@ import SettingsPage from '../Settings/SettingsPage';
 import MiHorario from './MiHorario';
 
 const MINISTRO_MENU_ITEMS = [
-  { key: 'pending', label: 'Asignaciones', icon: '&#128203;' },
-  { key: 'completed', label: 'Completadas', icon: '&#9989;' },
-  { key: 'horario', label: 'Mi Horario', icon: '&#128197;' },
-  { key: 'privacidad', label: 'Privacidad', icon: '&#128274;' },
-  { key: 'configuracion', label: 'Configuracion', icon: '&#9881;' }
+  { key: 'pending', label: 'Asignaciones', icon: '\uD83D\uDCCB' },
+  { key: 'completed', label: 'Completadas', icon: '\u2705' },
+  { key: 'horario', label: 'Mi Horario', icon: '\uD83D\uDCC5' },
+  { key: 'privacidad', label: 'Privacidad', icon: '\uD83D\uDD12' },
+  { key: 'configuracion', label: 'Configuracion', icon: '\u2699\uFE0F' }
 ];
 
 export default function MinistroDashboardPage() {
@@ -48,15 +48,19 @@ export default function MinistroDashboardPage() {
 
   const completedAssignments = assignments.filter(a => a.status === 'completed');
 
-  // Separate today vs upcoming
-  const todayStr = new Date().toDateString();
-  const todayAssignments = myPending.filter(a => a.scheduledDate && new Date(a.scheduledDate).toDateString() === todayStr);
-  const upcomingAssignments = myPending.filter(a => !a.scheduledDate || new Date(a.scheduledDate).toDateString() !== todayStr);
+  // Separate today vs upcoming — compare YYYY-MM-DD strings to avoid timezone issues
+  const todayISO = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
+  function getDateISO(d) {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('en-CA');
+  }
+  const todayAssignments = myPending.filter(a => a.scheduledDate && getDateISO(a.scheduledDate) === todayISO);
+  const upcomingAssignments = myPending.filter(a => !a.scheduledDate || getDateISO(a.scheduledDate) !== todayISO);
 
   const stats = [
-    { icon: '&#128197;', label: 'Hoy', value: todayAssignments.length, color: '#2563eb' },
-    { icon: '&#128203;', label: 'Pendientes', value: myPending.length, color: '#f59e0b' },
-    { icon: '&#9989;', label: 'Completadas', value: completedAssignments.length, color: '#10b981' },
+    { icon: '\uD83D\uDCC5', label: 'Hoy', value: todayAssignments.length, color: '#2563eb' },
+    { icon: '\uD83D\uDCCB', label: 'Pendientes', value: myPending.length, color: '#f59e0b' },
+    { icon: '\u2705', label: 'Completadas', value: completedAssignments.length, color: '#10b981' },
   ];
 
   const menuItems = MINISTRO_MENU_ITEMS.map(item => {

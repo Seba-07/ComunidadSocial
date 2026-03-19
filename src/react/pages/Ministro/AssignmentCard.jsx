@@ -16,9 +16,7 @@ export default function AssignmentCard({ assignment, onSelect }) {
   const org = a.organizationId || a.organization || {};
   const isToday = (() => {
     if (!a.scheduledDate) return false;
-    const d = new Date(a.scheduledDate);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
+    return new Date(a.scheduledDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA');
   })();
 
   const memberCount = org.members?.length || a.memberCount || 0;
