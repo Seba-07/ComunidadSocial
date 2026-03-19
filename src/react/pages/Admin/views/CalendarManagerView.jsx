@@ -9,8 +9,6 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 const EVENT_TYPES = {
   ASSIGNMENT: { color: '#2563eb', label: 'Asignación' },
-  DEADLINE: { color: '#ef4444', label: 'Plazo Crítico' },
-  DEADLINE_WARNING: { color: '#f97316', label: 'Plazo Próximo' },
   ASSEMBLY: { color: '#22c55e', label: 'Asamblea' }
 };
 
