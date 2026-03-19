@@ -71,7 +71,7 @@ export default function OrgComunicaciones({ org, onRefresh }) {
   }
 
   const tabs = [
-    { key: 'bulletins', label: 'Comunicados Municipales', count: bulletins.length },
+    { key: 'bulletins', label: 'Anuncios Municipales', count: bulletins.length },
     { key: 'internal', label: 'Comunicaciones Internas', count: communications.length }
   ];
 
@@ -125,7 +125,7 @@ function BulletinsInbox({ bulletins, loading, expandedId, onToggle }) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
-        <p style={{ fontSize: 14 }}>Cargando comunicados...</p>
+        <p style={{ fontSize: 14 }}>Cargando anuncios...</p>
       </div>
     );
   }
@@ -134,8 +134,8 @@ function BulletinsInbox({ bulletins, loading, expandedId, onToggle }) {
     return (
       <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
         <p style={{ fontSize: 40, margin: '0 0 12px' }}>{'\uD83D\uDCEC'}</p>
-        <p style={{ fontSize: 16 }}>No hay comunicados municipales</p>
-        <p style={{ fontSize: 13, marginTop: 8 }}>Los comunicados oficiales de la municipalidad aparecer\u00e1n aqu\u00ed</p>
+        <p style={{ fontSize: 16 }}>No hay anuncios municipales</p>
+        <p style={{ fontSize: 13, marginTop: 8 }}>Los anuncios oficiales de la municipalidad aparecer\u00e1n aqu\u00ed</p>
       </div>
     );
   }

@@ -51,11 +51,11 @@ export default function BulletinsView() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('¿Eliminar este comunicado?')) return;
+    if (!confirm('¿Eliminar este anuncio?')) return;
     try {
       await apiService.delete(`/bulletins/${id}`);
       setBulletins(prev => prev.filter(b => b._id !== id));
-      addToast('Comunicado eliminado', 'success');
+      addToast('Anuncio eliminado', 'success');
     } catch (err) {
       addToast(err.message, 'error');
     }
@@ -68,17 +68,17 @@ export default function BulletinsView() {
       )
     : bulletins;
 
-  if (loading) return <LoadingSpinner text="Cargando comunicados..." />;
+  if (loading) return <LoadingSpinner text="Cargando anuncios..." />;
 
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Comunicados Oficiales</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Anuncios Oficiales</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '10px 20px', border: 'none', borderRadius: 10, background: '#1e40af',
           color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
         }}>
-          + Redactar Nuevo Comunicado
+          + Redactar Nuevo Anuncio
         </button>
       </div>
 
@@ -101,15 +101,15 @@ export default function BulletinsView() {
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar comunicados..." />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar anuncios..." />
       </div>
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
           <p style={{ fontSize: 40, margin: '0 0 12px' }}>{'\uD83D\uDCE2'}</p>
-          <p style={{ fontSize: 16 }}>{bulletins.length === 0 ? 'No hay comunicados enviados' : 'Sin resultados'}</p>
+          <p style={{ fontSize: 16 }}>{bulletins.length === 0 ? 'No hay anuncios enviados' : 'Sin resultados'}</p>
           {bulletins.length === 0 && (
-            <p style={{ fontSize: 13, marginTop: 8 }}>Redacta el primer comunicado oficial para las organizaciones</p>
+            <p style={{ fontSize: 13, marginTop: 8 }}>Redacta el primer anuncio oficial para las organizaciones</p>
           )}
         </div>
       ) : (
@@ -188,12 +188,12 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!title.trim()) { addToast('Ingresa un título', 'error'); return; }
-    if (!content.trim()) { addToast('Ingresa el contenido del comunicado', 'error'); return; }
+    if (!content.trim()) { addToast('Ingresa el contenido del anuncio', 'error'); return; }
 
     setSubmitting(true);
     try {
       await apiService.post('/bulletins', { title: title.trim(), content: content.trim(), targetAudience });
-      addToast('Comunicado enviado exitosamente', 'success');
+      addToast('Anuncio enviado exitosamente', 'success');
       onCreated();
     } catch (err) {
       addToast(err.message || 'Error al enviar', 'error');
@@ -207,9 +207,9 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
       <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Redactar Comunicado Oficial</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Redactar Anuncio Oficial</h3>
           <p style={{ margin: '8px 0 0', fontSize: 13, color: '#6b7280' }}>
-            Este comunicado será visible para las organizaciones que coincidan con la audiencia seleccionada.
+            Este anuncio será visible para las organizaciones que coincidan con la audiencia seleccionada.
           </p>
         </div>
 
@@ -232,19 +232,19 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Contenido del Comunicado *</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Contenido del Anuncio *</label>
             <textarea value={content} onChange={e => setContent(e.target.value)}
-              placeholder="Escriba el contenido del comunicado oficial..."
+              placeholder="Escriba el contenido del anuncio oficial..."
               rows={10}
               style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 10, fontSize: 15, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.6 }} />
           </div>
 
           <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 13, color: '#1e40af', lineHeight: 1.5 }}>
             {targetAudience === 'TODAS'
-              ? 'Este comunicado será visible para todas las organizaciones aprobadas.'
+              ? 'Este anuncio será visible para todas las organizaciones aprobadas.'
               : targetAudience === 'DIRECTIVAS_VENCIDAS'
-              ? 'Este comunicado será visible solo para organizaciones cuya directiva haya vencido.'
-              : `Este comunicado será visible para organizaciones de tipo "${AUDIENCE_LABELS[targetAudience]}".`}
+              ? 'Este anuncio será visible solo para organizaciones cuya directiva haya vencido.'
+              : `Este anuncio será visible para organizaciones de tipo "${AUDIENCE_LABELS[targetAudience]}".`}
           </div>
 
           <div style={{ display: 'flex', gap: 12 }}>
@@ -254,7 +254,7 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
             </button>
             <button type="submit" disabled={submitting}
               style={{ flex: 1, padding: 14, border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', color: '#fff', background: '#1e40af', opacity: submitting ? 0.6 : 1 }}>
-              {submitting ? 'Enviando...' : 'Enviar Comunicado'}
+              {submitting ? 'Enviando...' : 'Enviar Anuncio'}
             </button>
           </div>
         </form>

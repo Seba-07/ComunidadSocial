@@ -25,7 +25,7 @@ const ADMIN_SECTIONS = [
       { key: 'estatutos', label: 'Estatutos', icon: '📜' },
       { key: 'plantillas-docs', label: 'Plantillas Docs', icon: '📄' },
       { key: 'noticias', label: 'Noticias', icon: '📰' },
-      { key: 'comunicados', label: 'Comunicados', icon: '📢' },
+      { key: 'comunicados', label: 'Anuncios', icon: '📢' },
     ]
   },
   {
