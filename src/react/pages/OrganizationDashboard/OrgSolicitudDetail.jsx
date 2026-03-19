@@ -517,55 +517,61 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                       <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600, background: '#fef3c7', padding: '3px 8px', borderRadius: 4 }}>
                         Certificado pendiente
                       </span>
-                      <input
-                        ref={el => fileInputRefs.current[key] = el}
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          if (e.target.files[0]) handleUploadCert(person.rut || key, e.target.files[0]);
-                        }}
-                      />
-                      <button
-                        onClick={() => fileInputRefs.current[key]?.click()}
-                        disabled={saving}
-                        style={{
-                          padding: '4px 10px', fontSize: 11, borderRadius: 6,
-                          border: '1px solid #d1d5db', background: 'white', color: '#374151',
-                          cursor: saving ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        Subir
-                      </button>
+                      {org.status === 'draft' && (
+                        <>
+                          <input
+                            ref={el => fileInputRefs.current[key] = el}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            style={{ display: 'none' }}
+                            onChange={e => {
+                              if (e.target.files[0]) handleUploadCert(person.rut || key, e.target.files[0]);
+                            }}
+                          />
+                          <button
+                            onClick={() => fileInputRefs.current[key]?.click()}
+                            disabled={saving}
+                            style={{
+                              padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                              border: '1px solid #d1d5db', background: 'white', color: '#374151',
+                              cursor: saving ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            Subir
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
 
-                  {isEditing ? (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <select
-                        onChange={e => { if (e.target.value) handleChangeCargo(key, parseInt(e.target.value)); }}
-                        defaultValue=""
-                        style={{ padding: '4px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db' }}
-                      >
-                        <option value="">Seleccionar...</option>
-                        {members.map((m, i) => (
-                          <option key={m.rut || i} value={i}>{formatName(m)} — {m.rut}</option>
-                        ))}
-                      </select>
-                      <button onClick={() => setEditingCargo(null)}
-                        style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, border: '1px solid #d1d5db', background: 'white', cursor: 'pointer' }}>
-                        Cancelar
+                  {org.status === 'draft' && (
+                    isEditing ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <select
+                          onChange={e => { if (e.target.value) handleChangeCargo(key, parseInt(e.target.value)); }}
+                          defaultValue=""
+                          style={{ padding: '4px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #d1d5db' }}
+                        >
+                          <option value="">Seleccionar...</option>
+                          {members.map((m, i) => (
+                            <option key={m.rut || i} value={i}>{formatName(m)} — {m.rut}</option>
+                          ))}
+                        </select>
+                        <button onClick={() => setEditingCargo(null)}
+                          style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, border: '1px solid #d1d5db', background: 'white', cursor: 'pointer' }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setEditingCargo(key)}
+                        style={{
+                          padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                          border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8',
+                          cursor: 'pointer',
+                        }}>
+                        Cambiar
                       </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setEditingCargo(key)}
-                      style={{
-                        padding: '4px 10px', fontSize: 11, borderRadius: 6,
-                        border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8',
-                        cursor: 'pointer',
-                      }}>
-                      Cambiar
-                    </button>
+                    )
                   )}
                 </div>
               </div>
