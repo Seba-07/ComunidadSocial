@@ -356,26 +356,54 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
           )}
           <div style={{ display: 'grid', gap: 10 }}>
             {org.corrections.items.map((item, i) => {
-              const isCertField = item.field?.startsWith('cert.');
+              const f = item.field || '';
+              // Classify field type for appropriate correction control
+              const isCertField = f.startsWith('cert.');
+              const isDirectorioField = f.startsWith('provisionalDirectorio.');
+              const isComisionField = f.startsWith('electoralCommission.');
+              const isMemberField = f.startsWith('members.');
+              const isGeneratedDoc = f.startsWith('generatedDoc.');
+              const isEstatutos = f === 'estatutos';
+              const isObjectives = f === 'objectives';
+              // These are auto-regenerated — no manual input needed
+              const isAutoRegenerated = isGeneratedDoc || isEstatutos;
+              // These need member selection from dropdown
+              const needsMemberSelect = isDirectorioField || isComisionField || isMemberField;
+
+              const inputStyle = { width: '100%', padding: '8px 12px', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 13, boxSizing: 'border-box', background: '#fffbeb' };
+              const doneStyle = { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6 };
+
               return (
                 <div key={i} style={{ padding: 12, background: 'white', border: '1px solid #fed7aa', borderRadius: 8 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Observacion: {item.message}</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>Valor actual: {item.currentValue || '—'}</div>
-                  {isCertField ? (
-                    <div>
-                      {correctedFields[item.field] ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>
-                            Nuevo archivo cargado ({correctedFields[item.field].name})
-                          </span>
-                          <button onClick={() => setCorrectedFields(prev => {
-                            const copy = { ...prev };
-                            delete copy[item.field];
-                            return copy;
-                          })} style={{ padding: '2px 8px', border: '1px solid #ef4444', borderRadius: 4, background: 'white', color: '#ef4444', fontSize: 11, cursor: 'pointer' }}>
-                            Quitar
+                  {item.currentValue && <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>Valor actual: {item.currentValue}</div>}
+
+                  {/* Auto-regenerated docs — just acknowledge, will be regenerated on resubmit */}
+                  {isAutoRegenerated && (
+                    <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 12, color: '#1e40af' }}>
+                      {correctedFields[f] === '_acknowledged' ? (
+                        <span style={{ fontWeight: 600 }}>Marcado para regeneración al reenviar</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <span>Este documento se regenerará automáticamente al corregir los datos y reenviar la solicitud.</span>
+                          <button onClick={() => setCorrectedFields(prev => ({ ...prev, [f]: '_acknowledged' }))}
+                            style={{ padding: '4px 12px', border: 'none', borderRadius: 6, background: '#2563eb', color: 'white', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            Entendido
                           </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Certificate upload */}
+                  {isCertField && (
+                    <div>
+                      {correctedFields[f] ? (
+                        <div style={doneStyle}>
+                          <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>Nuevo archivo: {correctedFields[f].name}</span>
+                          <button onClick={() => setCorrectedFields(prev => { const c = { ...prev }; delete c[f]; return c; })}
+                            style={{ padding: '2px 8px', border: '1px solid #ef4444', borderRadius: 4, background: 'white', color: '#ef4444', fontSize: 11, cursor: 'pointer' }}>Quitar</button>
                         </div>
                       ) : (
                         <label style={{
@@ -388,27 +416,69 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                             onChange={e => {
                               const file = e.target.files[0];
                               if (!file) return;
-                              if (file.size > 5 * 1024 * 1024) { addToast('Archivo demasiado grande (max 5MB)', 'error'); return; }
+                              if (file.size > 5 * 1024 * 1024) { addToast('Max 5MB', 'error'); return; }
                               const reader = new FileReader();
-                              reader.onload = () => {
-                                setCorrectedFields(prev => ({
-                                  ...prev,
-                                  [item.field]: { name: file.name, data: reader.result, _isFile: true }
-                                }));
-                              };
+                              reader.onload = () => setCorrectedFields(prev => ({ ...prev, [f]: { name: file.name, data: reader.result, _isFile: true } }));
                               reader.readAsDataURL(file);
                             }}
                           />
                         </label>
                       )}
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Directorio / Comisión — select from existing members */}
+                  {needsMemberSelect && (
+                    <div>
+                      {correctedFields[f] ? (
+                        <div style={doneStyle}>
+                          <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>
+                            Nuevo: {typeof correctedFields[f] === 'object' ? `${correctedFields[f].firstName} ${correctedFields[f].lastName} — ${correctedFields[f].rut}` : correctedFields[f]}
+                          </span>
+                          <button onClick={() => setCorrectedFields(prev => { const c = { ...prev }; delete c[f]; return c; })}
+                            style={{ padding: '2px 8px', border: '1px solid #ef4444', borderRadius: 4, background: 'white', color: '#ef4444', fontSize: 11, cursor: 'pointer' }}>Quitar</button>
+                        </div>
+                      ) : (
+                        <select
+                          value=""
+                          onChange={e => {
+                            const idx = parseInt(e.target.value);
+                            if (isNaN(idx)) return;
+                            const m = members[idx];
+                            if (m) setCorrectedFields(prev => ({ ...prev, [f]: { ...m, _isMember: true } }));
+                          }}
+                          style={inputStyle}
+                        >
+                          <option value="">Seleccionar miembro de reemplazo...</option>
+                          {members.map((m, mi) => (
+                            <option key={m.rut || mi} value={mi}>
+                              {m.firstName} {m.lastName} — {m.rut}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Objectives — textarea */}
+                  {isObjectives && (
+                    <textarea
+                      placeholder="Corrige los objetivos (uno por línea)..."
+                      value={correctedFields[f] || ''}
+                      onChange={e => setCorrectedFields(prev => ({ ...prev, [f]: e.target.value }))}
+                      rows={4}
+                      style={{ ...inputStyle, resize: 'vertical' }}
+                    />
+                  )}
+
+                  {/* Regular text fields */}
+                  {!isCertField && !needsMemberSelect && !isAutoRegenerated && !isObjectives && (
                     <input
                       type="text"
                       placeholder="Ingresa el valor corregido..."
-                      value={correctedFields[item.field] || ''}
-                      onChange={e => setCorrectedFields(prev => ({ ...prev, [item.field]: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 13, boxSizing: 'border-box', background: '#fffbeb' }}
+                      value={correctedFields[f] || ''}
+                      onChange={e => setCorrectedFields(prev => ({ ...prev, [f]: e.target.value }))}
+                      style={inputStyle}
                     />
                   )}
                 </div>
@@ -426,7 +496,9 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
             onClick={async () => {
               const pendingCount = org.corrections.items.length;
               const filledCount = Object.values(correctedFields).filter(v => {
+                if (v === '_acknowledged') return true;
                 if (typeof v === 'object' && v._isFile) return !!v.data;
+                if (typeof v === 'object' && v._isMember) return !!v.rut;
                 return typeof v === 'string' && v.trim();
               }).length;
               if (filledCount < pendingCount) {
@@ -435,21 +507,30 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               }
               setResubmitting(true);
               try {
-                // Separate text fields from file fields
+                // Classify corrections by type
                 const textFields = {};
                 const fileFields = {};
+                const memberFields = {};
                 for (const [key, val] of Object.entries(correctedFields)) {
+                  if (val === '_acknowledged') continue; // auto-regenerated, skip
                   if (typeof val === 'object' && val._isFile) {
                     fileFields[key] = val.data;
+                  } else if (typeof val === 'object' && val._isMember) {
+                    // Store the full member object for directorio/comision replacement
+                    memberFields[key] = val;
                   } else {
                     textFields[key] = val;
                   }
                 }
-                // Submit text corrections
+                // Merge member selections into textFields as serialized objects
+                for (const [key, member] of Object.entries(memberFields)) {
+                  const { _isMember, ...memberData } = member;
+                  textFields[key] = memberData;
+                }
+                // Submit corrections
                 await apiService.resubmitOrganization(org._id, resubmitComment, textFields);
-                // Upload corrected certificate files
+                // Upload corrected certificate files separately
                 for (const [field, base64Data] of Object.entries(fileFields)) {
-                  // Extract RUT from field path: cert.123456789.antecedentes → 123456789
                   const parts = field.split('.');
                   if (parts.length >= 2) {
                     const memberId = parts[1];
