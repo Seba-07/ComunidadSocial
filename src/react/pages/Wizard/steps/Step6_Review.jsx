@@ -4,6 +4,7 @@ import { useUiStore } from '../../../stores/uiStore';
 import { pdfService } from '@services/PDFService.js';
 import { apiService } from '@services/ApiService.js';
 import { jsPDF } from 'jspdf';
+import { templateToHtml } from '@shared/utils/templateBlockParser.js';
 import tenant from '../../../../config/tenant.js';
 
 function capitalize(str) {
@@ -580,19 +581,25 @@ export default function Step6_Review({ onNext, onPrev }) {
       <div className="r-toolbar">
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={() => {
-          // Save rendered document templates for submission to GeneratedDocuments collection
+          // Save rendered document templates as full HTML for submission to GeneratedDocuments
           const docs = {};
           const templateData = buildTemplateData();
           for (const [key, tmpl] of Object.entries(docTemplates)) {
             if (tmpl?.content) {
-              let rendered = tmpl.content;
+              // Replace placeholders in template content
+              let resolved = tmpl.content;
               for (const [ph, val] of Object.entries(templateData)) {
-                rendered = rendered.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
+                resolved = resolved.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
               }
-              // Also apply replacePlaceholders for {{NOMBRE_ORGANIZACION}} style
-              rendered = replacePlaceholders(rendered);
+              resolved = replacePlaceholders(resolved);
+              // Convert to full HTML with header/footer/tables/columns rendered
+              const htmlContent = templateToHtml(resolved, {
+                headerConfig: tmpl.headerConfig || null,
+                footerConfig: tmpl.footerConfig || null,
+                pageSize: tmpl.pageSize || 'letter',
+              });
               const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
-              docs[docTypeMap[key] || key] = { content: rendered, generatedAt: new Date().toISOString() };
+              docs[docTypeMap[key] || key] = { content: htmlContent, generatedAt: new Date().toISOString() };
             }
           }
           if (Object.keys(docs).length > 0) {

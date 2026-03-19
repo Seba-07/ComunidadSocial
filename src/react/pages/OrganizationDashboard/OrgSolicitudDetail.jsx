@@ -716,9 +716,15 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         function viewGenDoc(doc) {
           const w = window.open('', '_blank');
           if (!w) return;
-          w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${DOC_LABELS[doc.docType] || doc.docType}</title>
-            <style>body{font-family:Arial,sans-serif;margin:40px auto;max-width:800px;line-height:1.6;color:#111;}
-            @media print{body{margin:0;max-width:100%;}}</style></head><body>${doc.content}</body></html>`);
+          // If content is already a full HTML document (generated with templateToHtml), use it directly
+          if (doc.content && doc.content.trim().startsWith('<!DOCTYPE')) {
+            w.document.write(doc.content);
+          } else {
+            // Legacy fallback for documents saved before templateToHtml was introduced
+            w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${DOC_LABELS[doc.docType] || doc.docType}</title>
+              <style>body{font-family:Arial,sans-serif;margin:40px auto;max-width:800px;line-height:1.6;color:#111;}
+              @media print{body{margin:0;max-width:100%;}}</style></head><body>${doc.content}</body></html>`);
+          }
           w.document.close();
         }
         const eyeIconGen = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
