@@ -9,7 +9,7 @@ import MemberImportModal, { downloadMemberTemplate } from './MemberImportModal';
 
 const EMPTY_MEMBER = { firstName: '', lastName: '', rut: '', email: '', phone: '', birthDate: '', address: '' };
 
-// TEST DATA - 15 members (13 adults + 2 minors 15-16 years old)
+// TEST DATA - 14 members (10 adults + 4 minors: 1 de 14 años, 3 de 15-17 años)
 const TEST_MEMBERS = [
   { firstName: 'María', lastName: 'González', rut: '12.456.789-0', email: 'maria.gonzalez@test.cl', phone: '+56 9 1234 5001', birthDate: '1985-03-15', genero: 'femenino', address: 'Av. Dorsal 1250, Renca' },
   { firstName: 'Juan', lastName: 'Pérez', rut: '11.234.567-1', email: 'juan.perez@test.cl', phone: '+56 9 1234 5002', birthDate: '1978-07-22', genero: 'masculino', address: 'Calle Uno 345, Renca' },
@@ -21,12 +21,11 @@ const TEST_MEMBERS = [
   { firstName: 'Miguel', lastName: 'Torres', rut: '8.765.432-K', email: 'miguel.torres@test.cl', phone: '+56 9 1234 5008', birthDate: '1960-12-17', genero: 'masculino', address: 'Psje. El Sol 567, Renca' },
   { firstName: 'Claudia', lastName: 'Vargas', rut: '16.543.210-K', email: 'claudia.vargas@test.cl', phone: '+56 9 1234 5009', birthDate: '1995-08-25', genero: 'femenino', address: 'Av. Condell 1890, Renca' },
   { firstName: 'Jorge', lastName: 'Martínez', rut: '11.876.543-5', email: 'jorge.martinez@test.cl', phone: '+56 9 1234 5010', birthDate: '1980-02-14', genero: 'masculino', address: 'Calle Neptuno 234, Renca' },
-  { firstName: 'Valentina', lastName: 'Soto', rut: '17.654.321-3', email: 'valentina.soto@test.cl', phone: '+56 9 1234 5011', birthDate: '1993-06-19', genero: 'femenino', address: 'Av. Blanco Encalada 1560, Renca' },
-  { firstName: 'Luis', lastName: 'Ramírez', rut: '10.234.567-3', email: 'luis.ramirez@test.cl', phone: '+56 9 1234 5012', birthDate: '1975-10-05', genero: 'masculino', address: 'Calle Venus 789, Renca' },
-  { firstName: 'Sofía', lastName: 'Díaz', rut: '18.765.432-7', email: 'sofia.diaz@test.cl', phone: '+56 9 1234 5013', birthDate: '1998-01-11', genero: 'femenino', address: 'Psje. Los Jazmines 45, Renca' },
-  // 2 menores de edad (15-16 años)
-  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-4', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5014', birthDate: '2010-03-20', genero: 'masculino', address: 'Av. Dorsal 980, Renca' },
-  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-8', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5015', birthDate: '2009-08-14', genero: 'femenino', address: 'Calle Saturno 321, Renca' },
+  // 4 menores de edad (1 de 14 años, 1 de 15, 1 de 16, 1 de 17)
+  { firstName: 'Martina', lastName: 'Castillo', rut: '23.567.890-1', email: 'martina.castillo@test.cl', phone: '+56 9 1234 5011', birthDate: '2012-01-15', genero: 'femenino', address: 'Calle Neptuno 234, Renca' },
+  { firstName: 'Tomás', lastName: 'Araya', rut: '21.345.678-4', email: 'tomas.araya@test.cl', phone: '+56 9 1234 5012', birthDate: '2011-06-20', genero: 'masculino', address: 'Av. Dorsal 980, Renca' },
+  { firstName: 'Isidora', lastName: 'Fuentes', rut: '22.456.789-8', email: 'isidora.fuentes@test.cl', phone: '+56 9 1234 5013', birthDate: '2010-08-14', genero: 'femenino', address: 'Calle Saturno 321, Renca' },
+  { firstName: 'Mateo', lastName: 'Reyes', rut: '22.890.123-6', email: 'mateo.reyes@test.cl', phone: '+56 9 1234 5014', birthDate: '2009-04-10', genero: 'masculino', address: 'Psje. Los Jazmines 45, Renca' },
 ];
 
 function calculateAge(birthDate) {
@@ -265,15 +264,15 @@ export default function Step2_Members({ onNext, onPrev }) {
         }}>
           Descargar plantilla
         </button>
-        {members.length === 0 && (
+        {members.length <= 1 && (
           <button onClick={() => {
             TEST_MEMBERS.forEach(m => addMember(m));
-            addToast('15 miembros de prueba agregados (2 menores de edad)', 'success');
+            addToast('14 miembros de prueba agregados (4 menores de edad)', 'success');
           }} style={{
             padding: '10px 20px', border: '1px solid #f59e0b', borderRadius: 10,
             background: '#fffbeb', color: '#92400e', fontSize: 13, fontWeight: 600, cursor: 'pointer'
           }}>
-            Cargar 15 miembros de prueba
+            Cargar 14 miembros de prueba
           </button>
         )}
       </div>
