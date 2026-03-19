@@ -107,6 +107,7 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [electionActioning, setElectionActioning] = useState(false);
   const [rejectElectionReason, setRejectElectionReason] = useState('');
   const [showRejectElection, setShowRejectElection] = useState(false);
+  const [generatedDocs, setGeneratedDocs] = useState([]);
 
   const { updateOrgStatus, rejectOrg, scheduleMinistro, refreshOrganization, approveWithDocument } = useAdminStore();
   const { ministros, fetchMinistros } = useMinistrosStore();
@@ -116,6 +117,10 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
     fetchMinistros().catch(() => {});
     // Refresh org to get full data (list endpoint excludes members/docs)
     refreshOrganization(initialOrg._id).then(o => { if (o) setOrg(o); }).catch(() => {});
+    // Load generated documents (PDFs from wizard Step6)
+    apiService.get(`/organizations/${initialOrg._id}/generated-documents`)
+      .then(docs => { if (Array.isArray(docs)) setGeneratedDocs(docs); })
+      .catch(() => {});
   }, [initialOrg._id]);
 
   async function loadOrgDocs() {
@@ -433,8 +438,49 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
               ))}
               {org.objectives && (
                 <div style={{ marginTop: 8 }}>
-                  <span style={{ fontWeight: 600, color: '#374151', fontSize: 14, display: 'block', marginBottom: 4 }}>Objetivos:</span>
-                  <p style={{ color: '#6b7280', fontSize: 13, whiteSpace: 'pre-line', margin: 0 }}>{org.objectives}</p>
+                  <span style={{ fontWeight: 600, color: '#374151', fontSize: 14, display: 'block', marginBottom: 6 }}>Objetivos:</span>
+                  <ul style={{ margin: 0, paddingLeft: 20, color: '#6b7280', fontSize: 13, lineHeight: 1.8 }}>
+                    {org.objectives.split('\n').filter(Boolean).map((obj, i) => (
+                      <li key={i}>{obj}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Configuración Administrativa */}
+              {org.config && (
+                <div style={{ marginTop: 16, padding: 16, background: '#f9fafb', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+                  <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#111827' }}>Configuración Administrativa</h4>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {(() => {
+                      const c = org.config;
+                      const moneda = c.monedaCuota || 'UTM';
+                      const prefix = moneda === 'CLP' ? '$' : '';
+                      const suffix = moneda !== 'CLP' ? ` ${moneda}` : '';
+                      const CITACION = {
+                        carta_certificada: 'Carta certificada',
+                        correo_electronico: 'Correo electrónico',
+                        mensajeria_instantanea: 'Mensajería instantánea',
+                        entrega_personal: 'Entrega personal',
+                      };
+                      const rows = [
+                        ['Cuota mensual', c.cuotaMin != null && c.cuotaMax != null ? `${prefix}${c.cuotaMin}${suffix} — ${prefix}${c.cuotaMax}${suffix}` : null],
+                        ['Cuota incorporación', c.cuotaIncorporacion != null ? `${prefix}${c.cuotaIncorporacion}${suffix}` : null],
+                        ['Duración mandato', c.duracionMandato ? `${c.duracionMandato} ${c.duracionMandato === 1 ? 'año' : 'años'}` : null],
+                        ['Método de citación', CITACION[c.metodoCitacion] || c.metodoCitacion],
+                        ['Días de anticipación', c.diasAnticipacion ? `${c.diasAnticipacion} días` : null],
+                        ['Asambleas ordinarias', (c.asambleas || []).length > 0 ? c.asambleas.join(', ') : null],
+                        ['Mes balance anual', c.accountReviewMonth],
+                        ['Entidad disolución', c.beneficiarioDisolucion ? `${c.beneficiarioDisolucion}${c.rutDisolucion ? ` (RUT: ${c.rutDisolucion})` : ''}` : null],
+                      ].filter(([, v]) => v);
+                      return rows.map(([label, value]) => (
+                        <div key={label} style={{ display: 'flex', gap: 12 }}>
+                          <span style={{ fontWeight: 600, color: '#374151', minWidth: 160, fontSize: 13 }}>{label}:</span>
+                          <span style={{ color: '#6b7280', fontSize: 13 }}>{value}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
@@ -717,9 +763,102 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
 
           {tab === 'documentos' && (
             <div>
-              {/* Estatutos */}
+              {/* Documentos Generados (PDFs del wizard) */}
+              <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                Documentos Generados ({generatedDocs.length})
+              </h4>
+              {generatedDocs.length > 0 ? (
+                <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
+                  {generatedDocs.map((doc, i) => {
+                    const DOC_LABELS = {
+                      acta_constitutiva: 'Acta Constitutiva',
+                      lista_socios: 'Lista de Socios Fundadores',
+                      nomina_directorio: 'Nómina del Directorio',
+                      carta_solicitud: 'Carta de Solicitud',
+                      declaracion_jurada: 'Declaración Jurada',
+                    };
+                    return (
+                      <div key={i} style={{
+                        padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                              {DOC_LABELS[doc.docType] || doc.docType?.replace(/_/g, ' ') || 'Documento'}
+                            </div>
+                            {doc.generatedAt && (
+                              <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                                Generado: {localeDateString(doc.generatedAt)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={() => {
+                            if (!doc.content) return;
+                            if (doc.content.startsWith('data:application/pdf')) {
+                              try {
+                                const base64 = doc.content.split(',')[1] || doc.content.split('base64,')[1];
+                                const byteChars = atob(base64);
+                                const byteArray = new Uint8Array(byteChars.length);
+                                for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+                                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                window.open(URL.createObjectURL(blob), '_blank');
+                              } catch { window.open(doc.content, '_blank'); }
+                            } else {
+                              const w = window.open('', '_blank');
+                              if (w) { w.document.write(doc.content); w.document.close(); }
+                            }
+                          }} style={{
+                            padding: '5px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                            border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer',
+                          }}>Ver</button>
+                          {doc.content?.startsWith('data:application/pdf') && (
+                            <button onClick={() => {
+                              const label = DOC_LABELS[doc.docType] || 'Documento';
+                              downloadBase64(doc.content, `${label}_${orgName.replace(/\s+/g, '_')}.pdf`);
+                            }} style={{
+                              padding: '5px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                              border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer',
+                            }}>Descargar</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: 12, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 20, fontSize: 13, color: '#92400e' }}>
+                  No se encontraron documentos generados. Es posible que la organización fue creada antes de la implementación del sistema de plantillas.
+                </div>
+              )}
+
+              {/* Estatutos (compilados — leer desde estatutosGeneratedText si existe, sino snapshot) */}
               <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Estatutos</h4>
-              {org.estatutosSnapshot?.articulos?.length > 0 ? (
+              {org.estatutosGeneratedText ? (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{
+                    padding: 14, border: '1px solid #e5e7eb', borderRadius: 8,
+                    background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: '#374151' }}>Estatutos compilados (con datos reales)</span>
+                    <button onClick={() => {
+                      const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estatutos - ${orgName}</title>
+<style>body{font-family:Georgia,serif;max-width:750px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}
+h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-size:15px;color:#555;font-weight:400;margin-top:0}
+@media print{body{margin:20px}}</style></head><body>
+<h1>ESTATUTOS</h1><h2>${orgName} — ${orgType}</h2><hr style="margin:20px 0">
+<div style="white-space:pre-line;font-size:13px">${org.estatutosGeneratedText}</div></body></html>`], { type: 'text/html;charset=utf-8' });
+                      window.open(URL.createObjectURL(blob), '_blank');
+                    }} style={{
+                      padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                      border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer',
+                    }}>Ver / Imprimir</button>
+                  </div>
+                </div>
+              ) : org.estatutosSnapshot?.articulos?.length > 0 ? (
                 <div style={{ marginBottom: 16 }}>
                   <div className="r-toolbar" style={{
                     padding: 14, border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 10,
@@ -1170,12 +1309,14 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         }}>
           {(org.status === 'waiting_ministro' || org.status === 'pending_review' || org.status === 'in_review') && (
             <>
-              {org.status !== 'in_review' && (
+              {org.status === 'pending_review' && (
                 <button onClick={() => handleStatusChange('in_review')} disabled={isActioning}
                   style={actionBtn('#8b5cf6')}>Tomar Revisión</button>
               )}
-              <button onClick={openScheduleModal} disabled={isActioning}
-                style={actionBtn('#2563eb')}>Agendar Ministro</button>
+              {(org.status === 'waiting_ministro' || org.status === 'in_review') && (
+                <button onClick={openScheduleModal} disabled={isActioning}
+                  style={actionBtn('#2563eb')}>Agendar Ministro</button>
+              )}
               <button onClick={() => setShowReject(true)} disabled={isActioning}
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
