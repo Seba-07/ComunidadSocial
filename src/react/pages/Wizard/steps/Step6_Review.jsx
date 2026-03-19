@@ -598,42 +598,48 @@ export default function Step6_Review({ onNext, onPrev }) {
       <div className="r-toolbar">
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
         <button onClick={async () => {
-          // Save rendered document templates as full HTML for submission to GeneratedDocuments
-          const docs = {};
-          const templateData = buildTemplateData();
-          const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
+          try {
+            // Save rendered document templates as full HTML for submission to GeneratedDocuments
+            const docs = {};
+            const templateData = buildTemplateData();
+            const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
 
-          for (const [key, tmpl] of Object.entries(docTemplates)) {
-            if (tmpl?.content) {
-              // Replace placeholders in template content
-              let resolved = tmpl.content;
-              for (const [ph, val] of Object.entries(templateData)) {
-                resolved = resolved.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
+            for (const [key, tmpl] of Object.entries(docTemplates)) {
+              if (tmpl?.content) {
+                // Replace placeholders in template content
+                let resolved = tmpl.content;
+                for (const [ph, val] of Object.entries(templateData)) {
+                  resolved = resolved.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
+                }
+                resolved = replacePlaceholders(resolved);
+
+                // Convert S3 presigned URLs to base64 data URLs (permanent, won't expire)
+                let headerCfg = tmpl.headerConfig ? { ...tmpl.headerConfig } : null;
+                let footerCfg = tmpl.footerConfig ? { ...tmpl.footerConfig } : null;
+                if (headerCfg?.imageUrl || footerCfg?.imageUrl) {
+                  try {
+                    const prefetched = await pdfService.prefetchConfigImages(headerCfg, footerCfg);
+                    headerCfg = prefetched.headerConfig;
+                    footerCfg = prefetched.footerConfig;
+                  } catch { /* continue without images */ }
+                }
+
+                // Convert to full HTML with header/footer/tables/columns rendered
+                const htmlContent = templateToHtml(resolved, {
+                  headerConfig: headerCfg,
+                  footerConfig: footerCfg,
+                  pageSize: tmpl.pageSize || 'letter',
+                });
+                docs[docTypeMap[key] || key] = { content: htmlContent, generatedAt: new Date().toISOString() };
               }
-              resolved = replacePlaceholders(resolved);
-
-              // Convert S3 presigned URLs to base64 data URLs (permanent, won't expire)
-              let headerCfg = tmpl.headerConfig ? { ...tmpl.headerConfig } : null;
-              let footerCfg = tmpl.footerConfig ? { ...tmpl.footerConfig } : null;
-              if (headerCfg?.imageUrl || footerCfg?.imageUrl) {
-                try {
-                  const prefetched = await pdfService.prefetchConfigImages(headerCfg, footerCfg);
-                  headerCfg = prefetched.headerConfig;
-                  footerCfg = prefetched.footerConfig;
-                } catch { /* continue without images */ }
-              }
-
-              // Convert to full HTML with header/footer/tables/columns rendered
-              const htmlContent = templateToHtml(resolved, {
-                headerConfig: headerCfg,
-                footerConfig: footerCfg,
-                pageSize: tmpl.pageSize || 'letter',
-              });
-              docs[docTypeMap[key] || key] = { content: htmlContent, generatedAt: new Date().toISOString() };
             }
-          }
-          if (Object.keys(docs).length > 0) {
-            setFormDataField('documents', docs);
+
+            console.log(`[Step6] Documentos generados: ${Object.keys(docs).length} de ${Object.keys(docTemplates).length} plantillas`);
+            if (Object.keys(docs).length > 0) {
+              setFormDataField('documents', docs);
+            }
+          } catch (err) {
+            console.error('[Step6] Error generando documentos:', err);
           }
           onNext();
         }} style={{

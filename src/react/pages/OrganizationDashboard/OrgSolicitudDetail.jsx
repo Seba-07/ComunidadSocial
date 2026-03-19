@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 import { localeDateString, localeString } from '../../utils/formatters';
+import { templateToHtml } from '@shared/utils/templateBlockParser.js';
 
 const STATUS_LABELS = {
   draft: 'Borrador',
@@ -722,14 +723,14 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         function viewGenDoc(doc) {
           const w = window.open('', '_blank');
           if (!w) return;
-          // If content is already a full HTML document (generated with templateToHtml), use it directly
+          // If content is already a full HTML document (generated with templateToHtml), use directly
           if (doc.content && doc.content.trim().startsWith('<!DOCTYPE')) {
             w.document.write(doc.content);
           } else {
-            // Legacy fallback for documents saved before templateToHtml was introduced
-            w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${DOC_LABELS[doc.docType] || doc.docType}</title>
-              <style>body{font-family:Arial,sans-serif;margin:40px auto;max-width:800px;line-height:1.6;color:#111;}
-              @media print{body{margin:0;max-width:100%;}}</style></head><body>${doc.content}</body></html>`);
+            // Legacy: content has raw template syntax ([TABLE], [COLS], etc.)
+            // Convert to proper HTML with templateToHtml before displaying
+            const html = templateToHtml(doc.content || '');
+            w.document.write(html);
           }
           w.document.close();
         }

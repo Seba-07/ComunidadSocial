@@ -409,13 +409,17 @@ export const useWizardStore = create((set, get) => ({
             cargoId: doc.cargoId || null,
             cargoNombre: doc.cargoNombre || null
           }));
+        console.log(`[submitOrg] Documentos a guardar: ${docs.length}, tipos: ${docs.map(d => d.docType).join(', ')}, contenido HTML: ${docs.every(d => d.content?.startsWith('<!DOCTYPE'))}`);
         if (docs.length > 0) {
           try {
             await apiService.post(`/organizations/${orgId}/generated-documents`, { documents: docs });
+            console.log(`[submitOrg] Documentos guardados exitosamente para org ${orgId}`);
           } catch (e) {
             console.warn('Error saving generated documents (org created OK):', e.message);
           }
         }
+      } else {
+        console.warn('[submitOrg] No hay documentos en formData.documents:', formData.documents);
       }
 
       // Clear saved progress
