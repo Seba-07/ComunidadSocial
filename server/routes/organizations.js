@@ -4089,6 +4089,65 @@ router.post('/:id/directorio/renuncia',
   }
 );
 
+// ============ MEMBER CERTIFICATE ============
+/**
+ * GET /:id/members/:rut/certificate
+ * Returns member data needed for frontend PDF generation.
+ * Directivos, owner, admin, or the member themselves can request.
+ */
+router.get('/:id/members/:rut/certificate', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id)
+      .select('organizationName organizationType address unidadVecinal comuna provisionalDirectorio members')
+      .lean();
+    if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const memberRut = decodeURIComponent(req.params.rut);
+    const member = (organization.members || []).find(m => m.rut === memberRut);
+    if (!member) return res.status(404).json({ error: 'Miembro no encontrado' });
+
+    if (member.status === 'inactive') {
+      return res.status(400).json({ error: 'El socio no está activo. No se puede emitir certificado para socios dados de baja.' });
+    }
+
+    // Auth: owner, admin, directivo, or the member themselves
+    const isOwner = organization.userId?.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isDirectivo = isDirectivoMember(organization, req.user);
+    const cleanRut = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+    const isSelf = cleanRut(req.user.rut) === cleanRut(memberRut);
+
+    if (!isOwner && !isAdmin && !isDirectivo && !isSelf) {
+      return res.status(403).json({ error: 'No autorizado para generar este certificado' });
+    }
+
+    res.json({
+      data: {
+        organization: {
+          organizationName: organization.organizationName,
+          organizationType: organization.organizationType,
+          address: organization.address,
+          unidadVecinal: organization.unidadVecinal,
+          comuna: organization.comuna,
+          provisionalDirectorio: organization.provisionalDirectorio
+        },
+        member: {
+          firstName: member.firstName,
+          lastName: member.lastName,
+          rut: member.rut,
+          address: member.address,
+          genero: member.genero,
+          joinDate: member.joinDate,
+          status: member.status
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Member certificate error:', error);
+    res.status(500).json({ error: 'Error al generar datos del certificado' });
+  }
+});
+
 // ============ MEMBER DEACTIVATION (dar de baja) ============
 const VALID_DEACTIVATION_CATEGORIES = ['RENUNCIA_VOLUNTARIA', 'FALLECIMIENTO', 'CAMBIO_DOMICILIO', 'EXPULSION_ASAMBLEA', 'OTRA'];
 

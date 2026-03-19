@@ -3,6 +3,7 @@ import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { apiService } from '@services/ApiService.js';
+import { pdfService } from '@services/PDFService.js';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 import { validateRut, formatRut } from '../../utils/validators';
@@ -87,6 +88,18 @@ export default function OrgMembers({ org, onRefresh }) {
     }
   }
 
+  async function handleCertificate(member) {
+    try {
+      const res = await apiService.getMemberCertificateData(org._id, member.rut);
+      const { organization: certOrg, member: certMember } = res.data;
+      const doc = await pdfService.generateMemberCertificate(certOrg, certMember);
+      doc.save(`certificado_${certMember.firstName}_${certMember.lastName}.pdf`);
+      addToast('Certificado descargado', 'success');
+    } catch (error) {
+      addToast(error.message || 'Error al generar certificado', 'error');
+    }
+  }
+
   async function handleReactivate(member) {
     try {
       await apiService.reactivateMember(org._id, member.rut);
@@ -151,9 +164,15 @@ export default function OrgMembers({ org, onRefresh }) {
       sortable: false,
       render: (_, row) => {
         const isInactive = row.status === 'inactive';
+        const cleanR = (r) => (r || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        const isSelf = cleanR(user?.rut) === cleanR(row.rut);
+        const canCert = canEdit || isSelf;
         return (
           <div className="r-btn-row" style={{ gap: 6 }}>
             <button onClick={() => setViewMember(row)} style={actionBtnStyle}>Ver</button>
+            {canCert && !isInactive && (
+              <button onClick={() => handleCertificate(row)} style={{ ...actionBtnStyle, color: '#7c3aed', borderColor: '#c4b5fd' }} title="Descargar Certificado">Certificado</button>
+            )}
             {canEdit && !isInactive && <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>}
             {canEdit && !isInactive && <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>}
             {canEdit && (isInactive ? (
@@ -238,7 +257,7 @@ export default function OrgMembers({ org, onRefresh }) {
         member={editMember} onSaved={() => { setEditMember(null); onRefresh(); }} addToast={addToast} />
 
       {/* View Member Modal */}
-      <MemberProfileModal open={!!viewMember} onClose={() => setViewMember(null)} member={viewMember} org={org} />
+      <MemberProfileModal open={!!viewMember} onClose={() => setViewMember(null)} member={viewMember} org={org} onCertificate={handleCertificate} />
 
       {/* Payment Modal */}
       <MemberPaymentModal open={!!payMember} onClose={() => setPayMember(null)} orgId={org._id}
@@ -411,7 +430,7 @@ function MemberFormModal({ open, onClose, orgId, member, onSaved, addToast }) {
 }
 
 // ========== Member Profile Modal ==========
-function MemberProfileModal({ open, onClose, member, org }) {
+function MemberProfileModal({ open, onClose, member, org, onCertificate }) {
   if (!member) return null;
 
   const age = calcAge(member.birthDate);
@@ -469,6 +488,12 @@ function MemberProfileModal({ open, onClose, member, org }) {
           </>
         )}
       </div>
+      {member.status !== 'inactive' && onCertificate && (
+        <button onClick={() => onCertificate(member)}
+          style={{ width: '100%', marginTop: 16, padding: '12px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+          Descargar Certificado de Membresía
+        </button>
+      )}
     </Modal>
   );
 }

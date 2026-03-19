@@ -4,6 +4,7 @@
  */
 
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 import { getOrgType as getOrgTypeFromUtils, formatDate as formatDateFromUtils } from '../shared/utils/index.js';
 import { parseTemplateBlocks } from '../shared/utils/templateBlockParser.js';
 import tenant from '../config/tenant.js';
@@ -1593,6 +1594,167 @@ class PDFService {
     doc.text(`Documento generado el ${this.formatDate(new Date())} — ${tenant.platformName}`, MARGIN_LEFT, this.currentY);
 
     this.drawFooter(doc, pageNum);
+    return doc;
+  }
+
+  /**
+   * Genera un Certificado de Residencia y Membresía para un socio activo.
+   * Incluye QR de validación anti-falsificación.
+   */
+  async generateMemberCertificate(organization, member) {
+    const doc = new jsPDF();
+    const org = organization;
+    const dir = org.provisionalDirectorio || {};
+    const now = new Date();
+    const emissionDate = this.formatDate(now);
+    const joinDate = this.formatDate(member.joinDate);
+    const memberName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
+    const memberRut = member.rut || '—';
+    const memberAddress = member.address || 'no registrada';
+    const orgName = org.organizationName || '—';
+    const orgType = getOrgTypeName(org.organizationType) || 'Organización Comunitaria';
+    const unidadVecinal = org.unidadVecinal || '—';
+    const comuna = org.comuna || tenant.communeName || '—';
+
+    const presidentName = dir.president ? `${dir.president.firstName || ''} ${dir.president.lastName || ''}`.trim() : '';
+    const secretaryName = dir.secretary ? `${dir.secretary.firstName || ''} ${dir.secretary.lastName || ''}`.trim() : '';
+
+    // Header
+    this.drawHeader(doc, 'CERTIFICADO DE RESIDENCIA Y MEMBRESÍA');
+
+    this.currentY += 5;
+
+    // Folio / Reference number
+    const folio = `CERT-${memberRut.replace(/\./g, '').replace(/-/g, '').slice(0, 8)}-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#6b7280');
+    doc.text(`Folio: ${folio}`, PAGE_WIDTH - MARGIN_RIGHT, this.currentY, { align: 'right' });
+    this.currentY += 12;
+
+    // Organization info block
+    doc.setFontSize(11);
+    doc.setTextColor(COLORS.dark);
+    doc.setFont('helvetica', 'bold');
+    doc.text(orgName, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+    this.currentY += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.text);
+    doc.text(`${orgType} — ${comuna}`, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+    if (org.address) {
+      this.currentY += 5;
+      doc.setFontSize(9);
+      doc.text(org.address, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+    }
+    this.currentY += 10;
+
+    // Separator
+    doc.setDrawColor(COLORS.lightGray);
+    doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
+    this.currentY += 12;
+
+    // Body text
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.dark);
+
+    const gender = member.genero;
+    const title = gender === 'femenino' ? 'la señora' : gender === 'masculino' ? 'el señor' : 'el/la señor/a';
+    const titleCap = gender === 'femenino' ? 'La señora' : gender === 'masculino' ? 'El señor' : 'El/La señor/a';
+
+    const bodyLines = [
+      `Quien suscribe, en calidad de Presidente/a de la ${orgType}`,
+      `"${orgName}", con domicilio en ${org.address || '—'},`,
+      `Unidad Vecinal N° ${unidadVecinal}, comuna de ${comuna},`,
+      '',
+      'CERTIFICA QUE:',
+      '',
+      `${titleCap} ${memberName}, cédula de identidad N° ${memberRut},`,
+      `con domicilio registrado en ${memberAddress}, es socio/a activo/a`,
+      `de esta organización desde el ${joinDate}.`,
+      '',
+      `${titleCap.replace('señor', 'interesado')} se encuentra debidamente inscrito/a en el`,
+      `Libro de Registro de Socios, cumpliendo con los requisitos`,
+      `establecidos en la Ley N° 19.418 sobre Juntas de Vecinos y`,
+      `demás Organizaciones Comunitarias.`,
+      '',
+      'Se extiende el presente certificado a petición del/la interesado/a,',
+      `para los fines que estime convenientes.`,
+    ];
+
+    const lineHeight = 7;
+    bodyLines.forEach(line => {
+      if (line === 'CERTIFICA QUE:') {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text(line, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+      } else {
+        doc.text(line, MARGIN_LEFT + 10, this.currentY);
+      }
+      this.currentY += lineHeight;
+    });
+
+    // Emission date
+    this.currentY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(`${comuna}, ${emissionDate}.`, PAGE_WIDTH / 2, this.currentY, { align: 'center' });
+
+    // Signatures
+    this.currentY += 30;
+
+    if (this.currentY > PAGE_HEIGHT - 80) {
+      doc.addPage();
+      this.currentY = MARGIN_TOP + 20;
+    }
+
+    const sigWidth = 65;
+    const sigGap = (CONTENT_WIDTH - sigWidth * 2) / 3;
+    const sig1X = MARGIN_LEFT + sigGap;
+    const sig2X = MARGIN_LEFT + sigGap * 2 + sigWidth;
+    const sigY = this.currentY;
+
+    doc.setDrawColor(COLORS.dark);
+    doc.line(sig1X, sigY, sig1X + sigWidth, sigY);
+    doc.line(sig2X, sigY, sig2X + sigWidth, sigY);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESIDENTE/A', sig1X + sigWidth / 2, sigY + 6, { align: 'center' });
+    doc.text('SECRETARIO/A', sig2X + sigWidth / 2, sigY + 6, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    if (presidentName) doc.text(presidentName, sig1X + sigWidth / 2, sigY + 11, { align: 'center' });
+    if (secretaryName) doc.text(secretaryName, sig2X + sigWidth / 2, sigY + 11, { align: 'center' });
+
+    // QR Code
+    const qrText = `Certificado emitido por ${orgName} el ${emissionDate}. Válido para RUT: ${memberRut}. Folio: ${folio}`;
+    try {
+      const qrDataUrl = await QRCode.toDataURL(qrText, { width: 200, margin: 1, errorCorrectionLevel: 'M' });
+      const qrSize = 28;
+      const qrX = PAGE_WIDTH - MARGIN_RIGHT - qrSize;
+      const qrY = PAGE_HEIGHT - 45;
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+      doc.setFontSize(7);
+      doc.setTextColor('#9ca3af');
+      doc.text('Código de validación', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+      doc.text(folio, qrX + qrSize / 2, qrY + qrSize + 7, { align: 'center' });
+    } catch (qrErr) {
+      console.warn('QR generation failed:', qrErr);
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor('#9ca3af');
+    doc.text(`Documento generado el ${this.formatDate(now)} — ${tenant.platformName}`, MARGIN_LEFT, PAGE_HEIGHT - 12);
+    doc.text('Este certificado no requiere firma ológrafa ni timbre.', MARGIN_LEFT, PAGE_HEIGHT - 8);
+
+    this.drawFooter(doc, 1);
     return doc;
   }
 

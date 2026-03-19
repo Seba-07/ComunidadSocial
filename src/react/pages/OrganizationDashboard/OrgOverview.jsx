@@ -3,6 +3,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuthStore } from '../../stores/authStore';
 import { useUiStore } from '../../stores/uiStore';
 import { apiService } from '@services/ApiService.js';
+import { pdfService } from '@services/PDFService.js';
 import { formatDate } from '../../utils/formatters';
 
 const TYPE_LABELS = {
@@ -237,6 +238,38 @@ export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
       )}
 
       {/* Dissolution confirmation modal */}
+      {/* Self-service Certificate */}
+      {(() => {
+        if (!user?.rut) return null;
+        const cleanR = (r) => (r || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        const myMember = (org.members || []).find(m => cleanR(m.rut) === cleanR(user.rut) && m.status !== 'inactive');
+        if (!myMember) return null;
+        return (
+          <div style={{ background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 12, padding: 20, marginTop: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#5b21b6' }}>Mi Certificado de Membresía</div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Descarga tu certificado oficial como socio/a activo/a de esta organización.</div>
+              </div>
+              <button onClick={async () => {
+                try {
+                  const res = await apiService.getMemberCertificateData(org._id, myMember.rut);
+                  const { organization: certOrg, member: certMember } = res.data;
+                  const doc = await pdfService.generateMemberCertificate(certOrg, certMember);
+                  doc.save(`certificado_${certMember.firstName}_${certMember.lastName}.pdf`);
+                  addToast('Certificado descargado', 'success');
+                } catch (err) {
+                  addToast(err.message || 'Error al generar certificado', 'error');
+                }
+              }}
+                style={{ padding: '10px 24px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Descargar Certificado
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {showDissolve && (
         <div onClick={e => { if (e.target === e.currentTarget) setShowDissolve(false); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>

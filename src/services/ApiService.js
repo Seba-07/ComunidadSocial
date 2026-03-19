@@ -1304,6 +1304,12 @@ class ApiService {
     return this.post(`/organizations/${orgId}/directorio/renuncia`, data);
   }
 
+  // ==================== MEMBER CERTIFICATE ====================
+
+  async getMemberCertificateData(orgId, rut) {
+    return this.get(`/organizations/${orgId}/members/${encodeURIComponent(rut)}/certificate`);
+  }
+
   // ==================== MEMBER STATUS ====================
 
   async deactivateMember(orgId, rut, category, reason) {
