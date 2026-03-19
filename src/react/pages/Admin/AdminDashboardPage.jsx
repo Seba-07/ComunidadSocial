@@ -52,12 +52,11 @@ export: ExportView,
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('overview');
   const [incidentPrefill, setIncidentPrefill] = useState(null);
-  const { organizations, fetchAllOrganizations, fetchStats, stats } = useAdminStore();
+  const { organizations, fetchAllOrganizations } = useAdminStore();
   const addToast = useUiStore(s => s.addToast);
 
   useEffect(() => {
     fetchAllOrganizations().catch(err => addToast(err.message, 'error'));
-    fetchStats().catch(() => {});
   }, []);
 
   function handleEscalateToIncident(data) {
