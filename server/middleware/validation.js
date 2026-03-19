@@ -592,6 +592,15 @@ export const updateTicketStatusSchema = z.object({
   resolutionNote: z.string().max(5000).optional().or(z.literal(''))
 });
 
+/**
+ * Esquema para comunicados oficiales (Bulletins)
+ */
+export const createBulletinSchema = z.object({
+  title: z.string().min(1, 'Título requerido').max(200).trim(),
+  content: z.string().min(1, 'Contenido requerido').max(5000),
+  targetAudience: z.string().min(1).max(50).optional()
+});
+
 export const directorioResignationSchema = z.object({
   rutOut: z.string().min(1, 'RUT del miembro saliente es requerido').max(20),
   reason: z.enum(['RENUNCIA', 'FALLECIMIENTO', 'EXCLUSION'], {
@@ -630,6 +639,7 @@ export default {
   createSupportTicketSchema,
   createTicketSchema,
   updateTicketStatusSchema,
+  createBulletinSchema,
   directorioResignationSchema,
   // Middleware
   validate,

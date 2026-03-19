@@ -3,24 +3,24 @@ import Bulletin from '../models/Bulletin.js';
 import Organization from '../models/Organization.js';
 import AuditLog from '../models/AuditLog.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate, createBulletinSchema } from '../middleware/validation.js';
 
 const router = Router();
 
 // POST /api/bulletins — Create bulletin (admin only)
-router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createBulletinSchema), async (req, res) => {
   try {
     const { title, content, targetAudience } = req.body;
-
-    if (!title?.trim()) return res.status(400).json({ error: 'El título es obligatorio' });
-    if (!content?.trim()) return res.status(400).json({ error: 'El contenido es obligatorio' });
 
     const bulletin = await Bulletin.create({
       title: title.trim(),
       content: content.trim(),
       targetAudience: targetAudience || 'TODAS',
-      authorId: req.user._id,
-      authorName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email
+      author: req.user._id
     });
+
+    // Populate author for response
+    await bulletin.populate('author', 'firstName lastName');
 
     // Audit log
     AuditLog.logAction({
@@ -31,7 +31,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
       resource: 'SYSTEM',
       resourceId: bulletin._id,
       resourceName: title,
-      detail: `Comunicado oficial enviado a: ${targetAudience}`,
+      detail: `Comunicado oficial enviado a: ${targetAudience || 'TODAS'}`,
       ipAddress: req.ip
     }).catch(() => {});
 
@@ -46,6 +46,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) =>
 router.get('/admin', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const bulletins = await Bulletin.find()
+      .populate('author', 'firstName lastName')
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
@@ -93,6 +94,7 @@ router.get('/:id/bulletins', authenticate, async (req, res) => {
     if (org.boardStatus === 'VENCIDA') audiences.push('DIRECTIVAS_VENCIDAS');
 
     const bulletins = await Bulletin.find({ targetAudience: { $in: audiences } })
+      .populate('author', 'firstName lastName')
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();

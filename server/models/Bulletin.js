@@ -63,14 +63,10 @@ const bulletinSchema = new mongoose.Schema({
     ],
     default: 'TODAS'
   },
-  authorId: {
+  author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  },
-  authorName: {
-    type: String,
-    default: ''
   }
 }, {
   timestamps: true

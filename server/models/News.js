@@ -22,9 +22,13 @@ const newsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  featuredImageS3Key: {
+    type: String,
+    default: null
+  },
   category: {
     type: String,
-    enum: ['NOTICIAS', 'COMUNICADOS', 'EVENTOS', 'CONVOCATORIAS'],
+    enum: ['NOTICIAS', 'ANUNCIOS', 'EVENTOS', 'CONVOCATORIAS'],
     default: 'NOTICIAS'
   },
   author: {
@@ -96,7 +100,7 @@ newsSchema.statics.incrementView = async function(id) {
 newsSchema.statics.getCategoryLabels = function() {
   return {
     'NOTICIAS': 'Noticias',
-    'COMUNICADOS': 'Comunicados',
+    'ANUNCIOS': 'Anuncios',
     'EVENTOS': 'Eventos',
     'CONVOCATORIAS': 'Convocatorias'
   };

@@ -139,7 +139,7 @@ export default function BulletinsView() {
                       </div>
                       <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         <span>{formatDateShort(b.createdAt)}</span>
-                        {b.authorName && <span>por {b.authorName}</span>}
+                        {b.author && <span>por {b.author.firstName} {b.author.lastName}</span>}
                       </div>
                     </div>
                     <button

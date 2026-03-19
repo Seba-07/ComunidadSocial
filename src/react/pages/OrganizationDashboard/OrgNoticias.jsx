@@ -6,7 +6,7 @@ import { localeDateString } from '../../utils/formatters';
 const CATEGORIES = [
   { key: 'TODAS', label: 'Todas' },
   { key: 'NOTICIAS', label: 'Noticias' },
-  { key: 'COMUNICADOS', label: 'Comunicados' },
+  { key: 'ANUNCIOS', label: 'Anuncios' },
   { key: 'EVENTOS', label: 'Eventos' },
   { key: 'CONVOCATORIAS', label: 'Convocatorias' },
 ];
@@ -25,7 +25,7 @@ const chipStyle = (active) => ({
 
 const categoryColors = {
   NOTICIAS: '#2563eb',
-  COMUNICADOS: '#7c3aed',
+  ANUNCIOS: '#7c3aed',
   EVENTOS: '#059669',
   CONVOCATORIAS: '#d97706',
 };

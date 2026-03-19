@@ -1,46 +1,20 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import News from '../models/News.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate, createNewsSchema, updateNewsSchema } from '../middleware/validation.js';
+import * as storageService from '../services/storageService.js';
 
 const router = express.Router();
 
-// Crear directorio de uploads para imágenes si no existe
-const uploadDir = './uploads/news';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configurar multer para imágenes
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Solo se permiten imágenes (JPEG, PNG, GIF, WebP)'), false);
-  }
-};
-
+// Multer en memoria — las imágenes van a S3
 const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB para imágenes
-  }
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 /**
@@ -79,8 +53,17 @@ router.get('/', async (req, res) => {
       News.countDocuments(filter)
     ]);
 
+    // Resolve S3 URLs for featured images
+    const resolved = await Promise.all(news.map(async (article) => {
+      const obj = article.toObject ? article.toObject() : { ...article };
+      if (obj.featuredImageS3Key) {
+        obj.featuredImage = await storageService.getDocumentUrl({ s3Key: obj.featuredImageS3Key }) || obj.featuredImage;
+      }
+      return obj;
+    }));
+
     res.json({
-      news,
+      news: resolved,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -125,10 +108,16 @@ router.get('/:idOrSlug', async (req, res) => {
       return res.status(404).json({ error: 'Noticia no encontrada' });
     }
 
+    // Resolve S3 URL
+    const obj = article.toObject();
+    if (obj.featuredImageS3Key) {
+      obj.featuredImage = await storageService.getDocumentUrl({ s3Key: obj.featuredImageS3Key }) || obj.featuredImage;
+    }
+
     // Incrementar vistas de forma atómica (no bloquea la respuesta)
     News.incrementView(article._id).catch(() => {});
 
-    res.json(article);
+    res.json(obj);
   } catch (error) {
     console.error('Error al obtener noticia:', error);
     res.status(500).json({ error: 'Error al obtener noticia' });
@@ -170,7 +159,7 @@ router.post('/', authenticate, requireRole('MUNICIPALIDAD'), validate(createNews
 
 /**
  * POST /api/news/upload-image
- * Subir imagen para el editor (solo MUNICIPALIDAD)
+ * Subir imagen destacada a S3 (solo MUNICIPALIDAD)
  */
 router.post('/upload-image', authenticate, requireRole('MUNICIPALIDAD'), upload.single('image'), async (req, res) => {
   try {
@@ -178,12 +167,21 @@ router.post('/upload-image', authenticate, requireRole('MUNICIPALIDAD'), upload.
       return res.status(400).json({ error: 'No se proporcionó ninguna imagen' });
     }
 
-    // Construir URL de la imagen
-    const imageUrl = `/uploads/news/${req.file.filename}`;
+    // Upload to S3
+    const result = await storageService.storeFile(req.file.buffer, req.file.mimetype, {
+      organizationId: 'news',
+      type: 'featured-image',
+      fileName: req.file.originalname
+    });
+
+    // Resolve URL for response
+    const imageUrl = result.s3Key
+      ? await storageService.getDocumentUrl({ s3Key: result.s3Key })
+      : result.data;
 
     res.json({
       url: imageUrl,
-      filename: req.file.filename
+      s3Key: result.s3Key || null
     });
   } catch (error) {
     console.error('Error al subir imagen:', error);
@@ -197,7 +195,7 @@ router.post('/upload-image', authenticate, requireRole('MUNICIPALIDAD'), upload.
  */
 router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateNewsSchema), async (req, res) => {
   try {
-    const { title, summary, contentHTML, category, tags, isPublished, featuredImage } = req.body;
+    const { title, summary, contentHTML, category, tags, isPublished, featuredImage, featuredImageS3Key } = req.body;
 
     const article = await News.findById(req.params.id);
 
@@ -211,11 +209,11 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateNe
     if (category !== undefined) article.category = category;
     if (tags !== undefined) article.tags = tags;
     if (featuredImage !== undefined) article.featuredImage = featuredImage;
+    if (featuredImageS3Key !== undefined) article.featuredImageS3Key = featuredImageS3Key;
 
     // Manejar publicación
     if (isPublished !== undefined) {
       if (isPublished && !article.isPublished) {
-        // Publicar por primera vez
         article.isPublished = true;
         article.publishedAt = new Date();
       } else if (!isPublished) {
@@ -234,18 +232,12 @@ router.put('/:id', authenticate, requireRole('MUNICIPALIDAD'), validate(updateNe
 
 /**
  * POST /api/news/:id/publish
- * Publicar una noticia (solo MUNICIPALIDAD)
  */
 router.post('/:id/publish', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const article = await News.findById(req.params.id);
-
-    if (!article) {
-      return res.status(404).json({ error: 'Noticia no encontrada' });
-    }
-
+    if (!article) return res.status(404).json({ error: 'Noticia no encontrada' });
     await article.publish();
-
     res.json({ message: 'Noticia publicada correctamente', article });
   } catch (error) {
     console.error('Error al publicar noticia:', error);
@@ -255,18 +247,12 @@ router.post('/:id/publish', authenticate, requireRole('MUNICIPALIDAD'), async (r
 
 /**
  * POST /api/news/:id/unpublish
- * Despublicar una noticia (solo MUNICIPALIDAD)
  */
 router.post('/:id/unpublish', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const article = await News.findById(req.params.id);
-
-    if (!article) {
-      return res.status(404).json({ error: 'Noticia no encontrada' });
-    }
-
+    if (!article) return res.status(404).json({ error: 'Noticia no encontrada' });
     await article.unpublish();
-
     res.json({ message: 'Noticia despublicada correctamente', article });
   } catch (error) {
     console.error('Error al despublicar noticia:', error);
@@ -276,30 +262,18 @@ router.post('/:id/unpublish', authenticate, requireRole('MUNICIPALIDAD'), async 
 
 /**
  * DELETE /api/news/:id
- * Eliminar una noticia (solo MUNICIPALIDAD)
  */
 router.delete('/:id', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
     const article = await News.findById(req.params.id);
+    if (!article) return res.status(404).json({ error: 'Noticia no encontrada' });
 
-    if (!article) {
-      return res.status(404).json({ error: 'Noticia no encontrada' });
-    }
-
-    // Eliminar imagen destacada si existe
-    if (article.featuredImage && article.featuredImage.startsWith('/uploads/news/')) {
-      const imagePath = '.' + article.featuredImage;
-      try {
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-        }
-      } catch (e) {
-        console.error('Error al eliminar imagen:', e);
-      }
+    // Delete S3 image if exists
+    if (article.featuredImageS3Key) {
+      await storageService.deleteDocument({ s3Key: article.featuredImageS3Key });
     }
 
     await News.findByIdAndDelete(req.params.id);
-
     res.json({ message: 'Noticia eliminada correctamente' });
   } catch (error) {
     console.error('Error al eliminar noticia:', error);

@@ -5,14 +5,14 @@ import DataTable from '../../../components/ui/DataTable';
 
 const CATEGORIES = [
   { value: 'NOTICIAS', label: 'Noticias' },
-  { value: 'COMUNICADOS', label: 'Comunicados' },
+  { value: 'ANUNCIOS', label: 'Anuncios' },
   { value: 'EVENTOS', label: 'Eventos' },
   { value: 'CONVOCATORIAS', label: 'Convocatorias' },
 ];
 
 const categoryColors = {
   NOTICIAS: '#2563eb',
-  COMUNICADOS: '#7c3aed',
+  ANUNCIOS: '#7c3aed',
   EVENTOS: '#059669',
   CONVOCATORIAS: '#d97706',
 };
@@ -330,6 +330,7 @@ function NewsEditorModal({ article, onClose, onSaved }) {
     tags: article?.tags?.join(', ') || '',
     isPublished: article?.isPublished || false,
     featuredImage: article?.featuredImage || '',
+    featuredImageS3Key: article?.featuredImageS3Key || null,
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -357,6 +358,7 @@ function NewsEditorModal({ article, onClose, onSaved }) {
       if (!resp.ok) throw new Error('Error al subir imagen');
       const data = await resp.json();
       updateField('featuredImage', data.url);
+      if (data.s3Key) updateField('featuredImageS3Key', data.s3Key);
       addToast('Imagen subida', 'success');
     } catch (err) {
       addToast(err.message || 'Error al subir imagen', 'error');
@@ -380,6 +382,7 @@ function NewsEditorModal({ article, onClose, onSaved }) {
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
         isPublished: form.isPublished,
         featuredImage: form.featuredImage,
+        featuredImageS3Key: form.featuredImageS3Key,
       };
       if (article?._id) {
         await apiService.put(`/news/${article._id}`, payload);
