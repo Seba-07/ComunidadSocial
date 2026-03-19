@@ -187,6 +187,10 @@ export default function Step6_Review({ onNext, onPrev }) {
           addToast('No hay directores para generar declaraciones', 'error');
           return;
         }
+      } else if ((type === 'nomina' || type === 'carta') && templateContent) {
+        // Nomina and carta use generateFromTemplate directly
+        const titleMap = { nomina: 'NÓMINA DEL DIRECTORIO', carta: 'CARTA DE SOLICITUD' };
+        doc = pdfService.generateFromTemplate(templateContent, templateData, titleMap[type] || 'DOCUMENTO', config);
       }
       if (doc) {
         const url = pdfService.getPDFDataURL(doc);
@@ -453,19 +457,32 @@ export default function Step6_Review({ onNext, onPrev }) {
 
       {/* Documents Preview */}
       <Section title="Documentos Generados">
-        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
-          Los siguientes documentos se generarán automáticamente:
-        </p>
+        {Object.keys(docTemplates).length === 0 ? (
+          <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#991b1b' }}>
+            No hay plantillas de documentos asignadas para este tipo de organización. Los documentos se generarán con formato básico. Contacta al Secretario Municipal para configurar las plantillas.
+          </div>
+        ) : (
+          <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+            Los siguientes documentos se generarán automáticamente con la plantilla institucional:
+          </p>
+        )}
         {[
-          { key: 'acta', label: 'Acta de Asamblea Constitutiva' },
-          { key: 'socios', label: 'Lista de Socios Fundadores' },
-          { key: 'declaraciones', label: 'Declaraciones Juradas del Directorio' },
+          { key: 'acta', label: 'Acta de Asamblea Constitutiva', hasTemplate: !!docTemplates.acta },
+          { key: 'socios', label: 'Lista de Socios Fundadores', hasTemplate: !!docTemplates.socios },
+          ...(docTemplates.nomina ? [{ key: 'nomina', label: 'Nómina del Directorio', hasTemplate: true }] : []),
+          ...(docTemplates.carta ? [{ key: 'carta', label: 'Carta de Solicitud', hasTemplate: true }] : []),
+          { key: 'declaraciones', label: 'Declaraciones Juradas del Directorio', hasTemplate: true },
         ].map(doc => (
           <div key={doc.key} style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '8px 0', borderBottom: '1px solid #f3f4f6', flexWrap: 'wrap', gap: 8
           }}>
-            <span style={{ fontSize: 14, color: '#374151' }}>{doc.label}</span>
+            <span style={{ fontSize: 14, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {doc.label}
+              {!doc.hasTemplate && (
+                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#fef3c7', color: '#92400e' }}>Sin plantilla</span>
+              )}
+            </span>
             <ViewButton onClick={() => previewDocument(doc.key)} label="Ver" />
           </div>
         ))}
@@ -580,10 +597,12 @@ export default function Step6_Review({ onNext, onPrev }) {
 
       <div className="r-toolbar">
         <button onClick={onPrev} style={prevBtn}>Anterior</button>
-        <button onClick={() => {
+        <button onClick={async () => {
           // Save rendered document templates as full HTML for submission to GeneratedDocuments
           const docs = {};
           const templateData = buildTemplateData();
+          const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
+
           for (const [key, tmpl] of Object.entries(docTemplates)) {
             if (tmpl?.content) {
               // Replace placeholders in template content
@@ -592,13 +611,24 @@ export default function Step6_Review({ onNext, onPrev }) {
                 resolved = resolved.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
               }
               resolved = replacePlaceholders(resolved);
+
+              // Convert S3 presigned URLs to base64 data URLs (permanent, won't expire)
+              let headerCfg = tmpl.headerConfig ? { ...tmpl.headerConfig } : null;
+              let footerCfg = tmpl.footerConfig ? { ...tmpl.footerConfig } : null;
+              if (headerCfg?.imageUrl || footerCfg?.imageUrl) {
+                try {
+                  const prefetched = await pdfService.prefetchConfigImages(headerCfg, footerCfg);
+                  headerCfg = prefetched.headerConfig;
+                  footerCfg = prefetched.footerConfig;
+                } catch { /* continue without images */ }
+              }
+
               // Convert to full HTML with header/footer/tables/columns rendered
               const htmlContent = templateToHtml(resolved, {
-                headerConfig: tmpl.headerConfig || null,
-                footerConfig: tmpl.footerConfig || null,
+                headerConfig: headerCfg,
+                footerConfig: footerCfg,
                 pageSize: tmpl.pageSize || 'letter',
               });
-              const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
               docs[docTypeMap[key] || key] = { content: htmlContent, generatedAt: new Date().toISOString() };
             }
           }

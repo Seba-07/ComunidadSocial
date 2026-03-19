@@ -119,27 +119,29 @@ export function templateToHtml(templateContent, options = {}) {
   const { headerConfig, footerConfig, pageSize = 'letter' } = options;
   const blocks = parseTemplateBlocks(templateContent);
 
-  // Build header HTML
+  // Build header HTML — prefer imageDataUrl (base64, permanent) over imageUrl (presigned, expires)
   let headerHtml = '';
-  if (headerConfig && (headerConfig.text || headerConfig.imageUrl)) {
+  if (headerConfig && (headerConfig.text || headerConfig.imageDataUrl || headerConfig.imageUrl)) {
     const bgColor = headerConfig.backgroundColor || '#0891b2';
     const barHtml = headerConfig.showColorBar !== false
       ? `<div style="height:4px;background:${bgColor};margin-bottom:8px;"></div>` : '';
-    const imgHtml = headerConfig.imageUrl
-      ? `<img src="${headerConfig.imageUrl}" style="max-height:${(headerConfig.height || 60) - 10}px;max-width:200px;object-fit:contain;" />` : '';
+    const imgSrc = headerConfig.imageDataUrl || headerConfig.imageUrl;
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" style="max-height:${(headerConfig.height || 60) - 10}px;max-width:200px;object-fit:contain;" />` : '';
     const textHtml = headerConfig.text
       ? `<div style="text-align:center;"><strong style="font-size:13pt;">${escapeHtml(headerConfig.text)}</strong>${headerConfig.subtitle ? `<br/><span style="font-size:10pt;color:#555;">${escapeHtml(headerConfig.subtitle)}</span>` : ''}</div>` : '';
     headerHtml = `<div style="margin-bottom:16px;">${barHtml}<div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 0;">${imgHtml}${textHtml}</div></div>`;
   }
 
-  // Build footer HTML
+  // Build footer HTML — prefer imageDataUrl (base64, permanent) over imageUrl (presigned, expires)
   let footerHtml = '';
-  if (footerConfig && (footerConfig.text || footerConfig.imageUrl)) {
+  if (footerConfig && (footerConfig.text || footerConfig.imageDataUrl || footerConfig.imageUrl)) {
     const bgColor = footerConfig.backgroundColor || '#0891b2';
     const barHtml = footerConfig.showColorBar !== false
       ? `<div style="height:3px;background:${bgColor};margin-bottom:6px;"></div>` : '';
-    const imgHtml = footerConfig.imageUrl
-      ? `<img src="${footerConfig.imageUrl}" style="max-height:30px;max-width:150px;object-fit:contain;" />` : '';
+    const imgSrc = footerConfig.imageDataUrl || footerConfig.imageUrl;
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" style="max-height:30px;max-width:150px;object-fit:contain;" />` : '';
     const textHtml = footerConfig.text
       ? `<span style="font-size:8pt;color:#666;">${escapeHtml(footerConfig.text)}</span>` : '';
     footerHtml = `<div style="margin-top:32px;padding-top:8px;border-top:1px solid #e5e7eb;">${barHtml}<div style="display:flex;align-items:center;justify-content:center;gap:12px;">${imgHtml}${textHtml}</div></div>`;
@@ -169,9 +171,6 @@ export function templateToHtml(templateContent, options = {}) {
       bodyParts.push(`<table style="width:100%;border-collapse:collapse;margin:12px 0;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`);
     }
   }
-
-  const pageWidth = pageSize === 'legal' ? '216mm' : '216mm';
-  const pageMinHeight = pageSize === 'legal' ? '356mm' : '279mm';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
 @media screen { body { max-width: 800px; margin: 20px auto; padding: 40px; box-shadow: 0 1px 6px rgba(0,0,0,.1); border-radius: 4px; } }
