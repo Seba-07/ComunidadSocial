@@ -3040,7 +3040,46 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
     }
 
     assembly.status = transition.to;
-    if (action === 'convocar') assembly.convokedAt = new Date();
+    if (action === 'convocar') {
+      assembly.convokedAt = new Date();
+
+      // Auto-create Assignment if assembly requires Ministro de Fe
+      if (assembly.requiresMinister && !assembly.assignmentId) {
+        try {
+          const newAssignment = await Assignment.create({
+            // ministroId left unassigned — admin picks the ministro later
+            ministroId: new mongoose.Types.ObjectId(), // placeholder, admin overrides
+            ministroName: 'Por asignar',
+            organizationId: org._id,
+            organizationName: org.organizationName,
+            assemblyId: assembly._id || assembly.id,
+            source: 'auto',
+            scheduledDate: assembly.date ? new Date(assembly.date) : new Date(),
+            scheduledTime: assembly.time || '10:00',
+            location: org.assemblyAddress || org.address || '',
+            status: 'pending'
+          });
+
+          assembly.assignmentId = newAssignment._id;
+
+          // Notify all admin users
+          const admins = await User.find({ role: 'MUNICIPALIDAD', active: true }).select('_id');
+          for (const admin of admins) {
+            await Notification.create({
+              userId: admin._id,
+              type: 'assignment_auto',
+              title: 'Solicitud automática de Ministro de Fe',
+              message: `"${org.organizationName}" ha convocado una asamblea que requiere Ministro de Fe para el ${assembly.date || '—'}. Por favor, asigne un Ministro de Fe.`,
+              data: { organizationId: org._id, assignmentId: newAssignment._id },
+              organizationId: org._id
+            });
+          }
+        } catch (autoErr) {
+          console.error('Auto-assignment creation error:', autoErr);
+          // Don't block convocación if auto-assignment fails
+        }
+      }
+    }
     if (action === 'iniciar') assembly.startedAt = new Date();
     if (action === 'finalizar') {
       // Verificar quórum antes de finalizar
@@ -3135,6 +3174,19 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
 
         // Sincronizar roles de miembros con el nuevo directorio electo
         syncMemberRolesFromDirectorio(org);
+      }
+    }
+
+    // If assembly is cancelled, cancel linked assignment
+    if (action === 'cancelar' && assembly.assignmentId) {
+      try {
+        await Assignment.findByIdAndUpdate(assembly.assignmentId, {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancellationReason: 'Asamblea cancelada'
+        });
+      } catch (cancelErr) {
+        console.error('Auto-cancel assignment error:', cancelErr);
       }
     }
 

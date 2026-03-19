@@ -1,6 +1,8 @@
 import express from 'express';
 import Assignment from '../models/Assignment.js';
 import Organization from '../models/Organization.js';
+import Assembly from '../models/Assembly.js';
+import Notification from '../models/Notification.js';
 import Counter from '../models/Counter.js';
 import MinistroBlock from '../models/MinistroBlock.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -653,6 +655,96 @@ router.post('/:id/reject-assembly', authenticate, requireRole('MINISTRO_FE', 'MU
   } catch (error) {
     console.error('Reject assembly error:', error);
     res.status(500).json({ error: 'Error al rechazar asamblea' });
+  }
+});
+
+// Reschedule assignment (Admin only) — change date/time of confirmed assembly
+router.put('/:id/reschedule', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
+  try {
+    const assignment = await Assignment.findById(req.params.id);
+    if (!assignment) return res.status(404).json({ error: 'Asignación no encontrada' });
+
+    if (assignment.status !== 'pending') {
+      return res.status(400).json({ error: 'Solo se pueden reprogramar asignaciones pendientes' });
+    }
+
+    const { newDate, newTime, reason } = req.body;
+    if (!newDate || !newTime) {
+      return res.status(400).json({ error: 'Debe indicar nueva fecha y hora' });
+    }
+
+    const previousDate = assignment.scheduledDate;
+    const previousTime = assignment.scheduledTime;
+
+    // Update assignment
+    assignment.scheduledDate = new Date(newDate);
+    assignment.scheduledTime = newTime;
+    assignment.lastEditedAt = new Date();
+    await assignment.save();
+
+    // Sync with Organization.ministroData
+    const organization = await Organization.findById(assignment.organizationId);
+    if (organization) {
+      if (organization.ministroData) {
+        organization.ministroData.scheduledDate = new Date(newDate);
+        organization.ministroData.scheduledTime = newTime;
+      }
+      // Track change in appointmentChanges
+      if (!organization.appointmentChanges) organization.appointmentChanges = [];
+      organization.appointmentChanges.push({
+        changedAt: new Date(),
+        changedBy: req.userId,
+        previousData: { scheduledDate: previousDate, scheduledTime: previousTime },
+        newData: { scheduledDate: new Date(newDate), scheduledTime: newTime },
+        reason: reason || 'Reprogramación por Secretaría Municipal',
+      });
+      organization.appointmentWasModified = true;
+      organization.markModified('ministroData');
+      organization.markModified('appointmentChanges');
+      await organization.save();
+
+      // Sync with linked Assembly if exists
+      if (assignment.assemblyId) {
+        await Assembly.findByIdAndUpdate(assignment.assemblyId, {
+          date: new Date(newDate),
+          time: newTime,
+        });
+      }
+
+      // Notify Ministro de Fe
+      await Notification.create({
+        userId: assignment.ministroId,
+        type: 'assignment_rescheduled',
+        title: 'Asamblea reprogramada',
+        message: `La asamblea de "${assignment.organizationName}" ha sido reprogramada para el ${new Date(newDate).toLocaleDateString('es-CL')} a las ${newTime}.`,
+        organizationId: assignment.organizationId,
+        data: { assignmentId: assignment._id, previousDate, previousTime, newDate, newTime },
+      });
+
+      // Notify organization owner (dirigente)
+      if (organization.userId) {
+        await Notification.create({
+          userId: organization.userId,
+          type: 'assignment_rescheduled',
+          title: 'Asamblea reprogramada',
+          message: `El municipio ha reprogramado su asamblea con Ministro de Fe para el ${new Date(newDate).toLocaleDateString('es-CL')} a las ${newTime}.`,
+          organizationId: organization._id,
+          data: { assignmentId: assignment._id, newDate, newTime },
+        });
+      }
+    }
+
+    res.json({
+      message: 'Asignación reprogramada exitosamente',
+      assignment: {
+        _id: assignment._id,
+        scheduledDate: assignment.scheduledDate,
+        scheduledTime: assignment.scheduledTime,
+      }
+    });
+  } catch (error) {
+    console.error('Reschedule assignment error:', error);
+    res.status(500).json({ error: 'Error al reprogramar asignación' });
   }
 });
 

@@ -36,6 +36,16 @@ const assignmentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  assemblyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Assembly',
+    default: null
+  },
+  source: {
+    type: String,
+    enum: ['manual', 'auto'],
+    default: 'manual'
+  },
   scheduledDate: {
     type: Date,
     required: true

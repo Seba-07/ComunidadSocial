@@ -41,8 +41,10 @@ export default function CalendarManagerView() {
         type: 'ASSIGNMENT',
         color: EVENT_TYPES.ASSIGNMENT.color,
         title: a.organizationName || 'Asignación',
-        subtitle: `${a.ministroName || 'Ministro'} - ${a.time || ''}`,
+        subtitle: `${a.ministroName || 'Ministro'} - ${a.time || a.scheduledTime || ''}`,
         detail: a.status,
+        source: a.source || 'manual',
+        assemblyId: a.assemblyId || null,
         raw: a
       });
     });
@@ -116,16 +118,34 @@ export default function CalendarManagerView() {
                     borderLeft: `4px solid ${ev.color}`,
                     background: '#f9fafb'
                   }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>{ev.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: '#111827', flex: 1 }}>{ev.title}</span>
+                      {ev.source && (
+                        <span style={{
+                          padding: '1px 6px', borderRadius: 8, fontSize: 10, fontWeight: 600,
+                          background: ev.source === 'auto' ? '#dbeafe' : '#f3f4f6',
+                          color: ev.source === 'auto' ? '#1e40af' : '#6b7280'
+                        }}>
+                          {ev.source === 'auto' ? 'Auto' : 'Manual'}
+                        </span>
+                      )}
+                    </div>
                     {ev.subtitle && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{ev.subtitle}</div>}
-                    {ev.detail && (
-                      <span style={{
-                        display: 'inline-block', marginTop: 4, padding: '2px 8px',
-                        borderRadius: 10, fontSize: 11, background: ev.color + '20', color: ev.color
-                      }}>
-                        {ev.detail}
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                      {ev.detail && (
+                        <span style={{
+                          display: 'inline-block', padding: '2px 8px',
+                          borderRadius: 10, fontSize: 11, background: ev.color + '20', color: ev.color
+                        }}>
+                          {ev.detail}
+                        </span>
+                      )}
+                      {ev.assemblyId && (
+                        <span style={{ fontSize: 11, color: '#6b7280' }}>
+                          Vinculada a asamblea
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

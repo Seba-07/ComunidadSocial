@@ -593,7 +593,7 @@ function ElectionsModal({ open, onClose, elections, org }) {
 
 // ========== Create Assembly Modal ==========
 function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
-  const [form, setForm] = useState({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50 });
+  const [form, setForm] = useState({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50, requiresMinister: false });
   const [agendaItems, setAgendaItems] = useState([{ title: '', type: 'custom' }]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -613,7 +613,7 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
       const validItems = agendaItems.filter((item) => item.title.trim());
       await apiService.createAssembly(orgId, { ...form, agendaItems: validItems });
       addToast('Asamblea creada exitosamente', 'success');
-      setForm({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50 });
+      setForm({ title: '', type: 'ordinaria', date: '', time: '', description: '', quorumType: 'percentage', quorumValue: 50, requiresMinister: false });
       setAgendaItems([{ title: '', type: 'custom' }]);
       onCreated();
     } catch (error) {
@@ -652,6 +652,20 @@ function CreateAssemblyModal({ open, onClose, orgId, onCreated, addToast }) {
           <textarea id="asm-desc" value={form.description} onChange={set('description')} placeholder="Descripción..." rows={3}
             style={{ width: '100%', padding: '14px 16px', border: '2px solid #e5e7eb', borderRadius: 12, fontSize: 16, resize: 'vertical', boxSizing: 'border-box' }} />
         </FormField>
+
+        {/* Ministro de Fe */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 16px', border: `2px solid ${form.requiresMinister ? '#1e40af' : '#e5e7eb'}`, borderRadius: 12, background: form.requiresMinister ? '#eff6ff' : 'white', transition: 'all 0.15s' }}>
+            <input type="checkbox" checked={form.requiresMinister} onChange={(e) => setForm(f => ({ ...f, requiresMinister: e.target.checked }))}
+              style={{ width: 18, height: 18, accentColor: '#1e40af' }} />
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: form.requiresMinister ? '#1e40af' : '#374151' }}>Requiere Ministro de Fe</span>
+              <span style={{ display: 'block', fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                Al convocar, se generará automáticamente una solicitud al municipio
+              </span>
+            </div>
+          </label>
+        </div>
 
         {/* Agenda Items */}
         <div style={{ marginBottom: 16 }}>

@@ -102,6 +102,8 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const [flagComment, setFlagComment] = useState('');
   const [scheduleData, setScheduleData] = useState({ ministroId: '', date: '', time: '', location: '' });
   const [isActioning, setIsActioning] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleData, setRescheduleData] = useState({ date: '', time: '', reason: '' });
   const [signedPdf, setSignedPdf] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showDissolve, setShowDissolve] = useState(false);
@@ -664,6 +666,19 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
                       </span>
                     </div>
                   </div>
+                  {(org.status === 'ministro_scheduled' || org.status === 'waiting_ministro') && (
+                    <button onClick={() => {
+                      const d = org.ministroData.scheduledDate ? new Date(org.ministroData.scheduledDate).toISOString().split('T')[0] : '';
+                      setRescheduleData({ date: d, time: org.ministroData.scheduledTime || '', reason: '' });
+                      setShowReschedule(true);
+                    }} style={{
+                      marginTop: 12, padding: '8px 16px', border: '1px solid #f59e0b', borderRadius: 8,
+                      background: '#fffbeb', color: '#92400e', fontSize: 13, fontWeight: 600,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      {'\uD83D\uDCC5'} Reprogramar Fecha/Hora
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{ padding: 16, background: '#fafafa', borderRadius: 10, border: '1px solid #e5e7eb' }}>

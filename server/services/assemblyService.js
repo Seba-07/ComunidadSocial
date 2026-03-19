@@ -65,6 +65,8 @@ export async function createAssembly(org, data) {
       anonymousVotes: [],
       votingOpen: false
     })),
+    requiresMinister: data.requiresMinister || false,
+    assignmentId: null,
     attendance: 0,
     attendees: [],
     createdAt: new Date()

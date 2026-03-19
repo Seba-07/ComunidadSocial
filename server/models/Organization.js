@@ -147,6 +147,8 @@ const assemblySchema = new mongoose.Schema({
   agendaItems: [agendaItemSchema],
   attendance: Number,
   attendees: [assemblyAttendeeSchema],
+  requiresMinister: { type: Boolean, default: false },
+  assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment', default: null },
   convokedAt: Date,
   startedAt: Date,
   finishedAt: Date,
