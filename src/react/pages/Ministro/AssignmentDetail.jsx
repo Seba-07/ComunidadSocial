@@ -186,6 +186,49 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
         </div>
       </Section>
 
+      {/* Comisión Electoral */}
+      {(() => {
+        const comision = org?.electoralCommission || org?.comisionElectoral?.members || org?.comisionElectoral || [];
+        const comArray = Array.isArray(comision) ? comision : [];
+        if (comArray.length === 0) return null;
+        return (
+          <Section title={`Comision Electoral (${comArray.length})`}>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {comArray.map((m, i) => {
+                const bd = m.birthDate || (m.rut && members.find(mb => mb.rut === m.rut)?.birthDate);
+                const age = calculateAge(bd);
+                const isMinor = age !== null && age < 18;
+                return (
+                  <div key={m.rut || i} style={{
+                    display: 'flex', justifyContent: 'space-between', padding: '8px 10px',
+                    borderRadius: 8, border: '1px solid #f3f4f6',
+                    background: isMinor ? '#fef3c7' : 'transparent',
+                    flexWrap: 'wrap', gap: 4,
+                  }}>
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Miembro {i + 1}</span>
+                      <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{formatName(m)} — {m.rut || '—'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {age !== null && (
+                        <span style={{ fontSize: 12, color: isMinor ? '#d97706' : '#6b7280', fontWeight: isMinor ? 600 : 400 }}>
+                          {age} anos
+                        </span>
+                      )}
+                      {isMinor && (
+                        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600 }}>
+                          Menor de edad
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        );
+      })()}
+
       {/* Documentos para imprimir */}
       <Section title="Documentos para Imprimir">
         {/* Estatutos — siempre primero */}

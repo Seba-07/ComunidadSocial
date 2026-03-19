@@ -102,7 +102,7 @@ router.get('/ministro/:ministroId', authenticate, async (req, res) => {
     }
 
     const assignments = await Assignment.find({ ministroId: req.params.ministroId })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission comisionElectoral provisionalDirectorio estatutos estatutosSnapshot certificatesStep5`)
       .sort({ scheduledDate: -1 })
       .lean();
 
@@ -134,7 +134,7 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, 
       ministroId: req.userId,
       status: 'pending'
     })
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos certificatesStep5`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission comisionElectoral provisionalDirectorio estatutos estatutosSnapshot certificatesStep5`)
       .sort({ scheduledDate: 1 })
       .lean();
 
@@ -163,7 +163,7 @@ router.get('/my/pending', authenticate, requireRole('MINISTRO_FE'), async (req, 
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
-      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission provisionalDirectorio estatutos`)
+      .populate('organizationId', `${ORG_BASIC_FIELDS} members electoralCommission comisionElectoral provisionalDirectorio estatutos estatutosSnapshot`)
       .lean();
 
     if (!assignment) {
