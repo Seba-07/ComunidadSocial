@@ -48,17 +48,29 @@ export default function MinistroDashboardPage() {
 
   const completedAssignments = assignments.filter(a => a.status === 'completed');
 
-  // Separate today vs upcoming — compare YYYY-MM-DD strings to avoid timezone issues
-  const todayISO = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
-  function getDateISO(d) {
+  // Separate today / upcoming / overdue — extract YYYY-MM-DD from ISO string directly
+  // to avoid timezone conversion issues (server stores dates as UTC midnight)
+  const todayISO = new Date().toLocaleDateString('en-CA');
+  function getDateOnly(d) {
     if (!d) return '';
+    // If it's an ISO string like "2026-03-20T00:00:00.000Z", extract date part directly
+    if (typeof d === 'string' && d.length >= 10 && d[4] === '-') return d.substring(0, 10);
+    // Fallback: parse and format in local timezone
     return new Date(d).toLocaleDateString('en-CA');
   }
-  const todayAssignments = myPending.filter(a => a.scheduledDate && getDateISO(a.scheduledDate) === todayISO);
-  const upcomingAssignments = myPending.filter(a => !a.scheduledDate || getDateISO(a.scheduledDate) !== todayISO);
+  const todayAssignments = myPending.filter(a => getDateOnly(a.scheduledDate) === todayISO);
+  const overdueAssignments = myPending.filter(a => {
+    const d = getDateOnly(a.scheduledDate);
+    return d && d < todayISO;
+  });
+  const upcomingAssignments = myPending.filter(a => {
+    const d = getDateOnly(a.scheduledDate);
+    return !d || d > todayISO;
+  });
 
   const stats = [
     { icon: '\uD83D\uDCC5', label: 'Hoy', value: todayAssignments.length, color: '#2563eb' },
+    ...(overdueAssignments.length > 0 ? [{ icon: '\u26A0\uFE0F', label: 'Atrasadas', value: overdueAssignments.length, color: '#dc2626' }] : []),
     { icon: '\uD83D\uDCCB', label: 'Pendientes', value: myPending.length, color: '#f59e0b' },
     { icon: '\u2705', label: 'Completadas', value: completedAssignments.length, color: '#10b981' },
   ];
@@ -140,19 +152,37 @@ export default function MinistroDashboardPage() {
                   </>
                 )}
 
+                {/* Overdue — red alert */}
+                {overdueAssignments.length > 0 && (
+                  <>
+                    <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 700, color: '#dc2626' }}>
+                      Atrasadas ({overdueAssignments.length})
+                    </h2>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {overdueAssignments.map(a => (
+                        <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 {/* Upcoming */}
-                <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
-                  {todayAssignments.length > 0 ? 'Proximas' : 'Asignaciones Pendientes'} ({upcomingAssignments.length})
-                </h2>
-                {upcomingAssignments.length === 0 && todayAssignments.length === 0 ? (
-                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb' }}>
+                {upcomingAssignments.length > 0 && (
+                  <>
+                    <h2 style={{ margin: '24px 0 12px', fontSize: 18, fontWeight: 600, color: '#111827' }}>
+                      Proximas ({upcomingAssignments.length})
+                    </h2>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {upcomingAssignments.map(a => (
+                        <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {todayAssignments.length === 0 && overdueAssignments.length === 0 && upcomingAssignments.length === 0 && (
+                  <div style={{ background: 'white', borderRadius: 12, padding: 40, textAlign: 'center', border: '1px solid #e5e7eb', marginTop: 24 }}>
                     <p style={{ color: '#6b7280', fontSize: 16, margin: 0 }}>No tienes asignaciones pendientes</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gap: 10 }}>
-                    {upcomingAssignments.map(a => (
-                      <AssignmentCard key={a._id} assignment={a} onSelect={handleSelectAssignment} />
-                    ))}
                   </div>
                 )}
               </>

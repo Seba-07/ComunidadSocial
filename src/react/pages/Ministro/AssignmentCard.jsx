@@ -14,10 +14,15 @@ export default function AssignmentCard({ assignment, onSelect }) {
   const a = assignment;
   const status = a.status || 'pending';
   const org = a.organizationId || a.organization || {};
-  const isToday = (() => {
-    if (!a.scheduledDate) return false;
-    return new Date(a.scheduledDate).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA');
+  // Extract YYYY-MM-DD from ISO string directly to avoid UTC→local timezone shift
+  const schedDate = (() => {
+    if (!a.scheduledDate) return '';
+    const s = String(a.scheduledDate);
+    return s.length >= 10 && s[4] === '-' ? s.substring(0, 10) : new Date(s).toLocaleDateString('en-CA');
   })();
+  const todayDate = new Date().toLocaleDateString('en-CA');
+  const isToday = schedDate === todayDate;
+  const isOverdue = schedDate && schedDate < todayDate;
 
   const memberCount = org.members?.length || a.memberCount || 0;
 
@@ -26,10 +31,11 @@ export default function AssignmentCard({ assignment, onSelect }) {
       onClick={() => onSelect?.(a)}
       style={{
         background: 'white', borderRadius: 12, padding: 'clamp(14px, 3vw, 20px)',
-        border: isToday ? '2px solid #2563eb' : '1px solid #e5e7eb',
+        border: isToday ? '2px solid #2563eb' : isOverdue ? '2px solid #fca5a5' : '1px solid #e5e7eb',
         cursor: onSelect ? 'pointer' : 'default',
         transition: 'box-shadow 0.15s',
-        boxShadow: isToday ? '0 2px 12px rgba(37,99,235,0.12)' : 'none',
+        boxShadow: isToday ? '0 2px 12px rgba(37,99,235,0.12)' : isOverdue ? '0 2px 12px rgba(220,38,38,0.1)' : 'none',
+        background: isOverdue ? '#fef2f2' : 'white',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
@@ -41,6 +47,11 @@ export default function AssignmentCard({ assignment, onSelect }) {
             {isToday && (
               <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 10, fontWeight: 700, background: '#2563eb', color: 'white' }}>
                 HOY
+              </span>
+            )}
+            {isOverdue && (
+              <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 10, fontWeight: 700, background: '#dc2626', color: 'white' }}>
+                ATRASADA
               </span>
             )}
           </div>

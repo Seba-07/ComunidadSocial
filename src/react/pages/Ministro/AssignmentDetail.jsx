@@ -62,10 +62,30 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
   const dir = org?.provisionalDirectorio || {};
   const members = org?.members || [];
   const todayISO = new Date().toLocaleDateString('en-CA');
-  const schedISO = a.scheduledDate ? new Date(a.scheduledDate).toLocaleDateString('en-CA') : '';
+  const schedISO = (() => {
+    if (!a.scheduledDate) return '';
+    const s = String(a.scheduledDate);
+    return s.length >= 10 && s[4] === '-' ? s.substring(0, 10) : new Date(s).toLocaleDateString('en-CA');
+  })();
   const isToday = schedISO === todayISO;
   const isPast = schedISO && schedISO < todayISO;
   const canStart = (isToday || isPast) && a.status === 'pending';
+
+  // Dynamic quorum
+  const quorumRequired = org?.estatutosSnapshot?.miembrosMinimos
+    || org?.templateConfig?.miembrosMinimos
+    || ((org?.organizationType || '') === 'JUNTA_VECINOS' ? 50 : 15);
+
+  function calculateAge(bd) {
+    if (!bd) return null;
+    const birth = new Date(bd);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  }
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 'clamp(12px, 3vw, 24px)' }}>
@@ -115,6 +135,12 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
             <div style={{ fontSize: 12, color: '#6b7280' }}>Socios esperados</div>
             <div style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{members.length}</div>
           </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Quorum minimo requerido</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: members.length >= quorumRequired ? '#059669' : '#dc2626' }}>
+              {quorumRequired} personas
+            </div>
+          </div>
         </div>
       </Section>
 
@@ -123,45 +149,46 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
         <div style={{ display: 'grid', gap: 8 }}>
           {[
             ['Presidente/a', dir.president || dir.presidente],
+            ['Vicepresidente/a', dir.vicePresident || dir.vicepresidente],
             ['Secretario/a', dir.secretary || dir.secretario],
             ['Tesorero/a', dir.treasurer || dir.tesorero],
-          ].filter(([, p]) => p).map(([cargo, p]) => (
-            <div key={cargo} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', flexWrap: 'wrap', gap: 4 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{cargo}</span>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>{formatName(p)} — {p.rut || '—'}</span>
-            </div>
-          ))}
+            ...(dir.additionalMembers || []).map((m, i) => [m.cargoNombre || m.cargo || `Director/a ${i+1}`, m]),
+          ].filter(([, p]) => p).map(([cargo, p]) => {
+            const bd = p.birthDate || (p.rut && members.find(m => m.rut === p.rut)?.birthDate);
+            const age = calculateAge(bd);
+            const isMinor = age !== null && age < 18;
+            return (
+              <div key={cargo} style={{
+                display: 'flex', justifyContent: 'space-between', padding: '8px 10px',
+                borderRadius: 8, border: '1px solid #f3f4f6',
+                background: isMinor ? '#fef3c7' : 'transparent',
+                flexWrap: 'wrap', gap: 4,
+              }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{cargo}</span>
+                  <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>{formatName(p)} — {p.rut || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {age !== null && (
+                    <span style={{ fontSize: 12, color: isMinor ? '#d97706' : '#6b7280', fontWeight: isMinor ? 600 : 400 }}>
+                      {age} anos
+                    </span>
+                  )}
+                  {isMinor && (
+                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600 }}>
+                      Menor de edad
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Section>
 
       {/* Documentos para imprimir */}
       <Section title="Documentos para Imprimir">
-        {generatedDocs.length > 0 ? (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {generatedDocs.map((doc, i) => (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: 12, background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb',
-                flexWrap: 'wrap', gap: 8,
-              }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
-                  {DOC_LABELS[doc.docType] || doc.docType?.replace(/_/g, ' ')}
-                </span>
-                <button onClick={() => openPdf(doc.content)} style={{
-                  padding: '8px 18px', border: 'none', borderRadius: 8,
-                  background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', minHeight: 40,
-                }}>
-                  Ver / Imprimir
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>No hay documentos generados</p>
-        )}
-
-        {/* Estatutos */}
+        {/* Estatutos — siempre primero */}
         {org?.estatutosSnapshot?.articulos?.length > 0 && (
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -187,6 +214,32 @@ ${arts.map(a => `<div class="art"><div class="art-t">Art. ${a.numero}: ${a.titul
               Ver / Imprimir
             </button>
           </div>
+        )}
+
+        {/* PDFs generados */}
+        {generatedDocs.length > 0 ? (
+          <div style={{ display: 'grid', gap: 8, marginTop: org?.estatutosSnapshot?.articulos?.length ? 8 : 0 }}>
+            {generatedDocs.map((doc, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: 12, background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb',
+                flexWrap: 'wrap', gap: 8,
+              }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
+                  {DOC_LABELS[doc.docType] || doc.docType?.replace(/_/g, ' ')}
+                </span>
+                <button onClick={() => openPdf(doc.content)} style={{
+                  padding: '8px 18px', border: 'none', borderRadius: 8,
+                  background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', minHeight: 40,
+                }}>
+                  Ver / Imprimir
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0, marginTop: 8 }}>No hay documentos generados</p>
         )}
       </Section>
 
