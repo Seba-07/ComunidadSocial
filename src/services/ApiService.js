@@ -1238,6 +1238,24 @@ class ApiService {
     return this.put(`/support/tickets/${ticketId}/status`, { status });
   }
 
+  // ==================== TICKETS (Mesa de Ayuda) ====================
+
+  async createTicket(data) {
+    return this.post('/tickets', data);
+  }
+
+  async getOrgTickets(orgId) {
+    return this.get(`/tickets/org/${orgId}`);
+  }
+
+  async getAllTickets() {
+    return this.get('/tickets/admin/all');
+  }
+
+  async updateTicketStatus(ticketId, status, resolutionNote) {
+    return this.put(`/tickets/admin/${ticketId}/status`, { status, resolutionNote });
+  }
+
   // ==================== DIRECTORIO ====================
 
   async registerDirectorioResignation(orgId, data) {

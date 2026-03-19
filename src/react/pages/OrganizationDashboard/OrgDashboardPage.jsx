@@ -20,6 +20,7 @@ import OrgPrivacy from './OrgPrivacy';
 import OrgGuia from './OrgGuia';
 import OrgBiblioteca from './OrgBiblioteca';
 import OrgNoticias from './OrgNoticias';
+import OrgTramites from './OrgTramites';
 import SettingsPage from '../Settings/SettingsPage';
 import EmailVerificationBanner from '../../components/ui/EmailVerificationBanner';
 
@@ -35,10 +36,11 @@ const ORG_MENU_ITEMS = [
   { key: 'proyectos', label: 'Proyectos', icon: '📁' },
   { key: 'documentos', label: 'Archivo Histórico', icon: '📄' },
   { key: 'actividades', label: 'Actividades', icon: '📅' },
+  { key: 'tramites', label: 'Solicitudes', icon: '📋' },
 ];
 
 // Tabs visible per access level
-const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'elecciones', 'comunicaciones', 'finanzas', 'documentos', 'proyectos', 'actividades']);
+const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'elecciones', 'comunicaciones', 'finanzas', 'documentos', 'proyectos', 'actividades', 'tramites']);
 const SOCIO_TABS = new Set(['overview', 'directorio', 'comunicaciones']);
 
 /**
@@ -204,6 +206,7 @@ export default function OrgDashboardPage() {
           {effectiveTab === 'proyectos' && activeOrg && <OrgProyectos org={activeOrg} />}
           {effectiveTab === 'documentos' && activeOrg && <OrgDocumentos org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'actividades' && activeOrg && <OrgActividades org={activeOrg} />}
+          {effectiveTab === 'tramites' && activeOrg && <OrgTramites org={activeOrg} />}
         </main>
       </div>
     </>

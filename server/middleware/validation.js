@@ -573,6 +573,25 @@ export const createSupportTicketSchema = z.object({
   email: z.string().max(200).email().optional().or(z.literal(''))
 }).passthrough();
 
+/**
+ * Esquemas para tickets de solicitudes (Mesa de Ayuda)
+ */
+export const createTicketSchema = z.object({
+  title: z.string().min(1, 'Título requerido').max(200).trim(),
+  description: z.string().min(1, 'Descripción requerida').max(5000),
+  category: z.enum(['SUBVENCION', 'CIERRE_CALLE', 'CERTIFICADO', 'OTRO'], {
+    errorMap: () => ({ message: 'Categoría inválida' })
+  }),
+  organizationId: z.string().min(1, 'Organización requerida')
+});
+
+export const updateTicketStatusSchema = z.object({
+  status: z.enum(['PENDIENTE', 'EN_REVISION', 'RESUELTO', 'RECHAZADO'], {
+    errorMap: () => ({ message: 'Estado inválido' })
+  }),
+  resolutionNote: z.string().max(5000).optional().or(z.literal(''))
+});
+
 export const directorioResignationSchema = z.object({
   rutOut: z.string().min(1, 'RUT del miembro saliente es requerido').max(20),
   reason: z.enum(['RENUNCIA', 'FALLECIMIENTO', 'EXCLUSION'], {
@@ -609,6 +628,8 @@ export default {
   searchQuerySchema,
   libraryDocumentSchema,
   createSupportTicketSchema,
+  createTicketSchema,
+  updateTicketStatusSchema,
   directorioResignationSchema,
   // Middleware
   validate,

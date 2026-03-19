@@ -23,6 +23,7 @@ const SettingsPage = lazy(() => import('../Settings/SettingsPage'));
 const DocumentTemplatesView = lazy(() => import('./views/DocumentTemplatesView'));
 const NewsManagerView = lazy(() => import('./views/NewsManagerView'));
 const BulletinsView = lazy(() => import('./views/BulletinsView'));
+const TicketsView = lazy(() => import('./views/TicketsView'));
 const AdminOverviewView = lazy(() => import('./views/AdminOverviewView'));
 
 const VIEW_MAP = {
@@ -44,6 +45,7 @@ export: ExportView,
   'reg-datos': DataRegistryView,
   noticias: NewsManagerView,
   comunicados: BulletinsView,
+  'mesa-ayuda': TicketsView,
   configuracion: SettingsPage
 };
 

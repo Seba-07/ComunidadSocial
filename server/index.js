@@ -40,6 +40,7 @@ import tenantRoutes from './routes/tenant.js';
 import municipalityConfigRoutes from './routes/municipalityConfig.js';
 import supportRoutes from './routes/support.js';
 import bulletinsRoutes from './routes/bulletins.js';
+import ticketsRoutes from './routes/tickets.js';
 
 // Auto-migration system
 import { autoMigrateOrganizations } from './scripts/auto-migration.js';
@@ -197,6 +198,7 @@ app.use('/api/tenant', tenantRoutes);
 app.use('/api/config/municipality', municipalityConfigRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/bulletins', bulletinsRoutes);
+app.use('/api/tickets', ticketsRoutes);
 // Org-scoped bulletin endpoint (reuses bulletins router)
 app.use('/api/organizations', bulletinsRoutes);
 
