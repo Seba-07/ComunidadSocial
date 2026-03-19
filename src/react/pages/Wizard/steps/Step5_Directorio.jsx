@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWizardStore } from '../../../stores/wizardStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { useUiStore } from '../../../stores/uiStore';
+import { validateRut } from '../../../utils/validators';
 import { apiService } from '@services/ApiService.js';
 import FileUpload from '../../../components/ui/FileUpload';
 
@@ -186,6 +187,23 @@ export default function Step5_Directorio({ onNext, onPrev }) {
       if (!directorio[cargo.id]) return `Asigna un miembro al cargo: ${cargo.nombre}`;
     }
     if (comision.members.length < comisionSize) return `La comisión electoral requiere ${comisionSize} miembros`;
+
+    // Validar RUTs del directorio
+    for (const cargo of cargos) {
+      const assigned = directorio[cargo.id];
+      if (assigned?.rut && !validateRut(assigned.rut)) {
+        return `RUT inválido en ${cargo.nombre}: ${assigned.firstName} ${assigned.lastName} (${assigned.rut}). Verifica el dígito verificador.`;
+      }
+    }
+
+    // Validar RUTs de la comisión electoral
+    for (let i = 0; i < comision.members.length; i++) {
+      const m = comision.members[i];
+      if (m?.rut && !validateRut(m.rut)) {
+        return `RUT inválido en Comisión Electoral: ${m.firstName} ${m.lastName} (${m.rut}). Verifica el dígito verificador.`;
+      }
+    }
+
     // Validar certificados de antecedentes — obligatorio para todos los directores asignados
     for (const cargo of cargos) {
       const cert = certs[cargo.id];
