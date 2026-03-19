@@ -1198,8 +1198,14 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
 
     // Add a finance record
     if (req.body.addFinance) {
+      const finance = req.body.addFinance;
+      const validFundSources = ['FONDOS_PROPIOS', 'SUBVENCION_MUNICIPAL'];
+      if (finance.fundSource && !validFundSources.includes(finance.fundSource)) {
+        return res.status(400).json({ error: 'Origen de fondos no válido' });
+      }
       const newFinance = {
-        ...req.body.addFinance,
+        ...finance,
+        fundSource: finance.fundSource || 'FONDOS_PROPIOS',
         id: new mongoose.Types.ObjectId().toString()
       };
       if (!organization.finances) organization.finances = [];

@@ -12,12 +12,23 @@ const CATEGORY_LABELS = {
   donacion: 'Donación', proyecto: 'Proyecto', otro: 'Otro'
 };
 
+const FUND_SOURCE_LABELS = {
+  FONDOS_PROPIOS: 'Fondos Propios',
+  SUBVENCION_MUNICIPAL: 'Subvención Municipal'
+};
+
+const FUND_SOURCE_STYLES = {
+  FONDOS_PROPIOS: { bg: '#dbeafe', color: '#1e40af' },
+  SUBVENCION_MUNICIPAL: { bg: '#d1fae5', color: '#065f46' }
+};
+
 function formatCLP(val) {
   return (val || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
 }
 
 export default function OrgFinanzas({ org, onRefresh }) {
   const [filter, setFilter] = useState('all');
+  const [fundFilter, setFundFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
   const [showBalanceSelector, setShowBalanceSelector] = useState(false);
   const [balanceYear, setBalanceYear] = useState(new Date().getFullYear());
@@ -35,7 +46,10 @@ export default function OrgFinanzas({ org, onRefresh }) {
     }
   }
 
-  const filtered = filter === 'all' ? transactions : transactions.filter((t) => t.category === filter);
+  let filtered = filter === 'all' ? transactions : transactions.filter((t) => t.category === filter);
+  if (fundFilter !== 'all') {
+    filtered = filtered.filter((t) => (t.fundSource || 'FONDOS_PROPIOS') === fundFilter);
+  }
 
   const totals = useMemo(() => {
     const ingresos = transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -64,9 +78,9 @@ export default function OrgFinanzas({ org, onRefresh }) {
   }
 
   function exportCSV() {
-    const header = 'Fecha,Concepto,Categoría,Monto\n';
+    const header = 'Fecha,Concepto,Categoría,Origen,Monto,N° Resolución,Ref. Documento\n';
     const rows = transactions.map((t) =>
-      `${t.date ? localeDateString(t.date) : ''},${(t.concept || '').replace(/,/g, ';')},${CATEGORY_LABELS[t.category] || t.category || ''},${t.amount || 0}`
+      `${t.date ? localeDateString(t.date) : ''},${(t.concept || '').replace(/,/g, ';')},${CATEGORY_LABELS[t.category] || t.category || ''},${FUND_SOURCE_LABELS[t.fundSource] || 'Fondos Propios'},${t.amount || 0},${(t.resolutionNumber || '').replace(/,/g, ';')},${(t.documentRef || '').replace(/,/g, ';')}`
     ).join('\n');
     const csv = header + rows;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -85,6 +99,19 @@ export default function OrgFinanzas({ org, onRefresh }) {
       render: (val) => val ? localeDateString(val) : '—'
     },
     { key: 'concept', label: 'Concepto' },
+    {
+      key: 'fundSource', label: 'Origen',
+      hideOnMobile: true,
+      render: (val) => {
+        const source = val || 'FONDOS_PROPIOS';
+        const style = FUND_SOURCE_STYLES[source] || FUND_SOURCE_STYLES.FONDOS_PROPIOS;
+        return (
+          <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, background: style.bg, color: style.color, whiteSpace: 'nowrap' }}>
+            {FUND_SOURCE_LABELS[source] || 'Fondos Propios'}
+          </span>
+        );
+      }
+    },
     {
       key: 'category', label: 'Categoría',
       hideOnMobile: true,
@@ -136,12 +163,18 @@ export default function OrgFinanzas({ org, onRefresh }) {
         <SummaryCard label="Egresos del Mes" value={totals.monthOut} color="#f59e0b" />
       </div>
 
-      {/* Filter */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Filters */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <select value={filter} onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, maxWidth: '100%' }}>
+          style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14 }}>
           <option value="all">Todas las categorías</option>
           {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <select value={fundFilter} onChange={(e) => setFundFilter(e.target.value)}
+          style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14 }}>
+          <option value="all">Todos los orígenes</option>
+          <option value="FONDOS_PROPIOS">Fondos Propios</option>
+          <option value="SUBVENCION_MUNICIPAL">Subvención Municipal</option>
         </select>
       </div>
 
@@ -203,6 +236,9 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
   const [amount, setAmount] = useState('');
   const [direction, setDirection] = useState('ingreso');
   const [category, setCategory] = useState('ingreso');
+  const [fundSource, setFundSource] = useState('FONDOS_PROPIOS');
+  const [resolutionNumber, setResolutionNumber] = useState('');
+  const [documentRef, setDocumentRef] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
 
@@ -211,6 +247,9 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
     setAmount('');
     setDirection('ingreso');
     setCategory('ingreso');
+    setFundSource('FONDOS_PROPIOS');
+    setResolutionNumber('');
+    setDocumentRef('');
     setDate(new Date().toISOString().slice(0, 10));
   }
 
@@ -222,11 +261,13 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
 
     const finalAmount = direction === 'egreso' ? -Math.abs(numAmount) : Math.abs(numAmount);
 
+    const payload = { concept: concept.trim(), amount: finalAmount, category, fundSource, date };
+    if (resolutionNumber.trim()) payload.resolutionNumber = resolutionNumber.trim();
+    if (documentRef.trim()) payload.documentRef = documentRef.trim();
+
     setSubmitting(true);
     try {
-      await apiService.updateOrganization(orgId, {
-        addFinance: { concept: concept.trim(), amount: finalAmount, category, date }
-      });
+      await apiService.updateOrganization(orgId, { addFinance: payload });
       addToast('Transacción registrada', 'success');
       resetForm();
       onCreated();
@@ -242,32 +283,22 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
       <form className="auth-form" onSubmit={handleSubmit}>
         <FormField label="Concepto *" id="tx-concept" type="text" placeholder="Ej: Pago de arriendo, Cuota mensual" value={concept} onChange={(e) => setConcept(e.target.value)} />
 
-        <FormField label="Monto *" id="tx-amount" type="number" placeholder="0" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <FormField label="Monto (CLP) *" id="tx-amount" type="number" placeholder="0" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
         <FormField label="Tipo" id="tx-direction">
           <div className="r-form-row" style={{ gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setDirection('ingreso')}
-              style={{
-                flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            <button type="button" onClick={() => setDirection('ingreso')}
+              style={{ flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 borderColor: direction === 'ingreso' ? '#059669' : '#e5e7eb',
                 background: direction === 'ingreso' ? '#ecfdf5' : 'white',
-                color: direction === 'ingreso' ? '#059669' : '#6b7280'
-              }}
-            >
+                color: direction === 'ingreso' ? '#059669' : '#6b7280' }}>
               Ingreso
             </button>
-            <button
-              type="button"
-              onClick={() => setDirection('egreso')}
-              style={{
-                flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            <button type="button" onClick={() => setDirection('egreso')}
+              style={{ flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 borderColor: direction === 'egreso' ? '#ef4444' : '#e5e7eb',
                 background: direction === 'egreso' ? '#fef2f2' : 'white',
-                color: direction === 'egreso' ? '#ef4444' : '#6b7280'
-              }}
-            >
+                color: direction === 'egreso' ? '#ef4444' : '#6b7280' }}>
               Egreso
             </button>
           </div>
@@ -279,6 +310,33 @@ function CreateTransactionModal({ open, onClose, orgId, onCreated, addToast }) {
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </FormField>
+
+        <FormField label="Origen de Fondos *" id="tx-fund-source">
+          <div className="r-form-row" style={{ gap: 8 }}>
+            <button type="button" onClick={() => setFundSource('FONDOS_PROPIOS')}
+              style={{ flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                borderColor: fundSource === 'FONDOS_PROPIOS' ? '#1e40af' : '#e5e7eb',
+                background: fundSource === 'FONDOS_PROPIOS' ? '#dbeafe' : 'white',
+                color: fundSource === 'FONDOS_PROPIOS' ? '#1e40af' : '#6b7280' }}>
+              Fondos Propios
+            </button>
+            <button type="button" onClick={() => setFundSource('SUBVENCION_MUNICIPAL')}
+              style={{ flex: 1, padding: '12px 16px', border: '2px solid', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                borderColor: fundSource === 'SUBVENCION_MUNICIPAL' ? '#065f46' : '#e5e7eb',
+                background: fundSource === 'SUBVENCION_MUNICIPAL' ? '#d1fae5' : 'white',
+                color: fundSource === 'SUBVENCION_MUNICIPAL' ? '#065f46' : '#6b7280' }}>
+              Subvención Municipal
+            </button>
+          </div>
+        </FormField>
+
+        {fundSource === 'SUBVENCION_MUNICIPAL' && (
+          <FormField label="N° Resolución Municipal" id="tx-resolution" type="text" placeholder="Ej: Res. Exenta N° 1234/2026"
+            value={resolutionNumber} onChange={(e) => setResolutionNumber(e.target.value)} />
+        )}
+
+        <FormField label="Ref. Documento (boleta/factura)" id="tx-doc-ref" type="text" placeholder="Ej: Boleta N° 5678"
+          value={documentRef} onChange={(e) => setDocumentRef(e.target.value)} />
 
         <FormField label="Fecha" id="tx-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 

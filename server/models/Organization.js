@@ -550,6 +550,9 @@ const organizationSchema = new mongoose.Schema({
     concept: String,
     amount: Number,
     category: { type: String, enum: ['ingreso', 'egreso', 'cuota', 'donacion', 'proyecto', 'otro'] },
+    fundSource: { type: String, enum: ['FONDOS_PROPIOS', 'SUBVENCION_MUNICIPAL'], default: 'FONDOS_PROPIOS' },
+    resolutionNumber: String, // N° de resolución municipal (para subvenciones)
+    documentRef: String,      // Referencia a boleta/factura
     date: Date,
     memberRut: String,
     feePeriod: String,

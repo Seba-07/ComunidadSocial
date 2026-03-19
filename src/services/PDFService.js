@@ -1351,115 +1351,181 @@ class PDFService {
     const yearTxs = finances.filter(t => {
       const d = new Date(t.date);
       return d.getFullYear() === year;
-    });
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Group by category
-    const categories = {};
-    yearTxs.forEach(t => {
-      const cat = t.category || 'otro';
-      if (!categories[cat]) categories[cat] = { ingresos: 0, egresos: 0, count: 0 };
-      if (t.amount >= 0) categories[cat].ingresos += t.amount;
-      else categories[cat].egresos += Math.abs(t.amount);
-      categories[cat].count++;
-    });
+    // Split by fund source
+    const fondosPropios = yearTxs.filter(t => (t.fundSource || 'FONDOS_PROPIOS') === 'FONDOS_PROPIOS');
+    const subvenciones = yearTxs.filter(t => t.fundSource === 'SUBVENCION_MUNICIPAL');
 
-    const totalIngresos = yearTxs.filter(t => t.amount >= 0).reduce((s, t) => s + t.amount, 0);
-    const totalEgresos = yearTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-    const saldo = totalIngresos - totalEgresos;
+    const calcTotals = (txs) => {
+      const ingresos = txs.filter(t => t.amount >= 0).reduce((s, t) => s + t.amount, 0);
+      const egresos = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+      return { ingresos, egresos, saldo: ingresos - egresos };
+    };
+
+    const fpTotals = calcTotals(fondosPropios);
+    const subTotals = calcTotals(subvenciones);
+    const globalTotals = calcTotals(yearTxs);
 
     const catLabels = {
-      ingreso: 'Ingresos Generales', egreso: 'Egresos Generales', cuota: 'Cuotas Sociales',
-      donacion: 'Donaciones', proyecto: 'Proyectos', otro: 'Otros'
+      ingreso: 'Ingreso', egreso: 'Egreso', cuota: 'Cuota',
+      donacion: 'Donación', proyecto: 'Proyecto', otro: 'Otro'
     };
     const fmtCLP = (v) => (v || 0).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CL') : '—';
+    const truncate = (s, max) => s && s.length > max ? s.slice(0, max - 1) + '…' : (s || '');
 
+    let pageNum = 1;
+
+    const checkPage = (needed) => {
+      if (this.currentY + needed > PAGE_HEIGHT - 25) {
+        this.drawFooter(doc, pageNum);
+        pageNum++;
+        doc.addPage();
+        this.currentY = MARGIN_TOP + 10;
+      }
+    };
+
+    // ============ PAGE 1: HEADER + ORG INFO ============
     this.drawHeader(doc, `BALANCE ANUAL DE TESORERÍA — ${year}`);
-
     this.currentY = 55;
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
 
     // Organization info
-    doc.setFont('helvetica', 'bold');
-    doc.text('Organización:', MARGIN_LEFT, this.currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(org.organizationName || '—', MARGIN_LEFT + 35, this.currentY);
-    this.currentY += 7;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Tipo:', MARGIN_LEFT, this.currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(getOrgTypeName(org.organizationType) || '—', MARGIN_LEFT + 35, this.currentY);
-    this.currentY += 7;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Comuna:', MARGIN_LEFT, this.currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(org.comuna || tenant.communeName || '—', MARGIN_LEFT + 35, this.currentY);
-    this.currentY += 7;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Período:', MARGIN_LEFT, this.currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`1 de enero al 31 de diciembre de ${year}`, MARGIN_LEFT + 35, this.currentY);
-    this.currentY += 12;
-
-    // Separator
+    const infoFields = [
+      ['Organización:', org.organizationName || '—'],
+      ['Tipo:', getOrgTypeName(org.organizationType) || '—'],
+      ['Comuna:', org.comuna || tenant.communeName || '—'],
+      ['Período:', `1 de enero al 31 de diciembre de ${year}`]
+    ];
+    infoFields.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, MARGIN_LEFT, this.currentY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, MARGIN_LEFT + 35, this.currentY);
+      this.currentY += 7;
+    });
+    this.currentY += 5;
     doc.setDrawColor('#e5e7eb');
     doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
     this.currentY += 8;
 
-    // Detail by category table header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Detalle por Categoría', MARGIN_LEFT, this.currentY);
-    this.currentY += 8;
-
-    doc.setFontSize(10);
-    doc.setFillColor('#f3f4f6');
-    doc.rect(MARGIN_LEFT, this.currentY - 4, CONTENT_WIDTH, 7, 'F');
-    doc.text('Categoría', MARGIN_LEFT + 2, this.currentY);
-    doc.text('Ingresos', MARGIN_LEFT + 80, this.currentY);
-    doc.text('Egresos', MARGIN_LEFT + 115, this.currentY);
-    doc.text('Movimientos', MARGIN_LEFT + 147, this.currentY);
-    this.currentY += 8;
-
-    doc.setFont('helvetica', 'normal');
-    const catEntries = Object.entries(categories);
-    if (catEntries.length === 0) {
-      doc.setTextColor('#9ca3af');
-      doc.text('Sin movimientos registrados para este año', MARGIN_LEFT + 2, this.currentY);
+    // ============ HELPER: draw transaction detail table ============
+    const drawDetailTable = (txs, sectionLabel, sectionColor) => {
+      checkPage(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(sectionColor);
+      doc.text(sectionLabel, MARGIN_LEFT, this.currentY);
       doc.setTextColor('#000000');
       this.currentY += 8;
-    } else {
-      catEntries.forEach(([cat, data]) => {
-        doc.text(catLabels[cat] || cat, MARGIN_LEFT + 2, this.currentY);
-        doc.text(fmtCLP(data.ingresos), MARGIN_LEFT + 80, this.currentY);
-        doc.text(fmtCLP(data.egresos), MARGIN_LEFT + 115, this.currentY);
-        doc.text(String(data.count), MARGIN_LEFT + 155, this.currentY);
-        this.currentY += 7;
-      });
-    }
 
-    this.currentY += 5;
+      if (txs.length === 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor('#9ca3af');
+        doc.text('Sin movimientos registrados', MARGIN_LEFT + 2, this.currentY);
+        doc.setTextColor('#000000');
+        this.currentY += 10;
+        return;
+      }
+
+      // Table header
+      doc.setFontSize(8);
+      doc.setFillColor('#f3f4f6');
+      doc.rect(MARGIN_LEFT, this.currentY - 4, CONTENT_WIDTH, 7, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fecha', MARGIN_LEFT + 2, this.currentY);
+      doc.text('Concepto', MARGIN_LEFT + 22, this.currentY);
+      doc.text('Cat.', MARGIN_LEFT + 85, this.currentY);
+      doc.text('Ref. Doc.', MARGIN_LEFT + 105, this.currentY);
+      doc.text('Monto', MARGIN_LEFT + 140, this.currentY);
+      this.currentY += 7;
+
+      doc.setFont('helvetica', 'normal');
+      txs.forEach(t => {
+        checkPage(8);
+        doc.text(fmtDate(t.date), MARGIN_LEFT + 2, this.currentY);
+        doc.text(truncate(t.concept, 35), MARGIN_LEFT + 22, this.currentY);
+        doc.text(truncate(catLabels[t.category] || t.category || '', 10), MARGIN_LEFT + 85, this.currentY);
+        doc.text(truncate(t.documentRef || t.resolutionNumber || '', 18), MARGIN_LEFT + 105, this.currentY);
+        const amtColor = t.amount >= 0 ? '#059669' : '#ef4444';
+        doc.setTextColor(amtColor);
+        doc.text(fmtCLP(t.amount), MARGIN_LEFT + 140, this.currentY);
+        doc.setTextColor('#000000');
+        this.currentY += 6;
+      });
+
+      // Subtotals
+      this.currentY += 2;
+      doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
+      this.currentY += 6;
+      const totals = calcTotals(txs);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Subtotal Ingresos:', MARGIN_LEFT + 5, this.currentY);
+      doc.setTextColor('#059669');
+      doc.text(fmtCLP(totals.ingresos), MARGIN_LEFT + 100, this.currentY);
+      doc.setTextColor('#000000');
+      this.currentY += 6;
+      doc.text('Subtotal Egresos:', MARGIN_LEFT + 5, this.currentY);
+      doc.setTextColor('#ef4444');
+      doc.text(fmtCLP(totals.egresos), MARGIN_LEFT + 100, this.currentY);
+      doc.setTextColor('#000000');
+      this.currentY += 6;
+      doc.text('Saldo Sección:', MARGIN_LEFT + 5, this.currentY);
+      doc.setTextColor(totals.saldo >= 0 ? '#059669' : '#ef4444');
+      doc.text(fmtCLP(totals.saldo), MARGIN_LEFT + 100, this.currentY);
+      doc.setTextColor('#000000');
+      this.currentY += 10;
+    };
+
+    // ============ SECTION 1: FONDOS PROPIOS ============
+    drawDetailTable(fondosPropios, 'I. FONDOS PROPIOS (Cuotas, Donaciones, Otros)', '#1e40af');
+
+    // ============ SECTION 2: SUBVENCIONES ============
+    drawDetailTable(subvenciones, 'II. SUBVENCIONES MUNICIPALES (Fondos Públicos)', '#065f46');
+
+    // ============ RESUMEN GLOBAL ============
+    checkPage(50);
     doc.line(MARGIN_LEFT, this.currentY, PAGE_WIDTH - MARGIN_RIGHT, this.currentY);
     this.currentY += 8;
 
-    // Totals
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Resumen del Año', MARGIN_LEFT, this.currentY);
+    doc.text('RESUMEN GENERAL DEL AÑO', MARGIN_LEFT, this.currentY);
     this.currentY += 10;
 
     doc.setFontSize(11);
     const col1 = MARGIN_LEFT + 5;
     const col2 = MARGIN_LEFT + 100;
 
+    // Fondos Propios summary
+    doc.setFont('helvetica', 'normal');
+    doc.text('Saldo Fondos Propios:', col1, this.currentY);
+    doc.setTextColor(fpTotals.saldo >= 0 ? '#059669' : '#ef4444');
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmtCLP(fpTotals.saldo), col2, this.currentY);
+    doc.setTextColor('#000000');
+    this.currentY += 8;
+
+    // Subvenciones summary
+    doc.setFont('helvetica', 'normal');
+    doc.text('Saldo Subvenciones:', col1, this.currentY);
+    doc.setTextColor(subTotals.saldo >= 0 ? '#059669' : '#ef4444');
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmtCLP(subTotals.saldo), col2, this.currentY);
+    doc.setTextColor('#000000');
+    this.currentY += 8;
+
+    doc.line(col1, this.currentY - 2, col2 + 40, this.currentY - 2);
+    this.currentY += 3;
+
     doc.setFont('helvetica', 'normal');
     doc.text('Total Ingresos:', col1, this.currentY);
     doc.setTextColor('#059669');
     doc.setFont('helvetica', 'bold');
-    doc.text(fmtCLP(totalIngresos), col2, this.currentY);
+    doc.text(fmtCLP(globalTotals.ingresos), col2, this.currentY);
     doc.setTextColor('#000000');
     this.currentY += 8;
 
@@ -1467,18 +1533,18 @@ class PDFService {
     doc.text('Total Egresos:', col1, this.currentY);
     doc.setTextColor('#ef4444');
     doc.setFont('helvetica', 'bold');
-    doc.text(fmtCLP(totalEgresos), col2, this.currentY);
+    doc.text(fmtCLP(globalTotals.egresos), col2, this.currentY);
     doc.setTextColor('#000000');
     this.currentY += 8;
 
     doc.line(col1, this.currentY - 2, col2 + 40, this.currentY - 2);
-    this.currentY += 3;
+    this.currentY += 4;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.text('SALDO FINAL:', col1, this.currentY);
-    doc.setTextColor(saldo >= 0 ? '#059669' : '#ef4444');
-    doc.text(fmtCLP(saldo), col2, this.currentY);
+    doc.setTextColor(globalTotals.saldo >= 0 ? '#059669' : '#ef4444');
+    doc.text(fmtCLP(globalTotals.saldo), col2, this.currentY);
     doc.setTextColor('#000000');
     this.currentY += 5;
 
@@ -1492,14 +1558,9 @@ class PDFService {
     doc.setTextColor('#000000');
     doc.setFont('helvetica', 'normal');
 
-    // Signature section
+    // ============ SIGNATURES ============
     this.currentY += 20;
-
-    // Check if we need a new page for signatures
-    if (this.currentY > PAGE_HEIGHT - 70) {
-      doc.addPage();
-      this.currentY = MARGIN_TOP + 10;
-    }
+    checkPage(50);
 
     doc.setFontSize(10);
     const sigWidth = 55;
@@ -1509,7 +1570,6 @@ class PDFService {
     const sig3X = MARGIN_LEFT + (sigWidth + sigGap) * 2;
     const sigY = this.currentY;
 
-    // Signature lines
     [sig1X, sig2X, sig3X].forEach(x => {
       doc.line(x, sigY + 15, x + sigWidth, sigY + 15);
     });
@@ -1532,7 +1592,7 @@ class PDFService {
     doc.setFontSize(9);
     doc.text(`Documento generado el ${this.formatDate(new Date())} — ${tenant.platformName}`, MARGIN_LEFT, this.currentY);
 
-    this.drawFooter(doc, 1);
+    this.drawFooter(doc, pageNum);
     return doc;
   }
 
