@@ -722,9 +722,21 @@ ${articulos.map(a => `<div class="art"><div class="art-title">Artículo ${a.nume
         };
         function viewGenDoc(doc) {
           if (!doc.content) return;
-          // PDF stored as base64 data URL — open directly in browser PDF viewer
+          // PDF stored as base64 data URL — convert to Blob URL for reliable viewing
           if (doc.content.startsWith('data:application/pdf')) {
-            window.open(doc.content, '_blank');
+            try {
+              const base64 = doc.content.split(',')[1] || doc.content.split('base64,')[1];
+              const byteChars = atob(base64);
+              const byteArray = new Uint8Array(byteChars.length);
+              for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+              const blob = new Blob([byteArray], { type: 'application/pdf' });
+              const blobUrl = URL.createObjectURL(blob);
+              window.open(blobUrl, '_blank');
+            } catch (err) {
+              console.error('Error opening PDF:', err);
+              // Fallback: try data URL directly
+              window.open(doc.content, '_blank');
+            }
             return;
           }
           // Fallback for legacy HTML or raw text documents
