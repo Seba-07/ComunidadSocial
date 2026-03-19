@@ -3,13 +3,13 @@ import { useAuthStore } from './stores/authStore';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { sessionManager } from '@shared/SessionManager.js';
 import AuthPage from './pages/Auth/AuthPage';
-import MemberDashboardPage from './pages/MemberDashboard/MemberDashboardPage';
 import OrgDashboardPage from './pages/OrganizationDashboard/OrgDashboardPage';
 import ToastContainer from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import SupportModal from './components/ui/SupportModal';
 
 // Lazy-loaded pages for code splitting
+const MemberDashboardPage = lazy(() => import('./pages/MemberDashboard/MemberDashboardPage'));
 const AdminDashboardPage = lazy(() => import('./pages/Admin/AdminDashboardPage'));
 const WizardPage = lazy(() => import('./pages/Wizard/WizardPage'));
 const MinistroDashboardPage = lazy(() => import('./pages/Ministro/MinistroDashboardPage'));
@@ -283,7 +283,9 @@ export default function App() {
           path="/member"
           element={
             <ProtectedRoute allowedRoles={['MIEMBRO']}>
-              <MemberDashboardPage />
+              <SuspenseWrapper>
+                <MemberDashboardPage />
+              </SuspenseWrapper>
             </ProtectedRoute>
           }
         />

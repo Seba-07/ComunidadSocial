@@ -76,14 +76,9 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('zustand')) {
-              return 'vendor-react';
-            }
+            // Heavy libraries in own chunks (no cross-deps with react core)
             if (id.includes('jspdf') || id.includes('jszip')) {
               return 'vendor-pdf';
-            }
-            if (id.includes('dompurify')) {
-              return 'vendor-security';
             }
             if (id.includes('papaparse') || id.includes('xlsx')) {
               return 'vendor-import';
@@ -91,6 +86,7 @@ export default defineConfig({
             if (id.includes('qrcode') || id.includes('html5-qrcode')) {
               return 'vendor-qr';
             }
+            // All other node_modules in one chunk to avoid circular deps
             return 'vendor';
           }
 
