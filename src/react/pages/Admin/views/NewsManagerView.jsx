@@ -27,6 +27,7 @@ export default function NewsManagerView() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [showEditor, setShowEditor] = useState(false);
@@ -35,7 +36,7 @@ export default function NewsManagerView() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const addToast = useUiStore(s => s.addToast);
 
-  useEffect(() => { loadArticles(); }, [pagination.page, statusFilter]);
+  useEffect(() => { loadArticles(); }, [pagination.page, statusFilter, categoryFilter]);
 
   async function loadArticles() {
     try {
@@ -45,6 +46,7 @@ export default function NewsManagerView() {
       params.set('limit', '20');
       params.set('includeUnpublished', 'true');
       if (searchTerm) params.set('search', searchTerm);
+      if (categoryFilter) params.set('category', categoryFilter);
       const data = await apiService.get(`/news?${params}`);
       const list = data.news || [];
       // Client-side status filter (backend doesn't filter by status individually)
@@ -154,6 +156,16 @@ export default function NewsManagerView() {
             {f.label}
           </button>
         ))}
+        <select
+          value={categoryFilter}
+          onChange={e => { setCategoryFilter(e.target.value); setPagination(p => ({ ...p, page: 1 })); }}
+          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, background: 'white', color: '#374151' }}
+        >
+          <option value="">Todas las categorías</option>
+          {CATEGORIES.map(c => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <input
             type="text"

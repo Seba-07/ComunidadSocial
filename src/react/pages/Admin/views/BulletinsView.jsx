@@ -31,18 +31,22 @@ function formatDateShort(d) {
 export default function BulletinsView() {
   const [bulletins, setBulletins] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingBulletin, setEditingBulletin] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, pages: 1 });
   const addToast = useUiStore(s => s.addToast);
 
-  useEffect(() => { loadBulletins(); }, []);
+  useEffect(() => { loadBulletins(); }, [page]);
 
   async function loadBulletins() {
     setLoading(true);
     try {
-      const res = await apiService.get('/bulletins/admin');
+      const res = await apiService.get(`/bulletins/admin?page=${page}&limit=20`);
       setBulletins(res.data || []);
+      if (res.pagination) setPagination(res.pagination);
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -54,11 +58,27 @@ export default function BulletinsView() {
     if (!confirm('¿Eliminar este anuncio?')) return;
     try {
       await apiService.delete(`/bulletins/${id}`);
-      setBulletins(prev => prev.filter(b => b._id !== id));
       addToast('Anuncio eliminado', 'success');
+      loadBulletins();
     } catch (err) {
       addToast(err.message, 'error');
     }
+  }
+
+  function openEdit(bulletin) {
+    setEditingBulletin(bulletin);
+    setShowModal(true);
+  }
+
+  function openCreate() {
+    setEditingBulletin(null);
+    setShowModal(true);
+  }
+
+  function handleSaved() {
+    setShowModal(false);
+    setEditingBulletin(null);
+    loadBulletins();
   }
 
   const filtered = searchQuery.trim()
@@ -68,17 +88,17 @@ export default function BulletinsView() {
       )
     : bulletins;
 
-  if (loading) return <LoadingSpinner text="Cargando anuncios..." />;
+  if (loading && bulletins.length === 0) return <LoadingSpinner text="Cargando anuncios..." />;
 
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Anuncios Oficiales</h1>
-        <button onClick={() => setShowCreate(true)} style={{
+        <button onClick={openCreate} style={{
           padding: '10px 20px', border: 'none', borderRadius: 10, background: '#1e40af',
           color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
         }}>
-          + Redactar Nuevo Anuncio
+          + Nuevo Anuncio
         </button>
       </div>
 
@@ -86,17 +106,11 @@ export default function BulletinsView() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
           <span style={{ fontSize: 12, color: '#6b7280', display: 'block', marginBottom: 4 }}>Total</span>
-          <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb' }}>{bulletins.length}</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb' }}>{pagination.total}</span>
         </div>
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-          <span style={{ fontSize: 12, color: '#6b7280', display: 'block', marginBottom: 4 }}>Este mes</span>
-          <span style={{ fontSize: 24, fontWeight: 700, color: '#059669' }}>
-            {bulletins.filter(b => {
-              const d = new Date(b.createdAt);
-              const now = new Date();
-              return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-            }).length}
-          </span>
+          <span style={{ fontSize: 12, color: '#6b7280', display: 'block', marginBottom: 4 }}>Página</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: '#059669' }}>{page}/{pagination.pages || 1}</span>
         </div>
       </div>
 
@@ -106,7 +120,7 @@ export default function BulletinsView() {
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
-          <p style={{ fontSize: 40, margin: '0 0 12px' }}>{'\uD83D\uDCE2'}</p>
+          <p style={{ fontSize: 40, margin: '0 0 12px' }}>📢</p>
           <p style={{ fontSize: 16 }}>{bulletins.length === 0 ? 'No hay anuncios enviados' : 'Sin resultados'}</p>
           {bulletins.length === 0 && (
             <p style={{ fontSize: 13, marginTop: 8 }}>Redacta el primer anuncio oficial para las organizaciones</p>
@@ -121,8 +135,6 @@ export default function BulletinsView() {
                 <div
                   onClick={() => setExpandedId(isExpanded ? null : b._id)}
                   style={{ padding: 20, cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'white'}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -142,12 +154,20 @@ export default function BulletinsView() {
                         {b.author && <span>por {b.author.firstName} {b.author.lastName}</span>}
                       </div>
                     </div>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(b._id); }}
-                      style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #fca5a5', borderRadius: 6, background: 'white', color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}
-                    >
-                      Eliminar
-                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); openEdit(b); }}
+                        style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #bfdbfe', borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer' }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDelete(b._id); }}
+                        style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #fca5a5', borderRadius: 6, background: 'white', color: '#ef4444', cursor: 'pointer' }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                   {!isExpanded && b.content && (
                     <p style={{ margin: '8px 0 0', fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
@@ -168,10 +188,34 @@ export default function BulletinsView() {
         </div>
       )}
 
-      {showCreate && (
-        <CreateBulletinModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); loadBulletins(); }}
+      {/* Pagination */}
+      {pagination.pages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 20 }}>
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage(p => p - 1)}
+            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #d1d5db', background: 'white', cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.5 : 1, fontSize: 13 }}
+          >
+            Anterior
+          </button>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>
+            Página {page} de {pagination.pages}
+          </span>
+          <button
+            disabled={page >= pagination.pages}
+            onClick={() => setPage(p => p + 1)}
+            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #d1d5db', background: 'white', cursor: page >= pagination.pages ? 'not-allowed' : 'pointer', opacity: page >= pagination.pages ? 0.5 : 1, fontSize: 13 }}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      {showModal && (
+        <BulletinModal
+          bulletin={editingBulletin}
+          onClose={() => { setShowModal(false); setEditingBulletin(null); }}
+          onSaved={handleSaved}
           addToast={addToast}
         />
       )}
@@ -179,10 +223,11 @@ export default function BulletinsView() {
   );
 }
 
-function CreateBulletinModal({ onClose, onCreated, addToast }) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [targetAudience, setTargetAudience] = useState('TODAS');
+function BulletinModal({ bulletin, onClose, onSaved, addToast }) {
+  const isEditing = !!bulletin;
+  const [title, setTitle] = useState(bulletin?.title || '');
+  const [content, setContent] = useState(bulletin?.content || '');
+  const [targetAudience, setTargetAudience] = useState(bulletin?.targetAudience || 'TODAS');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e) {
@@ -192,11 +237,17 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
 
     setSubmitting(true);
     try {
-      await apiService.post('/bulletins', { title: title.trim(), content: content.trim(), targetAudience });
-      addToast('Anuncio enviado exitosamente', 'success');
-      onCreated();
+      const payload = { title: title.trim(), content: content.trim(), targetAudience };
+      if (isEditing) {
+        await apiService.put(`/bulletins/${bulletin._id}`, payload);
+        addToast('Anuncio actualizado', 'success');
+      } else {
+        await apiService.post('/bulletins', payload);
+        addToast('Anuncio enviado exitosamente', 'success');
+      }
+      onSaved();
     } catch (err) {
-      addToast(err.message || 'Error al enviar', 'error');
+      addToast(err.message || 'Error al guardar', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -207,7 +258,9 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
       <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Redactar Anuncio Oficial</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>
+            {isEditing ? 'Editar Anuncio' : 'Redactar Anuncio Oficial'}
+          </h3>
           <p style={{ margin: '8px 0 0', fontSize: 13, color: '#6b7280' }}>
             Este anuncio será visible para las organizaciones que coincidan con la audiencia seleccionada.
           </p>
@@ -254,7 +307,7 @@ function CreateBulletinModal({ onClose, onCreated, addToast }) {
             </button>
             <button type="submit" disabled={submitting}
               style={{ flex: 1, padding: 14, border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', color: '#fff', background: '#1e40af', opacity: submitting ? 0.6 : 1 }}>
-              {submitting ? 'Enviando...' : 'Enviar Anuncio'}
+              {submitting ? 'Guardando...' : isEditing ? 'Actualizar Anuncio' : 'Enviar Anuncio'}
             </button>
           </div>
         </form>

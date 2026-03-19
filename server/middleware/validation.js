@@ -608,6 +608,8 @@ export const createBulletinSchema = z.object({
   targetAudience: z.string().min(1).max(50).optional()
 });
 
+export const updateBulletinSchema = createBulletinSchema.partial();
+
 export const directorioResignationSchema = z.object({
   rutOut: z.string().min(1, 'RUT del miembro saliente es requerido').max(20),
   reason: z.enum(['RENUNCIA', 'FALLECIMIENTO', 'EXCLUSION'], {
@@ -648,6 +650,7 @@ export default {
   createTicketSchema,
   updateTicketStatusSchema,
   createBulletinSchema,
+  updateBulletinSchema,
   directorioResignationSchema,
   // Middleware
   validate,
