@@ -45,6 +45,7 @@ export default function OrgMembers({ org, onRefresh }) {
   const [payMember, setPayMember] = useState(null);
   const [search, setSearch] = useState('');
   const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [deactivateCategory, setDeactivateCategory] = useState('');
   const [deactivateReason, setDeactivateReason] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const addToast = useUiStore((s) => s.addToast);
@@ -68,24 +69,17 @@ export default function OrgMembers({ org, onRefresh }) {
       })
     : visibleMembers;
 
-  async function handleDelete(member) {
-    const name = `${member.firstName} ${member.lastName}`;
-    if (!confirm(`¿Estás seguro de eliminar a ${name}?`)) return;
-    try {
-      await apiService.updateOrganization(org._id, { removeMemberRut: member.rut });
-      addToast(`${name} eliminado`, 'success');
-      onRefresh();
-    } catch (error) {
-      addToast(error.message || 'Error al eliminar', 'error');
-    }
-  }
-
   async function handleDeactivate() {
     if (!deactivateTarget) return;
+    if (!deactivateCategory) {
+      addToast('Debe seleccionar una causal de baja', 'error');
+      return;
+    }
     try {
-      await apiService.deactivateMember(org._id, deactivateTarget.rut, deactivateReason || 'Baja voluntaria');
+      await apiService.deactivateMember(org._id, deactivateTarget.rut, deactivateCategory, deactivateReason);
       addToast(`${deactivateTarget.firstName} ${deactivateTarget.lastName} dado/a de baja`, 'success');
       setDeactivateTarget(null);
+      setDeactivateCategory('');
       setDeactivateReason('');
       onRefresh();
     } catch (error) {
@@ -167,7 +161,6 @@ export default function OrgMembers({ org, onRefresh }) {
             ) : (
               <button onClick={() => setDeactivateTarget(row)} style={{ ...actionBtnStyle, color: '#f59e0b', borderColor: '#fde68a' }}>Dar de Baja</button>
             ))}
-            {canEdit && <button onClick={() => handleDelete(row)} style={{ ...actionBtnStyle, color: '#ef4444', borderColor: '#fca5a5' }}>Eliminar</button>}
           </div>
         );
       }
@@ -253,7 +246,7 @@ export default function OrgMembers({ org, onRefresh }) {
 
       {/* Deactivation Modal */}
       {deactivateTarget && (
-        <div onClick={e => { if (e.target === e.currentTarget) { setDeactivateTarget(null); setDeactivateReason(''); } }}
+        <div onClick={e => { if (e.target === e.currentTarget) { setDeactivateTarget(null); setDeactivateCategory(''); setDeactivateReason(''); } }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#111827' }}>Dar de Baja a Socio</h3>
@@ -265,17 +258,27 @@ export default function OrgMembers({ org, onRefresh }) {
                 La organización quedará con quórum insuficiente tras esta baja.
               </div>
             ) : null}
-            <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Motivo (opcional)</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Causal de baja *</label>
+            <select value={deactivateCategory} onChange={e => setDeactivateCategory(e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', border: `2px solid ${!deactivateCategory ? '#fca5a5' : '#d1d5db'}`, borderRadius: 8, fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: '#fff' }}>
+              <option value="">— Seleccione causal —</option>
+              <option value="RENUNCIA_VOLUNTARIA">Renuncia Voluntaria</option>
+              <option value="FALLECIMIENTO">Fallecimiento</option>
+              <option value="CAMBIO_DOMICILIO">Cambio de Domicilio</option>
+              <option value="EXPULSION_ASAMBLEA">Expulsión por Asamblea</option>
+              <option value="OTRA">Otra</option>
+            </select>
+            <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Detalle adicional (opcional)</label>
             <input type="text" value={deactivateReason} onChange={e => setDeactivateReason(e.target.value)}
-              placeholder="Ej: Renuncia voluntaria, cambio de domicilio..."
+              placeholder="Ej: Solicitud presentada el 15/03/2026..."
               style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }} />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => { setDeactivateTarget(null); setDeactivateReason(''); }}
+              <button onClick={() => { setDeactivateTarget(null); setDeactivateCategory(''); setDeactivateReason(''); }}
                 style={{ padding: '8px 20px', fontSize: 13, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer' }}>
                 Cancelar
               </button>
-              <button onClick={handleDeactivate}
-                style={{ padding: '8px 20px', fontSize: 13, background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+              <button onClick={handleDeactivate} disabled={!deactivateCategory}
+                style={{ padding: '8px 20px', fontSize: 13, background: deactivateCategory ? '#f59e0b' : '#d1d5db', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
                 Confirmar Baja
               </button>
             </div>
@@ -451,8 +454,20 @@ function MemberProfileModal({ open, onClose, member, org }) {
         <ProfileField label="Teléfono" value={member.phone || '—'} />
         <ProfileField label="Email" value={member.email || '—'} />
         <ProfileField label="Dirección" value={member.address || '—'} />
-        <ProfileField label="Estado" value={member.status === 'inactive' ? 'Inactivo' : 'Activo'} />
+        <ProfileField label="Estado" value={member.status === 'inactive' ? 'Dado de baja' : 'Activo'} />
         <ProfileField label="Fecha de Ingreso" value={member.joinDate ? localeDateString(member.joinDate) : '—'} />
+        {member.status === 'inactive' && (
+          <>
+            <ProfileField label="Causal de Baja" value={({
+              RENUNCIA_VOLUNTARIA: 'Renuncia Voluntaria',
+              FALLECIMIENTO: 'Fallecimiento',
+              CAMBIO_DOMICILIO: 'Cambio de Domicilio',
+              EXPULSION_ASAMBLEA: 'Expulsión por Asamblea',
+              OTRA: 'Otra'
+            })[member.deactivationCategory] || member.deactivationReason || '—'} />
+            <ProfileField label="Fecha de Baja" value={member.deactivatedAt ? localeDateString(member.deactivatedAt) : '—'} />
+          </>
+        )}
       </div>
     </Modal>
   );

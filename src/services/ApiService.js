@@ -1298,8 +1298,8 @@ class ApiService {
 
   // ==================== MEMBER STATUS ====================
 
-  async deactivateMember(orgId, rut, reason) {
-    return this.post(`/organizations/${orgId}/members/${encodeURIComponent(rut)}/deactivate`, { reason });
+  async deactivateMember(orgId, rut, category, reason) {
+    return this.post(`/organizations/${orgId}/members/${encodeURIComponent(rut)}/deactivate`, { category, reason });
   }
 
   async reactivateMember(orgId, rut) {

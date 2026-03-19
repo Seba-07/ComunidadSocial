@@ -1189,11 +1189,11 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       }
     }
 
-    // Remove a member by RUT
+    // Remove a member by RUT — DEPRECATED: use /members/:rut/deactivate instead
     if (req.body.removeMemberRut) {
-      if (organization.members) {
-        organization.members = organization.members.filter(m => m.rut !== req.body.removeMemberRut);
-      }
+      return res.status(400).json({
+        error: 'La eliminación directa de socios está deshabilitada. Use la función "Dar de Baja" para mantener trazabilidad legal.'
+      });
     }
 
     // Add a finance record
@@ -4032,16 +4032,27 @@ router.post('/:id/directorio/renuncia',
 );
 
 // ============ MEMBER DEACTIVATION (dar de baja) ============
+const VALID_DEACTIVATION_CATEGORIES = ['RENUNCIA_VOLUNTARIA', 'FALLECIMIENTO', 'CAMBIO_DOMICILIO', 'EXPULSION_ASAMBLEA', 'OTRA'];
+
 router.post('/:id/members/:rut/deactivate', authenticate, validateObjectId(), async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
     if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    // Owner or MUNICIPALIDAD can deactivate
+    // Owner, MUNICIPALIDAD, or directivo can deactivate
     const isOwner = organization.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) {
+    const isDirectivo = isDirectivoMember(organization, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) {
       return res.status(403).json({ error: 'No autorizado' });
+    }
+
+    const { category, reason } = req.body;
+    if (!category || !VALID_DEACTIVATION_CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        error: 'Debe indicar una causal válida',
+        validCategories: VALID_DEACTIVATION_CATEGORIES
+      });
     }
 
     const memberRut = decodeURIComponent(req.params.rut);
@@ -4054,19 +4065,37 @@ router.post('/:id/members/:rut/deactivate', authenticate, validateObjectId(), as
 
     member.status = 'inactive';
     member.deactivatedAt = new Date();
-    member.deactivationReason = req.body.reason || 'Baja voluntaria';
+    member.deactivationCategory = category;
+    member.deactivationReason = reason || '';
+    member.deactivatedBy = req.userId.toString();
 
     await organization.save();
 
-    await AuditLog.create({
-      action: 'MEMBER_DEACTIVATED',
+    const CATEGORY_LABELS = {
+      RENUNCIA_VOLUNTARIA: 'Renuncia Voluntaria',
+      FALLECIMIENTO: 'Fallecimiento',
+      CAMBIO_DOMICILIO: 'Cambio de Domicilio',
+      EXPULSION_ASAMBLEA: 'Expulsión por Asamblea',
+      OTRA: 'Otra'
+    };
+
+    await AuditLog.logAction({
       userId: req.userId,
-      organizationId: organization._id,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE',
+      resource: 'ORGANIZATION',
+      resourceId: organization._id,
+      resourceName: organization.organizationName,
+      detail: `Baja de socio ${member.firstName} ${member.lastName} (${memberRut}) — Causal: ${CATEGORY_LABELS[category]}${reason ? '. Detalle: ' + reason : ''}`,
       details: {
-        memberRut: memberRut,
+        type: 'member_deactivated',
+        memberRut,
         memberName: `${member.firstName} ${member.lastName}`,
-        reason: member.deactivationReason
-      }
+        category,
+        reason: reason || null
+      },
+      ipAddress: req.ip
     });
 
     res.json({ message: 'Miembro dado de baja', data: organization });
@@ -4084,7 +4113,8 @@ router.post('/:id/members/:rut/reactivate', authenticate, validateObjectId(), as
 
     const isOwner = organization.userId.toString() === req.userId.toString();
     const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    if (!isOwner && !isAdmin) {
+    const isDirectivo = isDirectivoMember(organization, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) {
       return res.status(403).json({ error: 'No autorizado' });
     }
 
@@ -4092,11 +4122,34 @@ router.post('/:id/members/:rut/reactivate', authenticate, validateObjectId(), as
     const member = organization.members.find(m => m.rut === memberRut);
     if (!member) return res.status(404).json({ error: 'Miembro no encontrado' });
 
+    if (member.status !== 'inactive') {
+      return res.status(400).json({ error: 'El miembro ya está activo' });
+    }
+
     member.status = 'active';
     member.deactivatedAt = undefined;
+    member.deactivationCategory = undefined;
     member.deactivationReason = undefined;
+    member.deactivatedBy = undefined;
 
     await organization.save();
+
+    await AuditLog.logAction({
+      userId: req.userId,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      action: 'UPDATE',
+      resource: 'ORGANIZATION',
+      resourceId: organization._id,
+      resourceName: organization.organizationName,
+      detail: `Reactivación de socio ${member.firstName} ${member.lastName} (${memberRut})`,
+      details: {
+        type: 'member_reactivated',
+        memberRut,
+        memberName: `${member.firstName} ${member.lastName}`
+      },
+      ipAddress: req.ip
+    });
 
     res.json({ message: 'Miembro reactivado', data: organization });
   } catch (error) {

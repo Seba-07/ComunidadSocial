@@ -28,7 +28,12 @@ const memberSchema = new mongoose.Schema({
   },
   joinDate: { type: Date, default: Date.now },
   deactivatedAt: Date,
+  deactivationCategory: {
+    type: String,
+    enum: ['RENUNCIA_VOLUNTARIA', 'FALLECIMIENTO', 'CAMBIO_DOMICILIO', 'EXPULSION_ASAMBLEA', 'OTRA'],
+  },
   deactivationReason: String,
+  deactivatedBy: String, // userId del ejecutor
   signature: String, // Base64
   certificate: String // Base64 or URL
 });
