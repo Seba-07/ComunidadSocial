@@ -3,12 +3,22 @@ import { useAuthStore } from '../../stores/authStore';
 import '../../../shared/styles/sidebar.css';
 
 const STORAGE_KEY = 'sidebar-collapsed';
+const SECTIONS_KEY = 'sidebar-sections-collapsed';
 
 function getInitialCollapsed() {
   try {
     return localStorage.getItem(STORAGE_KEY) === 'true';
   } catch {
     return false;
+  }
+}
+
+function getInitialSectionsCollapsed() {
+  try {
+    const stored = localStorage.getItem(SECTIONS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
   }
 }
 
@@ -20,6 +30,7 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
   const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+  const [sectionsCollapsed, setSectionsCollapsed] = useState(getInitialSectionsCollapsed);
 
   useEffect(() => {
     const width = collapsed ? '72px' : '260px';
@@ -54,6 +65,14 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
     });
   }, []);
 
+  const toggleSection = useCallback((label) => {
+    setSectionsCollapsed((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   function handleItemClick(key) {
     onItemClick(key);
     setMobileOpen(false);
@@ -80,15 +99,52 @@ export default function SharedSidebar({ title, subtitle, menuItems, activeKey, o
     );
   }
 
+  // Auto-expand section when active item is inside a collapsed section
+  useEffect(() => {
+    if (!sections) return;
+    for (const section of sections) {
+      if (section.label && sectionsCollapsed[section.label]) {
+        const hasActive = section.items.some(item => item.key === activeKey);
+        if (hasActive) {
+          setSectionsCollapsed(prev => {
+            const next = { ...prev, [section.label]: false };
+            try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(next)); } catch {}
+            return next;
+          });
+          break;
+        }
+      }
+    }
+  }, [activeKey]);
+
   const renderItems = sections ? (
-    sections.map((section, i) => (
-      <div key={i} className={i > 0 ? 'unified-sidebar__section' : undefined}>
-        {section.label && (
-          <div className="unified-sidebar__section-label">{section.label}</div>
-        )}
-        {section.items.map(renderItem)}
-      </div>
-    ))
+    sections.map((section, i) => {
+      const isCollapsedSection = section.label && sectionsCollapsed[section.label];
+      return (
+        <div key={i} className={i > 0 ? 'unified-sidebar__section' : undefined}>
+          {section.label && (
+            <button
+              className="unified-sidebar__section-label"
+              onClick={() => toggleSection(section.label)}
+              aria-expanded={!isCollapsedSection}
+              title={collapsed ? section.label : undefined}
+            >
+              <span className="unified-sidebar__section-label-text">{section.label}</span>
+              <svg
+                className={`unified-sidebar__section-chevron${isCollapsedSection ? ' unified-sidebar__section-chevron--collapsed' : ''}`}
+                width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          )}
+          <div className={`unified-sidebar__section-items${isCollapsedSection ? ' unified-sidebar__section-items--collapsed' : ''}`}>
+            {section.items.map(renderItem)}
+          </div>
+        </div>
+      );
+    })
   ) : (
     menuItems?.map(renderItem)
   );

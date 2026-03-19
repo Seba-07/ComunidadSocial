@@ -96,13 +96,17 @@
 
 /* === Section separator === */
 .unified-sidebar__section {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 2px;
+  padding-top: 2px;
 }
 
-/* === Section label (uppercase category) === */
+/* === Section label (clickable, toggles collapse) === */
 .unified-sidebar__section-label {
-  padding: 12px 18px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 18px 6px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -111,6 +115,50 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.unified-sidebar__section-label:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.unified-sidebar__section-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chevron icon */
+.unified-sidebar__section-chevron {
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: transform 0.2s ease, opacity 0.15s;
+}
+
+.unified-sidebar__section-label:hover .unified-sidebar__section-chevron {
+  opacity: 0.8;
+}
+
+.unified-sidebar__section-chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+/* Collapsible items wrapper */
+.unified-sidebar__section-items {
+  overflow: hidden;
+  max-height: 500px;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+
+.unified-sidebar__section-items--collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* === Menu item === */
