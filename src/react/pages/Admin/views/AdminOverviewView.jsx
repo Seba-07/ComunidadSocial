@@ -1,7 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../../stores/uiStore';
+import Tabs from '../../../components/ui/Tabs';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+
+// Lazy load the advanced metrics tab (heavy, only loaded when needed)
+const AdvancedMetricsTab = lazy(() => import('./MetricsDashboardView'));
 
 const TYPE_LABELS = {
   JUNTA_VECINOS: 'Juntas de Vecinos',
@@ -54,6 +59,11 @@ const BOARD_STATUS_COLORS = {
 
 const ATTENTION_LIMIT = 20;
 
+const DASHBOARD_TABS = [
+  { key: 'resumen', label: 'Resumen Táctico', icon: '📊' },
+  { key: 'metricas', label: 'Métricas Avanzadas', icon: '📈' },
+];
+
 function shortLabel(type) {
   return TYPE_LABELS[type] || type?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Otro';
 }
@@ -76,9 +86,7 @@ function SkeletonBlock({ width, height, borderRadius = 8, style }) {
 
 function OverviewSkeleton() {
   return (
-    <div style={{ padding: 24 }} aria-busy="true" aria-label="Cargando centro de mando">
-      <SkeletonBlock width={220} height={32} style={{ marginBottom: 24 }} />
-      {/* KPI cards */}
+    <div aria-busy="true" aria-label="Cargando datos">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
         {[1, 2, 3, 4].map(i => (
           <div key={i} style={{ background: '#f9fafb', border: '2px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
@@ -90,7 +98,6 @@ function OverviewSkeleton() {
           </div>
         ))}
       </div>
-      {/* Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 32 }}>
         {[1, 2].map(i => (
           <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 }}>
@@ -99,7 +106,6 @@ function OverviewSkeleton() {
           </div>
         ))}
       </div>
-      {/* Table */}
       <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 }}>
         <SkeletonBlock width={200} height={18} style={{ marginBottom: 16 }} />
         {[1, 2, 3].map(i => (
@@ -134,8 +140,11 @@ function exportAttentionCSV(attentionOrgs) {
   URL.revokeObjectURL(url);
 }
 
-// --- Main Component ---
+// =============================================================
+// MAIN COMPONENT — Unified Dashboard with Tabs
+// =============================================================
 export default function AdminOverviewView({ onViewChange }) {
+  const [activeTab, setActiveTab] = useState('resumen');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,6 +166,56 @@ export default function AdminOverviewView({ onViewChange }) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  return (
+    <div style={{ padding: 24 }} role="region" aria-label="Dashboard Municipal">
+      {/* Header */}
+      <div className="responsive-flex-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12 }}>
+        <h1 style={{ margin: 0, fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, color: '#111827' }}>
+          Dashboard Municipal
+        </h1>
+        <button
+          onClick={() => { loadData(); if (activeTab === 'metricas') setActiveTab('resumen'); }}
+          aria-label="Actualizar datos"
+          title="Actualizar datos"
+          style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 500, border: '1px solid #d1d5db',
+            borderRadius: 8, background: 'white', color: '#374151', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+          }}
+        >
+          🔄 Actualizar
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ marginBottom: 24 }}>
+        <Tabs tabs={DASHBOARD_TABS} activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'resumen' && (
+        <ResumenTab
+          data={data}
+          loading={loading}
+          error={error}
+          onRetry={loadData}
+          onViewChange={onViewChange}
+        />
+      )}
+
+      {activeTab === 'metricas' && (
+        <Suspense fallback={<LoadingSpinner text="Cargando métricas avanzadas..." />}>
+          <AdvancedMetricsTab />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+// =============================================================
+// TAB 1: Resumen Táctico
+// =============================================================
+function ResumenTab({ data, loading, error, onRetry, onViewChange }) {
   if (loading) return <OverviewSkeleton />;
 
   if (error || !data) {
@@ -164,16 +223,12 @@ export default function AdminOverviewView({ onViewChange }) {
       <div role="alert" style={{ padding: 48, textAlign: 'center' }}>
         <p style={{ fontSize: 40, margin: '0 0 12px' }}>⚠️</p>
         <p style={{ fontSize: 16, color: '#374151', fontWeight: 600, margin: '0 0 8px' }}>
-          No se pudo cargar el Centro de Mando
+          No se pudo cargar el Dashboard
         </p>
         <p style={{ fontSize: 14, color: '#6b7280', margin: '0 0 20px' }}>
           {error || 'Respuesta vacía del servidor'}
         </p>
-        <button
-          onClick={loadData}
-          className="btn-auth"
-          style={{ maxWidth: 180, margin: '0 auto' }}
-        >
+        <button onClick={onRetry} className="btn-auth" style={{ maxWidth: 180, margin: '0 auto' }}>
           Reintentar
         </button>
       </div>
@@ -199,26 +254,7 @@ export default function AdminOverviewView({ onViewChange }) {
     }));
 
   return (
-    <div style={{ padding: 24 }} role="region" aria-label="Centro de Mando">
-      {/* Header with refresh */}
-      <div className="responsive-flex-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, color: '#111827' }}>
-          Centro de Mando
-        </h1>
-        <button
-          onClick={loadData}
-          aria-label="Actualizar datos"
-          title="Actualizar datos"
-          style={{
-            padding: '6px 14px', fontSize: 13, fontWeight: 500, border: '1px solid #d1d5db',
-            borderRadius: 8, background: 'white', color: '#374151', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
-          }}
-        >
-          🔄 Actualizar
-        </button>
-      </div>
-
+    <>
       {/* KPI Cards */}
       <div role="region" aria-label="Indicadores clave" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
         <KpiCard icon="🏢" label="Total Organizaciones" value={totalOrganizations} color="#2563eb" bg="#eff6ff" border="#bfdbfe" />
@@ -238,40 +274,24 @@ export default function AdminOverviewView({ onViewChange }) {
             <>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie
-                    data={pieData} cx="50%" cy="50%"
-                    innerRadius="35%" outerRadius="65%"
-                    paddingAngle={2} dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius="35%" outerRadius="65%" paddingAngle={2} dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                    {pieData.map((_, i) => (<Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />))}
                   </Pie>
                   <Tooltip formatter={(val) => [`${val} org.`, 'Cantidad']} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Legend — grid for mobile-friendly wrap */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                gap: '6px 12px', marginTop: 12
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '6px 12px', marginTop: 12 }}>
                 {pieData.map((d, i) => (
                   <span key={d.name} style={{ fontSize: 'clamp(10px, 1.8vw, 12px)', display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
                     <span style={{ width: 10, height: 10, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {d.name} ({d.value})
-                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name} ({d.value})</span>
                   </span>
                 ))}
               </div>
             </>
           ) : (
-            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-              Sin datos
-            </div>
+            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Sin datos</div>
           )}
         </div>
 
@@ -288,16 +308,12 @@ export default function AdminOverviewView({ onViewChange }) {
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(val) => [`${val}`, 'Organizaciones']} />
                 <Bar dataKey="cantidad" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                  {barData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
+                  {barData.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-              Sin datos
-            </div>
+            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Sin datos</div>
           )}
         </div>
       </div>
@@ -314,15 +330,8 @@ export default function AdminOverviewView({ onViewChange }) {
             )}
           </h3>
           {attentionOrgs.length > 0 && (
-            <button
-              onClick={() => exportAttentionCSV(attentionOrgs)}
-              aria-label="Exportar lista de atención a CSV"
-              style={{
-                padding: '5px 12px', fontSize: 12, fontWeight: 500, border: '1px solid #d1d5db',
-                borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap'
-              }}
-            >
+            <button onClick={() => exportAttentionCSV(attentionOrgs)} aria-label="Exportar lista de atención a CSV"
+              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
               📥 Exportar CSV
             </button>
           )}
@@ -359,7 +368,7 @@ export default function AdminOverviewView({ onViewChange }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -368,7 +377,6 @@ const thStyle = {
   fontWeight: 600, fontSize: 'clamp(10px, 1.8vw, 12px)', textTransform: 'uppercase', whiteSpace: 'nowrap'
 };
 
-// Touch-friendly row: button always visible, no hover dependency
 function AttentionRow({ org, onViewChange }) {
   const statusColor = BOARD_STATUS_COLORS[org.boardStatus] || '#6b7280';
   const statusLabel = BOARD_STATUS_LABELS[org.boardStatus] || org.boardStatus;
@@ -378,28 +386,17 @@ function AttentionRow({ org, onViewChange }) {
 
   return (
     <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-      <td style={{ padding: '12px', fontWeight: 600, color: '#111827', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {org.name}
-      </td>
+      <td style={{ padding: '12px', fontWeight: 600, color: '#111827', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{org.name}</td>
       <td style={{ padding: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>{shortLabel(org.type)}</td>
       <td style={{ padding: '12px' }}>
-        <span style={{
-          fontSize: 11, padding: '3px 10px', borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap',
-          color: statusColor, background: `${statusColor}15`, border: `1px solid ${statusColor}40`
-        }}>
+        <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap', color: statusColor, background: `${statusColor}15`, border: `1px solid ${statusColor}40` }}>
           {statusLabel}
         </span>
       </td>
       <td style={{ padding: '12px', color: '#6b7280', fontSize: 13, whiteSpace: 'nowrap' }}>{expDate}</td>
       <td style={{ padding: '12px', textAlign: 'center' }}>
-        <button
-          onClick={() => onViewChange && onViewChange('organizations')}
-          aria-label={`Ver organización ${org.name}`}
-          style={{
-            padding: '5px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #d1d5db',
-            borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer'
-          }}
-        >
+        <button onClick={() => onViewChange && onViewChange('organizations')} aria-label={`Ver organización ${org.name}`}
+          style={{ padding: '5px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #d1d5db', borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer' }}>
           Ver
         </button>
       </td>
@@ -411,17 +408,14 @@ function KpiCard({ icon, label, value, color, bg, border, alert, subtitle }) {
   return (
     <div style={{
       background: bg, border: `2px solid ${border}`, borderRadius: 12, padding: 'clamp(14px, 2.5vw, 20px)',
-      transition: 'transform 0.15s',
-      animation: alert ? 'pulse-badge 2s infinite' : 'none'
+      transition: 'transform 0.15s', animation: alert ? 'pulse-badge 2s infinite' : 'none'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 'clamp(22px, 4vw, 28px)' }}>{icon}</span>
         <span style={{ fontSize: 'clamp(11px, 2vw, 13px)', color: '#6b7280', fontWeight: 500 }}>{label}</span>
       </div>
       <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, color }}>{value.toLocaleString('es-CL')}</div>
-      {subtitle && (
-        <div style={{ fontSize: 'clamp(10px, 1.8vw, 12px)', color, fontWeight: 600, marginTop: 4 }}>{subtitle}</div>
-      )}
+      {subtitle && (<div style={{ fontSize: 'clamp(10px, 1.8vw, 12px)', color, fontWeight: 600, marginTop: 4 }}>{subtitle}</div>)}
     </div>
   );
 }

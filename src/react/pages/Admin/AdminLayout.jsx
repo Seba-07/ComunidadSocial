@@ -2,7 +2,7 @@ import SharedHeader from '../../components/layout/SharedHeader';
 import SharedSidebar from '../../components/layout/SharedSidebar';
 
 const MENU_ITEMS = [
-  { key: 'overview', label: 'Centro de Mando', icon: '\uD83D\uDCCA' },
+  { key: 'overview', label: 'Dashboard Municipal', icon: '📊' },
   { key: 'organizations', label: 'Organizaciones', icon: '\uD83C\uDFE2' },
   { key: 'schedule', label: 'Horarios', icon: '📅' },
   { key: 'calendar', label: 'Calendario', icon: '🗓️' },
@@ -11,7 +11,6 @@ const MENU_ITEMS = [
   { key: 'unidades', label: 'Unidades Vecinales', icon: '🗺️' },
   { key: 'estatutos', label: 'Estatutos', icon: '📜' },
   { key: 'plantillas-docs', label: 'Plantillas Docs', icon: '📄' },
-  { key: 'metrics', label: 'Métricas', icon: '📊' },
   { key: 'audit', label: 'Historial', icon: '📋' },
 { key: 'export', label: 'Exportar', icon: '📥' },
   { key: 'privacidad', label: 'Privacidad', icon: '🔒' },

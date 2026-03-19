@@ -12,7 +12,6 @@ const ScheduleManagerView = lazy(() => import('./views/ScheduleManagerView'));
 const CalendarManagerView = lazy(() => import('./views/CalendarManagerView'));
 const UnidadesVecinalesView = lazy(() => import('./views/UnidadesVecinalesView'));
 const EstatutosManagerView = lazy(() => import('./views/EstatutosManagerView'));
-const MetricsDashboardView = lazy(() => import('./views/MetricsDashboardView'));
 const AuditLogView = lazy(() => import('./views/AuditLogView'));
 const ExportView = lazy(() => import('./views/ExportView'));
 const OrgPrivacy = lazy(() => import('../OrganizationDashboard/OrgPrivacy'));
@@ -36,7 +35,6 @@ const VIEW_MAP = {
   unidades: UnidadesVecinalesView,
   estatutos: EstatutosManagerView,
   'plantillas-docs': DocumentTemplatesView,
-  metrics: MetricsDashboardView,
   audit: AuditLogView,
 export: ExportView,
   privacidad: OrgPrivacy,

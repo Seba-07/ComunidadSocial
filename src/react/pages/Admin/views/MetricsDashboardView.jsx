@@ -49,26 +49,22 @@ export default function MetricsDashboardView() {
   const maxStatusCount = Math.max(...Object.values(byStatus || {}), 1);
 
   return (
-    <div style={{ padding: 24 }}>
-      {/* Header */}
-      <div className="r-toolbar" style={{ marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Centro de Comando</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>Cumplimiento Ley 19.418 y gestión operativa</p>
-        </div>
+    <div>
+      {/* Toolbar */}
+      <div className="responsive-flex-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12 }}>
+        <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Cumplimiento Ley 19.418 y gestión operativa</p>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={loadMetrics} style={{
-            padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8,
+            padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 8,
             background: 'white', fontSize: 13, cursor: 'pointer'
-          }}>Actualizar</button>
+          }}>🔄 Actualizar</button>
           <button onClick={handleExport} disabled={isExporting} style={{
-            padding: '8px 16px', border: 'none', borderRadius: 8,
+            padding: '6px 14px', border: 'none', borderRadius: 8,
             background: '#059669', color: '#fff', fontSize: 13, cursor: 'pointer',
             fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
             opacity: isExporting ? 0.7 : 1
           }}>
-            <span style={{ fontSize: 15 }}>📊</span>
-            {isExporting ? 'Exportando...' : 'Exportar Reporte (CSV)'}
+            📊 {isExporting ? 'Exportando...' : 'Exportar CSV'}
           </button>
         </div>
       </div>
