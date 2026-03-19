@@ -13,8 +13,6 @@ import OrgDocumentos from './OrgDocumentos';
 import OrgFinanzas from './OrgFinanzas';
 import OrgComunicaciones from './OrgComunicaciones';
 import OrgElecciones from './OrgElecciones';
-import OrgProyectos from './OrgProyectos';
-import OrgActividades from './OrgActividades';
 import OrgMisOrganizaciones from './OrgMisOrganizaciones';
 import OrgPrivacy from './OrgPrivacy';
 import OrgGuia from './OrgGuia';
@@ -33,14 +31,12 @@ const ORG_MENU_ITEMS = [
   { key: 'elecciones', label: 'Elecciones', icon: '✅' },
   { key: 'comunicaciones', label: 'Comunicaciones', icon: '💬' },
   { key: 'finanzas', label: 'Finanzas', icon: '💰' },
-  { key: 'proyectos', label: 'Proyectos', icon: '📁' },
   { key: 'documentos', label: 'Archivo Histórico', icon: '📄' },
-  { key: 'actividades', label: 'Actividades', icon: '📅' },
   { key: 'tramites', label: 'Solicitudes', icon: '📋' },
 ];
 
 // Tabs visible per access level
-const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'elecciones', 'comunicaciones', 'finanzas', 'documentos', 'proyectos', 'actividades', 'tramites']);
+const DIRECTIVO_TABS = new Set(['overview', 'members', 'directorio', 'asambleas', 'elecciones', 'comunicaciones', 'finanzas', 'documentos', 'tramites']);
 const SOCIO_TABS = new Set(['overview', 'directorio', 'comunicaciones']);
 
 /**
@@ -203,9 +199,7 @@ export default function OrgDashboardPage() {
           {effectiveTab === 'elecciones' && activeOrg && <OrgElecciones org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'comunicaciones' && activeOrg && <OrgComunicaciones org={activeOrg} onRefresh={refreshActiveOrg} />}
           {effectiveTab === 'finanzas' && activeOrg && <OrgFinanzas org={activeOrg} onRefresh={refreshActiveOrg} />}
-          {effectiveTab === 'proyectos' && activeOrg && <OrgProyectos org={activeOrg} />}
           {effectiveTab === 'documentos' && activeOrg && <OrgDocumentos org={activeOrg} onRefresh={refreshActiveOrg} />}
-          {effectiveTab === 'actividades' && activeOrg && <OrgActividades org={activeOrg} />}
           {effectiveTab === 'tramites' && activeOrg && <OrgTramites org={activeOrg} />}
         </main>
       </div>
