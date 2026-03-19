@@ -605,6 +605,10 @@ class ApiService {
     return this.get('/organizations/stats/counts');
   }
 
+  async getAdminOverviewStats() {
+    return this.get('/dashboard/admin-overview');
+  }
+
   async getAdvancedMetrics() {
     return this.get('/dashboard/advanced-metrics');
   }

@@ -23,7 +23,7 @@ const TYPE_LABELS = {
   ORG_SOCIAL: 'Org. Social',
   ORG_CULTURAL: 'Org. Cultural',
   ORG_MUJERES: 'Org. Mujeres',
-  AGRUPACION_FOLCLORICA: 'Ag. Folcl\u00f3rica',
+  AGRUPACION_FOLCLORICA: 'Ag. Folclórica',
   AGRUPACION_CULTURAL: 'Ag. Cultural',
   AGRUPACION_JUVENIL: 'Ag. Juvenil',
   AGRUPACION_AMBIENTAL: 'Ag. Ambiental',
@@ -43,7 +43,7 @@ const BOARD_STATUS_LABELS = {
   VIGENTE: 'Vigentes',
   VENCIDA: 'Vencidas',
   EN_PROCESO_ELECTORAL: 'En Proceso Electoral',
-  PENDIENTE_VALIDACION: 'Pend. Validaci\u00f3n'
+  PENDIENTE_VALIDACION: 'Pend. Validación'
 };
 
 const BOARD_STATUS_COLORS = {
@@ -52,6 +52,8 @@ const BOARD_STATUS_COLORS = {
   EN_PROCESO_ELECTORAL: '#d97706',
   PENDIENTE_VALIDACION: '#7c3aed'
 };
+
+const ATTENTION_LIMIT = 20;
 
 function shortLabel(type) {
   return TYPE_LABELS[type] || type?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Otro';
@@ -67,7 +69,7 @@ export default function AdminOverviewView({ onViewChange }) {
   async function loadData() {
     setLoading(true);
     try {
-      const res = await apiService.get('/dashboard/admin-overview');
+      const res = await apiService.getAdminOverviewStats();
       setData(res);
     } catch (err) {
       addToast(err.message, 'error');
@@ -90,9 +92,9 @@ export default function AdminOverviewView({ onViewChange }) {
     .filter(t => t.count > 0)
     .map(t => ({ name: shortLabel(t.type), value: t.count }));
 
-  // Bar chart data
+  // Bar chart data — Fix #2: filtrar barras con valor 0
   const barData = Object.entries(organizationsByBoardStatus || {})
-    .filter(([, v]) => v > 0 || true)
+    .filter(([, v]) => v > 0)
     .map(([key, value]) => ({
       name: BOARD_STATUS_LABELS[key] || key,
       cantidad: value,
@@ -105,23 +107,23 @@ export default function AdminOverviewView({ onViewChange }) {
         Centro de Mando
       </h1>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — Fix #6: emojis directos en vez de escape unicode */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
         <KpiCard
-          icon="\uD83C\uDFE2" label="Total Organizaciones"
+          icon="🏢" label="Total Organizaciones"
           value={totalOrganizations} color="#2563eb" bg="#eff6ff" border="#bfdbfe"
         />
         <KpiCard
-          icon="\uD83D\uDC65" label="Vecinos Afiliados"
+          icon="👥" label="Vecinos Afiliados"
           value={totalMembers} color="#059669" bg="#ecfdf5" border="#a7f3d0"
         />
         <KpiCard
-          icon="\u26A0\uFE0F" label="Directivas Vencidas"
+          icon="⚠️" label="Directivas Vencidas"
           value={vencidas} color="#dc2626" bg="#fef2f2" border="#fecaca"
           alert={vencidas > 0}
         />
         <KpiCard
-          icon="\uD83D\uDDF3\uFE0F" label="Elecciones en Curso"
+          icon="🗳️" label="Elecciones en Curso"
           value={enProceso + pendValidacion} color="#7c3aed" bg="#f5f3ff" border="#c4b5fd"
           subtitle={pendValidacion > 0 ? `${pendValidacion} por validar` : null}
         />
@@ -132,7 +134,7 @@ export default function AdminOverviewView({ onViewChange }) {
         {/* Pie Chart — Distribution by Type */}
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 }}>
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
-            Distribuci\u00f3n por Tipo
+            Distribución por Tipo
           </h3>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -178,7 +180,7 @@ export default function AdminOverviewView({ onViewChange }) {
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
             Estado de Directorios
           </h3>
-          {barData.some(d => d.cantidad > 0) ? (
+          {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -203,7 +205,7 @@ export default function AdminOverviewView({ onViewChange }) {
       {/* Attention List */}
       <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24 }}>
         <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>{'\uD83D\uDEA8'}</span> Requieren Atenci\u00f3n
+          🚨 Requieren Atención
           {attentionOrgs.length > 0 && (
             <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', fontWeight: 700 }}>
               {attentionOrgs.length}
@@ -213,33 +215,34 @@ export default function AdminOverviewView({ onViewChange }) {
 
         {attentionOrgs.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 32, color: '#6b7280' }}>
-            <p style={{ fontSize: 32, margin: '0 0 8px' }}>{'\u2705'}</p>
-            <p style={{ fontSize: 14 }}>No hay organizaciones que requieran atenci\u00f3n inmediata</p>
+            <p style={{ fontSize: 32, margin: '0 0 8px' }}>✅</p>
+            <p style={{ fontSize: 14 }}>No hay organizaciones que requieran atención inmediata</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Organizaci\u00f3n</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Tipo</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Estado</th>
-                  <th style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Vencimiento</th>
-                  <th style={{ textAlign: 'center', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Acci\u00f3n</th>
+                  <th scope="col" style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Organización</th>
+                  <th scope="col" style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Tipo</th>
+                  <th scope="col" style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Estado</th>
+                  <th scope="col" style={{ textAlign: 'left', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Vencimiento</th>
+                  <th scope="col" style={{ textAlign: 'center', padding: '10px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {attentionOrgs.map(org => {
                   const statusColor = BOARD_STATUS_COLORS[org.boardStatus] || '#6b7280';
                   const statusLabel = BOARD_STATUS_LABELS[org.boardStatus] || org.boardStatus;
+                  // Fix #13: null check en fecha
                   const expDate = org.boardExpirationDate
                     ? new Date(org.boardExpirationDate).toLocaleDateString('es-CL', { year: 'numeric', month: 'short', day: 'numeric' })
-                    : '\u2014';
+                    : 'No definida';
                   return (
                     <tr key={org._id} style={{ borderBottom: '1px solid #f3f4f6' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '12px', fontWeight: 600, color: '#111827' }}>{org.name}</td>
+                      <td style={{ padding: '12px', fontWeight: 600, color: '#111827', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{org.name}</td>
                       <td style={{ padding: '12px', color: '#6b7280' }}>{shortLabel(org.type)}</td>
                       <td style={{ padding: '12px' }}>
                         <span style={{
@@ -253,6 +256,7 @@ export default function AdminOverviewView({ onViewChange }) {
                       <td style={{ padding: '12px', textAlign: 'center' }}>
                         <button
                           onClick={() => onViewChange && onViewChange('organizations')}
+                          aria-label={`Ver organización ${org.name}`}
                           style={{
                             padding: '5px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #d1d5db',
                             borderRadius: 6, background: 'white', color: '#374151', cursor: 'pointer'
@@ -266,6 +270,12 @@ export default function AdminOverviewView({ onViewChange }) {
                 })}
               </tbody>
             </table>
+            {/* Fix #5: mensaje cuando se alcanza el límite */}
+            {attentionOrgs.length >= ATTENTION_LIMIT && (
+              <div style={{ textAlign: 'center', padding: '12px 16px', background: '#fef3c7', borderRadius: '0 0 8px 8px', fontSize: 13, color: '#92400e', marginTop: 8 }}>
+                Mostrando las primeras {ATTENTION_LIMIT} organizaciones. Por favor, exporte a CSV para el listado completo.
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -273,12 +283,13 @@ export default function AdminOverviewView({ onViewChange }) {
   );
 }
 
+// Fix #1: usar pulse-badge (definida en CSS) en vez de pulse (no existe)
 function KpiCard({ icon, label, value, color, bg, border, alert, subtitle }) {
   return (
     <div style={{
       background: bg, border: `2px solid ${border}`, borderRadius: 12, padding: 20,
       transition: 'transform 0.15s',
-      animation: alert ? 'pulse 2s infinite' : 'none'
+      animation: alert ? 'pulse-badge 2s infinite' : 'none'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 28 }}>{icon}</span>
