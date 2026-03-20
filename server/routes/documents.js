@@ -1042,40 +1042,120 @@ ante Ministro de Fe y la aprobacion de sus estatutos.</p>
  * Genera PDF borrador del Certificado de Personalidad Jurídica (sin firma)
  */
 router.get('/:orgId/generate-certificado-borrador', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
-  let browser = null;
   try {
     const org = await Organization.findById(req.params.orgId);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    let html = generateCertificadoBorradorHTML(org);
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+    const margin = 25;
+    const cw = pw - margin * 2;
+    let y = 25;
 
-    // Register document and generate QR (optional — skips QR if FRONTEND_URL not set)
-    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
-      organizationId: org._id,
-      documentType: 'certificado_borrador',
-      documentTitle: `Certificado Personalidad Juridica (Borrador) - ${org.organizationName || ''}`,
-      issuedBy: req.user?._id
-    });
-    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
+    const name = org.organizationName || '';
+    const type = (org.organizationType || '').replace(/_/g, ' ');
+    const address = [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '';
+    const comuna = org.comuna || tenant.communeName || '';
+    const region = org.region || '';
+    const dir = org.provisionalDirectorio || {};
+    const president = dir.president || dir.presidente || {};
+    const secretary = dir.secretary || dir.secretario || {};
+    const treasurer = dir.treasurer || dir.tesorero || {};
+    const getName = (p) => p ? [p.firstName, p.lastName].filter(Boolean).join(' ') || '---' : '---';
+    const assemblyDate = org.ministroData?.scheduledDate || org.validationData?.validatedAt || org.createdAt || new Date();
+    const dateStr = formatDate(assemblyDate);
+    const membersCount = (org.members || []).length;
+    const ministroName = org.ministroData?.name || '___';
 
-    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2.5cm', right: '2cm', bottom: '2.5cm', left: '2cm' } });
-    await browser.close();
-    browser = null;
+    // Title
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+    doc.text('CERTIFICADO DE', pw / 2, y, { align: 'center' }); y += 7;
+    doc.text('PERSONALIDAD JURIDICA', pw / 2, y, { align: 'center' }); y += 10;
 
-    if (folio) {
-      await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(12);
+    doc.text(`Municipalidad de ${comuna || 'la Comuna'}`, pw / 2, y, { align: 'center' }); y += 12;
+
+    // Decorative line
+    doc.setDrawColor(30, 58, 138); doc.setLineWidth(0.5);
+    doc.line(margin, y, pw - margin, y); y += 12;
+
+    // Body paragraphs
+    doc.setFontSize(11); doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+
+    function addParagraph(text) {
+      const lines = doc.splitTextToSize(text, cw);
+      for (const l of lines) {
+        if (y > ph - 35) { doc.addPage(); y = 25; }
+        doc.text(l, margin, y); y += 5.5;
+      }
+      y += 4;
     }
 
-    const fileName = `Borrador_Certificado_${(org.organizationName || 'Org').replace(/\s+/g, '_')}.pdf`;
+    addParagraph(`Certifico que con fecha ${dateStr}, se ha constituido legalmente la organizacion comunitaria denominada "${name}", de tipo ${type}, con domicilio en ${address}${comuna ? ', comuna de ' + comuna : ''}${region ? ', Region ' + region : ''}, de conformidad con lo dispuesto en la Ley N° 19.418 sobre Juntas de Vecinos y demas Organizaciones Comunitarias.`);
+
+    addParagraph(`La organizacion cuenta con ${membersCount} miembros fundadores y su directorio provisorio quedo conformado por:`);
+
+    // Directory
+    doc.setFont('helvetica', 'bold');
+    const dirEntries = [
+      `Presidente/a: ${getName(president)} (RUT: ${president.rut || '---'})`,
+      `Secretario/a: ${getName(secretary)} (RUT: ${secretary.rut || '---'})`,
+      `Tesorero/a: ${getName(treasurer)} (RUT: ${treasurer.rut || '---'})`,
+    ];
+    for (const entry of dirEntries) {
+      doc.text(entry, margin + 10, y); y += 6;
+    }
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+
+    addParagraph(`La asamblea constitutiva fue celebrada ante ${ministroName}, Ministro de Fe designado por la Municipalidad, quien certifico la identidad de los asistentes, el cumplimiento del quorum legal y la aprobacion de los estatutos por unanimidad.`);
+
+    addParagraph('Se deja constancia que la organizacion ha cumplido con todos los requisitos legales establecidos en el Titulo I de la Ley N° 19.418 para su constitucion.');
+
+    addParagraph('Se extiende el presente certificado para los fines legales que correspondan.');
+
+    // Signature block
+    y += 15;
+    doc.setDrawColor(50); doc.line(pw / 2 - 50, y, pw / 2 + 50, y); y += 6;
+    doc.setFontSize(10);
+    doc.text('Secretario/a Municipal', pw / 2, y, { align: 'center' }); y += 5;
+    doc.text(comuna ? `Municipalidad de ${comuna}` : 'Municipalidad', pw / 2, y, { align: 'center' }); y += 15;
+
+    // Watermark
+    doc.setTextColor(180, 180, 180); doc.setFontSize(9);
+    doc.text('BORRADOR — Este documento requiere Firma Electronica Avanzada (FEA) para tener validez legal', pw / 2, y, { align: 'center' }); y += 5;
+    doc.text('Ley 19.418 - Ley 19.799 sobre Documentos Electronicos y Firma Electronica', pw / 2, y, { align: 'center' });
+
+    // Diagonal watermark
+    doc.saveGraphicsState();
+    const gState = new doc.GState({ opacity: 0.06 });
+    doc.setGState(gState);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(60); doc.setTextColor(200, 50, 50);
+    doc.text('BORRADOR', pw / 2, ph / 2, { align: 'center', angle: 45 });
+    doc.restoreGraphicsState();
+
+    // Register in DocumentRegistry
+    try {
+      const record = new DocumentRegistry({
+        organizationId: org._id,
+        documentType: 'certificado_borrador',
+        documentTitle: `Certificado Personalidad Juridica (Borrador) - ${name}`,
+        issuedBy: req.user?._id || null,
+      });
+      await record.save();
+    } catch (regErr) {
+      console.warn('DocumentRegistry save warning:', regErr.message);
+    }
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const fileName = `Borrador_Certificado_${(name || 'Org').replace(/\s+/g, '_')}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(pdf);
+    res.send(pdfBuffer);
   } catch (error) {
     console.error('Error generating certificado borrador:', error);
-    if (browser) await browser.close().catch(() => {});
     res.status(500).json({ error: `Error al generar borrador: ${error.message}` });
   }
 });
