@@ -1,4 +1,15 @@
-export default function ValidateCommission({ wizardData, updateWizardData, onNext, onPrev }) {
+function calculateAge(bd) {
+  if (!bd) return null;
+  const birth = new Date(bd);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+export default function ValidateCommission({ wizardData, updateWizardData, org, onNext, onPrev }) {
   // Handle both array and {members: [...]} formats
   const raw = wizardData.comisionElectoral || [];
   const commission = Array.isArray(raw) ? raw : (raw.members || []);
@@ -32,14 +43,40 @@ export default function ValidateCommission({ wizardData, updateWizardData, onNex
               touchAction: 'manipulation', transition: 'border-color 0.15s, background 0.15s',
             }}
           >
-            <div>
-              <span style={{ fontWeight: 600, fontSize: 'clamp(13px, 3vw, 14px)', color: '#2563eb', display: 'block', marginBottom: 2 }}>
-                Miembro {i + 1}
-              </span>
-              <span style={{ fontSize: 'clamp(13px, 3vw, 14px)', color: '#111827' }}>
-                {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.name || ''} — {m.rut || '—'}
-              </span>
-            </div>
+            {(() => {
+              const orgMembers = org?.members || [];
+              const bd = m.birthDate || (m.rut && orgMembers.find(mb => mb.rut === m.rut)?.birthDate);
+              const age = calculateAge(bd);
+              const isMinor = age !== null && age < 18;
+              return (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontWeight: 600, fontSize: 'clamp(13px, 3vw, 14px)', color: '#2563eb', display: 'block', marginBottom: 2 }}>
+                    Miembro {i + 1}
+                  </span>
+                  <span style={{ fontSize: 'clamp(13px, 3vw, 14px)', color: '#111827' }}>
+                    {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.name || ''} — {m.rut || '—'}
+                  </span>
+                  {age !== null && (
+                    <span style={{
+                      fontSize: 12, marginLeft: 8,
+                      color: isMinor ? '#d97706' : '#6b7280',
+                      fontWeight: isMinor ? 600 : 400,
+                    }}>
+                      ({age} anos)
+                    </span>
+                  )}
+                  {isMinor && (
+                    <span style={{
+                      fontSize: 10, marginLeft: 6, padding: '2px 6px', borderRadius: 4,
+                      background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      Menor de edad
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{
               width: 'clamp(32px, 7vw, 40px)', height: 'clamp(32px, 7vw, 40px)',
               borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
