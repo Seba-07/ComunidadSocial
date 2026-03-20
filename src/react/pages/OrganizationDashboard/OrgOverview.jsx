@@ -62,6 +62,125 @@ const QUORUM_MINIMUMS = { JUNTA_VECINOS: 50 };
 const DEFAULT_MINIMUM = 15;
 function getMinMembers(orgType) { return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM; }
 
+const ALERT_STYLES = {
+  red: { bg: '#fef2f2', border: '#fca5a5', color: '#991b1b', iconBg: '#fee2e2', btnBg: '#dc2626' },
+  orange: { bg: '#fffbeb', border: '#fde68a', color: '#92400e', iconBg: '#fef3c7', btnBg: '#d97706' },
+  blue: { bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', iconBg: '#dbeafe', btnBg: '#2563eb' },
+};
+
+function buildAlerts(org) {
+  const alerts = [];
+  const now = new Date();
+
+  // 1. Vigencia de Directiva
+  if (org.boardExpirationDate) {
+    const daysLeft = Math.ceil((new Date(org.boardExpirationDate) - now) / (1000 * 60 * 60 * 24));
+    const dateStr = new Date(org.boardExpirationDate).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (daysLeft <= 0) {
+      alerts.push({
+        severity: 'red', icon: '\u26A0\uFE0F',
+        title: 'Directiva Vencida',
+        description: `El mandato venció el ${dateStr}. Inicie el proceso electoral de renovación de directorio de inmediato.`,
+        actionLabel: 'Ir a Elecciones', actionTab: 'elecciones'
+      });
+    } else if (daysLeft <= 90) {
+      alerts.push({
+        severity: daysLeft <= 30 ? 'red' : 'orange', icon: '\u23F3',
+        title: `Directiva vence en ${daysLeft} días`,
+        description: `El mandato de la directiva vence el ${dateStr}. Planifique la renovación con anticipación.`,
+        actionLabel: 'Ir a Elecciones', actionTab: 'elecciones'
+      });
+    }
+  }
+
+  // 2. Asambleas sin acta
+  const assemblies = org.assemblies || [];
+  const orphanAssemblies = assemblies.filter(a =>
+    (a.status === 'finalizada' && (!a.actDocument || !a.actDocument.fileName))
+  );
+  if (orphanAssemblies.length > 0) {
+    const titles = orphanAssemblies.slice(0, 2).map(a => `"${a.title}"`).join(', ');
+    const extra = orphanAssemblies.length > 2 ? ` y ${orphanAssemblies.length - 2} más` : '';
+    alerts.push({
+      severity: 'orange', icon: '\uD83D\uDCCB',
+      title: `${orphanAssemblies.length} asamblea${orphanAssemblies.length > 1 ? 's' : ''} sin acta`,
+      description: `${titles}${extra}: Suba el documento firmado para legalizar los acuerdos adoptados.`,
+      actionLabel: 'Ir a Asambleas', actionTab: 'asambleas'
+    });
+  }
+
+  // 3. Rendición de subvenciones pendiente
+  const finances = org.finances || [];
+  const subIngreso = finances.filter(f => f.fundSource === 'SUBVENCION_MUNICIPAL' && f.amount > 0);
+  const subEgreso = finances.filter(f => f.fundSource === 'SUBVENCION_MUNICIPAL' && f.amount < 0);
+  if (subIngreso.length > 0) {
+    const totalIngreso = subIngreso.reduce((s, t) => s + t.amount, 0);
+    const totalEgreso = subEgreso.reduce((s, t) => s + Math.abs(t.amount), 0);
+    const sinRef = subEgreso.filter(f => !f.documentRef);
+    const saldoPendiente = totalIngreso - totalEgreso;
+
+    if (sinRef.length > 0 || saldoPendiente > 0) {
+      const issues = [];
+      if (sinRef.length > 0) issues.push(`${sinRef.length} egreso${sinRef.length > 1 ? 's' : ''} sin referencia de documento`);
+      if (saldoPendiente > 0) issues.push(`saldo de subvención pendiente por rendir: $${saldoPendiente.toLocaleString('es-CL')}`);
+      alerts.push({
+        severity: 'orange', icon: '\uD83D\uDCB0',
+        title: 'Rendición de Cuentas Pendiente',
+        description: `Subvenciones municipales: ${issues.join('; ')}. Complete la documentación de respaldo.`,
+        actionLabel: 'Ir a Finanzas', actionTab: 'finanzas'
+      });
+    }
+  }
+
+  // 4. Baja participación histórica
+  const finalized = assemblies.filter(a => a.status === 'finalizada').slice(-3);
+  if (finalized.length >= 2) {
+    const totalMembers = (org.members || []).filter(m => m.status !== 'inactive').length;
+    if (totalMembers > 0) {
+      const avgAttendance = finalized.reduce((s, a) => s + (a.attendees?.length || 0), 0) / finalized.length;
+      const pct = (avgAttendance / totalMembers) * 100;
+      if (pct < 25) {
+        alerts.push({
+          severity: 'blue', icon: '\uD83D\uDCC9',
+          title: 'Baja participación detectada',
+          description: `Promedio de asistencia: ${Math.round(pct)}% en las últimas ${finalized.length} asambleas. Considere estrategias de convocatoria para asegurar el quórum.`,
+          actionLabel: 'Ver Asambleas', actionTab: 'asambleas'
+        });
+      }
+    }
+  }
+
+  return alerts;
+}
+
+function AlertCard({ alert, onAction }) {
+  const s = ALERT_STYLES[alert.severity] || ALERT_STYLES.orange;
+  return (
+    <div style={{
+      background: s.bg, border: `2px solid ${s.border}`, borderRadius: 12,
+      padding: 16, display: 'flex', alignItems: 'flex-start', gap: 12
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 10, background: s.iconBg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 20, flexShrink: 0
+      }}>
+        {alert.icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: s.color, marginBottom: 4 }}>{alert.title}</div>
+        <p style={{ margin: 0, fontSize: 13, color: s.color, lineHeight: 1.5, opacity: 0.9 }}>{alert.description}</p>
+        {alert.actionLabel && (
+          <button onClick={() => onAction(alert.actionTab)}
+            style={{ marginTop: 10, padding: '6px 16px', fontSize: 12, fontWeight: 600, background: s.btnBg, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+            {alert.actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
   if (!org) return null;
 
@@ -82,83 +201,41 @@ export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
     (a) => a.status === 'convocada' || a.status === 'en_curso'
   );
 
-  // Board expiration warning (30 days or less)
-  const boardExpirationWarning = (() => {
-    if (org.boardStatus !== 'VIGENTE' || !org.boardExpirationDate) return null;
-    const daysLeft = Math.ceil((new Date(org.boardExpirationDate) - new Date()) / (1000 * 60 * 60 * 24));
-    if (daysLeft > 30) return null;
-    const dateStr = new Date(org.boardExpirationDate).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
-    return { daysLeft, dateStr };
-  })();
+  // ============ ALERTAS DE GESTIÓN ============
+  const alerts = buildAlerts(org);
 
   return (
     <div>
-      {/* Board Expiration Alert */}
-      {boardExpirationWarning && (
-        <div style={{
-          background: boardExpirationWarning.daysLeft <= 7 ? '#fef2f2' : '#fffbeb',
-          border: `2px solid ${boardExpirationWarning.daysLeft <= 7 ? '#fca5a5' : '#fde68a'}`,
-          borderRadius: 12, padding: 16, marginBottom: 24,
-          display: 'flex', alignItems: 'flex-start', gap: 12
-        }}>
-          <span style={{ fontSize: 24, flexShrink: 0 }}>{boardExpirationWarning.daysLeft <= 7 ? '\u26A0\uFE0F' : '\u23F3'}</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: boardExpirationWarning.daysLeft <= 7 ? '#991b1b' : '#92400e', marginBottom: 4 }}>
-              {boardExpirationWarning.daysLeft <= 0 ? 'Mandato de la directiva vencido' : `Mandato vence en ${boardExpirationWarning.daysLeft} d\u00edas`}
-            </div>
-            <p style={{ margin: 0, fontSize: 13, color: boardExpirationWarning.daysLeft <= 7 ? '#991b1b' : '#92400e', lineHeight: 1.5 }}>
-              Atenci\u00f3n: El mandato de su directiva vence el <strong>{boardExpirationWarning.dateStr}</strong>.
-              Por favor, inicie el proceso de renovaci\u00f3n de directorio a la brevedad.
-            </p>
-            <button
-              onClick={() => onNavigateTab('elecciones')}
-              style={{
-                marginTop: 10, padding: '6px 16px', fontSize: 13, fontWeight: 600,
-                background: boardExpirationWarning.daysLeft <= 7 ? '#dc2626' : '#d97706',
-                color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer'
-              }}
-            >
-              Ir a Elecciones
-            </button>
+      {/* Alertas de Gestión */}
+      {alerts.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            Alertas de Gestión
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: '#fef2f2', color: '#dc2626' }}>{alerts.length}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {alerts.map((alert, i) => (
+              <AlertCard key={i} alert={alert} onAction={(tab) => onNavigateTab(tab)} />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Alerts */}
+      {/* Asambleas activas */}
       {activeAssemblies.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           {activeAssemblies.map((a) => (
-            <div
-              key={a.id || a._id}
-              style={{
-                background: a.status === 'en_curso' ? '#d1fae5' : '#dbeafe',
-                border: `1px solid ${a.status === 'en_curso' ? '#10b981' : '#3b82f6'}`,
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 8,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 8,
-                flexWrap: 'wrap'
-              }}
-            >
+            <div key={a.id || a._id} style={{
+              background: a.status === 'en_curso' ? '#d1fae5' : '#dbeafe',
+              border: `1px solid ${a.status === 'en_curso' ? '#10b981' : '#3b82f6'}`,
+              borderRadius: 12, padding: 16, marginBottom: 8,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap'
+            }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <span style={{ fontWeight: 600, color: a.status === 'en_curso' ? '#065f46' : '#1e40af', wordBreak: 'break-word' }}>
-                  {a.title}
-                </span>
-                <span style={{ marginLeft: 8, fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>
-                  {formatDate(a.date)}
-                </span>
+                <span style={{ fontWeight: 600, color: a.status === 'en_curso' ? '#065f46' : '#1e40af', wordBreak: 'break-word' }}>{a.title}</span>
+                <span style={{ marginLeft: 8, fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>{formatDate(a.date)}</span>
               </div>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                padding: '4px 12px',
-                borderRadius: 20,
-                color: 'white',
-                background: a.status === 'en_curso' ? '#10b981' : '#3b82f6'
-              }}>
+              <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, color: 'white', background: a.status === 'en_curso' ? '#10b981' : '#3b82f6' }}>
                 {a.status === 'en_curso' ? 'En Curso' : 'Convocada'}
               </span>
             </div>
