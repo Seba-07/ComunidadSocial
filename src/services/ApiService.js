@@ -861,6 +861,24 @@ class ApiService {
     return this.post(`/organizations/${orgId}/assemblies/${assemblyId}/status`, { action });
   }
 
+  async finalizeAssemblyWithActa(orgId, assemblyId, file) {
+    const formData = new FormData();
+    formData.append('actDocument', file);
+    const response = await fetch(`${this.baseUrl}/organizations/${orgId}/assemblies/${assemblyId}/finalize`, {
+      method: 'POST', body: formData, credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', ...(this._authToken && { Authorization: `Bearer ${this._authToken}` }) }
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || data.detail || 'Error al finalizar asamblea');
+    }
+    return response.json();
+  }
+
+  async getAssemblyActDocument(orgId, assemblyId) {
+    return this.get(`/organizations/${orgId}/assemblies/${assemblyId}/act-document`);
+  }
+
   async deleteAssembly(orgId, assemblyId) {
     return this.delete(`/organizations/${orgId}/assemblies/${assemblyId}`);
   }

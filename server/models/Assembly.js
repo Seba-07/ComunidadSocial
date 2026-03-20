@@ -110,6 +110,12 @@ const assemblySchema = new mongoose.Schema({
   attendees: [assemblyAttendeeSchema],
   requiresMinister: { type: Boolean, default: false },
   assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment', default: null },
+  // Acta escaneada de la asamblea (PDF firmado)
+  actDocument: {
+    s3Key: { type: String, default: null },
+    fileName: { type: String, default: null },
+    uploadedAt: { type: Date, default: null }
+  },
   convokedAt: Date,
   startedAt: Date,
   finishedAt: Date

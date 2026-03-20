@@ -19,7 +19,7 @@ import Consent from '../models/Consent.js';
 import { maskOrganizationPii, maskPiiFields } from '../middleware/dataMasking.js';
 import AuditLog from '../models/AuditLog.js';
 import EstatutoTemplate from '../models/EstatutoTemplate.js';
-import { storeFile } from '../services/storageService.js';
+import { storeFile, getDocumentUrl } from '../services/storageService.js';
 import tenant from '../config/tenant.js';
 
 const router = express.Router();
@@ -1520,6 +1520,169 @@ router.post('/:id/reject-deletion', authenticate, requireRole('MUNICIPALIDAD'), 
   }
 });
 
+/**
+ * Regenerate PDF documents for an organization with updated data (ministro name, date).
+ * Uses DocumentTemplate + EstatutoTemplate + templateBlockParser to build HTML, then
+ * converts to PDF base64 via Puppeteer.
+ */
+async function regenerateOrgDocuments(organization, ministroName, scheduledDate, scheduledTime) {
+  try {
+    const DocumentTemplate = (await import('../models/DocumentTemplate.js')).default;
+
+    // Load the template config for this org type
+    const template = await EstatutoTemplate.findOne({
+      tipoOrganizacion: organization.organizationType,
+      activo: true, publicado: true
+    });
+    if (!template) return;
+
+    const templateIds = {
+      acta: template.actaTemplateId,
+      socios: template.sociosTemplateId,
+      nomina: template.nominaTemplateId,
+      carta: template.cartaTemplateId,
+    };
+
+    // Load document templates
+    const loadedTemplates = {};
+    for (const [key, id] of Object.entries(templateIds)) {
+      if (!id) continue;
+      const dt = await DocumentTemplate.findOne({ _id: id, activo: true });
+      if (dt?.content) loadedTemplates[key] = dt;
+    }
+    if (Object.keys(loadedTemplates).length === 0) return;
+
+    // Build template replacement data
+    const dir = organization.provisionalDirectorio || {};
+    const president = dir.president || dir.presidente || {};
+    const secretary = dir.secretary || dir.secretario || {};
+    const treasurer = dir.treasurer || dir.tesorero || {};
+    const config = organization.config || {};
+    const members = organization.members || [];
+    const getName = (m) => m ? `${m.firstName || ''} ${m.lastName || ''}`.trim() || '___' : '___';
+
+    const dateStr = scheduledDate ? formatDate(scheduledDate) : '___';
+    const moneda = config.monedaCuota || 'UTM';
+
+    // Build member table for LISTA_SOCIOS
+    const header = 'N°|Nombre Completo|RUT|Edad|Domicilio|Firma';
+    const rows = members.map((m, i) => {
+      const nombre = `${m.firstName || ''} ${m.lastName || ''}`.trim();
+      let edad = '';
+      if (m.birthDate) {
+        const birth = new Date(m.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const md = today.getMonth() - birth.getMonth();
+        if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) age--;
+        edad = String(age);
+      }
+      return `${i + 1}|${nombre}|${m.rut || ''}|${edad}|${m.address || ''}|`;
+    });
+    const listaSocios = `[TABLE]\n${header}\n${rows.join('\n')}\n[/TABLE]`;
+
+    // Meses de asamblea con formato correcto
+    const mesesArr = config.asambleas || [];
+    const mesesStr = mesesArr.length === 0 ? '___' : mesesArr.length === 1 ? mesesArr[0] : mesesArr.slice(0, -1).join(', ') + ' y ' + mesesArr[mesesArr.length - 1];
+
+    const data = {
+      NOMBRE_ORG: organization.organizationName || '',
+      TIPO_ORG: template.nombreTipo || organization.organizationType || '',
+      DIRECCION: [organization.street, organization.streetNumber].filter(Boolean).join(' ') || organization.address || '',
+      COMUNA: organization.comuna || '',
+      REGION: organization.region || '',
+      UNIDAD_VECINAL: organization.unidadVecinal || '',
+      EMAIL: organization.contactEmail || '',
+      TELEFONO: organization.contactPhone || '',
+      OBJETIVOS: organization.objectives || '',
+      TOTAL_SOCIOS: String(members.length),
+      LISTA_SOCIOS: listaSocios,
+      PRESIDENTE: getName(president),
+      RUT_PRESIDENTE: president.rut || '___',
+      SECRETARIO: getName(secretary),
+      RUT_SECRETARIO: secretary.rut || '___',
+      TESORERO: getName(treasurer),
+      RUT_TESORERO: treasurer.rut || '___',
+      DIRECTORES: (dir.additionalMembers || []).map(m => `${getName(m)} (${m.rut || '___'})`).join(', ') || 'N/A',
+      COMISION_ELECTORAL: (organization.electoralCommission || []).map(m => `${getName(m)} (${m.rut || '___'})`).join(', ') || 'N/A',
+      FECHA_ASAMBLEA: dateStr,
+      HORA_ASAMBLEA: scheduledTime || '___',
+      DURACION_MANDATO: String(config.duracionMandato || 3),
+      CUOTA_INCORPORACION: config.cuotaIncorporacion ? `${config.cuotaIncorporacion} ${moneda}` : '___',
+      CUOTA_MENSUAL: config.cuotaMin != null && config.cuotaMax != null
+        ? `minima de ${config.cuotaMin} ${moneda} y maxima de ${config.cuotaMax} ${moneda}` : '___',
+      METODO_CITACION: CITACION_LABELS[config.metodoCitacion] || 'carta certificada al domicilio registrado',
+      DIAS_ANTICIPACION: String(config.diasAnticipacion || 10),
+      MESES_ASAMBLEA: mesesStr,
+      ENTIDAD_DISOLUCION: config.beneficiarioDisolucion || '___',
+      RUT_DISOLUCION: config.rutDisolucion || '___',
+      MES_INFORME: config.accountReviewMonth || 'Marzo',
+      FECHA_HOY: formatDate(new Date()),
+      MINISTRO_FE: ministroName || '___',
+      RUT_MINISTRO_FE: '___',
+      UBICACION_ASAMBLEA: organization.assemblyAddress || [organization.street, organization.streetNumber].filter(Boolean).join(' ') || '___',
+      FIRMA_PRESIDENTE: `________________________\n${getName(president)}\nPresidente(a) Provisorio(a)\nRUT: ${president.rut || '___'}`,
+      FIRMA_SECRETARIO: `________________________\n${getName(secretary)}\nSecretario(a) Provisorio(a)\nRUT: ${secretary.rut || '___'}`,
+      FIRMA_TESORERO: `________________________\n${getName(treasurer)}\nTesorero(a) Provisorio(a)\nRUT: ${treasurer.rut || '___'}`,
+      FIRMA_MINISTRO_FE: `________________________\n${ministroName || '___'}\nMinistro de Fe\nRUT: ___`,
+    };
+
+    // Import templateToHtml
+    const { templateToHtml } = await import('../../../src/shared/utils/templateBlockParser.js');
+
+    const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
+    const newDocs = [];
+
+    for (const [key, tmpl] of Object.entries(loadedTemplates)) {
+      let content = tmpl.content;
+      // Replace placeholders
+      for (const [ph, val] of Object.entries(data)) {
+        content = content.replaceAll(`{${ph}}`, val).replaceAll(`{{${ph}}}`, val);
+      }
+      // Generate HTML
+      const html = templateToHtml(content, {
+        headerConfig: tmpl.headerConfig || null,
+        footerConfig: tmpl.footerConfig || null,
+        pageSize: tmpl.pageSize || 'letter',
+      });
+
+      // Convert HTML to PDF via Puppeteer
+      let pdfBase64;
+      let browser;
+      try {
+        const puppeteer = (await import('puppeteer')).default;
+        browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
+        const pdfBuffer = await page.pdf({ format: 'letter', printBackground: true, margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' } });
+        pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`;
+        await browser.close();
+      } catch (pdfErr) {
+        if (browser) await browser.close().catch(() => {});
+        console.warn(`Error generating PDF for ${key}:`, pdfErr.message);
+        continue;
+      }
+
+      newDocs.push({
+        docType: docTypeMap[key] || key,
+        content: pdfBase64,
+        generatedAt: new Date(),
+      });
+    }
+
+    if (newDocs.length > 0) {
+      await GeneratedDocuments.findOneAndUpdate(
+        { organizationId: organization._id },
+        { organizationId: organization._id, documents: newDocs },
+        { upsert: true, new: true }
+      );
+      console.log(`[regenerateOrgDocuments] ${newDocs.length} PDFs regenerated for ${organization.organizationName}`);
+    }
+  } catch (err) {
+    console.error('[regenerateOrgDocuments] Error:', err.message);
+  }
+}
+
 // Schedule ministro (Admin only)
 router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD'), async (req, res) => {
   try {
@@ -1665,6 +1828,10 @@ router.post('/:id/schedule-ministro', authenticate, requireRole('MUNICIPALIDAD')
         console.error('Error sending ministro assignment email:', emailErr);
       }
     }
+
+    // Regenerate PDFs with ministro name + assembly date (non-blocking, after response)
+    regenerateOrgDocuments(organization, ministroName, scheduledDate, scheduledTime)
+      .catch(err => console.error('Error regenerating documents:', err.message));
   } catch (error) {
     console.error('Schedule ministro error:', error);
     res.status(500).json({ error: 'Error al agendar Ministro de Fe' });
@@ -3074,10 +3241,16 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
 
     const { action } = req.body; // convocar, iniciar, finalizar, cancelar
 
+    // Finalizar requiere subida de acta — redirigir al endpoint dedicado
+    if (action === 'finalizar') {
+      return res.status(400).json({
+        error: 'Para finalizar una asamblea, use el endpoint POST /:id/assemblies/:assemblyId/finalize con el acta escaneada adjunta.'
+      });
+    }
+
     const transitions = {
       convocar: { from: ['draft'], to: 'convocada' },
       iniciar: { from: ['convocada'], to: 'en_curso' },
-      finalizar: { from: ['en_curso'], to: 'finalizada' },
       cancelar: { from: ['draft', 'convocada'], to: 'cancelada' }
     };
 
@@ -3129,101 +3302,6 @@ router.post('/:id/assemblies/:assemblyId/status', authenticate, validateObjectId
       }
     }
     if (action === 'iniciar') assembly.startedAt = new Date();
-    if (action === 'finalizar') {
-      // Verificar quórum antes de finalizar
-      const quorum = checkQuorum(assembly, org);
-      if (!quorum.met) {
-        return res.status(422).json({
-          error: 'No se puede finalizar sin quórum',
-          detail: quorum.message,
-          quorumRequired: quorum.required,
-          quorumActual: quorum.actual
-        });
-      }
-      assembly.finishedAt = new Date();
-      // Cerrar todas las votaciones abiertas
-      assembly.agendaItems.forEach(item => {
-        if (item.votingOpen) {
-          item.votingOpen = false;
-          item.votingClosedAt = new Date();
-        }
-      });
-
-      // Procesar resultados de elección de directorio
-      const electionItem = assembly.agendaItems.find(item => item.type === 'eleccion_directorio');
-      // Usar anonymousVotes (nuevo) con fallback a votes (legacy)
-      const electionVotes = electionItem ? (electionItem.anonymousVotes?.length > 0 ? electionItem.anonymousVotes : electionItem.votes) : [];
-      if (electionItem && electionVotes.length > 0) {
-        if (electionItem.votingMode === 'per_cargo') {
-          // Contar votos por cargo y determinar ganadores
-          const votesByCargo = {};
-          electionVotes.forEach(v => {
-            if (!votesByCargo[v.cargo]) votesByCargo[v.cargo] = {};
-            votesByCargo[v.cargo][v.candidateRut] = (votesByCargo[v.cargo][v.candidateRut] || 0) + 1;
-          });
-
-          const winners = {};
-          for (const [cargo, candidates] of Object.entries(votesByCargo)) {
-            const sorted = Object.entries(candidates).sort((a, b) => b[1] - a[1]);
-            if (sorted.length > 0) {
-              const winnerRut = sorted[0][0];
-              const candidate = electionItem.candidates.find(c => c.rut === winnerRut);
-              winners[cargo] = { rut: winnerRut, firstName: candidate?.firstName, lastName: candidate?.lastName, votes: sorted[0][1] };
-            }
-          }
-
-          electionItem.result = { mode: 'per_cargo', winners, votesByCargo };
-
-          // Actualizar directorio de la organización
-          const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
-          if (org.provisionalDirectorio) {
-            for (const [cargo, winner] of Object.entries(winners)) {
-              const schemaRole = roleMap[cargo] || cargo;
-              if (org.provisionalDirectorio[schemaRole] !== undefined) {
-                org.provisionalDirectorio[schemaRole] = { rut: winner.rut, firstName: winner.firstName, lastName: winner.lastName };
-              }
-            }
-            org.provisionalDirectorio.designatedAt = new Date();
-            org.provisionalDirectorio.type = 'ELECTO';
-          }
-        } else if (electionItem.votingMode === 'per_lista') {
-          // Contar votos por lista
-          const votesByLista = {};
-          electionVotes.forEach(v => {
-            votesByLista[v.lista] = (votesByLista[v.lista] || 0) + 1;
-          });
-          const sorted = Object.entries(votesByLista).sort((a, b) => b[1] - a[1]);
-          const winningLista = sorted.length > 0 ? sorted[0][0] : null;
-          const winningCandidates = winningLista ? electionItem.candidates.filter(c => c.lista === winningLista) : [];
-
-          electionItem.result = { mode: 'per_lista', winningLista, votesByLista, winningCandidates };
-
-          // Actualizar directorio con la lista ganadora
-          if (winningCandidates.length > 0 && org.provisionalDirectorio) {
-            const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
-            winningCandidates.forEach(c => {
-              if (c.cargo) {
-                const schemaRole = roleMap[c.cargo] || c.cargo;
-                if (org.provisionalDirectorio[schemaRole] !== undefined) {
-                  org.provisionalDirectorio[schemaRole] = { rut: c.rut, firstName: c.firstName, lastName: c.lastName };
-                }
-              }
-            });
-            org.provisionalDirectorio.designatedAt = new Date();
-            org.provisionalDirectorio.type = 'ELECTO';
-          }
-        }
-
-        org.lastDirectorioElection = {
-          assemblyId: assembly.id,
-          date: new Date(),
-          updatedAt: new Date()
-        };
-
-        // Sincronizar roles de miembros con el nuevo directorio electo
-        syncMemberRolesFromDirectorio(org);
-      }
-    }
 
     // If assembly is cancelled, cancel linked assignment
     if (action === 'cancelar' && assembly.assignmentId) {
@@ -3513,6 +3591,165 @@ router.post('/:id/assemblies/:assemblyId/mano-alzada', authenticate, validateObj
 });
 
 // Abrir/cerrar votación de un punto de agenda
+// ============ FINALIZE ASSEMBLY WITH ACTA ============
+const actaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Solo se permiten archivos PDF'));
+    }
+    cb(null, true);
+  }
+});
+
+router.post('/:id/assemblies/:assemblyId/finalize', authenticate, validateObjectId(), actaUpload.single('actDocument'), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const isDirectivo = isDirectivoMember(org, req.user);
+    if (!isOwner && !isAdmin && !isDirectivo) return res.status(403).json({ error: 'No tienes permisos' });
+
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    if (assembly.status !== 'en_curso') {
+      return res.status(400).json({ error: 'Solo se puede finalizar una asamblea en curso' });
+    }
+
+    // Acta obligatoria
+    if (!req.file) {
+      return res.status(422).json({ error: 'El Acta escaneada (PDF) es obligatoria para cerrar la asamblea' });
+    }
+
+    // Verificar quórum
+    const quorum = checkQuorum(assembly, org);
+    if (!quorum.met) {
+      return res.status(422).json({
+        error: 'No se puede finalizar sin quórum',
+        detail: quorum.message,
+        quorumRequired: quorum.required,
+        quorumActual: quorum.actual
+      });
+    }
+
+    // Subir acta a almacenamiento
+    const stored = await storeFile(req.file.buffer, req.file.mimetype, {
+      folder: `organizations/${org._id}/actas`,
+      fileName: `acta_${assembly.id || assembly._id}_${Date.now()}.pdf`
+    });
+
+    assembly.actDocument = {
+      s3Key: stored.s3Key || null,
+      fileName: req.file.originalname || 'acta.pdf',
+      uploadedAt: new Date()
+    };
+
+    // Finalizar asamblea
+    assembly.status = 'finalizada';
+    assembly.finishedAt = new Date();
+
+    // Cerrar todas las votaciones abiertas
+    assembly.agendaItems.forEach(item => {
+      if (item.votingOpen) {
+        item.votingOpen = false;
+        item.votingClosedAt = new Date();
+      }
+    });
+
+    // Procesar resultados de elección de directorio
+    const electionItem = assembly.agendaItems.find(item => item.type === 'eleccion_directorio');
+    const electionVotes = electionItem ? (electionItem.anonymousVotes?.length > 0 ? electionItem.anonymousVotes : electionItem.votes) : [];
+    if (electionItem && electionVotes.length > 0) {
+      if (electionItem.votingMode === 'per_cargo') {
+        const votesByCargo = {};
+        electionVotes.forEach(v => {
+          if (!votesByCargo[v.cargo]) votesByCargo[v.cargo] = {};
+          votesByCargo[v.cargo][v.candidateRut] = (votesByCargo[v.cargo][v.candidateRut] || 0) + 1;
+        });
+        const winners = {};
+        for (const [cargo, candidates] of Object.entries(votesByCargo)) {
+          const sorted = Object.entries(candidates).sort((a, b) => b[1] - a[1]);
+          if (sorted.length > 0) {
+            const winnerRut = sorted[0][0];
+            const candidate = electionItem.candidates.find(c => c.rut === winnerRut);
+            winners[cargo] = { rut: winnerRut, firstName: candidate?.firstName, lastName: candidate?.lastName, votes: sorted[0][1] };
+          }
+        }
+        electionItem.result = { mode: 'per_cargo', winners, votesByCargo };
+        const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
+        if (org.provisionalDirectorio) {
+          for (const [cargo, winner] of Object.entries(winners)) {
+            const schemaRole = roleMap[cargo] || cargo;
+            if (org.provisionalDirectorio[schemaRole] !== undefined) {
+              org.provisionalDirectorio[schemaRole] = { rut: winner.rut, firstName: winner.firstName, lastName: winner.lastName };
+            }
+          }
+          org.provisionalDirectorio.designatedAt = new Date();
+          org.provisionalDirectorio.type = 'ELECTO';
+        }
+      } else if (electionItem.votingMode === 'per_lista') {
+        const votesByLista = {};
+        electionVotes.forEach(v => { votesByLista[v.lista] = (votesByLista[v.lista] || 0) + 1; });
+        const sorted = Object.entries(votesByLista).sort((a, b) => b[1] - a[1]);
+        const winningLista = sorted.length > 0 ? sorted[0][0] : null;
+        const winningCandidates = winningLista ? electionItem.candidates.filter(c => c.lista === winningLista) : [];
+        electionItem.result = { mode: 'per_lista', winningLista, votesByLista, winningCandidates };
+        if (winningCandidates.length > 0 && org.provisionalDirectorio) {
+          const roleMap = { presidente: 'president', secretario: 'secretary', tesorero: 'treasurer' };
+          winningCandidates.forEach(c => {
+            if (c.cargo) {
+              const schemaRole = roleMap[c.cargo] || c.cargo;
+              if (org.provisionalDirectorio[schemaRole] !== undefined) {
+                org.provisionalDirectorio[schemaRole] = { rut: c.rut, firstName: c.firstName, lastName: c.lastName };
+              }
+            }
+          });
+          org.provisionalDirectorio.designatedAt = new Date();
+          org.provisionalDirectorio.type = 'ELECTO';
+        }
+      }
+
+      org.lastDirectorioElection = { assemblyId: assembly.id, date: new Date(), updatedAt: new Date() };
+      syncMemberRolesFromDirectorio(org);
+    }
+
+    await assemblyService.saveAssembly(org, assembly);
+
+    res.json({
+      message: 'Asamblea finalizada exitosamente con acta registrada',
+      data: assembly.toObject ? assembly.toObject() : assembly
+    });
+  } catch (error) {
+    console.error('Finalize assembly error:', error);
+    res.status(500).json({ error: 'Error al finalizar asamblea' });
+  }
+});
+
+// Get act document URL for a finalized assembly
+router.get('/:id/assemblies/:assemblyId/act-document', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const assembly = await assemblyService.findAssembly(org, req.params.assemblyId);
+    if (!assembly) return res.status(404).json({ error: 'Asamblea no encontrada' });
+
+    if (!assembly.actDocument?.s3Key && !assembly.actDocument?.fileName) {
+      return res.status(404).json({ error: 'Esta asamblea no tiene acta registrada' });
+    }
+
+    const url = await getDocumentUrl(assembly.actDocument);
+    res.json({ data: { url, fileName: assembly.actDocument.fileName } });
+  } catch (error) {
+    console.error('Get act document error:', error);
+    res.status(500).json({ error: 'Error al obtener acta' });
+  }
+});
+
 router.post('/:id/assemblies/:assemblyId/toggle-voting', authenticate, validateObjectId(), async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);

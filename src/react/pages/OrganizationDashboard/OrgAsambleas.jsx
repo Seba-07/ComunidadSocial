@@ -15,6 +15,7 @@ export default function OrgAsambleas({ org, onRefresh }) {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedAssembly, setSelectedAssembly] = useState(null);
   const [showElections, setShowElections] = useState(false);
+  const [finalizeTarget, setFinalizeTarget] = useState(null);
 
   // Sync selectedAssembly with refreshed org data
   useEffect(() => {
@@ -46,6 +47,19 @@ export default function OrgAsambleas({ org, onRefresh }) {
       onRefresh();
     } catch (error) {
       addToast(error.detail || error.message || 'Error al actualizar estado', 'error');
+    }
+  }
+
+  async function handleDownloadActa(assembly) {
+    try {
+      const res = await apiService.getAssemblyActDocument(org._id, assembly.id || assembly._id);
+      if (res.data?.url) {
+        window.open(res.data.url, '_blank');
+      } else {
+        addToast('No se pudo obtener el acta', 'error');
+      }
+    } catch (error) {
+      addToast(error.message || 'Error al descargar acta', 'error');
     }
   }
 
@@ -87,32 +101,34 @@ export default function OrgAsambleas({ org, onRefresh }) {
         </div>
       </div>
 
-      {active.length > 0 && <Section title="En Curso / Convocadas" color="#10b981" assemblies={active} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} />}
-      {drafts.length > 0 && <Section title="Borradores" color="#6b7280" assemblies={drafts} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} />}
-      {past.length > 0 && <Section title="Historial" color="#8b5cf6" assemblies={past} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} />}
+      {active.length > 0 && <Section title="En Curso / Convocadas" color="#10b981" assemblies={active} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} onFinalize={setFinalizeTarget} onDownloadActa={handleDownloadActa} />}
+      {drafts.length > 0 && <Section title="Borradores" color="#6b7280" assemblies={drafts} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} onFinalize={setFinalizeTarget} onDownloadActa={handleDownloadActa} />}
+      {past.length > 0 && <Section title="Historial" color="#8b5cf6" assemblies={past} onView={setSelectedAssembly} onAction={handleStatusAction} onDelete={handleDelete} onFinalize={setFinalizeTarget} onDownloadActa={handleDownloadActa} />}
       {assemblies.length === 0 && <p style={{ color: '#6b7280', textAlign: 'center', padding: 48 }}>No hay asambleas registradas</p>}
 
       <CreateAssemblyModal open={showCreate} onClose={() => setShowCreate(false)} orgId={org._id} onCreated={() => { setShowCreate(false); onRefresh(); }} addToast={addToast} />
       <AssemblyDetailModal assembly={selectedAssembly} onClose={() => setSelectedAssembly(null)} orgId={org._id} org={org} onRefresh={onRefresh} addToast={addToast} />
       <ElectionsModal open={showElections} onClose={() => setShowElections(false)} elections={elections} org={org} />
+      <FinalizeAssemblyModal assembly={finalizeTarget} onClose={() => setFinalizeTarget(null)} orgId={org._id}
+        onFinalized={() => { setFinalizeTarget(null); onRefresh(); }} addToast={addToast} />
     </div>
   );
 }
 
-function Section({ title, color, assemblies, onView, onAction, onDelete }) {
+function Section({ title, color, assemblies, onView, onAction, onDelete, onFinalize, onDownloadActa }) {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ fontSize: 14, fontWeight: 600, color, marginBottom: 12 }}>{title}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {assemblies.map((a) => (
-          <AssemblyCard key={a.id || a._id} assembly={a} onView={() => onView(a)} onAction={onAction} onDelete={onDelete} />
+          <AssemblyCard key={a.id || a._id} assembly={a} onView={() => onView(a)} onAction={onAction} onDelete={onDelete} onFinalize={onFinalize} onDownloadActa={onDownloadActa} />
         ))}
       </div>
     </div>
   );
 }
 
-function AssemblyCard({ assembly, onView, onAction, onDelete }) {
+function AssemblyCard({ assembly, onView, onAction, onDelete, onFinalize, onDownloadActa }) {
   const a = assembly;
   const id = a.id || a._id;
   const color = STATUS_COLORS[a.status] || '#6b7280';
@@ -122,7 +138,7 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
   const actions = [];
   if (a.status === 'draft') actions.push({ label: 'Convocar', action: 'convocar', color: '#3b82f6' });
   if (a.status === 'convocada') actions.push({ label: 'Iniciar', action: 'iniciar', color: '#10b981' });
-  if (a.status === 'en_curso') actions.push({ label: 'Finalizar', action: 'finalizar', color: '#8b5cf6' });
+  // Finalizar now handled via FinalizeModal — not in generic actions
 
   return (
     <div className="r-card" style={{ border: '1px solid #e5e7eb', borderLeft: `4px solid ${color}`, background: 'white' }}>
@@ -149,6 +165,12 @@ function AssemblyCard({ assembly, onView, onAction, onDelete }) {
         {actions.map(({ label, action, color: c }) => (
           <button key={action} onClick={() => onAction(id, action)} style={{ padding: '4px 12px', fontSize: 12, border: 'none', borderRadius: 6, background: c, color: 'white', cursor: 'pointer', fontWeight: 600 }}>{label}</button>
         ))}
+        {a.status === 'en_curso' && (
+          <button onClick={() => onFinalize(a)} style={{ padding: '4px 12px', fontSize: 12, border: 'none', borderRadius: 6, background: '#8b5cf6', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Subir Acta y Finalizar</button>
+        )}
+        {a.status === 'finalizada' && a.actDocument?.fileName && (
+          <button onClick={() => onDownloadActa(a)} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #8b5cf6', borderRadius: 6, background: 'white', color: '#8b5cf6', cursor: 'pointer', fontWeight: 600 }}>Descargar Acta</button>
+        )}
         {(a.status === 'draft' || a.status === 'convocada') && (
           <button onClick={() => onDelete(id)} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #ef4444', borderRadius: 6, background: 'white', color: '#ef4444', cursor: 'pointer' }}>Eliminar</button>
         )}
@@ -588,6 +610,78 @@ function ElectionsModal({ open, onClose, elections, org }) {
         Para convocar una elección, cree una nueva asamblea extraordinaria con un punto de tipo &quot;Elección Directorio&quot;.
       </div>
     </Modal>
+  );
+}
+
+// ========== Finalize Assembly Modal (with required Acta upload) ==========
+function FinalizeAssemblyModal({ assembly, onClose, orgId, onFinalized, addToast }) {
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!assembly) return null;
+
+  async function handleFinalize() {
+    if (!file) { addToast('Debe adjuntar el Acta escaneada (PDF) para finalizar', 'error'); return; }
+    setSubmitting(true);
+    try {
+      await apiService.finalizeAssemblyWithActa(orgId, assembly.id || assembly._id, file);
+      addToast('Asamblea finalizada exitosamente', 'success');
+      setFile(null);
+      onFinalized();
+    } catch (error) {
+      addToast(error.message || 'Error al finalizar', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 520, overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Subir Acta y Finalizar</h3>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: '#6b7280' }}>
+            Para cerrar legalmente la asamblea "{assembly.title}", debe adjuntar el acta escaneada y firmada.
+          </p>
+        </div>
+        <div style={{ padding: 24 }}>
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 13, color: '#1e40af', lineHeight: 1.5 }}>
+            Según la Ley 19.418, toda asamblea debe dejar constancia de sus acuerdos en un acta firmada por el Presidente y el Secretario de la organización.
+          </div>
+
+          {file ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 14, color: '#059669', fontWeight: 500 }}>{file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+              <button type="button" onClick={() => setFile(null)}
+                style={{ padding: '2px 10px', border: '1px solid #ef4444', borderRadius: 6, background: 'white', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>Quitar</button>
+            </div>
+          ) : (
+            <label style={{ display: 'block', padding: 24, border: '2px dashed #c4b5fd', borderRadius: 12, textAlign: 'center', cursor: 'pointer', color: '#7c3aed', fontSize: 14, fontWeight: 500, marginBottom: 20, background: '#faf5ff' }}>
+              Haz clic para seleccionar el Acta (PDF)
+              <input type="file" accept=".pdf" style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files[0];
+                  if (f && f.type !== 'application/pdf') { addToast('Solo se permiten archivos PDF', 'error'); return; }
+                  if (f && f.size > 20 * 1024 * 1024) { addToast('El archivo no puede superar 20MB', 'error'); return; }
+                  setFile(f);
+                }} />
+            </label>
+          )}
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={onClose}
+              style={{ flex: 1, padding: 14, background: '#f3f4f6', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>
+              Cancelar
+            </button>
+            <button onClick={handleFinalize} disabled={submitting || !file}
+              style={{ flex: 1, padding: 14, border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: file && !submitting ? 'pointer' : 'not-allowed', color: '#fff', background: file && !submitting ? '#8b5cf6' : '#d1d5db' }}>
+              {submitting ? 'Finalizando...' : 'Finalizar Asamblea'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
