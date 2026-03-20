@@ -360,28 +360,23 @@ async function createMemberAccounts(organization) {
         continue;
       }
 
-      // Crear nuevo usuario MIEMBRO — sin password, con activationToken
-      const activationToken = crypto.randomBytes(32).toString('hex');
-      const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
-      // Password temporal fuerte (nunca se usa directamente, solo para cumplir schema required)
-      const tempPassword = crypto.randomBytes(16).toString('hex');
-      const memberEmail = member.email || null; // No generar emails falsos
+      // Crear nuevo usuario MIEMBRO — password = RUT limpio, cambio obligatorio en primer login
+      const cleanRut = member.rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+      const memberEmail = member.email || null;
 
       const newUser = new User({
         rut: member.rut,
         firstName: member.firstName,
         lastName: member.lastName,
-        email: memberEmail || `${member.rut.replace(/\./g, '').replace(/-/g, '')}@placeholder.local`,
-        password: tempPassword,
+        email: memberEmail || `${cleanRut}@miembro.comunidadsocial.cl`,
+        password: cleanRut,
         phone: member.phone,
         address: member.address,
         role: 'MIEMBRO',
         organizationIds: [organization._id],
         organizationId: organization._id,
         mustChangePassword: true,
-        active: false, // Inactivo hasta que active su cuenta
-        resetPasswordToken: activationToken,
-        resetPasswordExpires: activationExpires,
+        active: true,
       });
 
       await newUser.save();
@@ -396,20 +391,17 @@ async function createMemberAccounts(organization) {
         ipAddress: 'system:member-creation'
       }).catch(err => console.error('Consent creation error for member:', err.message));
 
-      // Send activation email if member has a real email
+      // Send welcome email if member has a real email
       if (memberEmail) {
-        const baseUrl = process.env.FRONTEND_URL || process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173';
-        const activationUrl = `${baseUrl}/app/activate?token=${activationToken}`;
         try {
-          await emailService.sendMemberActivationEmail({
+          await emailService.sendWelcomeMemberEmail({
             email: memberEmail,
             userName: `${member.firstName} ${member.lastName}`.trim(),
             orgName: organization.organizationName,
-            activationUrl,
+            tempPassword: cleanRut,
           });
         } catch (emailErr) {
-          console.error(`Error sending activation email to ${memberEmail}:`, emailErr.message);
+          console.error(`Error sending welcome email to ${memberEmail}:`, emailErr.message);
         }
       }
 
@@ -417,10 +409,8 @@ async function createMemberAccounts(organization) {
         rut: member.rut,
         firstName: member.firstName,
         lastName: member.lastName,
-        email: memberEmail,
+        email: newUser.email,
         status: 'created',
-        hasEmail: !!memberEmail,
-        activationSent: !!memberEmail,
       });
 
     } catch (error) {
