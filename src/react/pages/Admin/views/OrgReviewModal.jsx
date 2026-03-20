@@ -153,9 +153,11 @@ export default function OrgReviewModal({ org: initialOrg, onClose }) {
   const electoralCommission = org.electoralCommission || org.comisionElectoral || [];
   const certs = org.certificatesStep5 || [];
 
-  // Tab "Aprobar" solo visible en estados post-asamblea
+  // Tab "Aprobar/Certificado" solo visible en estados post-asamblea
+  const isAlreadyApproved = org.status === 'approved' || org.status === 'sent_registry' || org.status === 'registry_observations' || org.status === 'dissolved';
+  const hasCertFEA = !!org.certificadoPersonalidadJuridica?.fileName;
   const reviewTabs = FEA_ELIGIBLE_STATUSES.has(org.status)
-    ? [...BASE_TABS, { key: 'aprobar', label: 'Aprobar' }]
+    ? [...BASE_TABS, { key: 'aprobar', label: hasCertFEA ? 'Certificado FEA' : 'Aprobar' }]
     : BASE_TABS;
 
   // Org name/type with fallbacks for both old and new field names
@@ -1130,19 +1132,60 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
 
           {tab === 'aprobar' && (
             <div style={{ display: 'grid', gap: 20 }}>
-              {/* Info banner */}
+
+              {/* If already approved — show certificate */}
+              {hasCertFEA && (
+                <div style={{ padding: 24, background: '#f0fdf4', borderRadius: 12, border: '2px solid #10b981' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <span style={{ fontSize: 32 }}>{'\u2705'}</span>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#166534' }}>Certificado FEA Emitido</h3>
+                      <p style={{ margin: '4px 0 0', fontSize: 13, color: '#374151' }}>
+                        {org.certificadoPersonalidadJuridica.fileName} — {formatDate(org.certificadoPersonalidadJuridica.uploadedAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={async () => {
+                    try {
+                      const certUrl = org.certificadoPersonalidadJuridica.url;
+                      if (!certUrl) { addToast('Certificado no disponible', 'error'); return; }
+                      // If it's a base64 data URL or S3 key, handle accordingly
+                      if (certUrl.startsWith('data:')) {
+                        const b64 = certUrl.split(',')[1] || certUrl.split('base64,')[1];
+                        const bytes = atob(b64);
+                        const arr = new Uint8Array(bytes.length);
+                        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+                        window.open(URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })), '_blank');
+                      } else if (certUrl.startsWith('s3:')) {
+                        const url = await apiService.get(`/organizations/${org._id}/certificate-url`);
+                        window.open(url.url, '_blank');
+                      } else {
+                        window.open(certUrl, '_blank');
+                      }
+                    } catch { addToast('Error al abrir certificado', 'error'); }
+                  }} style={{
+                    padding: '12px 24px', border: 'none', borderRadius: 10,
+                    background: '#10b981', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}>
+                    Ver Certificado Firmado
+                  </button>
+                </div>
+              )}
+
+              {/* If NOT yet approved — show FEA flow */}
+              {!hasCertFEA && (<>
               <div style={{
                 padding: 16, background: '#eff6ff', borderRadius: 10,
                 border: '1px solid #bfdbfe', display: 'flex', gap: 12, alignItems: 'flex-start'
               }}>
-                <span style={{ fontSize: 20 }}>&#x1f512;</span>
+                <span style={{ fontSize: 20 }}>{'\uD83D\uDD12'}</span>
                 <div>
                   <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#1e40af' }}>
-                    Flujo de Firma Electrónica Avanzada (Ley 19.799)
+                    Flujo de Firma Electronica Avanzada (Ley 19.799)
                   </h4>
                   <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
                     1. Descarga el borrador del certificado.<br />
-                    2. Firma el PDF con tu Firma Electrónica Avanzada (FEA) usando tu software de firma.<br />
+                    2. Firma el PDF con tu Firma Electronica Avanzada (FEA) usando tu software de firma.<br />
                     3. Sube el PDF firmado y aprueba la organizacion.
                   </p>
                 </div>
@@ -1310,21 +1353,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 </button>
               </div>
 
-              {/* Already approved */}
-              {org.certificadoPersonalidadJuridica?.fileName && (
-                <div style={{
-                  padding: 16, background: '#f0fdf4', borderRadius: 10,
-                  border: '1px solid #bbf7d0'
-                }}>
-                  <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#166534' }}>
-                    Certificado ya cargado
-                  </h4>
-                  <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>
-                    {org.certificadoPersonalidadJuridica.fileName} — subido el{' '}
-                    {formatDate(org.certificadoPersonalidadJuridica.uploadedAt)}
-                  </p>
-                </div>
-              )}
+              </>)}
             </div>
           )}
 
