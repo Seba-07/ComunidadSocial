@@ -8,6 +8,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "seed": "node scripts/seed.js",
+    "seed:demo": "node scripts/seed-demo-orgs.js",
     "seed:uv": "node scripts/seedUnidadesVecinales.js",
     "migrate:normalize": "node scripts/migrate-to-normalized.js",
     "migrate:normalize:dry": "node scripts/migrate-to-normalized.js --dry-run",
