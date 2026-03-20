@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiService } from '@services/ApiService.js';
 import { useUiStore } from '../../stores/uiStore';
 import { formatDate } from '../../utils/formatters';
+import { jsPDF } from 'jspdf';
 
 function formatName(p) {
   if (!p) return '—';
@@ -243,15 +244,45 @@ export default function AssignmentDetail({ assignment, onBack, onStartAssembly }
             </span>
             <button onClick={() => {
               const arts = [...org.estatutosSnapshot.articulos].sort((a, b) => (a.orden || a.numero) - (b.orden || b.numero));
-              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;max-width:750px;margin:40px auto;padding:0 20px;line-height:1.7}h1{text-align:center;font-size:20px}
-.art{margin-bottom:16px}.art-t{font-weight:700;font-size:13px;margin-bottom:3px}.art-c{font-size:12px;white-space:pre-line}@media print{body{margin:20px}}</style></head><body>
-<h1>ESTATUTOS</h1><h2 style="text-align:center;font-size:14px;color:#555">${org.organizationName}</h2><hr>
-${arts.map(a => `<div class="art"><div class="art-t">Art. ${a.numero}: ${a.titulo}</div><div class="art-c">${a.contenido}</div></div>`).join('')}</body></html>`;
-              const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+              const doc = new jsPDF();
+              const pw = doc.internal.pageSize.getWidth();
+              const ph = doc.internal.pageSize.getHeight();
+              const margin = 20;
+              const contentW = pw - margin * 2;
+              let y = 30;
+
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(16);
+              doc.text('ESTATUTOS', pw / 2, y, { align: 'center' });
+              y += 8;
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(11);
+              doc.text(org.organizationName || '', pw / 2, y, { align: 'center' });
+              y += 10;
+              doc.setDrawColor(200); doc.line(margin, y, pw - margin, y); y += 10;
+
+              for (const art of arts) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(11);
+                const titleLines = doc.splitTextToSize(`Articulo ${art.numero}: ${art.titulo}`, contentW);
+                if (y + titleLines.length * 5 + 10 > ph - 20) { doc.addPage(); y = 20; }
+                for (const line of titleLines) { doc.text(line, margin, y); y += 5; }
+                y += 2;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                const bodyLines = doc.splitTextToSize(art.contenido || '', contentW);
+                for (const line of bodyLines) {
+                  if (y > ph - 20) { doc.addPage(); y = 20; }
+                  doc.text(line, margin, y); y += 4.5;
+                }
+                y += 6;
+              }
+
+              const blob = doc.output('blob');
               window.open(URL.createObjectURL(blob), '_blank');
             }} style={{
-              padding: '8px 18px', border: '1px solid #2563eb', borderRadius: 8,
-              background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 600,
+              padding: '8px 18px', border: 'none', borderRadius: 8,
+              background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600,
               cursor: 'pointer', minHeight: 40,
             }}>
               Ver / Imprimir
