@@ -1627,8 +1627,12 @@ async function regenerateOrgDocuments(organization, ministroName, scheduledDate,
       FIRMA_MINISTRO_FE: `________________________\n${ministroName || '___'}\nMinistro de Fe\nRUT: ___`,
     };
 
-    // Import templateToHtml
-    const { templateToHtml } = await import('../../../src/shared/utils/templateBlockParser.js');
+    // Import templateToHtml — resolve from project root
+    const { fileURLToPath } = await import('url');
+    const { dirname, resolve } = await import('path');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const { templateToHtml } = await import(resolve(__dirname, '../../src/shared/utils/templateBlockParser.js'));
 
     const docTypeMap = { acta: 'acta_constitutiva', socios: 'lista_socios', nomina: 'nomina_directorio', carta: 'carta_solicitud' };
     const newDocs = [];
