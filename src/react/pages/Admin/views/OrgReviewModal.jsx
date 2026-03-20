@@ -1266,7 +1266,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 borderRadius: 12
               }}>
                 <h4 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: '#111827' }}>
-                  Paso 3: Aprobar Organizacion
+                  Paso 3: Aprobar y Emitir Certificado
                 </h4>
                 <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
                   Al aprobar se realizara automaticamente:
@@ -1524,15 +1524,6 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               <button onClick={() => setShowReject(true)} disabled={isActioning}
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
-          )}
-          {/* Post-asamblea: dirigir al flujo FEA en la pestaña Aprobar */}
-          {org.status === 'ministro_approved' && (
-            <button onClick={() => setTab('aprobar')} style={{
-              ...actionBtn('#10b981'),
-              padding: '10px 24px', fontSize: 14,
-            }}>
-              Ir a Firmar y Aprobar
-            </button>
           )}
           {/* Post-FEA: enviar al registro (solo si nunca se ha enviado) */}
           {org.status === 'approved' && !(statusHistory || []).some(h => h.status === 'sent_registry') && (
