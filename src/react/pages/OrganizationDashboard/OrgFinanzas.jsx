@@ -3,9 +3,23 @@ import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FormField from '../../components/ui/FormField';
 import { useUiStore } from '../../stores/uiStore';
+import { useAuthStore } from '../../stores/authStore';
 import { apiService } from '@services/ApiService.js';
 import { localeDateString } from '../../utils/formatters';
 import { pdfService } from '@services/PDFService.js';
+
+function getDirectivoCargo(org, user) {
+  if (!user?.rut || !org?.provisionalDirectorio) return null;
+  const clean = (r) => (r || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  const userRut = clean(user.rut);
+  const p = org.provisionalDirectorio;
+  if (p.president && clean(p.president.rut) === userRut) return 'president';
+  if (p.vicePresident && clean(p.vicePresident.rut) === userRut) return 'vicePresident';
+  if (p.secretary && clean(p.secretary.rut) === userRut) return 'secretary';
+  if (p.treasurer && clean(p.treasurer.rut) === userRut) return 'treasurer';
+  if (p.additionalMembers?.some(m => m && clean(m.rut) === userRut)) return 'director';
+  return null;
+}
 
 const CATEGORY_LABELS = {
   ingreso: 'Ingreso', egreso: 'Egreso', cuota: 'Cuota',
@@ -33,7 +47,12 @@ export default function OrgFinanzas({ org, onRefresh }) {
   const [showBalanceSelector, setShowBalanceSelector] = useState(false);
   const [balanceYear, setBalanceYear] = useState(new Date().getFullYear());
   const addToast = useUiStore((s) => s.addToast);
+  const user = useAuthStore((s) => s.user);
   const transactions = org?.finances || [];
+
+  // RBAC: solo Tesorero, Presidente, owner o admin pueden gestionar finanzas
+  const cargo = getDirectivoCargo(org, user);
+  const canManage = user?.role === 'MUNICIPALIDAD' || org?.userId === user?._id || cargo === 'treasurer' || cargo === 'president';
 
   function downloadBalancePDF() {
     try {
@@ -125,7 +144,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
         </span>
       )
     },
-    {
+    ...(canManage ? [{
       key: 'actions', label: '', sortable: false,
       render: (_, row) => (
         <button onClick={() => handleDelete(row.id || row._id)}
@@ -133,7 +152,7 @@ export default function OrgFinanzas({ org, onRefresh }) {
           Eliminar
         </button>
       )
-    }
+    }] : [])
   ];
 
   return (
@@ -141,9 +160,11 @@ export default function OrgFinanzas({ org, onRefresh }) {
       <div className="r-toolbar" style={{ marginBottom: 16 }}>
         <h3 className="r-page-title" style={{ fontSize: 18, fontWeight: 600, color: '#1e3a8a', margin: 0 }}>Finanzas</h3>
         <div className="r-toolbar__actions">
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setShowCreate(true)}>
-            + Transacción
-          </button>
+          {canManage && (
+            <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setShowCreate(true)}>
+              + Transacción
+            </button>
+          )}
           <button onClick={() => setShowBalanceSelector(true)} style={{ ...outlineBtn, background: '#eff6ff', borderColor: '#3b82f6' }}>Balance PDF</button>
           <button onClick={exportCSV} style={outlineBtn}>Exportar CSV</button>
         </div>

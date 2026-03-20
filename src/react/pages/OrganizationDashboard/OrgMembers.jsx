@@ -26,17 +26,17 @@ function getMinMembers(orgType) {
   return QUORUM_MINIMUMS[orgType] || DEFAULT_MINIMUM;
 }
 
-function isDirectivoOfOrg(org, user) {
-  if (!user?.rut || !org?.provisionalDirectorio) return false;
+function getDirectivoCargo(org, user) {
+  if (!user?.rut || !org?.provisionalDirectorio) return null;
   const clean = (rut) => (rut || '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
   const userRut = clean(user.rut);
   const prov = org.provisionalDirectorio;
-  if (prov.president && clean(prov.president.rut) === userRut) return true;
-  if (prov.vicePresident && clean(prov.vicePresident.rut) === userRut) return true;
-  if (prov.secretary && clean(prov.secretary.rut) === userRut) return true;
-  if (prov.treasurer && clean(prov.treasurer.rut) === userRut) return true;
-  if (prov.additionalMembers?.some(m => m && clean(m.rut) === userRut)) return true;
-  return false;
+  if (prov.president && clean(prov.president.rut) === userRut) return 'president';
+  if (prov.vicePresident && clean(prov.vicePresident.rut) === userRut) return 'vicePresident';
+  if (prov.secretary && clean(prov.secretary.rut) === userRut) return 'secretary';
+  if (prov.treasurer && clean(prov.treasurer.rut) === userRut) return 'treasurer';
+  if (prov.additionalMembers?.some(m => m && clean(m.rut) === userRut)) return 'director';
+  return null;
 }
 
 export default function OrgMembers({ org, onRefresh }) {
@@ -52,8 +52,12 @@ export default function OrgMembers({ org, onRefresh }) {
   const addToast = useUiStore((s) => s.addToast);
   const user = useAuthStore((s) => s.user);
 
-  // RBAC: solo owner, admin o directivo pueden editar miembros
-  const canEdit = user?.role === 'MUNICIPALIDAD' || org?.userId === user?._id || isDirectivoOfOrg(org, user);
+  // RBAC granular por cargo
+  const cargo = getDirectivoCargo(org, user);
+  const isOwnerOrAdmin = user?.role === 'MUNICIPALIDAD' || org?.userId === user?._id;
+  const canEdit = isOwnerOrAdmin || !!cargo; // cualquier directivo puede ver/editar datos básicos
+  // Solo Secretario, Presidente, owner o admin pueden gestionar socios (agregar/baja/reactivar)
+  const canManageSocios = isOwnerOrAdmin || cargo === 'secretary' || cargo === 'president';
 
   const members = org?.members || [];
   const activeCount = members.filter((m) => m.status !== 'inactive').length;
@@ -175,7 +179,7 @@ export default function OrgMembers({ org, onRefresh }) {
             )}
             {canEdit && !isInactive && <button onClick={() => setPayMember(row)} style={{ ...actionBtnStyle, color: '#059669', borderColor: '#bbf7d0' }} title="Registrar Pago">Pago</button>}
             {canEdit && !isInactive && <button onClick={() => setEditMember(row)} style={actionBtnStyle}>Editar</button>}
-            {canEdit && (isInactive ? (
+            {canManageSocios && (isInactive ? (
               <button onClick={() => handleReactivate(row)} style={{ ...actionBtnStyle, color: '#2563eb', borderColor: '#bfdbfe' }}>Reactivar</button>
             ) : (
               <button onClick={() => setDeactivateTarget(row)} style={{ ...actionBtnStyle, color: '#f59e0b', borderColor: '#fde68a' }}>Dar de Baja</button>
@@ -238,7 +242,7 @@ export default function OrgMembers({ org, onRefresh }) {
           )}
           <input type="text" placeholder="Buscar por nombre o RUT..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="r-search" />
-          {canEdit && (
+          {canManageSocios && (
             <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowAdd(true)}>
               + Agregar
             </button>

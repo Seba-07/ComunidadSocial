@@ -195,6 +195,45 @@ function isDirectivoMember(org, user) {
 }
 
 /**
+ * Retorna el cargo específico del usuario en el directorio de la org.
+ * Devuelve 'president', 'vicePresident', 'secretary', 'treasurer', 'director', o null.
+ */
+function getDirectivoCargo(org, user) {
+  if (!user || !user.rut) return null;
+  const cleanRut = normalizeRut(user.rut);
+  const prov = org.provisionalDirectorio;
+  if (!prov) return null;
+  if (prov.president && normalizeRut(prov.president.rut) === cleanRut) return 'president';
+  if (prov.vicePresident && normalizeRut(prov.vicePresident.rut) === cleanRut) return 'vicePresident';
+  if (prov.secretary && normalizeRut(prov.secretary.rut) === cleanRut) return 'secretary';
+  if (prov.treasurer && normalizeRut(prov.treasurer.rut) === cleanRut) return 'treasurer';
+  if (prov.additionalMembers?.some(m => m && normalizeRut(m.rut) === cleanRut)) return 'director';
+  return null;
+}
+
+/**
+ * Verifica si el usuario puede gestionar finanzas (crear/editar/eliminar transacciones).
+ * Solo Tesorero, Presidente, owner y MUNICIPALIDAD.
+ */
+function canManageFinances(org, user) {
+  if (user.role === 'MUNICIPALIDAD') return true;
+  if (org.userId?.toString() === user._id?.toString()) return true;
+  const cargo = getDirectivoCargo(org, user);
+  return cargo === 'treasurer' || cargo === 'president';
+}
+
+/**
+ * Verifica si el usuario puede gestionar socios (agregar/baja).
+ * Solo Secretario, Presidente, owner y MUNICIPALIDAD.
+ */
+function canManageMembers(org, user) {
+  if (user.role === 'MUNICIPALIDAD') return true;
+  if (org.userId?.toString() === user._id?.toString()) return true;
+  const cargo = getDirectivoCargo(org, user);
+  return cargo === 'secretary' || cargo === 'president';
+}
+
+/**
  * Verifica si el quórum de una asamblea se cumple.
  * @returns {{ met: boolean, required: number, actual: number, message: string }}
  */
@@ -1160,8 +1199,11 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
     // ============ ACTION HANDLERS ============
     // Handle specific actions from req.body
 
-    // Add a new member
+    // Add a new member — RBAC: solo Secretario, Presidente, owner, admin
     if (req.body.addMember) {
+      if (!canManageMembers(organization, req.user)) {
+        return res.status(403).json({ error: 'Solo el Secretario/a o Presidente/a pueden agregar socios' });
+      }
       const newMember = req.body.addMember;
       // Check for duplicate RUT
       if (!organization.members) organization.members = [];
@@ -1196,8 +1238,11 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       });
     }
 
-    // Add a finance record
+    // Add a finance record — RBAC: solo Tesorero, Presidente, owner, admin
     if (req.body.addFinance) {
+      if (!canManageFinances(organization, req.user)) {
+        return res.status(403).json({ error: 'Solo el Tesorero/a o Presidente/a pueden registrar transacciones financieras' });
+      }
       const finance = req.body.addFinance;
       const validFundSources = ['FONDOS_PROPIOS', 'SUBVENCION_MUNICIPAL'];
       if (finance.fundSource && !validFundSources.includes(finance.fundSource)) {
@@ -1212,8 +1257,11 @@ router.put('/:id', authenticate, requireVerifiedEmail, validateObjectId(), async
       organization.finances.push(newFinance);
     }
 
-    // Remove a finance record by id
+    // Remove a finance record by id — RBAC: solo Tesorero, Presidente, owner, admin
     if (req.body.removeFinance) {
+      if (!canManageFinances(organization, req.user)) {
+        return res.status(403).json({ error: 'Solo el Tesorero/a o Presidente/a pueden eliminar transacciones financieras' });
+      }
       if (organization.finances) {
         organization.finances = organization.finances.filter(f => f.id !== req.body.removeFinance);
       }
@@ -4089,6 +4137,38 @@ router.post('/:id/directorio/renuncia',
   }
 );
 
+// ============ USER PERMISSIONS FOR ORG ============
+/**
+ * GET /:id/my-permissions
+ * Returns the current user's granular permissions for this org.
+ */
+router.get('/:id/my-permissions', authenticate, validateObjectId(), async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id)
+      .select('userId provisionalDirectorio')
+      .lean();
+    if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
+
+    const isOwner = org.userId?.toString() === req.userId.toString();
+    const isAdmin = req.user.role === 'MUNICIPALIDAD';
+    const cargo = getDirectivoCargo(org, req.user);
+
+    res.json({
+      data: {
+        cargo,
+        isOwner,
+        isAdmin,
+        canManageFinances: isAdmin || isOwner || cargo === 'treasurer' || cargo === 'president',
+        canManageMembers: isAdmin || isOwner || cargo === 'secretary' || cargo === 'president',
+        canEdit: isAdmin || isOwner || !!cargo
+      }
+    });
+  } catch (error) {
+    console.error('My permissions error:', error);
+    res.status(500).json({ error: 'Error al obtener permisos' });
+  }
+});
+
 // ============ MEMBER CERTIFICATE ============
 /**
  * GET /:id/members/:rut/certificate
@@ -4156,12 +4236,9 @@ router.post('/:id/members/:rut/deactivate', authenticate, validateObjectId(), as
     const organization = await Organization.findById(req.params.id);
     if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    // Owner, MUNICIPALIDAD, or directivo can deactivate
-    const isOwner = organization.userId.toString() === req.userId.toString();
-    const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    const isDirectivo = isDirectivoMember(organization, req.user);
-    if (!isOwner && !isAdmin && !isDirectivo) {
-      return res.status(403).json({ error: 'No autorizado' });
+    // RBAC granular: solo Secretario, Presidente, owner, admin
+    if (!canManageMembers(organization, req.user)) {
+      return res.status(403).json({ error: 'Solo el Secretario/a o Presidente/a pueden dar de baja socios' });
     }
 
     const { category, reason } = req.body;
@@ -4228,11 +4305,9 @@ router.post('/:id/members/:rut/reactivate', authenticate, validateObjectId(), as
     const organization = await Organization.findById(req.params.id);
     if (!organization) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    const isOwner = organization.userId.toString() === req.userId.toString();
-    const isAdmin = req.user.role === 'MUNICIPALIDAD';
-    const isDirectivo = isDirectivoMember(organization, req.user);
-    if (!isOwner && !isAdmin && !isDirectivo) {
-      return res.status(403).json({ error: 'No autorizado' });
+    // RBAC granular: solo Secretario, Presidente, owner, admin
+    if (!canManageMembers(organization, req.user)) {
+      return res.status(403).json({ error: 'Solo el Secretario/a o Presidente/a pueden reactivar socios' });
     }
 
     const memberRut = decodeURIComponent(req.params.rut);

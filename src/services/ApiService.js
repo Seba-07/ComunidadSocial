@@ -1304,6 +1304,12 @@ class ApiService {
     return this.post(`/organizations/${orgId}/directorio/renuncia`, data);
   }
 
+  // ==================== ORG PERMISSIONS ====================
+
+  async getMyOrgPermissions(orgId) {
+    return this.get(`/organizations/${orgId}/my-permissions`);
+  }
+
   // ==================== MEMBER CERTIFICATE ====================
 
   async getMemberCertificateData(orgId, rut) {
