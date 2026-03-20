@@ -5041,6 +5041,27 @@ if (process.env.NODE_ENV !== 'production') {
       res.status(500).json({ error: error.message });
     }
   });
+
+  router.post('/:id/dev-revert-dissolved', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+    try {
+      const organization = await Organization.findById(req.params.id);
+      if (!organization) return res.status(404).json({ error: 'Organizacion no encontrada' });
+      if (organization.status !== 'dissolved') return res.status(400).json({ error: 'La organizacion no esta disuelta' });
+
+      organization.status = 'approved';
+      organization.statusHistory.push({
+        status: 'approved',
+        date: new Date(),
+        comment: 'DEV: Revertida disolucion para testing'
+      });
+      await organization.save();
+
+      res.json({ message: 'DEV: Disolucion revertida a approved', status: organization.status });
+    } catch (error) {
+      console.error('DEV revert dissolved error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 }
 
 export default router;
