@@ -1534,14 +1534,59 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               Ir a Firmar y Aprobar
             </button>
           )}
-          {/* Enviar al Registro solo disponible DESPUÉS de aprobar */}
-          {org.status === 'approved' && (
+          {/* Post-FEA: enviar al registro */}
+          {org.status === 'approved' && !org.sentToRegistry && (
+            <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
+              style={actionBtn('#6366f1')}>Enviar al Registro Civil</button>
+          )}
+          {/* En Registro Civil: confirmar inscripcion o marcar observaciones */}
+          {org.status === 'sent_registry' && (
             <>
-              <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
-                style={actionBtn('#6366f1')}>Enviar al Registro Civil</button>
-              <button onClick={() => setShowDissolve(true)} disabled={isActioning}
-                style={actionBtn('#dc2626')}>Disolver Organizacion</button>
+              <button onClick={async () => {
+                setIsActioning(true);
+                try {
+                  await updateOrgStatus(org._id, 'approved');
+                  addToast('Organizacion inscrita en Registro Civil. Cuentas de socios activadas.', 'success');
+                  const updated = await refreshOrganization(org._id);
+                  if (updated) setOrg(updated);
+                } catch (err) { addToast(err.message, 'error'); }
+                finally { setIsActioning(false); }
+              }} disabled={isActioning} style={{
+                ...actionBtn('#10b981'),
+                padding: '10px 24px', fontSize: 14,
+              }}>
+                Confirmar Inscripcion en Registro Civil
+              </button>
+              <button onClick={() => handleStatusChange('registry_observations')} disabled={isActioning}
+                style={actionBtn('#f59e0b')}>Observaciones del Registro</button>
             </>
+          )}
+          {/* Observaciones del Registro: corregir y reenviar o confirmar */}
+          {org.status === 'registry_observations' && (
+            <>
+              <button onClick={async () => {
+                setIsActioning(true);
+                try {
+                  await updateOrgStatus(org._id, 'approved');
+                  addToast('Organizacion inscrita en Registro Civil. Cuentas de socios activadas.', 'success');
+                  const updated = await refreshOrganization(org._id);
+                  if (updated) setOrg(updated);
+                } catch (err) { addToast(err.message, 'error'); }
+                finally { setIsActioning(false); }
+              }} disabled={isActioning} style={{
+                ...actionBtn('#10b981'),
+                padding: '10px 24px', fontSize: 14,
+              }}>
+                Confirmar Inscripcion en Registro Civil
+              </button>
+              <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
+                style={actionBtn('#6366f1')}>Reenviar al Registro</button>
+            </>
+          )}
+          {/* Org ya completamente aprobada */}
+          {org.status === 'approved' && (
+            <button onClick={() => setShowDissolve(true)} disabled={isActioning}
+              style={actionBtn('#dc2626')}>Disolver Organizacion</button>
           )}
         </div>
       </div>
