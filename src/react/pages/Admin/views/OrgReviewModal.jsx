@@ -1166,7 +1166,10 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                         `${apiService.baseUrl}/documents/${org._id}/generate-certificado-borrador`,
                         { headers: apiService.getHeaders(), credentials: 'include' }
                       );
-                      if (!resp.ok) throw new Error('Error al generar borrador');
+                      if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        throw new Error(errData.error || 'Error al generar borrador');
+                      }
                       const blob = await resp.blob();
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');

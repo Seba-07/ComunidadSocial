@@ -1038,40 +1038,105 @@ router.get('/:orgId/generate-certificado-borrador', authenticate, requireRole('M
     const org = await Organization.findById(req.params.orgId);
     if (!org) return res.status(404).json({ error: 'Organización no encontrada' });
 
-    let html = generateCertificadoBorradorHTML(org);
-
-    // Registrar documento y generar QR
-    const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
-      organizationId: org._id,
-      documentType: 'certificado_borrador',
-      documentTitle: `Certificado Personalidad Jurídica (Borrador) - ${org.organizationName || ''}`,
-      issuedBy: req.user?._id
-    });
-    html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
-
-    browser = await puppeteer.launch(PUPPETEER_OPTIONS);
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '2.5cm', right: '2cm', bottom: '2.5cm', left: '2cm' }
-    });
-
-    await browser.close();
-    browser = null;
-
-    await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
-
+    let pdf;
     const fileName = `Borrador_Certificado_${(org.organizationName || 'Org').replace(/\s+/g, '_')}.pdf`;
+
+    // Try Puppeteer first (better quality), fallback to jsPDF
+    try {
+      let html = generateCertificadoBorradorHTML(org);
+      const { folio, qrDataUrl, verifyUrl } = await registerDocumentAndGetQR({
+        organizationId: org._id,
+        documentType: 'certificado_borrador',
+        documentTitle: `Certificado Personalidad Jurídica (Borrador) - ${org.organizationName || ''}`,
+        issuedBy: req.user?._id
+      });
+      html = injectQRFooter(html, buildVerificationFooter(folio, qrDataUrl, verifyUrl));
+
+      browser = await puppeteer.launch(PUPPETEER_OPTIONS);
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '2.5cm', right: '2cm', bottom: '2.5cm', left: '2cm' } });
+      await browser.close();
+      browser = null;
+
+      await DocumentRegistry.updateOne({ folio }, { fileHash: crypto.createHash('sha256').update(pdf).digest('hex') });
+    } catch (puppeteerErr) {
+      console.warn('Puppeteer failed, falling back to jsPDF:', puppeteerErr.message);
+      if (browser) await browser.close().catch(() => {});
+
+      // jsPDF fallback
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const cw = pw - margin * 2;
+      let y = 30;
+
+      const name = org.organizationName || '';
+      const type = (org.organizationType || '').replace(/_/g, ' ');
+      const address = [org.street, org.streetNumber].filter(Boolean).join(' ') || org.address || '';
+      const comuna = org.comuna || '';
+      const region = org.region || '';
+      const dir = org.provisionalDirectorio || {};
+      const president = dir.president || dir.presidente || {};
+      const secretary = dir.secretary || dir.secretario || {};
+      const treasurer = dir.treasurer || dir.tesorero || {};
+      const getName = (p) => p ? [p.firstName, p.lastName].filter(Boolean).join(' ') || '---' : '---';
+      const assemblyDate = org.ministroData?.scheduledDate || org.validationData?.validatedAt || org.createdAt || new Date();
+      const dateStr = formatDate(assemblyDate);
+      const membersCount = (org.members || []).length;
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+      doc.text('CERTIFICADO DE PERSONALIDAD JURIDICA', pw / 2, y, { align: 'center' }); y += 10;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+      doc.text(`Municipalidad de ${comuna || 'la comuna'}`, pw / 2, y, { align: 'center' }); y += 16;
+
+      doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+      const paragraphs = [
+        `Certifico que con fecha ${dateStr}, se ha constituido legalmente la organizacion comunitaria denominada "${name}", de tipo ${type}, con domicilio en ${address}${comuna ? ', comuna de ' + comuna : ''}${region ? ', Region ' + region : ''}, de conformidad con lo dispuesto en la Ley N 19.418 sobre Juntas de Vecinos y demas Organizaciones Comunitarias.`,
+        `La organizacion cuenta con ${membersCount} miembros fundadores y su directorio provisorio quedo conformado por:`,
+      ];
+      for (const p of paragraphs) {
+        const lines = doc.splitTextToSize(p, cw);
+        for (const l of lines) { doc.text(l, margin, y); y += 5.5; }
+        y += 4;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Presidente/a: ${getName(president)} (RUT: ${president.rut || '---'})`, margin + 10, y); y += 6;
+      doc.text(`Secretario/a: ${getName(secretary)}`, margin + 10, y); y += 6;
+      doc.text(`Tesorero/a: ${getName(treasurer)}`, margin + 10, y); y += 10;
+      doc.setFont('helvetica', 'normal');
+
+      const closing = [
+        'Se deja constancia que la organizacion ha cumplido con todos los requisitos legales establecidos en el Titulo I de la Ley N 19.418 para su constitucion, incluyendo la celebracion de la asamblea constitutiva ante Ministro de Fe y la aprobacion de sus estatutos.',
+        'Se extiende el presente certificado para los fines legales que correspondan.',
+      ];
+      for (const p of closing) {
+        const lines = doc.splitTextToSize(p, cw);
+        for (const l of lines) { doc.text(l, margin, y); y += 5.5; }
+        y += 4;
+      }
+
+      y += 20;
+      doc.setDrawColor(50); doc.line(pw / 2 - 50, y, pw / 2 + 50, y); y += 5;
+      doc.setFontSize(10);
+      doc.text('Secretario/a Municipal', pw / 2, y, { align: 'center' }); y += 5;
+      doc.text(comuna ? `Municipalidad de ${comuna}` : 'Municipalidad', pw / 2, y, { align: 'center' }); y += 12;
+
+      doc.setTextColor(200, 200, 200); doc.setFontSize(9);
+      doc.text('BORRADOR — Requiere firma electronica avanzada (FEA) Ley 19.799', pw / 2, y, { align: 'center' });
+
+      pdf = Buffer.from(doc.output('arraybuffer'));
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(pdf);
   } catch (error) {
     console.error('Error generating certificado borrador:', error);
-    if (browser) await browser.close();
-    res.status(500).json({ error: 'Error al generar borrador de certificado' });
+    if (browser) await browser.close().catch(() => {});
+    res.status(500).json({ error: `Error al generar borrador: ${error.message}` });
   }
 });
 
