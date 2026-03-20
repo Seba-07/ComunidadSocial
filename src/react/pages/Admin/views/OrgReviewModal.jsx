@@ -1525,11 +1525,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
           )}
-          {/* Post-asamblea: flujo FEA — solo acciones de aprobación */}
-          {org.status === 'ministro_approved' && (
-            <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
-              style={actionBtn('#6366f1')}>Enviar al Registro</button>
-          )}
+          {/* Post-asamblea: flujo FEA — primero aprobar, luego enviar al registro */}
           {(org.status === 'ministro_approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
             <button onClick={() => setTab('aprobar')} style={{
               ...actionBtn('#10b981'),
@@ -1538,9 +1534,14 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               Aprobar con Certificado FEA
             </button>
           )}
+          {/* Enviar al Registro solo disponible DESPUÉS de aprobar */}
           {org.status === 'approved' && (
-            <button onClick={() => setShowDissolve(true)} disabled={isActioning}
-              style={actionBtn('#dc2626')}>Disolver Organización</button>
+            <>
+              <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
+                style={actionBtn('#6366f1')}>Enviar al Registro Civil</button>
+              <button onClick={() => setShowDissolve(true)} disabled={isActioning}
+                style={actionBtn('#dc2626')}>Disolver Organizacion</button>
+            </>
           )}
         </div>
       </div>

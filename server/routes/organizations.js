@@ -2060,7 +2060,7 @@ const VALID_STATUS_TRANSITIONS = {
   'rejected': ['pending_review', 'draft', 'waiting_ministro'],
   'sent_registry': ['approved', 'registry_observations', 'rejected'],
   'registry_observations': ['sent_registry', 'approved', 'rejected'],
-  'approved': ['dissolved'], // Estado final, solo puede disolverse
+  'approved': ['sent_registry', 'dissolved'], // Puede enviarse al Registro Civil o disolverse
   'dissolved': [], // Estado terminal
   'deletion_requested': [] // Managed by approve/reject-deletion routes
 };
