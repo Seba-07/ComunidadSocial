@@ -54,19 +54,32 @@ export default function OrgDocumentos({ org, onRefresh }) {
     }
   }
 
-  async function handleDownloadActa() {
-    try {
-      await apiService.downloadActaPDF(org._id);
-    } catch (error) {
-      addToast(error.message || 'Error al descargar acta', 'error');
+  const [generatedDocs, setGeneratedDocs] = useState([]);
+  useEffect(() => {
+    if (org?._id) {
+      apiService.get(`/organizations/${org._id}/generated-documents`)
+        .then(d => { if (Array.isArray(d)) setGeneratedDocs(d); })
+        .catch(() => {});
     }
-  }
+  }, [org?._id]);
 
-  async function handleDownloadMembers() {
-    try {
-      await apiService.downloadMembersPDF(org._id);
-    } catch (error) {
-      addToast(error.message || 'Error al descargar lista', 'error');
+  function openGeneratedPdf(docType) {
+    const doc = generatedDocs.find(d => d.docType === docType);
+    if (!doc?.content) {
+      addToast('Documento no disponible', 'error');
+      return;
+    }
+    if (doc.content.startsWith('data:application/pdf')) {
+      try {
+        const b64 = doc.content.split(',')[1] || doc.content.split('base64,')[1];
+        const bytes = atob(b64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        window.open(URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })), '_blank');
+      } catch { window.open(doc.content, '_blank'); }
+    } else {
+      const w = window.open('', '_blank');
+      if (w) { w.document.write(doc.content); w.document.close(); }
     }
   }
 
@@ -198,9 +211,10 @@ export default function OrgDocumentos({ org, onRefresh }) {
       <div style={{ marginBottom: 32 }}>
         <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Documentos Legales</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <LegalDoc name="Acta Constitutiva" icon="📋" onDownload={handleDownloadActa} />
-          <LegalDoc name="Lista de Miembros" icon="📋" onDownload={handleDownloadMembers} />
-          {org.estatutos && <LegalDoc name="Estatutos" icon="📜" />}
+          <LegalDoc name="Acta Constitutiva" icon="\uD83D\uDCCB" onDownload={() => openGeneratedPdf('acta_constitutiva')} available={generatedDocs.some(d => d.docType === 'acta_constitutiva')} />
+          <LegalDoc name="Lista de Socios Fundadores" icon="\uD83D\uDCCB" onDownload={() => openGeneratedPdf('lista_socios')} available={generatedDocs.some(d => d.docType === 'lista_socios')} />
+          <LegalDoc name="Nomina del Directorio" icon="\uD83D\uDCCB" onDownload={() => openGeneratedPdf('nomina_directorio')} available={generatedDocs.some(d => d.docType === 'nomina_directorio')} />
+          {org.estatutos && <LegalDoc name="Estatutos" icon="\uD83D\uDCDC" />}
         </div>
       </div>
 
@@ -324,7 +338,7 @@ export default function OrgDocumentos({ org, onRefresh }) {
 const actionBtnStyle = { padding: '4px 12px', fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6, background: 'white', cursor: 'pointer', color: '#374151', fontWeight: 500 };
 const certBtnStyle = { padding: '10px 20px', border: '1px solid #8b5cf6', borderRadius: 12, background: 'white', color: '#8b5cf6', cursor: 'pointer', fontWeight: 600, fontSize: 13 };
 
-function LegalDoc({ name, icon = '📋', onDownload }) {
+function LegalDoc({ name, icon = '\uD83D\uDCCB', onDownload, available = true }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -335,10 +349,13 @@ function LegalDoc({ name, icon = '📋', onDownload }) {
         <span style={{ fontSize: 20 }}>{icon}</span>
         <span style={{ fontWeight: 500, fontSize: 14 }}>{name}</span>
       </div>
-      {onDownload && (
+      {onDownload && available && (
         <button onClick={onDownload} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6, background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}>
-          Descargar PDF
+          Ver / Imprimir
         </button>
+      )}
+      {onDownload && !available && (
+        <span style={{ fontSize: 11, color: '#9ca3af' }}>No disponible</span>
       )}
     </div>
   );
@@ -348,43 +365,71 @@ function LegalDoc({ name, icon = '📋', onDownload }) {
 function DirectorioCertificados({ org, onRefresh, addToast }) {
   const directorio = org?.provisionalDirectorio || {};
   const certs = org?.certificatesStep5 || [];
-  const cargos = Object.entries(directorio).filter(([, data]) => data?.rut);
+  const SKIP = new Set(['_id', '__v', 'type', 'designatedAt', 'additionalMembers', 'createdAt', 'updatedAt']);
+  const cargos = Object.entries(directorio).filter(([k, v]) => !SKIP.has(k) && v && typeof v === 'object' && !Array.isArray(v) && (v.rut || v.firstName));
+  // Add additional members
+  if (Array.isArray(directorio.additionalMembers)) {
+    directorio.additionalMembers.forEach((m, i) => {
+      if (m?.rut || m?.firstName) cargos.push([`additional_${i}`, { ...m, cargo: m.cargoNombre || m.cargo || `Director/a ${i+1}` }]);
+    });
+  }
 
   if (cargos.length === 0) return null;
 
-  // Check which cargos have certificates
-  function hasCert(cargoKey, data) {
-    return certs.some(c =>
-      (c.memberId && c.memberId === cargoKey) ||
-      (c.memberName && data && c.memberName === `${data.firstName} ${data.lastName}`)
-    );
+  const CARGO_LABELS = { president: 'Presidente/a', presidente: 'Presidente/a', vicePresident: 'Vicepresidente/a', vicepresidente: 'Vicepresidente/a', secretary: 'Secretario/a', secretario: 'Secretario/a', treasurer: 'Tesorero/a', tesorero: 'Tesorero/a' };
+
+  function getCert(cargoKey, data) {
+    const normRut = (data?.rut || '').replace(/\./g, '').replace(/-/g, '');
+    return certs.find(c => {
+      if (!c.certificate) return false;
+      const cId = (c.memberId || '').replace(/\./g, '').replace(/-/g, '');
+      if (normRut && cId === normRut) return true;
+      if (c.memberId === cargoKey) return true;
+      return false;
+    });
   }
 
-  const pending = cargos.filter(([key, data]) => !hasCert(key, data));
-  if (pending.length === 0 && !org.certificatesPending) return null;
+  function viewCert(cert) {
+    if (!cert?.certificate) return;
+    try {
+      let b64 = cert.certificate;
+      if (b64.includes(',')) b64 = b64.split(',')[1];
+      const bytes = atob(b64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      const isPdf = bytes.startsWith('%PDF') || cert.certificate.includes('application/pdf');
+      window.open(URL.createObjectURL(new Blob([arr], { type: isPdf ? 'application/pdf' : 'image/png' })), '_blank');
+    } catch {
+      // Try direct data URI
+      window.open(cert.certificate.startsWith('data:') ? cert.certificate : `data:application/pdf;base64,${cert.certificate}`, '_blank');
+    }
+  }
 
-  async function handleUploadCert(cargoKey, file) {
+  async function handleUploadCert(cargoKey, personRut, file) {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { addToast('El archivo no puede superar 5MB', 'error'); return; }
-
+    if (file.size > 5 * 1024 * 1024) { addToast('Max 5MB', 'error'); return; }
     try {
       const reader = new FileReader();
       reader.onload = async () => {
         await apiService.post(`/organizations/${org._id}/sync-certificates`, {
-          certificates: { [cargoKey]: { name: file.name, data: reader.result } }
+          certificates: { [personRut || cargoKey]: { name: file.name, data: reader.result } }
         });
-        addToast('Certificado subido exitosamente', 'success');
+        addToast('Certificado subido', 'success');
         if (onRefresh) onRefresh();
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      addToast(error.message || 'Error al subir certificado', 'error');
+      addToast(error.message || 'Error al subir', 'error');
     }
   }
 
+  const pending = cargos.filter(([key, data]) => !getCert(key, data));
+
   return (
     <div style={{ marginBottom: 32 }}>
-      <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Certificados de Directorio</h4>
+      <h4 style={{ fontSize: 15, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
+        Certificados de Directorio ({certs.filter(c => c.certificate).length}/{cargos.length})
+      </h4>
       {pending.length > 0 && (
         <div style={{ padding: 10, background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#92400e' }}>
           Faltan {pending.length} certificado(s) de antecedentes por subir.
@@ -392,32 +437,35 @@ function DirectorioCertificados({ org, onRefresh, addToast }) {
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {cargos.map(([key, data]) => {
-          const uploaded = hasCert(key, data);
+          const cert = getCert(key, data);
           return (
             <div key={key} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8
+              padding: '12px 16px', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+              flexWrap: 'wrap', gap: 8,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 20 }}>📋</span>
+                <span style={{ fontSize: 20 }}>{cert ? '\uD83D\uDCCE' : '\uD83D\uDCCB'}</span>
                 <div>
-                  <span style={{ fontWeight: 500, fontSize: 14 }}>{data.cargo || key}</span>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>{data.firstName} {data.lastName}</div>
+                  <span style={{ fontWeight: 500, fontSize: 14 }}>{CARGO_LABELS[key] || data.cargo || key}</span>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{data.firstName} {data.lastName} — {data.rut || ''}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {uploaded ? (
-                  <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Subido</span>
+                {cert ? (
+                  <>
+                    <span style={{ fontSize: 11, color: '#059669', fontWeight: 600, background: '#d1fae5', padding: '3px 8px', borderRadius: 4 }}>Subido</span>
+                    <button onClick={() => viewCert(cert)} style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6, background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}>
+                      Ver
+                    </button>
+                  </>
                 ) : (
                   <>
-                    <span style={{ fontSize: 12, color: '#d97706', fontWeight: 600 }}>Pendiente</span>
-                    <label style={{
-                      padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6,
-                      background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600
-                    }}>
+                    <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>Pendiente</span>
+                    <label style={{ padding: '4px 12px', fontSize: 12, border: '1px solid #2563eb', borderRadius: 6, background: 'white', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}>
                       Subir
                       <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
-                        onChange={(e) => handleUploadCert(key, e.target.files[0])} />
+                        onChange={(e) => handleUploadCert(key, data.rut, e.target.files[0])} />
                     </label>
                   </>
                 )}

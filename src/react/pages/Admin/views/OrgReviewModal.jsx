@@ -1534,8 +1534,8 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               Ir a Firmar y Aprobar
             </button>
           )}
-          {/* Post-FEA: enviar al registro */}
-          {org.status === 'approved' && !org.sentToRegistry && (
+          {/* Post-FEA: enviar al registro (solo si nunca se ha enviado) */}
+          {org.status === 'approved' && !(statusHistory || []).some(h => h.status === 'sent_registry') && (
             <button onClick={() => handleStatusChange('sent_registry')} disabled={isActioning}
               style={actionBtn('#6366f1')}>Enviar al Registro Civil</button>
           )}
