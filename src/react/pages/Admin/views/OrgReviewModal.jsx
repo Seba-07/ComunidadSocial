@@ -1588,6 +1588,25 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
             <button onClick={() => setShowDissolve(true)} disabled={isActioning}
               style={actionBtn('#dc2626')}>Disolver Organizacion</button>
           )}
+          {/* DEV ONLY: revert to ministro_approved for testing */}
+          {import.meta.env.DEV && (org.status === 'approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
+            <button onClick={async () => {
+              if (!confirm('DEV: Revertir a ministro_approved? Esto limpiara el certificado FEA y las cuentas de socios creadas.')) return;
+              setIsActioning(true);
+              try {
+                await apiService.post(`/organizations/${org._id}/dev-revert-to-ministro-approved`);
+                addToast('DEV: Organización revertida a ministro_approved', 'success');
+                const updated = await refreshOrganization(org._id);
+                if (updated) setOrg(updated);
+              } catch (err) { addToast(err.message, 'error'); }
+              finally { setIsActioning(false); }
+            }} disabled={isActioning} style={{
+              ...actionBtn('#9ca3af'),
+              fontSize: 11, padding: '4px 10px', opacity: 0.7,
+            }}>
+              DEV: Revertir a ministro_approved
+            </button>
+          )}
         </div>
       </div>
 

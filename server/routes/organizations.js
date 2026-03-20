@@ -5005,4 +5005,42 @@ router.post('/:id/elections/impugn', authenticate, requireRole('MUNICIPALIDAD'),
   }
 });
 
+// ==================== DEV ONLY: Revert org to ministro_approved ====================
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/:id/dev-revert-to-ministro-approved', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
+    try {
+      const organization = await Organization.findById(req.params.id);
+      if (!organization) return res.status(404).json({ error: 'Organizacion no encontrada' });
+
+      // Clear approval data
+      organization.status = 'ministro_approved';
+      organization.certificadoPersonalidadJuridica = undefined;
+      organization.memberAccountsCreated = false;
+      organization.memberAccountsCreatedAt = undefined;
+      organization.statusHistory.push({
+        status: 'ministro_approved',
+        date: new Date(),
+        comment: 'DEV: Revertido a ministro_approved para testing'
+      });
+
+      await organization.save();
+
+      // Deactivate member accounts created during approval (don't delete, just deactivate)
+      const memberRuts = (organization.members || []).map(m => m.rut).filter(Boolean);
+      if (memberRuts.length > 0) {
+        const deactivated = await User.updateMany(
+          { rut: { $in: memberRuts }, role: 'MIEMBRO' },
+          { $set: { active: false } }
+        );
+        console.log(`DEV: Deactivated ${deactivated.modifiedCount} member accounts`);
+      }
+
+      res.json({ message: 'DEV: Organizacion revertida a ministro_approved', status: organization.status });
+    } catch (error) {
+      console.error('DEV revert error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+}
+
 export default router;
