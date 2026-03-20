@@ -101,6 +101,8 @@ export default function OrgDashboardPage() {
         const approved = orgs.find(o => APPROVED_STATUSES.has(o.status));
         setActiveOrg(approved ? approved._id : orgs[0]._id);
       }
+      // Load full org data (members, certificates, etc.) — list endpoint excludes heavy fields
+      setTimeout(() => refreshActiveOrg(), 100);
     });
   }, [id]);
 

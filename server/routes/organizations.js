@@ -331,7 +331,7 @@ async function createMemberAccounts(organization) {
       const existingUser = userByRut.get(member.rut) || (member.email && userByEmail.get(member.email));
 
       if (existingUser) {
-        // Si ya existe, asociar a la organización si es MIEMBRO (soporta múltiples orgs)
+        // Si ya existe, asociar a la organización y reactivar si es MIEMBRO
         if (existingUser.role === 'MIEMBRO') {
           if (!existingUser.organizationIds) existingUser.organizationIds = [];
           const orgIdStr = organization._id.toString();
@@ -339,12 +339,15 @@ async function createMemberAccounts(organization) {
             existingUser.organizationIds.push(organization._id);
           }
           if (!existingUser.organizationId) existingUser.organizationId = organization._id;
+          // Reactivate if deactivated (e.g. from dev-revert)
+          const wasInactive = !existingUser.active;
+          if (wasInactive) existingUser.active = true;
           await existingUser.save();
           createdAccounts.push({
             rut: member.rut,
             email: existingUser.email,
-            status: 'already_exists',
-            message: 'Usuario ya existente, asociado a la organización'
+            status: wasInactive ? 'reactivated' : 'already_exists',
+            message: wasInactive ? 'Cuenta reactivada' : 'Usuario ya existente, asociado a la organización'
           });
         } else {
           createdAccounts.push({
@@ -2283,7 +2286,7 @@ router.post('/:id/approve-with-document', authenticate, requireRole('MUNICIPALID
 
     // Build summary for response
     const activationsSent = memberAccountsResult?.createdAccounts?.filter(a => a.activationSent).length || 0;
-    const accountsCreated = memberAccountsResult?.createdAccounts?.filter(a => a.status === 'created').length || 0;
+    const accountsCreated = memberAccountsResult?.createdAccounts?.filter(a => a.status === 'created' || a.status === 'reactivated').length || 0;
 
     res.json({
       message: 'Organización aprobada con certificado firmado',

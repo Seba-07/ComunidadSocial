@@ -281,8 +281,8 @@ export default function OrgOverview({ org, onNavigateTab, onRefresh }) {
         </div>
       )}
 
-      {/* Quorum Alert */}
-      {org.status === 'approved' && !quorumMet && (
+      {/* Quorum Alert — only show for established orgs, not recently approved */}
+      {org.status === 'approved' && !quorumMet && memberCount > 0 && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginTop: 24 }}>
           <div style={{ fontWeight: 700, color: '#991b1b', fontSize: 15, marginBottom: 6 }}>
             Quórum Insuficiente
