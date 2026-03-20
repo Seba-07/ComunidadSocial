@@ -1306,7 +1306,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                     opacity: isActioning ? 0.6 : 1
                   }}
                 >
-                  {isActioning ? 'Aprobando...' : 'Aprobar Organizacion'}
+                  {isActioning ? 'Aprobando...' : 'Confirmar Aprobacion con FEA'}
                 </button>
               </div>
 
@@ -1525,13 +1525,13 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
                 style={actionBtn('#ef4444')}>Rechazar</button>
             </>
           )}
-          {/* Post-asamblea: flujo FEA — primero aprobar, luego enviar al registro */}
-          {(org.status === 'ministro_approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
+          {/* Post-asamblea: dirigir al flujo FEA en la pestaña Aprobar */}
+          {org.status === 'ministro_approved' && (
             <button onClick={() => setTab('aprobar')} style={{
               ...actionBtn('#10b981'),
               padding: '10px 24px', fontSize: 14,
             }}>
-              Aprobar con Certificado FEA
+              Ir a Firmar y Aprobar
             </button>
           )}
           {/* Enviar al Registro solo disponible DESPUÉS de aprobar */}
