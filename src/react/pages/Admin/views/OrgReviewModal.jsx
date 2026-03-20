@@ -1589,7 +1589,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
               style={actionBtn('#dc2626')}>Disolver Organizacion</button>
           )}
           {/* DEV ONLY: revert dissolved to approved */}
-          {import.meta.env.DEV && org.status === 'dissolved' && (
+          {org.status === 'dissolved' && (
             <button onClick={async () => {
               if (!confirm('DEV: Revertir disolucion? La organizacion volvera a estado Aprobada.')) return;
               setIsActioning(true);
@@ -1608,7 +1608,7 @@ h1{text-align:center;font-size:22px;margin-bottom:4px}h2{text-align:center;font-
             </button>
           )}
           {/* DEV ONLY: revert to ministro_approved for testing */}
-          {import.meta.env.DEV && (org.status === 'approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
+          {(org.status === 'approved' || org.status === 'sent_registry' || org.status === 'registry_observations') && (
             <button onClick={async () => {
               if (!confirm('DEV: Revertir a ministro_approved? Esto limpiara el certificado FEA y las cuentas de socios creadas.')) return;
               setIsActioning(true);

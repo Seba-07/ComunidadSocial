@@ -5005,8 +5005,8 @@ router.post('/:id/elections/impugn', authenticate, requireRole('MUNICIPALIDAD'),
   }
 });
 
-// ==================== DEV ONLY: Revert org to ministro_approved ====================
-if (process.env.NODE_ENV !== 'production') {
+// ==================== DEV/TESTING: Revert org status (MUNICIPALIDAD only) ====================
+{
   router.post('/:id/dev-revert-to-ministro-approved', authenticate, requireRole('MUNICIPALIDAD'), validateObjectId(), async (req, res) => {
     try {
       const organization = await Organization.findById(req.params.id);
